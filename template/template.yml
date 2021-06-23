@@ -1,0 +1,7 @@
+name: template
+version: null
+description: Explain the core functionality in a concise manner. 
+design: template.vhd
+verification: template_tb.vhd
+dependencies:
+used-by:

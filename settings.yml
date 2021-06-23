@@ -1,0 +1,4 @@
+#specify where the remote IP code base is located (ex: a repo on github)
+remote-path: "../remote"
+#specify where to look for the local code base storing IPs (ex: working directory)
+local-path: "../local"
