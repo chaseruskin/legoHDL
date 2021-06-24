@@ -1,7 +1,7 @@
 #   setup.py is ran first to properly configure a new user's local machine for
 #   legoHDL to properly function. It is in essence the 'install' file. It
 #   supports two types of installations.
-import os, sys
+import os, sys, stat, shutil
 
 INSTALL_OPTION=0
 
@@ -19,12 +19,20 @@ for i,arg in enumerate(sys.argv):
 master_script='manager.py'
 program_name='legoHDL'
 working_dir=os.path.expanduser('~/.'+program_name+'/')
+print('Initializing '+working_dir+' working directory...')
 try:
     os.makedirs(working_dir+'packages/')
 except:
     pass
-path=os.path.realpath(__file__)
+
+path=os.path.realpath(__file__) #note for release: path <- working_dir
 path=path[:path.rfind('/')+1]
+try:
+    shutil.copytree(path, working_dir+program_name)
+    #shutil.move(path, working_dir) #note for release: use this command
+except:
+    pass
+
 
 #   The first method (preferred) will turn the main python script into an 
 #   executable file and then symbolically store it in /usr/local/bin/.
@@ -32,7 +40,8 @@ if(INSTALL_OPTION == 0):
     print('Option: 0')
 
     print('Creating executable script...')
-    os.system("chmod +x "+path+master_script)
+    st = os.stat(path+master_script)
+    os.chmod(path+master_script, st.st_mode | stat.S_IXUSR | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
     try:
         os.makedirs('/usr/local/bin/') # attempt to create directory if DNE
     except:
@@ -41,7 +50,7 @@ if(INSTALL_OPTION == 0):
     if(os.path.isfile("/usr/local/bin/"+program_name)):
         print('Symbolic link already exists for '+program_name)
     else:
-        print('Creating symbolic link located in /usr/local/bin/ to executable script...')
+        print('Creating symbolic link file located in /usr/local/bin/ to executable script...')
         os.system("ln -s "+path+master_script+" /usr/local/bin/"+program_name)
     pass
 
