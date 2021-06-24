@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os, sys
 import yaml
 import collections
@@ -87,6 +88,7 @@ class legoHDL:
         self.remote = self.pkgmngPath+"/../remote/"
 
         self.local = self.pkgmngPath+"/../local/"
+        self.local = os.path.expanduser("~/.legoHDL/")
 
         self.parse()
         if(self.isValidProject):
