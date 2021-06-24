@@ -325,7 +325,7 @@ class legoHDL:
         
         self.save()
         #initialize git repo
-        cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/chase800/"+self.projectName+".git master"
+        cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/HDLdb/"+self.projectName+".git master"
         os.system(cmd)
         pass
 
