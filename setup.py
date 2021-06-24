@@ -1,4 +1,4 @@
-#   setup.py is ran first to properly configure a new user's local machine for
+#   setup.py is ran first to configure a new user's local machine for
 #   legoHDL to properly function. It is in essence the 'install' file. It
 #   supports two types of installations.
 import os, sys, stat, shutil
@@ -51,7 +51,7 @@ if(INSTALL_OPTION == 0):
         print('Symbolic link already exists for '+program_name)
     else:
         print('Creating symbolic link file located in /usr/local/bin/ to executable script...')
-        os.system("ln -s "+path+master_script+" /usr/local/bin/"+program_name)
+        os.symlink(path+master_script, "/usr/local/bin/"+program_name)
     pass
 
 
