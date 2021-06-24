@@ -2,5 +2,5 @@
 remote-path: null
 #specify where to look for the local code base (ex: working directory)
 local-path: "~/.legoHDL/"
-#specify a text editor command to open projects for active development
+#specify a text editor to open projects for development (ex: code)
 text-editor: "code"
