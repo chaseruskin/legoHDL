@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 import os, sys
-import yaml
-import collections
-import requests
-from requests.auth import HTTPBasicAuth
+import collections, yaml
 #<ideas>
 
 #movtivation behind building our own Hardware HDL manager:
@@ -67,10 +64,10 @@ from requests.auth import HTTPBasicAuth
 class legoHDL:
     def __init__(self):
 
-        r = requests.get('https://gitlab.com/chase800/andgate/-/raw/master/AndGate.yml')
+        #r = requests.get('https://gitlab.com/chase800/andgate/-/raw/master/AndGate.yml')
         #r = requests.get('https://raw.githubusercontent.com/c-rus/Bored-Bucket/main/Makefile')
         #r = requests.get('https://gitlab.com/chase800/andgate/-/raw/master/AndGate.yml')
-        print(r.text)
+        #print(r.text)
 
         self.isValidProject = False
         self.path = ""
@@ -260,7 +257,7 @@ class legoHDL:
                 loc_ver = self.fetchVersion(pkg, False)
                 if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
                     info = '(update available)'
-                    ver = self.fetchVersion(pkg, False)
+                    ver = loc_ver
 
             print("\t",pkg,"\t\t",isDownloaded,"\t\t",ver,"\t",info)
         pass

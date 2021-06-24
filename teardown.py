@@ -11,7 +11,7 @@ working_dir=os.path.expanduser('~/.'+program_name+'/')
 print('Removing '+working_dir+' working directory...')
 shutil.rmtree(working_dir, ignore_errors=True)
 
-
+#   Tearing down the first method.
 print('Option: 0')
 
 print('Checking for symbolic link file...')
@@ -21,7 +21,7 @@ try:
 except:
     print('No symbolic link file detected in /usr/local/bin/')
 
-
+#   Tearing down the second method.
 print("Option: 1")
 
 shell=os.environ['SHELL']
