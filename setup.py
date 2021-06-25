@@ -1,9 +1,13 @@
 #   setup.py is ran first to configure a new user's local machine for
 #   legoHDL to properly function. It is in essence the 'install' file. It
 #   supports two types of installations.
-import os, sys, stat, shutil, git
+import os, sys, stat, shutil, git, yaml
 
 INSTALL_OPTION=0
+
+settings = dict()
+with open("./settings.yml", "r") as file:
+    settings = yaml.load(file, Loader=yaml.FullLoader)
 
 print('---BEGINNING INSTALLATION---')
 
@@ -19,8 +23,8 @@ for i,arg in enumerate(sys.argv):
 master_script='manager.py'
 program_name='legoHDL'
 
-remote="https://gitlab.com/HDLdb/"
-working_dir=os.path.expanduser('~/.'+program_name+'/')
+remote=settings['remote-path']
+working_dir=os.path.expanduser(settings['local-path'])
 
 print('Initializing '+working_dir+' working directory...')
 try:
