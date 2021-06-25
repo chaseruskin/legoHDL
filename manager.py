@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sys
+import os, sys, git, shutil
 import collections, yaml
 #<ideas>
 
@@ -64,28 +64,24 @@ import collections, yaml
 class legoHDL:
     def __init__(self):
 
-        #r = requests.get('https://gitlab.com/chase800/andgate/-/raw/master/AndGate.yml')
-        #r = requests.get('https://raw.githubusercontent.com/c-rus/Bored-Bucket/main/Makefile')
-        #r = requests.get('https://gitlab.com/chase800/andgate/-/raw/master/AndGate.yml')
-        #print(r.text)
-
         self.isValidProject = False
         self.path = ""
         self.projectName = ""
-        self.projectPath = os.getcwd()
+        self.pkgPath = ""
         
         self.metadata = None
         
         #defines path to working dir of 'legoHDL' tool
         self.pkgmngPath = os.path.realpath(__file__)
-        lastSlash = self.pkgmngPath.rfind('/')
-        self.pkgmngPath = self.pkgmngPath[:lastSlash]
+        self.pkgmngPath = self.pkgmngPath[:self.pkgmngPath.rfind('/')+1]
 
-        #defines path to dir of remote code base relative to 'legoHDL' tool
-        self.remote = self.pkgmngPath+"/../remote/"
-
-        self.local = self.pkgmngPath+"/../local/"
+        #defines path to dir of remote code base
+        self.remote = "https://gitlab.com/HDLdb/"
+        #defines path to dir of local code base
         self.local = os.path.expanduser("~/.legoHDL/")
+        
+        #origin.push()
+        #print(origin)
 
         self.parse()
         if(self.isValidProject):
@@ -170,7 +166,7 @@ class legoHDL:
         pass
 
     def download(self, package):
-        catalog = os.listdir(self.remote+"packages")
+        catalog = os.listdir(self.remote)
         loc_catalog = os.listdir(self.local+"packages")
         cmd = ''
 
@@ -212,7 +208,7 @@ class legoHDL:
         tmp.move_to_end('name', last=False)
 
         #a little magic to save YAML in custom order for easier readability
-        with open("./"+self.projectName+".yml", "w") as file:
+        with open(self.pkgPath+self.projectName+".yml", "w") as file:
             while len(tmp):
                 it = tmp.popitem(last=False)
                 single_dict = {}
@@ -224,7 +220,7 @@ class legoHDL:
         #lock all dependency files to disable editing
         #Linux: "chattr +i <file>"...macOS: chflags uchg <file>"
         if(len(self.metadata['dependencies']) > 0):
-            os.system("chflags uchg "+self.projectPath+"/dependencies/*;")
+            os.system("chflags uchg "+self.pkgPath+"dependencies/*;")
         pass
 
     def list(self, options):
@@ -263,7 +259,7 @@ class legoHDL:
         pass
 
     def boot(self):
-        with open("./"+self.projectName+".yml", "r") as file:
+        with open(self.pkgPath+self.projectName+".yml", "r") as file:
             self.metadata = yaml.load(file, Loader=yaml.FullLoader)
 
         self.isValidProject = True
@@ -274,27 +270,38 @@ class legoHDL:
         #unlock all dependency files to enable editing
         #Linux: "chattr -i <file>"...macOS: chflags nouchg <file>"
         if(len(self.metadata['dependencies']) > 0):
-            if(not os.path.isdir(self.local+"packages/"+self.projectName+"/dependencies")):
+            if(not os.path.isdir(self.pkgPath+"dependencies")):
                 os.mkdir("dependencies")
-            os.system("chflags nouchg "+self.projectPath+"/dependencies/*;")
+            os.system("chflags nouchg "+self.pkgPath+"dependencies/*;")
         pass
 
-    def createProject(self, package, options, description):
-        if(os.path.isdir(self.remote+package)):
-                print("ERROR- That project already exists!\
-                \n\tDownload it from the remote codebase by using \'legoHDL download "+package+"\' or find it on your\
-                \n\tlocal codebase.\
-                    ")
+    def createProject(self, package, options, description='Give a brief explanation here.'):
+        #create a local repo
+        self.pkgPath = self.local+"packages/"+package
+        repo = None
+        try:
+            repo = git.Repo(self.pkgPath)
+            print('Project already exists locally!')
+            return
+        except:
+            try: #if no error, that means the package exists on the remote!
+                repo = git.Git(self.local+"packages/").clone(self.remote+package+".git")
+                print('Project already exists on remote code base; downloading now...')
                 return
+            except: 
+                print('Initialzing new project...')
+
+            shutil.copytree(self.pkgmngPath+"template/", self.pkgPath)
+            repo = git.Repo.init(self.pkgPath)
+            repo.create_remote('origin', self.remote+package+".git") #attach to remote code base
+            
+        
         #run the commands to generate new project from template
-        cmd =   "cd "+self.remote+"packages; mkdir "+package+";\
-                cp -R "+self.pkgmngPath+"/template/ "+"./"+package+";\
-                "
-        os.system(cmd)
-        dirr = self.remote+'packages/'+package+'/'
+
         #file to find/replace word 'template'
-        file_swaps = [(dirr+'template.yml',dirr+package+'.yml'),(dirr+'design/template.vhd', dirr+'design/'+package+'.vhd'),
-        (dirr+'testbench/template_tb.vhd', dirr+'testbench/'+package+'_tb.vhd')]
+        self.pkgPath+='/'
+        file_swaps = [(self.pkgPath+'template.yml',self.pkgPath+package+'.yml'),(self.pkgPath+'design/template.vhd', self.pkgPath+'design/'+package+'.vhd'),
+        (self.pkgPath+'testbench/template_tb.vhd', self.pkgPath+'testbench/'+package+'_tb.vhd')]
         for x in file_swaps:
             file_in = open(x[0], "r")
             file_out = open(x[1], "w")
@@ -304,12 +311,10 @@ class legoHDL:
             os.remove(x[0])
             file_out.close()
 
-        self.projectPath = self.local + 'packages/' + package
         self.projectName = package
-        print(self.projectPath)
-        os.chdir(self.remote+'packages/'+package)
-        self.boot()
+        print(self.pkgPath)
 
+        self.boot()
         self.describe(description)
 
         installPkg = list()
@@ -325,8 +330,18 @@ class legoHDL:
         
         self.save()
         #initialize git repo
-        cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/HDLdb/"+self.projectName+".git master"
-        os.system(cmd)
+        repo.index.add(repo.untracked_files)
+        repo.index.commit("Initializes project.")
+        repo.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
+
+        #add and commit package name to registry repo
+        reg = git.Repo(self.local+"registry")
+        reg.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
+        with open(self.local+"registry/db.txt", 'a') as file:
+            file.write(self.projectName+"\n")
+        reg.index.add('db.txt')
+        reg.index.commit('Appends '+self.projectName+' to the database.')
+        reg.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
         pass
 
     def describe(self, phrase):
@@ -345,8 +360,8 @@ class legoHDL:
     def parse(self):
         #check if we are in a project directory (necessary to run a majority of commands)
         self.path = os.getcwd()
-        lastSlash = self.projectPath.rfind('/') #determine project's name to know the YAML to open
-        self.projectName = self.projectPath[lastSlash+1:]
+        lastSlash = self.pkgPath.rfind('/') #determine project's name to know the YAML to open
+        self.projectName = self.pkgPath[lastSlash+1:]
         #read YAML
         try:
             self.boot()
@@ -380,7 +395,6 @@ class legoHDL:
             pass
         elif(command == "new" and len(package)):
             self.createProject(package, options, description)
-            self.download(package)
             exit()
             pass
         elif(command == "upload" and self.isValidProject):

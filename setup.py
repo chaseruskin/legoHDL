@@ -1,7 +1,7 @@
 #   setup.py is ran first to configure a new user's local machine for
 #   legoHDL to properly function. It is in essence the 'install' file. It
 #   supports two types of installations.
-import os, sys, stat, shutil
+import os, sys, stat, shutil, git
 
 INSTALL_OPTION=0
 
@@ -18,12 +18,35 @@ for i,arg in enumerate(sys.argv):
 
 master_script='manager.py'
 program_name='legoHDL'
+
+remote="https://gitlab.com/HDLdb/"
 working_dir=os.path.expanduser('~/.'+program_name+'/')
+
 print('Initializing '+working_dir+' working directory...')
 try:
     os.makedirs(working_dir+'packages/')
 except:
     pass
+
+
+print('Setting up package registry...')
+#check the remote registry if package appears there
+if(not os.path.isdir(working_dir+"registry")):
+    try:
+        clone = git.Git(working_dir).clone(remote+"registry.git") #grab if it exists
+        print('Grabbed package registry from remote')
+    except:
+        repo = git.Repo.init(working_dir+"registry")
+        origin = repo.create_remote('origin', remote+"registry.git")
+        open(working_dir+"registry/db.txt", 'wb').close()
+        repo.index.add("db.txt")
+        repo.index.commit("Initial commit.")
+        origin.push(refspec='{}:{}'.format('master', 'master'))
+        print('Initialized package registry')
+        pass
+else:
+    print('Package registry already initialized')
+
 
 path=os.path.realpath(__file__) #note for release: path <- working_dir
 path=path[:path.rfind('/')+1]
