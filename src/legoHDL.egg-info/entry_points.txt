@@ -1,0 +1,4 @@
+
+            [console_scripts]
+            legoHDL=pkgmngr.manager:main
+        

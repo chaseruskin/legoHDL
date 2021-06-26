@@ -211,7 +211,6 @@ class legoHDL:
     def download(self, package):
         self.syncRegistry()
         loc_catalog = os.listdir(self.local+"packages")
-        cmd = ''
 
         if package in self.registry:
             if package in loc_catalog: #just give it an update!
@@ -274,7 +273,13 @@ class legoHDL:
     def list(self, options):
         self.syncRegistry() 
         catalog = self.registry
-        local_catalog = list(os.listdir(self.local+"packages/"))
+        #prevent any hidden directories from populating list
+        tmp = list(os.listdir(self.local+"packages/"))
+        local_catalog = list()
+        for d in tmp:
+            if(d[0] != '.'):
+                local_catalog.append(d)
+
         downloadedList = dict()
         
         for pkg in catalog:
