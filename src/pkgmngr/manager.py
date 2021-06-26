@@ -6,12 +6,10 @@ import collections, yaml, tempfile
 #on a version release, have a dedicated zipped file of the vhd and .yaml?
 #faster for an install, but may have to be reworked if then deciding to download
 
-
 #allow remote to be null,
 #allow user to open settings file
-#allow user to open template folder to edit
-
-#movtivation behind building our own Hardware HDL manager:
+#allow user to open template folder
+#movtivation behind building a Hardware HDL manager:
 #   -direct control and flexibility to design to meet our needs/worklfow/situation
 #   -complete customization to tackle our problem of managing our modules
 #   -promotes more experimentation => seeks to find the best solution (not trying to conform to other's standards)
@@ -94,6 +92,8 @@ class legoHDL:
         
         #defines path to dir of remote code base
         self.remote = self.settings['remote']
+        self.remote = None #testing allowing option to not connect to a remote!
+
         #defines path to dir of local code base
         self.local = os.path.expanduser(self.settings['local'])
         #defines how to open workspaces
@@ -114,8 +114,9 @@ class legoHDL:
 
     def syncRegistry(self, pkg=None):
         if(self.registry == None): #must check for changes
-            reg = git.Repo(self.local+"registry")
-            reg.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
+            if(self.remote != None):
+                reg = git.Repo(self.local+"registry")
+                reg.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
             self.registry = dict()
             with open(self.local+"registry/db.txt", 'r') as file:
                 for line in file.readlines():
@@ -130,7 +131,7 @@ class legoHDL:
             if(pkg in self.registry and (self.registry[pkg] == self.metadata['version'] \
                 or (self.metadata['version'] == zero))):
                 return
-            print('Syncing with remote registry...')
+            print('Syncing with registry...')
             self.registry[pkg] = self.metadata['version']
 
             with open(self.local+"registry/db.txt", 'w') as file:
@@ -145,7 +146,8 @@ class legoHDL:
             reg = git.Repo(self.local+"registry")
             reg.index.add('db.txt')
             reg.index.commit(msg)
-            reg.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
+            if(self.remote != None):
+                reg.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
         pass
 
 
@@ -221,6 +223,11 @@ class legoHDL:
 
     def download(self, package):
         self.syncRegistry()
+
+        if(self.remote == None):
+            print('No remote code base configured to download modules')
+            return
+
         loc_catalog = os.listdir(self.local+"packages")
 
         if package in self.registry:
@@ -242,7 +249,7 @@ class legoHDL:
         self.syncRegistry()
 
         repo = git.Repo(self.local+"packages/"+self.pkgName)
-        
+        print(release)
         if(release != ''):
             self.metadata['version'] = release[1:]
             repo.create_tag(release)
@@ -250,7 +257,7 @@ class legoHDL:
         if not self.pkgName in self.registry.keys():
             print("Uploading a new package to remote storage...")
             cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/chase800/"+self.pkgName+".git master"  
-        else:
+        elif self.remote != None:
             print("Updating remote package contents...")
             repo.remotes.origin.push()
         
@@ -261,6 +268,15 @@ class legoHDL:
         if(len(options) != 1):
             print("ERROR- Invalid syntax; could not adjust setting")
             return
+        if(choice == ''):
+            if(options[0] == 'remote'):
+                print('WARNING- No remote code base is configured')
+                choice = None
+            elif(options[0] == 'local'):
+                print('ERROR- Must include a local code base path')
+                return
+            elif(options[0] == 'editor'):
+                choice = None
 
         self.settings[options[0]] = choice
 
@@ -272,6 +288,7 @@ class legoHDL:
         if(not self.isValidProject): 
             return
         #write back YAML info
+        print(self.metadata['version'])
         tmp = collections.OrderedDict(self.metadata)
         tmp.move_to_end('dependencies')
         tmp.move_to_end('name', last=False)
@@ -310,7 +327,7 @@ class legoHDL:
             else:
                 downloadedList[pkg] = False
 
-        if(options.count('local')):
+        if(options.count('local') or self.remote == None):
             catalog = local_catalog
         if(options.count('alpha')):
             catalog = sorted(catalog)
@@ -334,6 +351,23 @@ class legoHDL:
             print("\t",pkg,"\t\t",isDownloaded,"\t\t",ver,"\t",info)
         pass
 
+    def cleanup(self, pkg):
+        if(self.remote == None):
+            print('WARNING- No remote code base is configured, if this module is deleted it may be unrecoverable.\n \
+                DELETE '+pkg+'? (y/n)\
+                ')
+            response = ''
+            while(response.lower() != 'y' or response.lower() != 'n'):
+                response = input()
+                print(response)
+
+            if(response.lower() == 'n'):
+                print(pkg+' not deleted')
+                return
+
+        #delete the module
+        pass
+
     def boot(self):
         with open(self.pkgPath+self.pkgName+".yml", "r") as file:
             self.metadata = yaml.load(file, Loader=yaml.FullLoader)
@@ -343,8 +377,8 @@ class legoHDL:
         if(self.metadata['dependencies'] == None):
             self.metadata['dependencies'] = dict()
         
-        #unlock all dependency files to enable editing
-        #Linux: "chattr -i <file>"...macOS: chflags nouchg <file>"
+        #TO-DO: unlock all dependency files to enable editing
+        # unlock .yaml?
         if(len(self.metadata['dependencies']) > 0):
             if(not os.path.isdir(self.pkgPath+"dependencies")):
                 os.mkdir("dependencies")
@@ -360,18 +394,23 @@ class legoHDL:
             print('Project already exists locally!')
             return
         except:
-            try: #if no error, that means the package exists on the remote!
-                repo = git.Git(self.local+"packages/").clone(self.remote+package+".git")
-                print('Project already exists on remote code base; downloading now...')
-                return
-            except: 
-                print('Initialzing new project...')
+            if(self.remote != None):
+                try: #if no error, that means the package exists on the remote!
+                    repo = git.Git(self.local+"packages/").clone(self.remote+package+".git")
+                    print('Project already exists on remote code base; downloading now...')
+                    return
+                except: 
+                    pass
+            else:
+                print('No remote code bases to check from in settings')
 
+            print('Initialzing new project...')
             shutil.copytree(self.pkgmngPath+"template/", self.pkgPath)
             repo = git.Repo.init(self.pkgPath)
-            repo.create_remote('origin', self.remote+package+".git") #attach to remote code base
             
-        
+            if(self.remote != None):
+                repo.create_remote('origin', self.remote+package+".git") #attach to remote code base
+            
         #run the commands to generate new project from template
 
         #file to find/replace word 'template'
@@ -384,8 +423,8 @@ class legoHDL:
             for line in file_in:
                 file_out.write(line.replace("template", package))
             file_in.close()
-            os.remove(x[0])
             file_out.close()
+            os.remove(x[0])
 
         self.projectName = self.pkgName = package
         print(self.pkgPath)
@@ -408,8 +447,11 @@ class legoHDL:
         #initialize git repo
         repo.index.add(repo.untracked_files)
         repo.index.commit("Initializes project.")
-        print('Generating new remote repository...')
-        repo.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
+        if(self.remote != None):
+            print('Generating new remote repository...')
+            repo.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
+        else:
+            print('No remote code base attached to local repository')
 
         #add and commit package name to registry repo
         self.syncRegistry(self.pkgName)
@@ -434,7 +476,7 @@ class legoHDL:
         lastSlash = self.pkgPath.rfind('/') #determine project's name to know the YAML to open
         self.pkgName = self.pkgPath[lastSlash+1:]
         self.pkgPath+='/'
-        #read YAML
+        #try to read YAML
         try:
             self.boot()
         except:
@@ -477,6 +519,8 @@ class legoHDL:
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
             self.upload(release=str(ver))
+            if(len(options) == 2 and options[1] == 'd'):
+                self.cleanup(self.pkgName)
             pass
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
@@ -488,6 +532,8 @@ class legoHDL:
             #download is used if a developer wishes to contribtue and improve to an existing package
             self.describe(package)
             pass
+        elif(command == 'del'):
+            self.cleanup(package)
         elif(command == "list"):
             #a visual aide to help a developer see what package's are at the ready to use
             self.list(options)
@@ -506,23 +552,24 @@ class legoHDL:
             \n\tinstall <package> [-v]\n\t\t-fetch package from the code base to be available in current project\
             \n\tuninstall <package>\n\t\t-remove package from current project along with all dependency packages\
             \n\tdownload <package> [-o]\n\t\t-pull package from remote code base for further development\
-            \n\tupload <package> [-dismiss]\n\t\t-push package to remote code base to be available to others\
+            \n\tupload <package> [-v -d]\n\t\t-push package to remote code base to be available to others\
             \n\tupdate <package> [-all]\n\t\t-download available package to be updated to latest version\
             \n\tlist [-alpha -local]\n\t\t-print list of all packages available from code base\
             \n\topen <package> \n\t\t-opens the package with the set text-editor\
+            \n\tdel <package> \n\t\t-deletes the package from the local code base\
             \n\tsearch <package> [-local]\n\t\t-search remote (default) or local code base for specified package\
             \n\tdetails <package> [-v]\n\t\t-provide further detail into a specified package\
             \n\tports <package> [-v]\n\t\t-print ports list of specified package\
             \n\tdescribe \"short description\"\n\t\t-add description to current project\
-            \n\tnew <package> [-d \"description\" -i <package> [-v] , <package> [-v] , ...]\n\t\t-create a standard empty package based on a template and pushes to remote code base\
+            \n\tnew <package> [-\"description\" -i <package> [-v] , <package> [-v] , ...]\n\t\t-create a standard empty package based on a template and pushes to remote code base\
             \n\tset [-local | -remote | -editor] <path>\n\t\t-adjust package manager settings\
             \n")
             print("Optional flags\
-            \n\t-v\t\tspecify what version (semantic versioning -v0.0)\
+            \n\t-v\t\tspecify what version (semantic versioning -v0.0.0)\
             \n\t-i\t\tset installation flag to install package(s) on project creation\
             \n\t-alpha\t\talphabetical order\
             \n\t-o\t\topen the project\
-            \n\t-dismiss\tremove package from your local codebase\
+            \n\t-warp\tremoves the released package from your local codebase\
             \n\t-local\t\tidentify local path setting\
             \n\t-remote\t\tidentify remote path setting\
             \n\t-editor\t\tidentify text-editor setting\

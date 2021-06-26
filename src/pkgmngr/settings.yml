@@ -1,3 +1,3 @@
 editor: code
-local: /Users/Chase/develop/hdl
-remote: https://gitlab.com/HDLdb/
+local: ~/.legoHDL/
+remote: null

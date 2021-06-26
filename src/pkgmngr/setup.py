@@ -20,11 +20,11 @@ for i,arg in enumerate(sys.argv):
         exit('ERROR- Invalid arguments. Setup failed.')
     pass
 
-master_script='manager.py'
+master_script='/manager.py'
 program_name='legoHDL'
 
-remote=settings['remote-path']
-working_dir=os.path.expanduser(settings['local-path'])
+remote=settings['remote']+'/'
+working_dir=os.path.expanduser(settings['local'])+'/'
 
 print('Initializing '+working_dir+' working directory...')
 try:
