@@ -1,1 +1,2 @@
-graft template
+graft src/pkgmngr/template
+include src/pkgmngr/settings.yml

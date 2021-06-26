@@ -6,6 +6,11 @@ import collections, yaml, tempfile
 #on a version release, have a dedicated zipped file of the vhd and .yaml?
 #faster for an install, but may have to be reworked if then deciding to download
 
+
+#allow remote to be null,
+#allow user to open settings file
+#allow user to open template folder to edit
+
 #movtivation behind building our own Hardware HDL manager:
 #   -direct control and flexibility to design to meet our needs/worklfow/situation
 #   -complete customization to tackle our problem of managing our modules
@@ -362,7 +367,7 @@ class legoHDL:
             except: 
                 print('Initialzing new project...')
 
-            shutil.copytree(self.pkgmngPath+"../../template/", self.pkgPath)
+            shutil.copytree(self.pkgmngPath+"template/", self.pkgPath)
             repo = git.Repo.init(self.pkgPath)
             repo.create_remote('origin', self.remote+package+".git") #attach to remote code base
             

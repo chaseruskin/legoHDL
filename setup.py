@@ -26,6 +26,7 @@ setuptools.setup(
     include_package_data=True,
     package_data={
         "": ["settings.yml"],
+        "": ["template"]
     },
     python_requires=">=3.5"
 )
