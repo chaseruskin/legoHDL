@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-import os, sys
-import collections, yaml
+import os, sys, git, shutil
+import collections, yaml, tempfile
 #<ideas>
 
 #movtivation behind building our own Hardware HDL manager:
 #   -direct control and flexibility to design to meet our needs/worklfow/situation
 #   -complete customization to tackle our problem of managing our modules
 #   -promotes more experimentation => seeks to find the best solution (not trying to conform to other's standards)
-#   -in-house so it doesn't rely on outsiders to maintain and improve
 
 #some idea python scripts to be made:
 #   toolbelt.py // helps automate use of tools for lint, anaylsis, sim
@@ -29,6 +28,9 @@ import collections, yaml
 #seperate program/framework to perform lint, synth, simulation/verification, place-and-route, bitstream? 
 
 #add pin mapping to YAML file to allow program to place-and-route design post-synthesis
+
+#search all design VHD files to determine which is top-level design
+#then find which testbench instantiates that design
 
 #alternate method: dependency folder has files that point to the git commits of those versions?
 
@@ -62,38 +64,37 @@ import collections, yaml
 #</ideas>
 
 class legoHDL:
-    def __init__(self):
 
-        #r = requests.get('https://gitlab.com/chase800/andgate/-/raw/master/AndGate.yml')
-        #r = requests.get('https://raw.githubusercontent.com/c-rus/Bored-Bucket/main/Makefile')
-        #r = requests.get('https://gitlab.com/chase800/andgate/-/raw/master/AndGate.yml')
-        #print(r.text)
+    def __init__(self):
+        #defines path to working dir of 'legoHDL' tool
+        self.pkgmngPath = os.path.realpath(__file__)
+        self.pkgmngPath = self.pkgmngPath[:self.pkgmngPath.rfind('/')+1]
+
+        settings = dict()
+        with open(self.pkgmngPath+"settings.yml", "r") as file:
+            settings = yaml.load(file, Loader=yaml.FullLoader)
 
         self.isValidProject = False
         self.path = ""
-        self.projectName = ""
-        self.projectPath = os.getcwd()
+        self.pkgName = ""
+        self.pkgPath = ""
         
+        self.registry = None #list of all available modules in remote
         self.metadata = None
-        
-        #defines path to working dir of 'legoHDL' tool
-        self.pkgmngPath = os.path.realpath(__file__)
-        lastSlash = self.pkgmngPath.rfind('/')
-        self.pkgmngPath = self.pkgmngPath[:lastSlash]
 
-        #defines path to dir of remote code base relative to 'legoHDL' tool
-        self.remote = self.pkgmngPath+"/../remote/"
-
-        self.local = self.pkgmngPath+"/../local/"
-        self.local = os.path.expanduser("~/.legoHDL/")
+        #defines path to dir of remote code base
+        self.remote = settings['remote-path']
+        #defines path to dir of local code base
+        self.local = os.path.expanduser(settings['local-path'])
+        #defines how to open workspaces
+        self.textEditor = settings['text-editor']
 
         self.parse()
-        if(self.isValidProject):
-            self.save()
+        self.save()
         pass
 
     #returns a string to a package directory
-    def pkgPath(self, package, remote=True, folder=''):
+    def findPath(self, package, remote=True, folder=''):
         pathway = self.remote
         subdir = ''
         if(not remote):
@@ -102,14 +103,52 @@ class legoHDL:
             subdir = "/"+folder+"/"
         return pathway+"packages/"+package+subdir
 
+    def syncRegistry(self, pkg=None):
+        if(self.registry == None): #must check for changes
+            reg = git.Repo(self.local+"registry")
+            reg.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
+            self.registry = dict()
+            with open(self.local+"registry/db.txt", 'r') as file:
+                for line in file.readlines():
+                    m = line.find('=')
+                    key = line[:m]
+                    val = line[m+1:len(line)-1]
+                    if(m != -1):
+                        self.registry[key] = val
+        
+        if(pkg != None): #looking to write a value to registry
+            if(self.registry[pkg] == self.metadata['version'] or (self.metadata['version'] == None)):
+                return
+            
+            self.registry[pkg] = self.metadata['version']
+
+            with open(self.local+"registry/db.txt", 'w') as file:
+                for key,val in self.registry.items():
+                    if(val == None or val == '0'):
+                        val = ''
+                    file.write(key+"="+val+"\n")
+            if(val == ''):
+                msg = 'Introduces '+self.pkgName+' to the database.'
+            else:
+                msg = 'Updates '+self.pkgName+' version to '+self.metadata['version']+'.'
+            reg = git.Repo(self.local+"registry")
+            reg.index.add('db.txt')
+            reg.index.commit(msg)
+            reg.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
+        pass
+
 
     def fetchVersion(self, package, remote=True):
-        tmp_metadata = None
-        with open(self.pkgPath(package, remote)+"/"+package+".yml", "r") as file:
-            tmp_metadata = yaml.load(file, Loader=yaml.FullLoader)
-        if(tmp_metadata['version'] == None):
+        self.syncRegistry()
+        ver = self.registry[package]
+        if(not remote):
+            with open(self.local+"packages/"+package+"/"+package+".yml", "r") as file:
+                tmp_metadata = yaml.load(file, Loader=yaml.FullLoader)
+            ver = tmp_metadata['version']
+        if(ver == None):
             return ''
-        return tmp_metadata['version']
+        else:
+            return ver
 
     def uninstall(self, package, options):
         #does this module exist in this project's scope?
@@ -130,11 +169,11 @@ class legoHDL:
 
     def install(self, package, options):
         #verify there is an existing module under this name
-        if(not os.path.isdir(self.pkgPath(package))):
+        if(not os.path.isdir(self.findPath(package))):
             print("ERROR- No module exists under the name \"",package,"\".",sep='')
             return
         
-        if(not os.path.isdir(self.pkgPath(self.projectName, False, 'dependencies'))):
+        if(not os.path.isdir(self.findPath(self.pkgName, False, 'dependencies'))):
             os.mkdir('dependencies')
 
         #checkout latest version number
@@ -170,49 +209,53 @@ class legoHDL:
         pass
 
     def download(self, package):
-        catalog = os.listdir(self.remote+"packages")
+        self.syncRegistry()
         loc_catalog = os.listdir(self.local+"packages")
-        cmd = ''
 
-        if package in catalog:
-            if package in loc_catalog:
-                cmd =   'cd '+self.local+'packages/'+package+';'\
-                        'git pull --tags '+self.remote+'/packages/'+package
-            else:
-                cmd =   'cd '+self.local+'packages; mkdir '+package+'; cd '+package+';\
-                        git init; git pull --tags '+self.remote+'packages/'+package
-            os.system(cmd)
+        if package in self.registry:
+            if package in loc_catalog: #just give it an update!
+                repo = git.Repo(self.local+"packages/"+package)
+                repo.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
+            else: #oh man, go grab the whole thing!
+                repo = git.Git(self.local+"packages/").clone(self.remote+package+".git")
         else:
             print('ERROR- Package \''+package+'\' does not exist in remote storage.')
         pass
 
-    def upload(self, release=''):
-        catalog = os.listdir(self.remote+"packages")
-        cmd = ''
-
-        if(release != ''):
-            self.metadata['version'] = float(release[1:])
-            os.system('git tag '+release)
-
-        if not self.projectName in catalog:
-            print("Uploading a new package to remote storage...")
-            cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/chase800/"+self.projectName+".git master"  
-        else:
-            print("Updating remote package contents...")
-            cmd ='git push --tags'
-        #copy the local repo into the remote repo code base
-        #option to give a version too on upload? 
+    def load(self, package):
+        cmd = self.textEditor+" "+self.local+"packages/"+package
         os.system(cmd)
         pass
 
+    def upload(self, release=''):
+        self.syncRegistry()
+
+        repo = git.Repo(self.local+"packages/"+self.pkgName)
+        
+        if(release != ''):
+            self.metadata['version'] = release[1:]
+            repo.create_tag(release)
+
+        if not self.pkgName in self.registry.keys():
+            print("Uploading a new package to remote storage...")
+            cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/chase800/"+self.pkgName+".git master"  
+        else:
+            print("Updating remote package contents...")
+            repo.remotes.origin.push()
+        
+        self.syncRegistry(self.pkgName)
+        pass
+
     def save(self):
+        if(not self.isValidProject): 
+            return
         #write back YAML info
         tmp = collections.OrderedDict(self.metadata)
         tmp.move_to_end('dependencies')
         tmp.move_to_end('name', last=False)
 
         #a little magic to save YAML in custom order for easier readability
-        with open("./"+self.projectName+".yml", "w") as file:
+        with open(self.pkgPath+self.pkgName+".yml", "w") as file:
             while len(tmp):
                 it = tmp.popitem(last=False)
                 single_dict = {}
@@ -224,13 +267,19 @@ class legoHDL:
         #lock all dependency files to disable editing
         #Linux: "chattr +i <file>"...macOS: chflags uchg <file>"
         if(len(self.metadata['dependencies']) > 0):
-            os.system("chflags uchg "+self.projectPath+"/dependencies/*;")
+            os.system("chflags uchg "+self.pkgPath+"dependencies/*;")
         pass
 
     def list(self, options):
-        #default checks catalog of remote packages
-        catalog = set(os.listdir(self.pkgPath('')))
-        local_catalog = set(os.listdir(self.pkgPath('', False)))
+        self.syncRegistry() 
+        catalog = self.registry
+        #prevent any hidden directories from populating list
+        tmp = list(os.listdir(self.local+"packages/"))
+        local_catalog = list()
+        for d in tmp:
+            if(d[0] != '.'):
+                local_catalog.append(d)
+
         downloadedList = dict()
         
         for pkg in catalog:
@@ -251,19 +300,20 @@ class legoHDL:
             isDownloaded = '-'
             info = ''
 
-            ver = self.fetchVersion(pkg)
+            ver = self.fetchVersion(pkg, True)
             if (downloadedList[pkg]):
                 isDownloaded = 'y'
+                loc_ver = ''
                 loc_ver = self.fetchVersion(pkg, False)
                 if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
-                    info = '(update available)'
+                    info = '(update)-> '+ver
                     ver = loc_ver
 
             print("\t",pkg,"\t\t",isDownloaded,"\t\t",ver,"\t",info)
         pass
 
     def boot(self):
-        with open("./"+self.projectName+".yml", "r") as file:
+        with open(self.pkgPath+self.pkgName+".yml", "r") as file:
             self.metadata = yaml.load(file, Loader=yaml.FullLoader)
 
         self.isValidProject = True
@@ -274,27 +324,38 @@ class legoHDL:
         #unlock all dependency files to enable editing
         #Linux: "chattr -i <file>"...macOS: chflags nouchg <file>"
         if(len(self.metadata['dependencies']) > 0):
-            if(not os.path.isdir(self.local+"packages/"+self.projectName+"/dependencies")):
+            if(not os.path.isdir(self.pkgPath+"dependencies")):
                 os.mkdir("dependencies")
-            os.system("chflags nouchg "+self.projectPath+"/dependencies/*;")
+            os.system("chflags nouchg "+self.pkgPath+"dependencies/*;")
         pass
 
-    def createProject(self, package, options, description):
-        if(os.path.isdir(self.remote+package)):
-                print("ERROR- That project already exists!\
-                \n\tDownload it from the remote codebase by using \'legoHDL download "+package+"\' or find it on your\
-                \n\tlocal codebase.\
-                    ")
+    def createProject(self, package, options, description='Give a brief explanation here.'):
+        #create a local repo
+        self.pkgPath = self.local+"packages/"+package
+        repo = None
+        try:
+            repo = git.Repo(self.pkgPath)
+            print('Project already exists locally!')
+            return
+        except:
+            try: #if no error, that means the package exists on the remote!
+                repo = git.Git(self.local+"packages/").clone(self.remote+package+".git")
+                print('Project already exists on remote code base; downloading now...')
                 return
+            except: 
+                print('Initialzing new project...')
+
+            shutil.copytree(self.pkgmngPath+"template/", self.pkgPath)
+            repo = git.Repo.init(self.pkgPath)
+            repo.create_remote('origin', self.remote+package+".git") #attach to remote code base
+            
+        
         #run the commands to generate new project from template
-        cmd =   "cd "+self.remote+"packages; mkdir "+package+";\
-                cp -R "+self.pkgmngPath+"/template/ "+"./"+package+";\
-                "
-        os.system(cmd)
-        dirr = self.remote+'packages/'+package+'/'
+
         #file to find/replace word 'template'
-        file_swaps = [(dirr+'template.yml',dirr+package+'.yml'),(dirr+'design/template.vhd', dirr+'design/'+package+'.vhd'),
-        (dirr+'testbench/template_tb.vhd', dirr+'testbench/'+package+'_tb.vhd')]
+        self.pkgPath+='/'
+        file_swaps = [(self.pkgPath+'template.yml',self.pkgPath+package+'.yml'),(self.pkgPath+'design/template.vhd', self.pkgPath+'design/'+package+'.vhd'),
+        (self.pkgPath+'testbench/template_tb.vhd', self.pkgPath+'testbench/'+package+'_tb.vhd')]
         for x in file_swaps:
             file_in = open(x[0], "r")
             file_out = open(x[1], "w")
@@ -304,12 +365,10 @@ class legoHDL:
             os.remove(x[0])
             file_out.close()
 
-        self.projectPath = self.local + 'packages/' + package
-        self.projectName = package
-        print(self.projectPath)
-        os.chdir(self.remote+'packages/'+package)
-        self.boot()
+        self.projectName = self.pkgName = package
+        print(self.pkgPath)
 
+        self.boot()
         self.describe(description)
 
         installPkg = list()
@@ -325,8 +384,12 @@ class legoHDL:
         
         self.save()
         #initialize git repo
-        cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/HDLdb/"+self.projectName+".git master"
-        os.system(cmd)
+        repo.index.add(repo.untracked_files)
+        repo.index.commit("Initializes project.")
+        #repo.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
+
+        #add and commit package name to registry repo
+        self.syncRegistry(self.pkgName)
         pass
 
     def describe(self, phrase):
@@ -344,9 +407,10 @@ class legoHDL:
 
     def parse(self):
         #check if we are in a project directory (necessary to run a majority of commands)
-        self.path = os.getcwd()
-        lastSlash = self.projectPath.rfind('/') #determine project's name to know the YAML to open
-        self.projectName = self.projectPath[lastSlash+1:]
+        self.pkgPath = os.getcwd()
+        lastSlash = self.pkgPath.rfind('/') #determine project's name to know the YAML to open
+        self.pkgName = self.pkgPath[lastSlash+1:]
+        self.pkgPath+='/'
         #read YAML
         try:
             self.boot()
@@ -380,17 +444,22 @@ class legoHDL:
             pass
         elif(command == "new" and len(package)):
             self.createProject(package, options, description)
-            self.download(package)
             exit()
             pass
         elif(command == "upload" and self.isValidProject):
+            ver = ''
+            if(len(options)):
+                ver = options[0]
+            print(ver)
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
-            self.upload(package)
+            self.upload(release=str(ver))
             pass
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
             self.download(package)
+            if('o' in options):
+                self.load(package)
             pass
         elif(command == "describe"):
             #download is used if a developer wishes to contribtue and improve to an existing package
@@ -399,6 +468,9 @@ class legoHDL:
         elif(command == "list"):
             #a visual aide to help a developer see what package's are at the ready to use
             self.list(options)
+            pass
+        elif(command == "open"):
+            self.load(package)
             pass
         elif(command == "show"):
             self.show(package)
@@ -411,6 +483,7 @@ class legoHDL:
             \n\tupload <package> [-dismiss]\n\t\t-push package to remote code base to be available to others\
             \n\tupdate <package> [-all]\n\t\t-download available package to be updated to latest version\
             \n\tlist [-alpha -local]\n\t\t-print list of all packages available from code base\
+            \n\topen <package> \n\t\t-opens the package with the set text-editor\
             \n\tsearch <package> [-local]\n\t\t-search remote (default) or local code base for specified package\
             \n\tdetails <package> [-v]\n\t\t-provide further detail into a specified package\
             \n\tports <package> [-v]\n\t\t-print ports list of specified package\

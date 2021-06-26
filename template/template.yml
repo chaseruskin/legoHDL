@@ -1,5 +1,5 @@
 name: template
-version: null
+version: 0
 description: Explain the core functionality in a concise manner. 
 design: template.vhd
 verification: template_tb.vhd
