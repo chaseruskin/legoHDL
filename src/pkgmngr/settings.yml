@@ -1,6 +1,3 @@
-#specify where the remote code base is located (ex: a repo on github)
-remote-path: "https://gitlab.com/HDLdb/"
-#specify where to look for the local code base (ex: working directory)
-local-path: "~/.legoHDL/"
-#specify a text editor to open projects for development (ex: code)
-text-editor: "code"
+editor: code
+local: /Users/Chase/develop/hdl
+remote: https://gitlab.com/HDLdb/

@@ -3,6 +3,9 @@ import os, sys, git, shutil
 import collections, yaml, tempfile
 #<ideas>
 
+#on a version release, have a dedicated zipped file of the vhd and .yaml?
+#faster for an install, but may have to be reworked if then deciding to download
+
 #movtivation behind building our own Hardware HDL manager:
 #   -direct control and flexibility to design to meet our needs/worklfow/situation
 #   -complete customization to tackle our problem of managing our modules
@@ -24,6 +27,8 @@ import collections, yaml, tempfile
 
 #use filenames with the version (in dependency folder) to allow for designs that require multiple versions of a module that 
 # is used by different entities
+
+#prompt to move all current projects to new local directory when changing setting? nah
 
 #seperate program/framework to perform lint, synth, simulation/verification, place-and-route, bitstream? 
 
@@ -70,9 +75,9 @@ class legoHDL:
         self.pkgmngPath = os.path.realpath(__file__)
         self.pkgmngPath = self.pkgmngPath[:self.pkgmngPath.rfind('/')+1]
 
-        settings = dict()
+        self.settings = dict()
         with open(self.pkgmngPath+"settings.yml", "r") as file:
-            settings = yaml.load(file, Loader=yaml.FullLoader)
+            self.settings = yaml.load(file, Loader=yaml.FullLoader)
 
         self.isValidProject = False
         self.path = ""
@@ -81,14 +86,13 @@ class legoHDL:
         
         self.registry = None #list of all available modules in remote
         self.metadata = None
-
+        
         #defines path to dir of remote code base
-        self.remote = settings['remote-path']
+        self.remote = self.settings['remote']
         #defines path to dir of local code base
-        self.local = os.path.expanduser(settings['local-path'])
+        self.local = os.path.expanduser(self.settings['local'])
         #defines how to open workspaces
-        self.textEditor = settings['text-editor']
-
+        self.textEditor = self.settings['editor']
         self.parse()
         self.save()
         pass
@@ -117,14 +121,16 @@ class legoHDL:
                         self.registry[key] = val
         
         if(pkg != None): #looking to write a value to registry
-            if(self.registry[pkg] == self.metadata['version'] or (self.metadata['version'] == None)):
+            zero = '0.0.0'
+            if(pkg in self.registry and (self.registry[pkg] == self.metadata['version'] \
+                or (self.metadata['version'] == zero))):
                 return
-            
+            print('Syncing with remote registry...')
             self.registry[pkg] = self.metadata['version']
 
             with open(self.local+"registry/db.txt", 'w') as file:
                 for key,val in self.registry.items():
-                    if(val == None or val == '0'):
+                    if(val == zero):
                         val = ''
                     file.write(key+"="+val+"\n")
             if(val == ''):
@@ -246,6 +252,17 @@ class legoHDL:
         self.syncRegistry(self.pkgName)
         pass
 
+    def setSetting(self, options, choice):
+        if(len(options) != 1):
+            print("ERROR- Invalid syntax; could not adjust setting")
+            return
+
+        self.settings[options[0]] = choice
+
+        with open(self.pkgmngPath+"settings.yml", "w") as file:
+            yaml.dump(self.settings, file)
+            pass
+
     def save(self):
         if(not self.isValidProject): 
             return
@@ -345,7 +362,7 @@ class legoHDL:
             except: 
                 print('Initialzing new project...')
 
-            shutil.copytree(self.pkgmngPath+"template/", self.pkgPath)
+            shutil.copytree(self.pkgmngPath+"../../template/", self.pkgPath)
             repo = git.Repo.init(self.pkgPath)
             repo.create_remote('origin', self.remote+package+".git") #attach to remote code base
             
@@ -386,7 +403,8 @@ class legoHDL:
         #initialize git repo
         repo.index.add(repo.untracked_files)
         repo.index.commit("Initializes project.")
-        #repo.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
+        print('Generating new remote repository...')
+        repo.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
 
         #add and commit package name to registry repo
         self.syncRegistry(self.pkgName)
@@ -475,6 +493,9 @@ class legoHDL:
         elif(command == "show"):
             self.show(package)
             pass
+        elif(command == "set"):
+            self.setSetting(options, package)
+            pass
         elif(command == "help"):
             print("List of commands\
             \n\tinstall <package> [-v]\n\t\t-fetch package from the code base to be available in current project\
@@ -489,6 +510,7 @@ class legoHDL:
             \n\tports <package> [-v]\n\t\t-print ports list of specified package\
             \n\tdescribe \"short description\"\n\t\t-add description to current project\
             \n\tnew <package> [-d \"description\" -i <package> [-v] , <package> [-v] , ...]\n\t\t-create a standard empty package based on a template and pushes to remote code base\
+            \n\tset [-local | -remote | -editor] <path>\n\t\t-adjust package manager settings\
             \n")
             print("Optional flags\
             \n\t-v\t\tspecify what version (semantic versioning -v0.0)\
@@ -496,7 +518,9 @@ class legoHDL:
             \n\t-alpha\t\talphabetical order\
             \n\t-o\t\topen the project\
             \n\t-dismiss\tremove package from your local codebase\
-            \n\t-local\t\tfilter set to packages located on your local code base\
+            \n\t-local\t\tidentify local path setting\
+            \n\t-remote\t\tidentify remote path setting\
+            \n\t-editor\t\tidentify text-editor setting\
             ")
         else:
             print("Invalid command; type \"help\" to see a list of available commands")
