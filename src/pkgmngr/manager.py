@@ -112,8 +112,10 @@ class legoHDL:
             subdir = "/"+folder+"/"
         return pathway+"packages/"+package+subdir
 
-    def syncRegistry(self, pkg=None):
-        if(self.registry == None): #must check for changes
+    def syncRegistry(self, pkg=None, rm=False):
+        msg = ''
+        zero = '0.0.0'
+        if(self.registry == None): # must check for changes
             if(self.remote != None):
                 reg = git.Repo(self.local+"registry")
                 reg.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
@@ -125,29 +127,32 @@ class legoHDL:
                     val = line[m+1:len(line)-1]
                     if(m != -1):
                         self.registry[key] = val
-        
-        if(pkg != None): #looking to write a value to registry
-            zero = '0.0.0'
+        if(pkg != None and rm == True): #looking to remove a value from the registry
+            self.registry.pop(pkg, None)
+            msg = 'Removes '+pkg+' from the database.'
+
+        elif(pkg != None): #looking to write a value to registry
             if(pkg in self.registry and (self.registry[pkg] == self.metadata['version'] \
                 or (self.metadata['version'] == zero))):
                 return
             print('Syncing with registry...')
             self.registry[pkg] = self.metadata['version']
-
-            with open(self.local+"registry/db.txt", 'w') as file:
-                for key,val in self.registry.items():
-                    if(val == zero):
-                        val = ''
-                    file.write(key+"="+val+"\n")
-            if(val == ''):
+            if(self.registry[pkg] == ''):
                 msg = 'Introduces '+self.pkgName+' to the database.'
             else:
                 msg = 'Updates '+self.pkgName+' version to '+self.metadata['version']+'.'
-            reg = git.Repo(self.local+"registry")
-            reg.index.add('db.txt')
-            reg.index.commit(msg)
-            if(self.remote != None):
-                reg.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
+
+        with open(self.local+"registry/db.txt", 'w') as file:
+            for key,val in self.registry.items():
+                if(val == zero):
+                    val = ''
+                file.write(key+"="+val+"\n")
+        
+        reg = git.Repo(self.local+"registry")
+        reg.index.add('db.txt')
+        reg.index.commit(msg)
+        if(self.remote != None):
+            reg.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
         pass
 
 
@@ -347,25 +352,34 @@ class legoHDL:
                 if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
                     info = '(update)-> '+ver
                     ver = loc_ver
-
-            print("\t",pkg,"\t\t",isDownloaded,"\t\t",ver,"\t",info)
+            print("\t",'{:<24}'.format(pkg),'{:<16}'.format(isDownloaded),'{:<10}'.format(ver),info)
         pass
 
     def cleanup(self, pkg):
         if(self.remote == None):
             print('WARNING- No remote code base is configured, if this module is deleted it may be unrecoverable.\n \
-                DELETE '+pkg+'? (y/n)\
+                DELETE '+pkg+'? [y/n]\
                 ')
             response = ''
-            while(response.lower() != 'y' or response.lower() != 'n'):
+            while(True):
                 response = input()
-                print(response)
-
+                if(response.lower() == 'y' or response.lower() == 'n'):
+                    break
             if(response.lower() == 'n'):
                 print(pkg+' not deleted')
                 return
+        
+        #delete locally
+        try:
+            shutil.rmtree(self.local+"packages/"+pkg)
+        except:
+            print('No module '+pkg+' exists locally')
+            return
 
-        #delete the module
+        #update registry
+        self.syncRegistry(pkg, rm=True)
+
+        #delete the module remotely
         pass
 
     def boot(self):
@@ -428,7 +442,7 @@ class legoHDL:
 
         self.projectName = self.pkgName = package
         print(self.pkgPath)
-
+        print(options)
         self.boot()
         self.describe(description)
 
@@ -465,7 +479,7 @@ class legoHDL:
         if(package == ''):
             print('ERROR- please provide a package name to show!')
             return
-        with open(self.pkgPath(package)+"/"+package+".yml", 'r') as file:
+        with open(self.local+"packages/"+package+"/"+package+".yml", 'r') as file:
             for line in file:
                 print('\t',line,sep='',end='')
         pass
@@ -491,15 +505,20 @@ class legoHDL:
             if(i == 1):
                 command = arg
             elif(i > 1):
-                if(arg[0] == '-'):
+                if(i == 2 and arg[0] != '-'):
+                    package = arg
+                if(arg[0] == '-'): #parse any options
                     options.append(arg[1:])
-                elif(len(options) and options[0] == 'd'):
-                    description = arg
-                    options.pop()
-                elif(len(options) and options[0] == 'i'):
+                elif(len(options) and options.count('i') > 0):
                     options.append(arg)
                 else:
-                    package = arg
+                    pass
+
+        if(len(options) > 1 and options[1] == 'i'):
+            description = options[0]
+            options.remove(options[0])
+        elif(len(options) == 1):
+            description = options[0]
 
         if(command == "install" and self.isValidProject):
             self.install(package, options)
@@ -548,28 +567,29 @@ class legoHDL:
             self.setSetting(options, package)
             pass
         elif(command == "help"):
-            print("List of commands\
-            \n\tinstall <package> [-v]\n\t\t-fetch package from the code base to be available in current project\
-            \n\tuninstall <package>\n\t\t-remove package from current project along with all dependency packages\
-            \n\tdownload <package> [-o]\n\t\t-pull package from remote code base for further development\
-            \n\tupload <package> [-v -d]\n\t\t-push package to remote code base to be available to others\
-            \n\tupdate <package> [-all]\n\t\t-download available package to be updated to latest version\
-            \n\tlist [-alpha -local]\n\t\t-print list of all packages available from code base\
-            \n\topen <package> \n\t\t-opens the package with the set text-editor\
-            \n\tdel <package> \n\t\t-deletes the package from the local code base\
-            \n\tsearch <package> [-local]\n\t\t-search remote (default) or local code base for specified package\
-            \n\tdetails <package> [-v]\n\t\t-provide further detail into a specified package\
-            \n\tports <package> [-v]\n\t\t-print ports list of specified package\
-            \n\tdescribe \"short description\"\n\t\t-add description to current project\
-            \n\tnew <package> [-\"description\" -i <package> [-v] , <package> [-v] , ...]\n\t\t-create a standard empty package based on a template and pushes to remote code base\
-            \n\tset [-local | -remote | -editor] <path>\n\t\t-adjust package manager settings\
+            print("Command list\
+            \n\tinstall <package> [-v0.0.0]\n\t\t-fetch package from the code base to be available in current project\
+            \n\n\tuninstall <package>\n\t\t-remove package from current project along with all dependency packages\
+            \n\n\tdownload <package> [-o]\n\t\t-pull package from remote code base for further development\
+            \n\n\tupload <package> [-v0.0.0 -d]\n\t\t-push package to remote code base to be available to others\
+            \n\n\tupdate <package> [-all]\n\t\t-update local package to be to the latest version\
+            \n\n\tlist [-alpha -local]\n\t\t-print list of all packages available from code base\
+            \n\n\topen <package> \n\t\t-opens the package with the set text-editor\
+            \n\n\tdel <package> \n\t\t-deletes the package from the local code base\
+            \n\n\tconvert <package> \n\t\t-converts the existing files with names containing <package> into a package format\
+            \n\n\tsearch <package> [-local]\n\t\t-search remote (default) or local code base for specified package\
+            \n\n\tshow <package> [-v0.0.0]\n\t\t-provide further detail into a specified package\
+            \n\n\tports <package> [-v0.0.0]\n\t\t-print ports list of specified package\
+            \n\n\tdescribe \"description\"\n\t\t-add description to current project\
+            \n\n\tnew <package> [-\"description\" -i <package> [-v0.0.0] , <package> [-v0.0.0] , ...]\n\t\t-create a standard empty package based on a template and pushes to remote code base\
+            \n\n\tset [-local | -remote | -editor] <path>\n\t\t-adjust package manager settings\
             \n")
             print("Optional flags\
-            \n\t-v\t\tspecify what version (semantic versioning -v0.0.0)\
+            \n\t-v0.0.0\t\tspecify package version (insert values replacing 0's)\
             \n\t-i\t\tset installation flag to install package(s) on project creation\
             \n\t-alpha\t\talphabetical order\
             \n\t-o\t\topen the project\
-            \n\t-warp\tremoves the released package from your local codebase\
+            \n\t-warp\t\tremoves the released package from your local codebase\
             \n\t-local\t\tidentify local path setting\
             \n\t-remote\t\tidentify remote path setting\
             \n\t-editor\t\tidentify text-editor setting\
@@ -581,7 +601,7 @@ class legoHDL:
 
 def main():
     print('\n---legoHDL package manager---\n')
-    legoHDL() #create instance
+    legoHDL()
 
 
 if __name__ == "__main__":
