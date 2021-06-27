@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os, sys, git, shutil
-import collections, yaml, tempfile
+import collections, yaml
+import gitlab, random
 #<ideas>
 
 #on a version release, have a dedicated zipped file of the vhd and .yaml?
@@ -86,6 +87,17 @@ class legoHDL:
         self.path = ""
         self.pkgName = ""
         self.pkgPath = ""
+
+        tk = self.decrypt("gl-token")
+        gl = gitlab.Gitlab('https://gitlab.com/', tk)
+        self.encrypt(tk, "gl-token")
+        
+        groups = gl.groups.list()
+        print(groups[0].variables.list())
+        projects = groups[0].projects
+        projects = gl.projects.list(owned=True)
+        for p in projects:
+            print(p.name)
         
         self.registry = None #list of all available modules in remote
         self.metadata = None
@@ -100,6 +112,33 @@ class legoHDL:
         self.textEditor = self.settings['editor']
         self.parse()
         self.save()
+        pass
+
+    def decrypt(self, filename="token"):
+        token = ''
+        with open(self.pkgmngPath+filename+".bin", 'r') as file:
+            binary_str = file.read()
+            while len(binary_str):
+                tmp = ''
+                for x in range(8*2):
+                    if x % 2 == 0:
+                        binary_str = binary_str[1:]
+                        continue
+                    tmp += binary_str[0]
+                    binary_str = binary_str[1:]
+                token += chr((int('0b'+tmp, base=2)))
+            pass
+        return token
+
+    def encrypt(self, token, filename="token"):
+        random.seed()
+        with open(self.pkgmngPath+filename+".bin", 'w') as file:
+            for letter in token:
+                secret = bin(ord(letter))[2:]
+                secret = ((8-len(secret))*"0")+secret #pad to make fixed 8-bits
+                for x in range(len(secret)):
+                    file.write(str(random.randint(0, 1)) + secret[x])
+                pass
         pass
 
     #returns a string to a package directory
@@ -273,6 +312,14 @@ class legoHDL:
         if(len(options) != 1):
             print("ERROR- Invalid syntax; could not adjust setting")
             return
+
+        if(options[0] == 'gl-token'):
+            self.encrypt(choice, 'gl-token')
+            return
+        elif(options[0] == 'gh-token'):
+            self.encrypt(choice, 'gh-token')
+            return
+
         if(choice == ''):
             if(options[0] == 'remote'):
                 print('WARNING- No remote code base is configured')
