@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import os, sys, git, shutil
 import collections, yaml
-import gitlab, random
 #<ideas>
+
+
+#export project as a vivado project, with symbolic links to the VHDL files
 
 #on a version release, have a dedicated zipped file of the vhd and .yaml?
 #faster for an install, but may have to be reworked if then deciding to download
@@ -87,17 +89,6 @@ class legoHDL:
         self.path = ""
         self.pkgName = ""
         self.pkgPath = ""
-
-        tk = self.decrypt("gl-token")
-        gl = gitlab.Gitlab('https://gitlab.com/', tk)
-        self.encrypt(tk, "gl-token")
-        
-        groups = gl.groups.list()
-        print(groups[0].variables.list())
-        projects = groups[0].projects
-        projects = gl.projects.list(owned=True)
-        for p in projects:
-            print(p.name)
         
         self.registry = None #list of all available modules in remote
         self.metadata = None
@@ -112,33 +103,6 @@ class legoHDL:
         self.textEditor = self.settings['editor']
         self.parse()
         self.save()
-        pass
-
-    def decrypt(self, filename="token"):
-        token = ''
-        with open(self.pkgmngPath+filename+".bin", 'r') as file:
-            binary_str = file.read()
-            while len(binary_str):
-                tmp = ''
-                for x in range(8*2):
-                    if x % 2 == 0:
-                        binary_str = binary_str[1:]
-                        continue
-                    tmp += binary_str[0]
-                    binary_str = binary_str[1:]
-                token += chr((int('0b'+tmp, base=2)))
-            pass
-        return token
-
-    def encrypt(self, token, filename="token"):
-        random.seed()
-        with open(self.pkgmngPath+filename+".bin", 'w') as file:
-            for letter in token:
-                secret = bin(ord(letter))[2:]
-                secret = ((8-len(secret))*"0")+secret #pad to make fixed 8-bits
-                for x in range(len(secret)):
-                    file.write(str(random.randint(0, 1)) + secret[x])
-                pass
         pass
 
     #returns a string to a package directory
@@ -403,6 +367,10 @@ class legoHDL:
         pass
 
     def cleanup(self, pkg):
+        if(not os.path.isfile(self.local+"packages/"+pkg+"/"+pkg+".yml")):
+            print('No module '+pkg+' exists locally')
+            return
+        
         if(self.remote == None):
             print('WARNING- No remote code base is configured, if this module is deleted it may be unrecoverable.\n \
                 DELETE '+pkg+'? [y/n]\
@@ -415,6 +383,9 @@ class legoHDL:
             if(response.lower() == 'n'):
                 print(pkg+' not deleted')
                 return
+            #update registry if there is no remote 
+            # (if there is a remote then the project still lives on, can be "redownloaded")
+            self.syncRegistry(pkg, rm=True)
         
         #delete locally
         try:
@@ -422,11 +393,9 @@ class legoHDL:
         except:
             print('No module '+pkg+' exists locally')
             return
+            
 
-        #update registry
-        self.syncRegistry(pkg, rm=True)
-
-        #delete the module remotely
+        #delete the module remotely?
         pass
 
     def boot(self):
@@ -618,7 +587,7 @@ class legoHDL:
             \n\tinstall <package> [-v0.0.0]\n\t\t-fetch package from the code base to be available in current project\
             \n\n\tuninstall <package>\n\t\t-remove package from current project along with all dependency packages\
             \n\n\tdownload <package> [-o]\n\t\t-pull package from remote code base for further development\
-            \n\n\tupload <package> [-v0.0.0 -d]\n\t\t-push package to remote code base to be available to others\
+            \n\n\tupload [-v0.0.0 -d]\n\t\t-push package to remote code base to be available to others\
             \n\n\tupdate <package> [-all]\n\t\t-update local package to be to the latest version\
             \n\n\tlist [-alpha -local]\n\t\t-print list of all packages available from code base\
             \n\n\topen <package> \n\t\t-opens the package with the set text-editor\

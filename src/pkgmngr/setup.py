@@ -23,7 +23,7 @@ for i,arg in enumerate(sys.argv):
 master_script='/manager.py'
 program_name='legoHDL'
 
-remote=settings['remote']+'/'
+remote=settings['remote']
 working_dir=os.path.expanduser(settings['local'])+'/'
 
 print('Initializing '+working_dir+' working directory...')
@@ -37,15 +37,16 @@ print('Setting up package registry...')
 #check the remote registry if package appears there
 if(not os.path.isdir(working_dir+"registry")):
     try:
-        clone = git.Git(working_dir).clone(remote+"registry.git") #grab if it exists
+        clone = git.Git(working_dir).clone(remote+"/registry.git") #grab if it exists
         print('Grabbed package registry from remote')
     except:
         repo = git.Repo.init(working_dir+"registry")
-        origin = repo.create_remote('origin', remote+"registry.git")
         open(working_dir+"registry/db.txt", 'wb').close()
         repo.index.add("db.txt")
         repo.index.commit("Initial commit.")
-        origin.push(refspec='{}:{}'.format('master', 'master'))
+        if(remote != None):
+            origin = repo.create_remote('origin', remote+"/registry.git")
+            origin.push(refspec='{}:{}'.format('master', 'master'))
         print('Initialized package registry')
         pass
 else:

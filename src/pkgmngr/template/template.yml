@@ -1,7 +1,7 @@
 name: template
 version: '0.0.0'
-description: Explain the core functionality in a concise manner. 
-design: template.vhd
+description: Explain the functionality in a concise manner. 
+toplevel: template.vhd
 verification: template_tb.vhd
 dependencies:
 used-by:
