@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os, sys, git, shutil
 import collections, yaml
+from datetime import date
 #<ideas>
 
 
@@ -119,17 +120,26 @@ class legoHDL:
         msg = ''
         zero = '0.0.0'
         if(self.registry == None): # must check for changes
+            folders=list()
             if(self.remote != None):
                 reg = git.Repo(self.local+"registry")
                 reg.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
+            else: #check package directory for any changes to folder removals if only local setting
+                folders = os.listdir(self.local+"packages/")
+
             self.registry = dict()
             with open(self.local+"registry/db.txt", 'r') as file:
                 for line in file.readlines():
                     m = line.find('=')
                     key = line[:m]
                     val = line[m+1:len(line)-1]
-                    if(m != -1):
-                        self.registry[key] = val
+                    self.registry[key] = val
+            # if only local, keep registry in sync with all available folders in package dir
+            for prj in list(self.registry.keys()):
+                if not prj in folders:
+                    self.registry.pop(prj, None)
+                    msg = 'Removes '+prj+' from the database.'
+            
         if(pkg != None and rm == True): #looking to remove a value from the registry
             self.registry.pop(pkg, None)
             msg = 'Removes '+pkg+' from the database.'
@@ -145,6 +155,7 @@ class legoHDL:
             else:
                 msg = 'Updates '+self.pkgName+' version to '+self.metadata['version']+'.'
 
+
         with open(self.local+"registry/db.txt", 'w') as file:
             for key,val in self.registry.items():
                 if(val == zero):
@@ -152,7 +163,7 @@ class legoHDL:
                 file.write(key+"="+val+"\n")
         
         reg = git.Repo(self.local+"registry")
-        reg.index.add('db.txt')
+        reg.git.add(update=True)
         reg.index.commit(msg)
         if(self.remote != None):
             reg.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
@@ -253,13 +264,37 @@ class legoHDL:
         os.system(cmd)
         pass
 
-    def upload(self, release=''):
+    def upload(self, release='', options=None):
         self.syncRegistry()
+        last_ver = self.metadata['version']
+        first_dot = last_ver.find('.')
+        last_dot = last_ver.rfind('.')
+
+        major = int(last_ver[:first_dot])
+        minor = int(last_ver[first_dot+1:last_dot])
+        patch = int(last_ver[last_dot+1:])
+        print('last version:',major,minor,patch)
+        if(release == ''):
+            if(options[0] == "maj"):
+                major += 1
+                minor = patch = 0
+                pass
+            elif(options[0] == "min"):
+                minor += 1
+                patch = 0
+                pass
+            elif(options[0] == "fix"):
+                patch += 1
+                pass
+            release = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
 
         repo = git.Repo(self.local+"packages/"+self.pkgName)
         print(release)
         if(release != ''):
             self.metadata['version'] = release[1:]
+            self.save()
+            repo.git.add(update=True)
+            repo.index.commit("Release version -> "+self.metadata['version'])
             repo.create_tag(release)
 
         if not self.pkgName in self.registry.keys():
@@ -277,11 +312,8 @@ class legoHDL:
             print("ERROR- Invalid syntax; could not adjust setting")
             return
 
-        if(options[0] == 'gl-token'):
-            self.encrypt(choice, 'gl-token')
-            return
-        elif(options[0] == 'gh-token'):
-            self.encrypt(choice, 'gh-token')
+        if(not options[0] in self.settings.keys()):
+            print("ERROR- Invalid setting")
             return
 
         if(choice == ''):
@@ -363,7 +395,7 @@ class legoHDL:
                 if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
                     info = '(update)-> '+ver
                     ver = loc_ver
-            print("\t",'{:<24}'.format(pkg),'{:<16}'.format(isDownloaded),'{:<10}'.format(ver),info)
+            print("\t",'{:<24}'.format(pkg),'{:<14}'.format(isDownloaded),'{:<10}'.format(ver),info,"\n")
         pass
 
     def cleanup(self, pkg):
@@ -447,14 +479,21 @@ class legoHDL:
         self.pkgPath+='/'
         file_swaps = [(self.pkgPath+'template.yml',self.pkgPath+package+'.yml'),(self.pkgPath+'design/template.vhd', self.pkgPath+'design/'+package+'.vhd'),
         (self.pkgPath+'testbench/template_tb.vhd', self.pkgPath+'testbench/'+package+'_tb.vhd')]
+
+        today = date.today().strftime("%B %d, %Y")
         for x in file_swaps:
             file_in = open(x[0], "r")
             file_out = open(x[1], "w")
             for line in file_in:
-                file_out.write(line.replace("template", package))
+                line = line.replace("template", package)
+                line = line.replace("%DATE%", today)
+                line = line.replace("%AUTHOR%", self.settings["author"])
+                line = line.replace("%PROJECT%", package)
+                file_out.write(line) #insert date into template
             file_in.close()
             file_out.close()
             os.remove(x[0])
+
 
         self.projectName = self.pkgName = package
         print(self.pkgPath)
@@ -530,6 +569,8 @@ class legoHDL:
                 else:
                     pass
 
+        package = package.replace("-", "_")
+
         if(len(options) > 1 and options[1] == 'i'):
             description = options[0]
             options.remove(options[0])
@@ -544,16 +585,22 @@ class legoHDL:
             pass
         elif(command == "new" and len(package)):
             self.createProject(package, options, description)
-            exit()
+            if(options.count("o") > 0):
+                self.load(package)
             pass
         elif(command == "upload" and self.isValidProject):
+            if(len(options) == 0):
+                print("ERROR- please flag the next version for release with one of the following args:\n"\
+                    "\t(-v0.0.0 | -maj | -min | -fix)")
+                exit()
+            
             ver = ''
-            if(len(options)):
+            if(options[0][0] == 'v'):
                 ver = options[0]
-            print(ver)
+                print(ver)
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
-            self.upload(release=str(ver))
+            self.upload(release=str(ver), options=options)
             if(len(options) == 2 and options[1] == 'd'):
                 self.cleanup(self.pkgName)
             pass
@@ -579,6 +626,9 @@ class legoHDL:
         elif(command == "show"):
             self.show(package)
             pass
+        elif(command == "template" and self.settings['editor'] != None):
+            os.system(self.settings['editor']+" "+self.pkgmngPath+"/template")
+            pass
         elif(command == "set"):
             self.setSetting(options, package)
             pass
@@ -587,7 +637,7 @@ class legoHDL:
             \n\tinstall <package> [-v0.0.0]\n\t\t-fetch package from the code base to be available in current project\
             \n\n\tuninstall <package>\n\t\t-remove package from current project along with all dependency packages\
             \n\n\tdownload <package> [-o]\n\t\t-pull package from remote code base for further development\
-            \n\n\tupload [-v0.0.0 -d]\n\t\t-push package to remote code base to be available to others\
+            \n\n\tupload <-v0.0.0 | -maj | -min | -fix>\n\t\t-release the next new version of package\
             \n\n\tupdate <package> [-all]\n\t\t-update local package to be to the latest version\
             \n\n\tlist [-alpha -local]\n\t\t-print list of all packages available from code base\
             \n\n\topen <package> \n\t\t-opens the package with the set text-editor\
@@ -597,8 +647,9 @@ class legoHDL:
             \n\n\tshow <package> [-v0.0.0]\n\t\t-provide further detail into a specified package\
             \n\n\tports <package> [-v0.0.0]\n\t\t-print ports list of specified package\
             \n\n\tdescribe \"description\"\n\t\t-add description to current project\
-            \n\n\tnew <package> [-\"description\" -i <package> [-v0.0.0] , <package> [-v0.0.0] , ...]\n\t\t-create a standard empty package based on a template and pushes to remote code base\
-            \n\n\tset [-local | -remote | -editor] <path>\n\t\t-adjust package manager settings\
+            \n\n\tnew <package> [-\"description\" -o -i <package> [-v0.0.0] , <package> [-v0.0.0] , ...]\n\t\t-create a standard empty package based on a template and pushes to remote code base\
+            \n\n\tset <value/path> [-local | -remote | -editor | -author]\n\t\t-adjust package manager settings\
+            \n\n\ttemplate\n\t\t-open the template in the configured text-editor to make custom configuration\
             \n")
             print("Optional flags\
             \n\t-v0.0.0\t\tspecify package version (insert values replacing 0's)\
@@ -609,6 +660,10 @@ class legoHDL:
             \n\t-local\t\tidentify local path setting\
             \n\t-remote\t\tidentify remote path setting\
             \n\t-editor\t\tidentify text-editor setting\
+            \n\t-author\t\tidentify author setting\
+            \n\t-maj\t\trelease as next major update (^.0.0)\
+            \n\t-min\t\trelease as next minor update (-.^.0)\
+            \n\t-fix\t\trelease as next patch update (-.-.^)\
             ")
         else:
             print("Invalid command; type \"help\" to see a list of available commands")

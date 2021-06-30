@@ -1,9 +1,10 @@
 --
---Project:
---Author:
---Date:
---Description:
+--  Project:        %PROJECT%
+--  Author:         %AUTHOR%
+--  Date:           %DATE%
+--  Description:
 --
+
 library ieee;
 use ieee.std_logic_1164.all;
 

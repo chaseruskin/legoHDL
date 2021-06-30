@@ -1,5 +1,5 @@
 name: template
-version: '0.0.0'
+version: 0.0.0
 description: Explain the functionality in a concise manner. 
 toplevel: template.vhd
 verification: template_tb.vhd
