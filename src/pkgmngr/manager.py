@@ -2,6 +2,7 @@
 import os, sys, git, shutil
 import collections, yaml
 from datetime import date
+from pkgmngr import capsule
 #<ideas>
 
 
@@ -78,6 +79,7 @@ from datetime import date
 class legoHDL:
 
     def __init__(self):
+        
         #defines path to working dir of 'legoHDL' tool
         self.pkgmngPath = os.path.realpath(__file__)
         self.pkgmngPath = self.pkgmngPath[:self.pkgmngPath.rfind('/')+1]
@@ -99,7 +101,9 @@ class legoHDL:
         self.remote = None #testing allowing option to not connect to a remote!
 
         #defines path to dir of local code base
-        self.local = os.path.expanduser(self.settings['local'])
+        self.local = os.path.expanduser(self.settings['local'])+"/"
+
+        self.hidden = os.path.expanduser("~/.legoHDL/") #path to registry and cache
         #defines how to open workspaces
         self.textEditor = self.settings['editor']
         self.parse()
@@ -116,19 +120,25 @@ class legoHDL:
             subdir = "/"+folder+"/"
         return pathway+"packages/"+package+subdir
 
-    def syncRegistry(self, pkg=None, rm=False):
+    def syncRegistry(self, pkg=None, rm=False, skip=False, meta=None):
         msg = ''
         zero = '0.0.0'
-        if(self.registry == None): # must check for changes
+        
+        meta = self.metadata if meta == None else meta
+
+        if(self.registry == None and not skip): # must check for changes
             folders=list()
             if(self.remote != None):
-                reg = git.Repo(self.local+"registry")
+                reg = git.Repo(self.hidden+"registry")
                 reg.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
-            else: #check package directory for any changes to folder removals if only local setting
+            else: # check package directory for any changes to folder removals if only local setting
                 folders = os.listdir(self.local+"packages/")
+                for f in folders:
+                    if not self.isValidPackage(f):
+                        folders.remove(f)
 
             self.registry = dict()
-            with open(self.local+"registry/db.txt", 'r') as file:
+            with open(self.hidden+"registry/db.txt", 'r') as file:
                 for line in file.readlines():
                     m = line.find('=')
                     key = line[:m]
@@ -140,29 +150,39 @@ class legoHDL:
                     self.registry.pop(prj, None)
                     msg = 'Removes '+prj+' from the database.'
             
+            for prj in folders:
+                if not prj in list(self.registry.keys()) and self.isValidPackage(prj):
+                    print("Found a new local valid package",prj)
+                    #load settings
+                    with open(self.local+"packages/"+prj+"/"+prj+".yml", "r") as file:
+                        tmp_meta = yaml.load(file, Loader=yaml.FullLoader)
+                        self.syncRegistry(prj, skip=True, meta=tmp_meta)
+                    
+
+            
         if(pkg != None and rm == True): #looking to remove a value from the registry
             self.registry.pop(pkg, None)
             msg = 'Removes '+pkg+' from the database.'
 
         elif(pkg != None): #looking to write a value to registry
-            if(pkg in self.registry and (self.registry[pkg] == self.metadata['version'] \
-                or (self.metadata['version'] == zero))):
+            if(pkg in self.registry and (self.registry[pkg] == meta['version'] \
+                or (meta['version'] == zero))):
                 return
             print('Syncing with registry...')
-            self.registry[pkg] = self.metadata['version']
+            self.registry[pkg] = meta['version'] if meta['version'] != '0.0.0' else ''
             if(self.registry[pkg] == ''):
-                msg = 'Introduces '+self.pkgName+' to the database.'
+                msg = 'Introduces '+pkg+' to the database.'
             else:
-                msg = 'Updates '+self.pkgName+' version to '+self.metadata['version']+'.'
+                msg = 'Updates '+pkg+' version to '+meta['version']+'.'
 
 
-        with open(self.local+"registry/db.txt", 'w') as file:
+        with open(self.hidden+"registry/db.txt", 'w') as file:
             for key,val in self.registry.items():
                 if(val == zero):
                     val = ''
                 file.write(key+"="+val+"\n")
         
-        reg = git.Repo(self.local+"registry")
+        reg = git.Repo(self.hidden+"registry")
         reg.git.add(update=True)
         reg.index.commit(msg)
         if(self.remote != None):
@@ -323,8 +343,9 @@ class legoHDL:
             elif(options[0] == 'local'):
                 print('ERROR- Must include a local code base path')
                 return
-            elif(options[0] == 'editor'):
-                choice = None
+
+        if(options[0] == 'local'):
+            os.makedirs(choice+"/packages", exist_ok=True)
 
         self.settings[options[0]] = choice
 
@@ -364,7 +385,7 @@ class legoHDL:
         tmp = list(os.listdir(self.local+"packages/"))
         local_catalog = list()
         for d in tmp:
-            if(d[0] != '.'):
+            if(self.isValidPackage(d)):
                 local_catalog.append(d)
 
         downloadedList = dict()
@@ -395,7 +416,8 @@ class legoHDL:
                 if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
                     info = '(update)-> '+ver
                     ver = loc_ver
-            print("\t",'{:<24}'.format(pkg),'{:<14}'.format(isDownloaded),'{:<10}'.format(ver),info,"\n")
+            print("\t",'{:<24}'.format(pkg),'{:<14}'.format(isDownloaded),'{:<10}'.format(ver),info)
+        print()
         pass
 
     def cleanup(self, pkg):
@@ -638,7 +660,7 @@ class legoHDL:
             \n\n\tuninstall <package>\n\t\t-remove package from current project along with all dependency packages\
             \n\n\tdownload <package> [-o]\n\t\t-pull package from remote code base for further development\
             \n\n\tupload <-v0.0.0 | -maj | -min | -fix>\n\t\t-release the next new version of package\
-            \n\n\tupdate <package> [-all]\n\t\t-update local package to be to the latest version\
+            \n\n\tupdate <package> [-all]\n\t\t-update developed package to be to the latest version\
             \n\n\tlist [-alpha -local]\n\t\t-print list of all packages available from code base\
             \n\n\topen <package> \n\t\t-opens the package with the set text-editor\
             \n\n\tdel <package> \n\t\t-deletes the package from the local code base\

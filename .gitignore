@@ -2,3 +2,4 @@ build/
 build/lib/pkgmngr
 dist/
 src/legoHDL.egg-info/
+src/pkgmngr/__pycache__/
