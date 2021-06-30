@@ -2,7 +2,7 @@
 import os, sys, git, shutil
 import collections, yaml
 from datetime import date
-from pkgmngr import capsule
+import capsule
 #<ideas>
 
 
@@ -106,6 +106,7 @@ class legoHDL:
         self.hidden = os.path.expanduser("~/.legoHDL/") #path to registry and cache
         #defines how to open workspaces
         self.textEditor = self.settings['editor']
+        
         self.parse()
         self.save()
         pass
