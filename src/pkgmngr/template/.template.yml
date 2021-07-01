@@ -1,7 +1,7 @@
 name: template
 version: 0.0.0
-summary: Explain the functionality in a concise manner. 
+summary:  
 toplevel: template.vhd
 verification: template_tb.vhd
-derives:
-integrates:
+derives: {}
+integrates: {}

@@ -132,22 +132,20 @@ class legoHDL:
             subdir = "/"+folder+"/"
         return pathway+package+subdir
 
-    def syncRegistry(self, pkg=None, rm=False, skip=False, meta=None):
+    def syncRegistry(self, cap=None, rm=False, skip=False):
         msg = ''
         zero = '0.0.0'
-        
-        meta = self.metadata if meta == None else meta
 
         if(self.registry == None and not skip): # must check for changes
             folders=list()
-            if(self.remote != None):
+            if(caps.Capsule.linkedRemote()):
                 reg = git.Repo(self.hidden+"registry")
                 reg.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
             else: # check package directory for any changes to folder removals if only local setting
-                folders = os.listdir(self.local)
-                for f in folders:
-                    if not self.isValidPackage(f):
-                        folders.remove(f)
+                capsules = list()
+                for prj in os.listdir(self.local):
+                    if self.isValidPackage(prj):
+                        capsules.append(prj)
 
             self.registry = dict()
             with open(self.hidden+"registry/db.txt", 'r') as file:
@@ -158,47 +156,45 @@ class legoHDL:
                     self.registry[key] = val
             # if only local, keep registry in sync with all available folders in package dir
             for prj in list(self.registry.keys()):
-                if not prj in folders:
+                if not prj in capsules:
                     self.registry.pop(prj, None)
                     msg = 'Removes '+prj+' from the database.'
             
-            for prj in folders:
-                if not prj in list(self.registry.keys()) and self.isValidPackage(prj):
-                    print("Found a new local valid package",prj)
+            for c in capsules:
+                if not c in list(self.registry.keys()):
+                    print("Found a new local valid package",c)
                     #load settings
-                    with open(self.local+prj+"/."+prj+".yml", "r") as file:
-                        tmp_meta = yaml.load(file, Loader=yaml.FullLoader)
-                        self.syncRegistry(prj, skip=True, meta=tmp_meta)
-                    
+                    self.syncRegistry(caps.Capsule(c), skip=True)
 
-            
-        if(pkg != None and rm == True): #looking to remove a value from the registry
-            self.registry.pop(pkg, None)
-            msg = 'Removes '+pkg+' from the database.'
+         
+        if(cap != None and rm == True): #looking to remove a value from the registry
+            self.registry.pop(cap.getName(), None)
+            msg = 'Removes '+cap.getName()+' from the database.'
 
-        elif(pkg != None): #looking to write a value to registry
-            if(pkg in self.registry and (self.registry[pkg] == meta['version'] \
-                or (meta['version'] == zero))):
+        elif(cap != None): #looking to write a value to registry
+            if(cap.getName() in self.registry and (self.registry[cap.getName()] == cap.getMeta()['version'] \
+                or (cap.getMeta()['version'] == zero))):
                 return
             print('Syncing with registry...')
-            self.registry[pkg] = meta['version'] if meta['version'] != '0.0.0' else ''
-            if(self.registry[pkg] == ''):
-                msg = 'Introduces '+pkg+' to the database.'
+            self.registry[cap.getName()] = cap.getMeta()['version'] if cap.getMeta()['version'] != '0.0.0' else ''
+            if(self.registry[cap.getName()] == ''):
+                msg = 'Introduces '+cap.getName() +' to the database.'
             else:
-                msg = 'Updates '+pkg+' version to '+meta['version']+'.'
+                msg = 'Updates '+cap.getName() +' version to '+cap.getMeta()['version']+'.'
 
-
-        with open(self.hidden+"registry/db.txt", 'w') as file:
-            for key,val in self.registry.items():
-                if(val == zero):
-                    val = ''
-                file.write(key+"="+val+"\n")
-        
-        reg = git.Repo(self.hidden+"registry")
-        reg.git.add(update=True)
-        reg.index.commit(msg)
-        if(self.remote != None):
-            reg.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
+        if(msg != ''):
+            print(msg)
+            with open(self.hidden+"registry/db.txt", 'w') as file:
+                for key,val in self.registry.items():
+                    if(val == zero):
+                        val = ''
+                    file.write(key+"="+val+"\n")
+            
+            reg = git.Repo(self.hidden+"registry")
+            reg.git.add(update=True)
+            reg.index.commit(msg)
+            if(self.remote != None):
+                reg.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
         pass
 
 
@@ -273,28 +269,22 @@ class legoHDL:
         print("Successfully installed ", package, " [",version,"] to the current project.",sep='')
         pass
 
-    def download(self, package):
+    def download(self, cap):
         self.syncRegistry()
 
-        if(self.remote == None):
+        if(not cap.linkedRemote()):
             print('No remote code base configured to download modules')
             return
 
         loc_catalog = os.listdir(self.local)
 
-        if package in self.registry:
-            if package in loc_catalog: #just give it an update!
-                repo = git.Repo(self.local+package)
-                repo.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
+        if cap.getName() in self.registry:
+            if cap.getName() in loc_catalog: #just give it an update!
+                cap.pull()
             else: #oh man, go grab the whole thing!
-                repo = git.Git(self.local).clone(self.remote+package+".git")
+                cap.clone()
         else:
-            print('ERROR- Package \''+package+'\' does not exist in remote storage.')
-        pass
-
-    def load(self, package):
-        cmd = self.textEditor+" "+self.local+package
-        os.system(cmd)
+            print('ERROR- Package \''+cap.getName()+'\' does not exist in remote storage.')
         pass
 
     def upload(self, release='', options=None):
@@ -487,59 +477,11 @@ class legoHDL:
 
     def createProject(self, package, options, description='Give a brief explanation here.'):
         #create a local repo
-        self.pkgPath = self.local+package
-        repo = None
+        
         c = caps.Capsule(package, True)
-        try:
-            repo = git.Repo(self.pkgPath)
-            print('Project already exists locally!')
-            return
-        except:
-            if(self.remote != None):
-                try: #if no error, that means the package exists on the remote!
-                    repo = git.Git(self.local).clone(self.remote+package+".git")
-                    print('Project already exists on remote code base; downloading now...')
-                    return
-                except: 
-                    pass
-            else:
-                print('No remote code bases to check from in settings')
-
-            print('Initialzing new project...')
-            shutil.copytree(self.pkgmngPath+"template/", self.pkgPath)
-            repo = git.Repo.init(self.pkgPath)
-            
-            if(self.remote != None):
-                repo.create_remote('origin', self.remote+package+".git") #attach to remote code base
-            
-        #run the commands to generate new project from template
-
-        #file to find/replace word 'template'
-        self.pkgPath+='/'
-        file_swaps = [(self.pkgPath+'.template.yml',self.pkgPath+"."+package+'.yml'),(self.pkgPath+'design/template.vhd', self.pkgPath+'design/'+package+'.vhd'),
-        (self.pkgPath+'testbench/template_tb.vhd', self.pkgPath+'testbench/'+package+'_tb.vhd')]
-
-        today = date.today().strftime("%B %d, %Y")
-        for x in file_swaps:
-            file_in = open(x[0], "r")
-            file_out = open(x[1], "w")
-            for line in file_in:
-                line = line.replace("template", package)
-                line = line.replace("%DATE%", today)
-                line = line.replace("%AUTHOR%", self.settings["author"])
-                line = line.replace("%PROJECT%", package)
-                file_out.write(line) #insert date into template
-            file_in.close()
-            file_out.close()
-            os.remove(x[0])
-
-
         self.projectName = self.pkgName = package
-        print(self.pkgPath)
-        print(options)
-        self.boot()
-        c.metadata['summary'] = description
-        self.describe(description)
+        print('here')
+        #c.metadata['summary'] = description
         #TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
         #installPkg = list()
         #if 'i' in options:
@@ -551,37 +493,21 @@ class legoHDL:
         #            installPkg.append(opt)
         #    if(len(installPkg)): #perform last install
         #        self.install(installPkg[0], installPkg[1:])
-        
-        self.save()
-        #initialize git repo
-        repo.index.add(repo.untracked_files)
-        repo.index.commit("Initializes project.")
-        if(self.remote != None):
-            print('Generating new remote repository...')
-            repo.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
-        else:
-            print('No remote code base attached to local repository')
 
         #add and commit package name to registry repo (pass in capsule obj)
-        self.syncRegistry(package)
+        self.syncRegistry(c)
+        print('hehehe')
+        return c
         pass
 
     def describe(self, phrase):
         self.metadata['summary'] = phrase
         pass
 
-    def show(self, package):
-        if(package == ''):
-            print('ERROR- please provide a package name to show!')
-            return
-        with open(self.local+package+"/."+package+".yml", 'r') as file:
-            for line in file:
-                print(line,sep='',end='')
-        pass
-
     def parse(self):
+        #set class capsule variable for user settings
         caps.Capsule.settings = self.settings
-        #set class capsule variable for where to look for projects
+        
         caps.Capsule.pkgmngPath = self.pkgmngPath
         #check if we are in a project directory (necessary to run a majority of commands)
         self.pkgPath = os.getcwd()
@@ -591,14 +517,8 @@ class legoHDL:
 
         capsuleCWD = caps.Capsule(self.pkgName)
         if(not capsuleCWD.isValid()):
-            print("NOT A CAPSULE")
-        else:
-            print("")
-        #try to read YAML
-        try:
-            self.boot()
-        except:
-            print('Not a package directory!')
+            print("NOT A CAPSULE DIRECTORY")
+        
 
         command = ""
         package = ""
@@ -620,24 +540,27 @@ class legoHDL:
 
         package = package.replace("-", "_")
 
+        capsulePKG = caps.Capsule(package)
+
         if(len(options) > 1 and options[1] == 'i'):
             description = options[0]
             options.remove(options[0])
         elif(len(options) == 1):
             description = options[0]
 
-        if(command == "install" and self.isValidProject):
+        if(command == "install" and capsuleCWD.isValid()):
             self.install(package, options)
             pass
-        elif(command == "uninstall" and self.isValidProject):
+        elif(command == "uninstall" and capsuleCWD.isValid()):
             self.uninstall(package, options)
             pass
         elif(command == "new" and len(package)):
-            self.createProject(package, options, description)
+            cap = caps.Capsule(package, new=True)
+            self.syncRegistry(cap)
             if(options.count("o") > 0):
-                self.load(package)
+                cap.load()
             pass
-        elif(command == "upload" and self.isValidProject):
+        elif(command == "upload" and capsuleCWD.isValid()):
             if(len(options) == 0):
                 print("ERROR- please flag the next version for release with one of the following args:\n"\
                     "\t(-v0.0.0 | -maj | -min | -fix)")
@@ -655,13 +578,13 @@ class legoHDL:
             pass
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
-            self.download(package)
+            self.download(capsulePKG)
             if('o' in options):
-                self.load(package)
+                capsulePKG.load()
             pass
-        elif(command == "summary"):
-            #download is used if a developer wishes to contribtue and improve to an existing package
-            self.describe(package)
+        elif(command == "summary" and capsuleCWD.isValid()):
+            capsuleCWD.getMeta()['summary'] = package
+            capsuleCWD.push("Updates project summary")
             pass
         elif(command == 'del'):
             self.cleanup(package)
@@ -670,10 +593,11 @@ class legoHDL:
             self.list(options)
             pass
         elif(command == "open"):
-            self.load(package)
+            capsulePKG.load()
             pass
         elif(command == "show"):
-            self.show(package)
+            if(capsulePKG.isValid()):
+                capsulePKG.show()
             pass
         elif(command == "template" and self.settings['editor'] != None):
             os.system(self.settings['editor']+" "+self.pkgmngPath+"/template")
