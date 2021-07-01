@@ -2,7 +2,10 @@
 import os, sys, git, shutil
 import collections, yaml
 from datetime import date
-import capsule
+try:
+    from pkgmngr import capsule as caps
+except:
+    import capsule as caps
 #<ideas>
 
 
@@ -116,7 +119,7 @@ class legoHDL:
         pass
 
     def isValidPackage(self, pkg):
-        return os.path.isfile(self.local+pkg+"/"+pkg+".yml")
+        return os.path.isfile(self.local+pkg+"/."+pkg+".yml")
         pass
 
     #returns a string to a package directory
@@ -163,7 +166,7 @@ class legoHDL:
                 if not prj in list(self.registry.keys()) and self.isValidPackage(prj):
                     print("Found a new local valid package",prj)
                     #load settings
-                    with open(self.local+prj+"/"+prj+".yml", "r") as file:
+                    with open(self.local+prj+"/."+prj+".yml", "r") as file:
                         tmp_meta = yaml.load(file, Loader=yaml.FullLoader)
                         self.syncRegistry(prj, skip=True, meta=tmp_meta)
                     
@@ -203,7 +206,7 @@ class legoHDL:
         self.syncRegistry()
         ver = self.registry[package]
         if(not remote):
-            with open(self.local+package+"/"+package+".yml", "r") as file:
+            with open(self.local+package+"/."+package+".yml", "r") as file:
                 tmp_metadata = yaml.load(file, Loader=yaml.FullLoader)
             ver = tmp_metadata['version']
         if(ver == None):
@@ -374,7 +377,7 @@ class legoHDL:
         tmp.move_to_end('name', last=False)
 
         #a little magic to save YAML in custom order for easier readability
-        with open(self.pkgPath+self.pkgName+".yml", "w") as file:
+        with open(self.pkgPath+"."+self.pkgName+".yml", "w") as file:
             while len(tmp):
                 it = tmp.popitem(last=False)
                 single_dict = {}
@@ -395,6 +398,7 @@ class legoHDL:
         catalog = self.registry
         #prevent any hidden directories from populating list
         tmp = list(os.listdir(self.local))
+
         local_catalog = list()
         for d in tmp:
             if(self.isValidPackage(d)):
@@ -433,7 +437,7 @@ class legoHDL:
         pass
 
     def cleanup(self, pkg):
-        if(not os.path.isfile(self.local+pkg+"/"+pkg+".yml")):
+        if(not os.path.isfile(self.local+pkg+"/."+pkg+".yml")):
             print('No module '+pkg+' exists locally')
             return
         
@@ -465,7 +469,7 @@ class legoHDL:
         pass
 
     def boot(self):
-        with open(self.pkgPath+self.pkgName+".yml", "r") as file:
+        with open(self.pkgPath+"."+self.pkgName+".yml", "r") as file:
             self.metadata = yaml.load(file, Loader=yaml.FullLoader)
 
         self.isValidProject = True
@@ -476,7 +480,7 @@ class legoHDL:
         #TO-DO: unlock all dependency files to enable editing
         # unlock .yaml?
         if(len(self.metadata['derives']) > 0):
-            if(not os.path.isdir(self.pkgPath+"derives")):
+            if(not os.path.isdir(self.pkgPath+"libraries")):
                 os.mkdir("libraries")
             os.system("chflags nouchg "+self.pkgPath+"libraries/*;")
         pass
@@ -485,6 +489,7 @@ class legoHDL:
         #create a local repo
         self.pkgPath = self.local+package
         repo = None
+        c = caps.Capsule(package, True)
         try:
             repo = git.Repo(self.pkgPath)
             print('Project already exists locally!')
@@ -511,7 +516,7 @@ class legoHDL:
 
         #file to find/replace word 'template'
         self.pkgPath+='/'
-        file_swaps = [(self.pkgPath+'template.yml',self.pkgPath+package+'.yml'),(self.pkgPath+'design/template.vhd', self.pkgPath+'design/'+package+'.vhd'),
+        file_swaps = [(self.pkgPath+'.template.yml',self.pkgPath+"."+package+'.yml'),(self.pkgPath+'design/template.vhd', self.pkgPath+'design/'+package+'.vhd'),
         (self.pkgPath+'testbench/template_tb.vhd', self.pkgPath+'testbench/'+package+'_tb.vhd')]
 
         today = date.today().strftime("%B %d, %Y")
@@ -533,18 +538,19 @@ class legoHDL:
         print(self.pkgPath)
         print(options)
         self.boot()
+        c.metadata['summary'] = description
         self.describe(description)
-
-        installPkg = list()
-        if 'i' in options:
-            for opt in options[1:]:
-                if(opt == ','):
-                    self.install(installPkg[0], installPkg[1:])
-                    installPkg.clear()
-                else:
-                    installPkg.append(opt)
-            if(len(installPkg)): #perform last install
-                self.install(installPkg[0], installPkg[1:])
+        #TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
+        #installPkg = list()
+        #if 'i' in options:
+        #    for opt in options[1:]:
+        #        if(opt == ','):
+        #            self.install(installPkg[0], installPkg[1:])
+        #            installPkg.clear()
+        #        else:
+        #            installPkg.append(opt)
+        #    if(len(installPkg)): #perform last install
+        #        self.install(installPkg[0], installPkg[1:])
         
         self.save()
         #initialize git repo
@@ -556,8 +562,8 @@ class legoHDL:
         else:
             print('No remote code base attached to local repository')
 
-        #add and commit package name to registry repo
-        self.syncRegistry(self.pkgName)
+        #add and commit package name to registry repo (pass in capsule obj)
+        self.syncRegistry(package)
         pass
 
     def describe(self, phrase):
@@ -568,17 +574,26 @@ class legoHDL:
         if(package == ''):
             print('ERROR- please provide a package name to show!')
             return
-        with open(self.local+package+"/"+package+".yml", 'r') as file:
+        with open(self.local+package+"/."+package+".yml", 'r') as file:
             for line in file:
                 print(line,sep='',end='')
         pass
 
     def parse(self):
+        caps.Capsule.settings = self.settings
+        #set class capsule variable for where to look for projects
+        caps.Capsule.pkgmngPath = self.pkgmngPath
         #check if we are in a project directory (necessary to run a majority of commands)
         self.pkgPath = os.getcwd()
         lastSlash = self.pkgPath.rfind('/') #determine project's name to know the YAML to open
         self.pkgName = self.pkgPath[lastSlash+1:]
         self.pkgPath+='/'
+
+        capsuleCWD = caps.Capsule(self.pkgName)
+        if(not capsuleCWD.isValid()):
+            print("NOT A CAPSULE")
+        else:
+            print("")
         #try to read YAML
         try:
             self.boot()
