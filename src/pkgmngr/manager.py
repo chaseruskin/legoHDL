@@ -74,6 +74,10 @@ import capsule
 #   -software languages are the best at writing software; why try to do so in a restricted HW language in confusing ways
 #   when software languages are available to do the job (there are great data science modules available scipy, matplotlib, pandas)
 
+# a "library" is no more than a collection of VHDL files with respective packages. Every new release gets new component declarations
+# for that specific version added to that project's pkg VHDL file. library "name"; use "name".projectpkg.component_ver (library.packagefile.comp)
+# continually updates. The top-level to a project is the only component that gets added to the pkg file. Adding versioning to the end
+# of component names may allow for preserving and using multiple designs
 #</ideas>
 
 class legoHDL:
@@ -111,6 +115,10 @@ class legoHDL:
         self.save()
         pass
 
+    def isValidPackage(self, pkg):
+        return os.path.isfile(self.local+pkg+"/"+pkg+".yml")
+        pass
+
     #returns a string to a package directory
     def findPath(self, package, remote=True, folder=''):
         pathway = self.remote
@@ -119,7 +127,7 @@ class legoHDL:
             pathway = self.local
         if(folder != ''):
             subdir = "/"+folder+"/"
-        return pathway+"packages/"+package+subdir
+        return pathway+package+subdir
 
     def syncRegistry(self, pkg=None, rm=False, skip=False, meta=None):
         msg = ''
@@ -133,7 +141,7 @@ class legoHDL:
                 reg = git.Repo(self.hidden+"registry")
                 reg.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
             else: # check package directory for any changes to folder removals if only local setting
-                folders = os.listdir(self.local+"packages/")
+                folders = os.listdir(self.local)
                 for f in folders:
                     if not self.isValidPackage(f):
                         folders.remove(f)
@@ -155,7 +163,7 @@ class legoHDL:
                 if not prj in list(self.registry.keys()) and self.isValidPackage(prj):
                     print("Found a new local valid package",prj)
                     #load settings
-                    with open(self.local+"packages/"+prj+"/"+prj+".yml", "r") as file:
+                    with open(self.local+prj+"/"+prj+".yml", "r") as file:
                         tmp_meta = yaml.load(file, Loader=yaml.FullLoader)
                         self.syncRegistry(prj, skip=True, meta=tmp_meta)
                     
@@ -195,7 +203,7 @@ class legoHDL:
         self.syncRegistry()
         ver = self.registry[package]
         if(not remote):
-            with open(self.local+"packages/"+package+"/"+package+".yml", "r") as file:
+            with open(self.local+package+"/"+package+".yml", "r") as file:
                 tmp_metadata = yaml.load(file, Loader=yaml.FullLoader)
             ver = tmp_metadata['version']
         if(ver == None):
@@ -205,29 +213,30 @@ class legoHDL:
 
     def uninstall(self, package, options):
         #does this module exist in this project's scope?
-        if not package in self.metadata['dependencies']:
+        if not package in self.metadata['derives']:
             print("ERROR- No installed module exists under the name \"",package,"\".",sep='')
             return
 
-        version = self.metadata['dependencies'][package]
+        version = self.metadata['derives'][package]
         print("\nUninstalling", package, "version:",version,"\b...\n")
 
         #delete file from dependency directory
-        os.remove(self.projectPath+"/dependencies/"+package+".vhd")
+        os.remove(self.projectPath+"/libraries/"+package+".vhd")
 
         #update metadata of new removal
-        del self.metadata['dependencies'][package]
+        del self.metadata['derives'][package]
         print("Successfully uninstalled ", package, " [",version,"] from the current project.",sep='')
         pass
-
+    
+    #to-do: REWORK INSTALL FUNCTION
     def install(self, package, options):
         #verify there is an existing module under this name
         if(not os.path.isdir(self.findPath(package))):
             print("ERROR- No module exists under the name \"",package,"\".",sep='')
             return
         
-        if(not os.path.isdir(self.findPath(self.pkgName, False, 'dependencies'))):
-            os.mkdir('dependencies')
+        if(not os.path.isdir(self.findPath(self.pkgName, False, 'derives'))):
+            os.mkdir('libraries')
 
         #checkout latest version number
         version = self.fetchVersion(package)
@@ -245,18 +254,18 @@ class legoHDL:
 
         #formulate commands
         #suggestion: pull down from remote repo before doing checkouts
-        cmd = "cd "+self.remote+"packages/"+package+"; git checkout "+version+" -q;" #-q options silences git output
+        cmd = "cd "+self.remote+package+"; git checkout "+version+" -q;" #-q options silences git output
         error = os.system(cmd)
         if(error != 256):
-            cmd = "cd "+self.remote+"packages/"+package+\
-            "; cp ./design/* "+self.projectPath+"/dependencies/; git checkout - -q"
+            cmd = "cd "+self.remote+package+\
+            "; cp ./design/* "+self.projectPath+"/libraries/; git checkout - -q"
             os.system(cmd)
         else:
             print("ERROR- The version you are requesting for this module does not exist.")
             return
 
         #update metadata to list module under this project's dependency and compatible version
-        self.metadata['dependencies'][package] = version
+        self.metadata['derives'][package] = version
         
         print("Successfully installed ", package, " [",version,"] to the current project.",sep='')
         pass
@@ -268,20 +277,20 @@ class legoHDL:
             print('No remote code base configured to download modules')
             return
 
-        loc_catalog = os.listdir(self.local+"packages")
+        loc_catalog = os.listdir(self.local)
 
         if package in self.registry:
             if package in loc_catalog: #just give it an update!
-                repo = git.Repo(self.local+"packages/"+package)
+                repo = git.Repo(self.local+package)
                 repo.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
             else: #oh man, go grab the whole thing!
-                repo = git.Git(self.local+"packages/").clone(self.remote+package+".git")
+                repo = git.Git(self.local).clone(self.remote+package+".git")
         else:
             print('ERROR- Package \''+package+'\' does not exist in remote storage.')
         pass
 
     def load(self, package):
-        cmd = self.textEditor+" "+self.local+"packages/"+package
+        cmd = self.textEditor+" "+self.local+package
         os.system(cmd)
         pass
 
@@ -309,7 +318,7 @@ class legoHDL:
                 pass
             release = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
 
-        repo = git.Repo(self.local+"packages/"+self.pkgName)
+        repo = git.Repo(self.local+self.pkgName)
         print(release)
         if(release != ''):
             self.metadata['version'] = release[1:]
@@ -320,7 +329,8 @@ class legoHDL:
 
         if not self.pkgName in self.registry.keys():
             print("Uploading a new package to remote storage...")
-            cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/chase800/"+self.pkgName+".git master"  
+            #to-do: implement git python code for said commands
+            #cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/chase800/"+self.pkgName+".git master"  
         elif self.remote != None:
             print("Updating remote package contents...")
             repo.remotes.origin.push()
@@ -346,7 +356,7 @@ class legoHDL:
                 return
 
         if(options[0] == 'local'):
-            os.makedirs(choice+"/packages", exist_ok=True)
+            os.makedirs(choice, exist_ok=True)
 
         self.settings[options[0]] = choice
 
@@ -360,7 +370,7 @@ class legoHDL:
         #write back YAML info
         print(self.metadata['version'])
         tmp = collections.OrderedDict(self.metadata)
-        tmp.move_to_end('dependencies')
+        tmp.move_to_end('derives')
         tmp.move_to_end('name', last=False)
 
         #a little magic to save YAML in custom order for easier readability
@@ -375,15 +385,16 @@ class legoHDL:
 
         #lock all dependency files to disable editing
         #Linux: "chattr +i <file>"...macOS: chflags uchg <file>"
-        if(len(self.metadata['dependencies']) > 0):
-            os.system("chflags uchg "+self.pkgPath+"dependencies/*;")
+        #to-do: implement with python code
+        if(len(self.metadata['derives']) > 0):
+            os.system("chflags uchg "+self.pkgPath+"libraries/*;")
         pass
 
     def list(self, options):
         self.syncRegistry() 
         catalog = self.registry
         #prevent any hidden directories from populating list
-        tmp = list(os.listdir(self.local+"packages/"))
+        tmp = list(os.listdir(self.local))
         local_catalog = list()
         for d in tmp:
             if(self.isValidPackage(d)):
@@ -422,7 +433,7 @@ class legoHDL:
         pass
 
     def cleanup(self, pkg):
-        if(not os.path.isfile(self.local+"packages/"+pkg+"/"+pkg+".yml")):
+        if(not os.path.isfile(self.local+pkg+"/"+pkg+".yml")):
             print('No module '+pkg+' exists locally')
             return
         
@@ -444,7 +455,7 @@ class legoHDL:
         
         #delete locally
         try:
-            shutil.rmtree(self.local+"packages/"+pkg)
+            shutil.rmtree(self.local+pkg)
         except:
             print('No module '+pkg+' exists locally')
             return
@@ -459,20 +470,20 @@ class legoHDL:
 
         self.isValidProject = True
 
-        if(self.metadata['dependencies'] == None):
-            self.metadata['dependencies'] = dict()
+        if(self.metadata['derives'] == None):
+            self.metadata['derives'] = dict()
         
         #TO-DO: unlock all dependency files to enable editing
         # unlock .yaml?
-        if(len(self.metadata['dependencies']) > 0):
-            if(not os.path.isdir(self.pkgPath+"dependencies")):
-                os.mkdir("dependencies")
-            os.system("chflags nouchg "+self.pkgPath+"dependencies/*;")
+        if(len(self.metadata['derives']) > 0):
+            if(not os.path.isdir(self.pkgPath+"derives")):
+                os.mkdir("libraries")
+            os.system("chflags nouchg "+self.pkgPath+"libraries/*;")
         pass
 
     def createProject(self, package, options, description='Give a brief explanation here.'):
         #create a local repo
-        self.pkgPath = self.local+"packages/"+package
+        self.pkgPath = self.local+package
         repo = None
         try:
             repo = git.Repo(self.pkgPath)
@@ -481,7 +492,7 @@ class legoHDL:
         except:
             if(self.remote != None):
                 try: #if no error, that means the package exists on the remote!
-                    repo = git.Git(self.local+"packages/").clone(self.remote+package+".git")
+                    repo = git.Git(self.local).clone(self.remote+package+".git")
                     print('Project already exists on remote code base; downloading now...')
                     return
                 except: 
@@ -550,16 +561,16 @@ class legoHDL:
         pass
 
     def describe(self, phrase):
-        self.metadata['description'] = phrase
+        self.metadata['summary'] = phrase
         pass
 
     def show(self, package):
         if(package == ''):
             print('ERROR- please provide a package name to show!')
             return
-        with open(self.local+"packages/"+package+"/"+package+".yml", 'r') as file:
+        with open(self.local+package+"/"+package+".yml", 'r') as file:
             for line in file:
-                print('\t',line,sep='',end='')
+                print(line,sep='',end='')
         pass
 
     def parse(self):
@@ -633,7 +644,7 @@ class legoHDL:
             if('o' in options):
                 self.load(package)
             pass
-        elif(command == "describe"):
+        elif(command == "summary"):
             #download is used if a developer wishes to contribtue and improve to an existing package
             self.describe(package)
             pass
@@ -669,7 +680,7 @@ class legoHDL:
             \n\n\tsearch <package> [-local]\n\t\t-search remote (default) or local code base for specified package\
             \n\n\tshow <package> [-v0.0.0]\n\t\t-provide further detail into a specified package\
             \n\n\tports <package> [-v0.0.0]\n\t\t-print ports list of specified package\
-            \n\n\tdescribe \"description\"\n\t\t-add description to current project\
+            \n\n\tsummary \"description\"\n\t\t-add description to current project\
             \n\n\tnew <package> [-\"description\" -o -i <package> [-v0.0.0] , <package> [-v0.0.0] , ...]\n\t\t-create a standard empty package based on a template and pushes to remote code base\
             \n\n\tset <value/path> [-local | -remote | -editor | -author]\n\t\t-adjust package manager settings\
             \n\n\ttemplate\n\t\t-open the template in the configured text-editor to make custom configuration\
