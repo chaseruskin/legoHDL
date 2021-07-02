@@ -87,6 +87,8 @@ class legoHDL:
 
     def __init__(self):
         
+        self.capsulePKG = None
+        self.capsuleCWD = None
         #defines path to working dir of 'legoHDL' tool
         self.pkgmngPath = os.path.realpath(__file__)
         self.pkgmngPath = self.pkgmngPath[:self.pkgmngPath.rfind('/')+1]
@@ -94,43 +96,26 @@ class legoHDL:
         self.settings = dict()
         with open(self.pkgmngPath+"settings.yml", "r") as file:
             self.settings = yaml.load(file, Loader=yaml.FullLoader)
-
-        self.isValidProject = False
-        self.path = ""
-        self.pkgName = ""
-        self.pkgPath = ""
         
         self.registry = None #list of all available modules in remote
-        self.metadata = None
         
         #defines path to dir of remote code base
         self.remote = self.settings['remote']
         self.remote = None #testing allowing option to not connect to a remote!
-
         #defines path to dir of local code base
         self.local = os.path.expanduser(self.settings['local'])+"/"
-
         self.hidden = os.path.expanduser("~/.legoHDL/") #path to registry and cache
         #defines how to open workspaces
         self.textEditor = self.settings['editor']
         
+        os.environ['VHDL_LS_CONFIG'] = self.hidden+"mapping.toml"
+
         self.parse()
-        self.save()
         pass
 
-    def isValidPackage(self, pkg):
+    def isValidPkg(self, pkg):
         return os.path.isfile(self.local+pkg+"/."+pkg+".yml")
         pass
-
-    #returns a string to a package directory
-    def findPath(self, package, remote=True, folder=''):
-        pathway = self.remote
-        subdir = ''
-        if(not remote):
-            pathway = self.local
-        if(folder != ''):
-            subdir = "/"+folder+"/"
-        return pathway+package+subdir
 
     def syncRegistry(self, cap=None, rm=False, skip=False):
         msg = ''
@@ -144,7 +129,7 @@ class legoHDL:
             else: # check package directory for any changes to folder removals if only local setting
                 capsules = list()
                 for prj in os.listdir(self.local):
-                    if self.isValidPackage(prj):
+                    if self.isValidPkg(prj):
                         capsules.append(prj)
 
             self.registry = dict()
@@ -198,13 +183,11 @@ class legoHDL:
         pass
 
 
-    def fetchVersion(self, package, remote=True):
+    def fetchVersion(self, cap, remote=True):
         self.syncRegistry()
-        ver = self.registry[package]
+        ver = self.registry[cap.getName()]
         if(not remote):
-            with open(self.local+package+"/."+package+".yml", "r") as file:
-                tmp_metadata = yaml.load(file, Loader=yaml.FullLoader)
-            ver = tmp_metadata['version']
+            ver = cap.getVersion()
         if(ver == None):
             return ''
         else:
@@ -287,48 +270,30 @@ class legoHDL:
             print('ERROR- Package \''+cap.getName()+'\' does not exist in remote storage.')
         pass
 
-    def upload(self, release='', options=None):
+    def upload(self, cap, options=None):
+        if(len(options) == 0):
+                print("ERROR- please flag the next version for release with one of the following args:\n"\
+                    "\t(-v0.0.0 | -maj | -min | -fix)")
+                exit()
+            
+        ver = ''
+        if(options[0][0] == 'v'):
+            ver = options[0]
+            print(ver)
+
         self.syncRegistry()
-        last_ver = self.metadata['version']
-        first_dot = last_ver.find('.')
-        last_dot = last_ver.rfind('.')
 
-        major = int(last_ver[:first_dot])
-        minor = int(last_ver[first_dot+1:last_dot])
-        patch = int(last_ver[last_dot+1:])
-        print('last version:',major,minor,patch)
-        if(release == ''):
-            if(options[0] == "maj"):
-                major += 1
-                minor = patch = 0
-                pass
-            elif(options[0] == "min"):
-                minor += 1
-                patch = 0
-                pass
-            elif(options[0] == "fix"):
-                patch += 1
-                pass
-            release = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
+        cap.release(ver, options)        
 
-        repo = git.Repo(self.local+self.pkgName)
-        print(release)
-        if(release != ''):
-            self.metadata['version'] = release[1:]
-            self.save()
-            repo.git.add(update=True)
-            repo.index.commit("Release version -> "+self.metadata['version'])
-            repo.create_tag(release)
-
-        if not self.pkgName in self.registry.keys():
+        if not cap.getName() in self.registry.keys():
             print("Uploading a new package to remote storage...")
             #to-do: implement git python code for said commands
             #cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/chase800/"+self.pkgName+".git master"  
-        elif self.remote != None:
+        elif caps.Capsule.linkedRemote():
             print("Updating remote package contents...")
-            repo.remotes.origin.push()
+            cap.__repo.remotes.origin.push()
         
-        self.syncRegistry(self.pkgName)
+        self.syncRegistry(cap)
         pass
 
     def setSetting(self, options, choice):
@@ -357,41 +322,14 @@ class legoHDL:
             yaml.dump(self.settings, file)
             pass
 
-    def save(self):
-        if(not self.isValidProject): 
-            return
-        #write back YAML info
-        print(self.metadata['version'])
-        tmp = collections.OrderedDict(self.metadata)
-        tmp.move_to_end('derives')
-        tmp.move_to_end('name', last=False)
-
-        #a little magic to save YAML in custom order for easier readability
-        with open(self.pkgPath+"."+self.pkgName+".yml", "w") as file:
-            while len(tmp):
-                it = tmp.popitem(last=False)
-                single_dict = {}
-                single_dict[it[0]] = it[1]
-                yaml.dump(single_dict, file)
-                pass
-            pass
-
-        #lock all dependency files to disable editing
-        #Linux: "chattr +i <file>"...macOS: chflags uchg <file>"
-        #to-do: implement with python code
-        if(len(self.metadata['derives']) > 0):
-            os.system("chflags uchg "+self.pkgPath+"libraries/*;")
-        pass
-
     def list(self, options):
         self.syncRegistry() 
         catalog = self.registry
-        #prevent any hidden directories from populating list
-        tmp = list(os.listdir(self.local))
 
+        tmp = list(os.listdir(self.local))
         local_catalog = list()
         for d in tmp:
-            if(self.isValidPackage(d)):
+            if(self.isValidPkg(d)):
                 local_catalog.append(d)
 
         downloadedList = dict()
@@ -411,14 +349,14 @@ class legoHDL:
         print("\tModule\t\t\tlocal\t\tversion")
         print("-"*80)
         for pkg in catalog:
+            cp = caps.Capsule(pkg)
             isDownloaded = '-'
             info = ''
-
-            ver = self.fetchVersion(pkg, True)
+            ver = self.fetchVersion(cp, True)
             if (downloadedList[pkg]):
                 isDownloaded = 'y'
                 loc_ver = ''
-                loc_ver = self.fetchVersion(pkg, False)
+                loc_ver = self.fetchVersion(cp, False)
                 if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
                     info = '(update)-> '+ver
                     ver = loc_ver
@@ -426,14 +364,14 @@ class legoHDL:
         print()
         pass
 
-    def cleanup(self, pkg):
-        if(not os.path.isfile(self.local+pkg+"/."+pkg+".yml")):
-            print('No module '+pkg+' exists locally')
+    def cleanup(self, cap):
+        if(not cap.isValid()):
+            print('No module '+cap.getName()+' exists locally')
             return
         
         if(self.remote == None):
             print('WARNING- No remote code base is configured, if this module is deleted it may be unrecoverable.\n \
-                DELETE '+pkg+'? [y/n]\
+                DELETE '+cap.getName()+'? [y/n]\
                 ')
             response = ''
             while(True):
@@ -441,46 +379,21 @@ class legoHDL:
                 if(response.lower() == 'y' or response.lower() == 'n'):
                     break
             if(response.lower() == 'n'):
-                print(pkg+' not deleted')
+                print(cap.getName()+' not deleted')
                 return
             #update registry if there is no remote 
             # (if there is a remote then the project still lives on, can be "redownloaded")
-            self.syncRegistry(pkg, rm=True)
-        
+            self.syncRegistry(cap, rm=True)   
         #delete locally
         try:
-            shutil.rmtree(self.local+pkg)
+            shutil.rmtree(self.local+cap.getName())
         except:
-            print('No module '+pkg+' exists locally')
+            print('No module '+cap.getName()+' exists locally')
             return
             
-
         #delete the module remotely?
         pass
 
-    def boot(self):
-        with open(self.pkgPath+"."+self.pkgName+".yml", "r") as file:
-            self.metadata = yaml.load(file, Loader=yaml.FullLoader)
-
-        self.isValidProject = True
-
-        if(self.metadata['derives'] == None):
-            self.metadata['derives'] = dict()
-        
-        #TO-DO: unlock all dependency files to enable editing
-        # unlock .yaml?
-        if(len(self.metadata['derives']) > 0):
-            if(not os.path.isdir(self.pkgPath+"libraries")):
-                os.mkdir("libraries")
-            os.system("chflags nouchg "+self.pkgPath+"libraries/*;")
-        pass
-
-    def createProject(self, package, options, description='Give a brief explanation here.'):
-        #create a local repo
-        
-        c = caps.Capsule(package, True)
-        self.projectName = self.pkgName = package
-        print('here')
         #c.metadata['summary'] = description
         #TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
         #installPkg = list()
@@ -495,35 +408,23 @@ class legoHDL:
         #        self.install(installPkg[0], installPkg[1:])
 
         #add and commit package name to registry repo (pass in capsule obj)
-        self.syncRegistry(c)
-        print('hehehe')
-        return c
-        pass
-
-    def describe(self, phrase):
-        self.metadata['summary'] = phrase
-        pass
 
     def parse(self):
         #set class capsule variable for user settings
         caps.Capsule.settings = self.settings
-        
         caps.Capsule.pkgmngPath = self.pkgmngPath
-        #check if we are in a project directory (necessary to run a majority of commands)
-        self.pkgPath = os.getcwd()
-        lastSlash = self.pkgPath.rfind('/') #determine project's name to know the YAML to open
-        self.pkgName = self.pkgPath[lastSlash+1:]
-        self.pkgPath+='/'
 
-        capsuleCWD = caps.Capsule(self.pkgName)
-        if(not capsuleCWD.isValid()):
+        #check if we are in a project directory (necessary to run a majority of commands)
+        pkgPath = os.getcwd()
+        lastSlash = pkgPath.rfind('/') #determine project's name to know the YAML to open
+        pkgCWD = pkgPath[lastSlash+1:]
+        self.capsuleCWD = caps.Capsule(pkgCWD)
+        if(not self.capsuleCWD.isValid()):
             print("NOT A CAPSULE DIRECTORY")
         
-
-        command = ""
-        package = ""
+        command = package = description = ""
         options = []
-        description = ''
+
         #store args accordingly from command-line
         for i, arg in enumerate(sys.argv):
             if(i == 1):
@@ -538,66 +439,52 @@ class legoHDL:
                 else:
                     pass
 
+
+        description = package
         package = package.replace("-", "_")
-
-        capsulePKG = caps.Capsule(package)
-
-        if(len(options) > 1 and options[1] == 'i'):
-            description = options[0]
-            options.remove(options[0])
-        elif(len(options) == 1):
-            description = options[0]
-
-        if(command == "install" and capsuleCWD.isValid()):
-            self.install(package, options)
+        self.capsulePKG = caps.Capsule(package)
+        
+        #branching through possible commands
+        if(command == "install" and self.capsuleCWD.isValid()):
+            self.install(package, options) #TO-DO
             pass
-        elif(command == "uninstall" and capsuleCWD.isValid()):
-            self.uninstall(package, options)
+        elif(command == "uninstall" and self.capsuleCWD.isValid()):
+            self.uninstall(package, options) #TO-DO
             pass
-        elif(command == "new" and len(package)):
-            cap = caps.Capsule(package, new=True)
-            self.syncRegistry(cap)
+        elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
+            self.capsulePKG = caps.Capsule(package, new=True)
+            self.syncRegistry(self.capsulePKG)
             if(options.count("o") > 0):
-                cap.load()
+                self.capsulePKG.load()
             pass
-        elif(command == "upload" and capsuleCWD.isValid()):
-            if(len(options) == 0):
-                print("ERROR- please flag the next version for release with one of the following args:\n"\
-                    "\t(-v0.0.0 | -maj | -min | -fix)")
-                exit()
-            
-            ver = ''
-            if(options[0][0] == 'v'):
-                ver = options[0]
-                print(ver)
+        elif(command == "upload" and self.capsuleCWD.isValid()):
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
-            self.upload(release=str(ver), options=options)
+            self.upload(self.capsuleCWD, options=options)
             if(len(options) == 2 and options[1] == 'd'):
-                self.cleanup(self.pkgName)
+                self.cleanup(self.capsuleCWD.getName())
             pass
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
-            self.download(capsulePKG)
+            self.download(self.capsulePKG)
             if('o' in options):
-                capsulePKG.load()
+                self.capsulePKG.load()
             pass
-        elif(command == "summary" and capsuleCWD.isValid()):
-            capsuleCWD.getMeta()['summary'] = package
-            capsuleCWD.push("Updates project summary")
+        elif(command == "summ" and self.capsuleCWD.isValid()):
+            self.capsuleCWD.getMeta()['summary'] = description
+            self.capsuleCWD.pushYML("Updates project summary")
             pass
         elif(command == 'del'):
-            self.cleanup(package)
-        elif(command == "list"):
-            #a visual aide to help a developer see what package's are at the ready to use
+            self.cleanup(self.capsulePKG)
+        elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             self.list(options)
             pass
         elif(command == "open"):
-            capsulePKG.load()
+            self.capsulePKG.load()
             pass
         elif(command == "show"):
-            if(capsulePKG.isValid()):
-                capsulePKG.show()
+            if(self.capsulePKG.isValid()):
+                self.capsulePKG.show()
             pass
         elif(command == "template" and self.settings['editor'] != None):
             os.system(self.settings['editor']+" "+self.pkgmngPath+"/template")
@@ -619,7 +506,7 @@ class legoHDL:
             \n\n\tsearch <package> [-local]\n\t\t-search remote (default) or local code base for specified package\
             \n\n\tshow <package> [-v0.0.0]\n\t\t-provide further detail into a specified package\
             \n\n\tports <package> [-v0.0.0]\n\t\t-print ports list of specified package\
-            \n\n\tsummary \"description\"\n\t\t-add description to current project\
+            \n\n\tsumm \"description\"\n\t\t-add description to current project\
             \n\n\tnew <package> [-\"description\" -o -i <package> [-v0.0.0] , <package> [-v0.0.0] , ...]\n\t\t-create a standard empty package based on a template and pushes to remote code base\
             \n\n\tset <value/path> [-local | -remote | -editor | -author]\n\t\t-adjust package manager settings\
             \n\n\ttemplate\n\t\t-open the template in the configured text-editor to make custom configuration\

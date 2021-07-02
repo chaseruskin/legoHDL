@@ -8,7 +8,6 @@ class Capsule:
     pkgmngPath = ''
     def __init__(self, name='', new=False):
         self.__name = name
-        self.__version = '0.0.0'
         self.__metadata = dict()
         self.__remoteURL = None
         self.__localPath = Capsule.settings['local']+"/"+self.__name+'/'
@@ -44,13 +43,68 @@ class Capsule:
     def clone(self):
         self.__repo = git.Git(self.__localPath).clone(self.__remoteURL)
 
+    def getVersion(self):
+        return self.__metadata['version']
+
+    def release(self, ver='', options=None):
+        first_dot = self.getVersion().find('.')
+        last_dot = self.getVersion().rfind('.')
+
+        major = int(self.getVersion()[:first_dot])
+        minor = int(self.getVersion()[first_dot+1:last_dot])
+        patch = int(self.getVersion()[last_dot+1:])
+        print('last version:',major,minor,patch)
+        if(ver == ''):
+            if(options[0] == "maj"):
+                major += 1
+                minor = patch = 0
+                pass
+            elif(options[0] == "min"):
+                minor += 1
+                patch = 0
+                pass
+            elif(options[0] == "fix"):
+                patch += 1
+                pass
+            else:
+                return
+            ver = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
+        else:
+            ver = ver[1:]
+            try:
+                r_major = int(ver[:first_dot])
+            except:
+                return
+            try:
+                r_minor = int(ver[first_dot+1:last_dot])
+            except:
+                r_minor = 0
+            try:
+                r_patch = int(ver[last_dot+1:])
+            except:
+                r_patch = 0
+                
+            if(r_major < major):
+                return
+            elif(r_major == major and r_minor < minor):
+                return
+            elif(r_major == major and r_minor == minor and r_patch <= patch):
+                return
+            ver = 'v'+str(r_major)+'.'+str(r_minor)+'.'+str(r_patch)
+        print(ver)
+        if(ver != '' and ver[0] == 'v'):
+            self.__metadata['version'] = ver[1:]
+            self.save()
+            self.__repo.git.add(update=True)
+            self.__repo.index.commit("Release version -> "+self.getVersion())
+            self.__repo.create_tag(ver)
+        pass
+
     def loadMeta(self):
-        print("LOADING META", self.__name)
+        print("-",self.getName(),'-',end='')
         with open(self.metadataPath(), "r") as file:
             self.__metadata = yaml.load(file, Loader=yaml.FullLoader)
             file.close()
-        
-        self.__version = self.__metadata['version']
 
         if(self.__metadata['derives'] == None):
             self.__metadata['derives'] = dict()
@@ -108,7 +162,7 @@ class Capsule:
     def pull(self):
         self.__repo.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
 
-    def push(self, msg):
+    def pushYML(self, msg):
         self.save()
         self.__repo.index.add("."+self.__name+".yml")
         self.__repo.index.commit(msg)

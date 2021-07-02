@@ -21,27 +21,29 @@ for i,arg in enumerate(sys.argv):
     pass
 
 master_script='/manager.py'
-program_name='legoHDL'
+program_name='legohdl'
 
 remote=settings['remote']
 working_dir=os.path.expanduser(settings['local'])+'/'
+hidden_dir=os.path.expanduser("~/."+program_name+"/")
 
-print('Initializing '+working_dir+' working directory...')
-try:
-    os.makedirs(working_dir+'packages/')
-except:
-    pass
+print('Initializing working directory... '+working_dir)
+os.makedirs(working_dir, exist_ok=True)
+
+
+print('Initializing configuration directory... '+hidden_dir)
+os.makedirs(hidden_dir, exist_ok=True)
 
 
 print('Setting up package registry...')
 #check the remote registry if package appears there
-if(not os.path.isdir(working_dir+"registry")):
+if(not os.path.isdir(hidden_dir+"registry")):
     try:
-        clone = git.Git(working_dir).clone(remote+"/registry.git") #grab if it exists
+        clone = git.Git(hidden_dir).clone(remote+"/registry.git") #grab if it exists
         print('Grabbed package registry from remote')
     except:
-        repo = git.Repo.init(working_dir+"registry")
-        open(working_dir+"registry/db.txt", 'wb').close()
+        repo = git.Repo.init(hidden_dir+"registry")
+        open(hidden_dir+"registry/db.txt", 'wb').close()
         repo.index.add("db.txt")
         repo.index.commit("Initial commit.")
         if(remote != None):
@@ -52,11 +54,18 @@ if(not os.path.isdir(working_dir+"registry")):
 else:
     print('Package registry already initialized')
 
+print('Setting up cache folder...')
+os.makedirs(hidden_dir+"cache", exist_ok=True)
+print('Cache folder created')
+
+print('Setting up libraries folder...')
+os.makedirs(hidden_dir+"lib", exist_ok=True)
+print('Libraries folder created')
 
 path=os.path.realpath(__file__) #note for release: path <- working_dir
 path=path[:path.rfind('/')+1]
 try:
-    shutil.copytree(path, working_dir+program_name)
+    shutil.copytree(path, hidden_dir+program_name)
     #shutil.move(path, working_dir) #note for release: use this command
 except:
     pass
