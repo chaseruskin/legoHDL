@@ -1,0 +1,76 @@
+#<ideas>
+
+
+#export project as a vivado project, with symbolic links to the VHDL files
+
+#on a version release, have a dedicated zipped file of the vhd and .yaml?
+#faster for an install, but may have to be reworked if then deciding to download
+
+#allow remote to be null,
+#allow user to open settings file
+#allow user to open template folder
+#movtivation behind building a Hardware HDL manager:
+#   -direct control and flexibility to design to meet our needs/worklfow/situation
+#   -complete customization to tackle our problem of managing our modules
+#   -promotes more experimentation => seeks to find the best solution (not trying to conform to other's standards)
+
+#some idea python scripts to be made:
+#   toolbelt.py // helps automate use of tools for lint, anaylsis, sim
+#   testkit.py // module to store common functions related to testbenches
+#   manager.py // package manager to handle collections of IPs
+
+#the dependencies folder is not tracked by git because there would be major overlap of code/resources. Code should be 
+# tried to restricted into a single location. Tracking the YAML file and its list of dependencies will be enough and 
+# will trigger installs when required by a download
+
+#when installing dependency, follow directed acyclic graph with topological sort
+#when installing dependency, automatically paste the component declaration into top-level design
+#when installing dependency, allow for adding multiple dependencies in one command by using ',' between modules
+#example: legoHDL install flipflop -v1.0 , combinational , asyncCounter -v2.1
+
+#use filenames with the version (in dependency folder) to allow for designs that require multiple versions of a module that 
+# is used by different entities
+
+#prompt to move all current projects to new local directory when changing setting? nah
+
+#seperate program/framework to perform lint, synth, simulation/verification, place-and-route, bitstream? 
+
+#add pin mapping to YAML file to allow program to place-and-route design post-synthesis
+
+#search all design VHD files to determine which is top-level design
+#then find which testbench instantiates that design
+
+#alternate method: dependency folder has files that point to the git commits of those versions?
+
+#use 'sync tb' to sync ports of design to the testbench vhdl and across testbench.py file for use 
+# -(will also auto make generic testbench) (can be embedded into CI with analysis of design file) -toolkit.py-
+
+#eventually make a GUI with tkinter for easier & visual package management
+
+#SCENARIO: developer is working on improving a VHDL module that has been previouly released (v1.0). Other higher-level
+# module packages now use v1.0 in their design as a dependency. Developer now releases v1.1. A new moudle package now
+# uses v1.1 of this lower-level module, and now another newer high-level module uses the modules that depend on v1.0 
+# and the module that depends on v1.1. What's the resolve?
+#   -all MINOR (0.X) version updates should try to update the dependency list of those who depend on it and rerun verification
+#   to ensure module is still valid. If the build fails in CI, automate a git revert to the commit previous to the "Updates 
+#   'x' dependency module version to '#.#'.
+#   -all MAJOR (X.0) version updates will not automatically trigger the chain because of it has altered the core
+#   functionality and can be assumed to break all other builds
+
+#program should handle most git version control behind the scenes (pushing and pulling, maybe even tags)
+
+#what if a developer never had to touch a VHDL file when verifying a module?
+# motivation:
+#   -faster development time as it is all rooted in a single source (python testbench file)
+#   -VHDL files can very repetitive in nature when setting up a testbench using I/O files
+#   -command-line automatic scripts will handle copying and pasting the right lines of code into the tb
+#   -python is source of verification because it is very readable, easy to build up a library of helpful code, 
+#   and easy to write with minimal lines
+#   -software languages are the best at writing software; why try to do so in a restricted HW language in confusing ways
+#   when software languages are available to do the job (there are great data science modules available scipy, matplotlib, pandas)
+
+# a "library" is no more than a collection of VHDL files with respective packages. Every new release gets new component declarations
+# for that specific version added to that project's pkg VHDL file. library "name"; use "name".projectpkg.component_ver (library.packagefile.comp)
+# continually updates. The top-level to a project is the only component that gets added to the pkg file. Adding versioning to the end
+# of component names may allow for preserving and using multiple designs
+#</ideas>

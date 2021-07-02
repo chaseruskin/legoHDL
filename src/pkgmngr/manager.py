@@ -1,90 +1,12 @@
 #!/usr/bin/env python3
 import os, sys, git, shutil
-import collections, yaml
-from datetime import date
+import yaml
 try:
     from pkgmngr import capsule as caps
 except:
     import capsule as caps
-#<ideas>
-
-
-#export project as a vivado project, with symbolic links to the VHDL files
-
-#on a version release, have a dedicated zipped file of the vhd and .yaml?
-#faster for an install, but may have to be reworked if then deciding to download
-
-#allow remote to be null,
-#allow user to open settings file
-#allow user to open template folder
-#movtivation behind building a Hardware HDL manager:
-#   -direct control and flexibility to design to meet our needs/worklfow/situation
-#   -complete customization to tackle our problem of managing our modules
-#   -promotes more experimentation => seeks to find the best solution (not trying to conform to other's standards)
-
-#some idea python scripts to be made:
-#   toolbelt.py // helps automate use of tools for lint, anaylsis, sim
-#   testkit.py // module to store common functions related to testbenches
-#   manager.py // package manager to handle collections of IPs
-
-#the dependencies folder is not tracked by git because there would be major overlap of code/resources. Code should be 
-# tried to restricted into a single location. Tracking the YAML file and its list of dependencies will be enough and 
-# will trigger installs when required by a download
-
-#when installing dependency, follow directed acyclic graph with topological sort
-#when installing dependency, automatically paste the component declaration into top-level design
-#when installing dependency, allow for adding multiple dependencies in one command by using ',' between modules
-#example: legoHDL install flipflop -v1.0 , combinational , asyncCounter -v2.1
-
-#use filenames with the version (in dependency folder) to allow for designs that require multiple versions of a module that 
-# is used by different entities
-
-#prompt to move all current projects to new local directory when changing setting? nah
-
-#seperate program/framework to perform lint, synth, simulation/verification, place-and-route, bitstream? 
-
-#add pin mapping to YAML file to allow program to place-and-route design post-synthesis
-
-#search all design VHD files to determine which is top-level design
-#then find which testbench instantiates that design
-
-#alternate method: dependency folder has files that point to the git commits of those versions?
-
-#use 'sync tb' to sync ports of design to the testbench vhdl and across testbench.py file for use 
-# -(will also auto make generic testbench) (can be embedded into CI with analysis of design file) -toolkit.py-
-
-#eventually make a GUI with tkinter for easier & visual package management
-
-#SCENARIO: developer is working on improving a VHDL module that has been previouly released (v1.0). Other higher-level
-# module packages now use v1.0 in their design as a dependency. Developer now releases v1.1. A new moudle package now
-# uses v1.1 of this lower-level module, and now another newer high-level module uses the modules that depend on v1.0 
-# and the module that depends on v1.1. What's the resolve?
-#   -all MINOR (0.X) version updates should try to update the dependency list of those who depend on it and rerun verification
-#   to ensure module is still valid. If the build fails in CI, automate a git revert to the commit previous to the "Updates 
-#   'x' dependency module version to '#.#'.
-#   -all MAJOR (X.0) version updates will not automatically trigger the chain because of it has altered the core
-#   functionality and can be assumed to break all other builds
-
-#program should handle most git version control behind the scenes (pushing and pulling, maybe even tags)
-
-#what if a developer never had to touch a VHDL file when verifying a module?
-# motivation:
-#   -faster development time as it is all rooted in a single source (python testbench file)
-#   -VHDL files can very repetitive in nature when setting up a testbench using I/O files
-#   -command-line automatic scripts will handle copying and pasting the right lines of code into the tb
-#   -python is source of verification because it is very readable, easy to build up a library of helpful code, 
-#   and easy to write with minimal lines
-#   -software languages are the best at writing software; why try to do so in a restricted HW language in confusing ways
-#   when software languages are available to do the job (there are great data science modules available scipy, matplotlib, pandas)
-
-# a "library" is no more than a collection of VHDL files with respective packages. Every new release gets new component declarations
-# for that specific version added to that project's pkg VHDL file. library "name"; use "name".projectpkg.component_ver (library.packagefile.comp)
-# continually updates. The top-level to a project is the only component that gets added to the pkg file. Adding versioning to the end
-# of component names may allow for preserving and using multiple designs
-#</ideas>
 
 class legoHDL:
-
     def __init__(self):
         
         self.capsulePKG = None
@@ -108,7 +30,7 @@ class legoHDL:
         #defines how to open workspaces
         self.textEditor = self.settings['editor']
         
-        os.environ['VHDL_LS_CONFIG'] = self.hidden+"mapping.toml"
+        os.environ['VHDL_LS_CONFIG'] = self.hidden+"mapping.toml" #directly works with VHDL_LS
 
         self.parse()
         pass
@@ -157,15 +79,15 @@ class legoHDL:
             msg = 'Removes '+cap.getName()+' from the database.'
 
         elif(cap != None): #looking to write a value to registry
-            if(cap.getName() in self.registry and (self.registry[cap.getName()] == cap.getMeta()['version'] \
-                or (cap.getMeta()['version'] == zero))):
+            if(cap.getName() in self.registry and (self.registry[cap.getName()] == cap.getVersion() \
+                or (cap.getVersion() == zero))):
                 return
             print('Syncing with registry...')
-            self.registry[cap.getName()] = cap.getMeta()['version'] if cap.getMeta()['version'] != '0.0.0' else ''
+            self.registry[cap.getName()] = cap.getVersion() if cap.getVersion() != '0.0.0' else ''
             if(self.registry[cap.getName()] == ''):
                 msg = 'Introduces '+cap.getName() +' to the database.'
             else:
-                msg = 'Updates '+cap.getName() +' version to '+cap.getMeta()['version']+'.'
+                msg = 'Updates '+cap.getName() +' version to '+cap.getVersion()+'.'
 
         if(msg != ''):
             print(msg)
@@ -462,7 +384,7 @@ class legoHDL:
             # remote codebase (all CI should pass locally before pushing up)
             self.upload(self.capsuleCWD, options=options)
             if(len(options) == 2 and options[1] == 'd'):
-                self.cleanup(self.capsuleCWD.getName())
+                self.cleanup(self.capsuleCWD)
             pass
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
@@ -486,6 +408,8 @@ class legoHDL:
             if(self.capsulePKG.isValid()):
                 self.capsulePKG.show()
             pass
+        elif(command == "ports" and self.capsulePKG.isValid()):
+            self.capsulePKG.ports()
         elif(command == "template" and self.settings['editor'] != None):
             os.system(self.settings['editor']+" "+self.pkgmngPath+"/template")
             pass
@@ -502,7 +426,7 @@ class legoHDL:
             \n\n\tlist [-alpha -local]\n\t\t-print list of all packages available from code base\
             \n\n\topen <package> \n\t\t-opens the package with the set text-editor\
             \n\n\tdel <package> \n\t\t-deletes the package from the local code base\
-            \n\n\tconvert <package> \n\t\t-converts the existing files with names containing <package> into a package format\
+            \n\n\tconvert <package> \n\t\t-converts the current directory into a valid package format\
             \n\n\tsearch <package> [-local]\n\t\t-search remote (default) or local code base for specified package\
             \n\n\tshow <package> [-v0.0.0]\n\t\t-provide further detail into a specified package\
             \n\n\tports <package> [-v0.0.0]\n\t\t-print ports list of specified package\
@@ -516,7 +440,7 @@ class legoHDL:
             \n\t-i\t\tset installation flag to install package(s) on project creation\
             \n\t-alpha\t\talphabetical order\
             \n\t-o\t\topen the project\
-            \n\t-warp\t\tremoves the released package from your local codebase\
+            \n\t-d\t\tremoves the released package from your local codebase\
             \n\t-local\t\tidentify local path setting\
             \n\t-remote\t\tidentify remote path setting\
             \n\t-editor\t\tidentify text-editor setting\
@@ -528,7 +452,7 @@ class legoHDL:
         else:
             print("Invalid command; type \"help\" to see a list of available commands")
         pass
-
+    pass
 
 def main():
     print('\n---legoHDL package manager---\n')

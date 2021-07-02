@@ -1,6 +1,7 @@
 import os, yaml, git, shutil
 from datetime import date
 import collections, stat
+import glob
 
 #a capsule is a package/module that is signified by having the capsule.yml
 class Capsule:
@@ -44,7 +45,7 @@ class Capsule:
         self.__repo = git.Git(self.__localPath).clone(self.__remoteURL)
 
     def getVersion(self):
-        return self.__metadata['version']
+        return self.getMeta('version')
 
     def release(self, ver='', options=None):
         first_dot = self.getVersion().find('.')
@@ -101,15 +102,15 @@ class Capsule:
         pass
 
     def loadMeta(self):
-        print("-",self.getName(),'-',end='')
+        #print("-",self.getName(),'-',end='')
         with open(self.metadataPath(), "r") as file:
             self.__metadata = yaml.load(file, Loader=yaml.FullLoader)
             file.close()
 
-        if(self.__metadata['derives'] == None):
+        if(self.getMeta('derives') == None):
             self.__metadata['derives'] = dict()
 
-        if(self.__metadata['integrates'] == None):
+        if(self.getMeta('integrates') == None):
             self.__metadata['integrates'] = dict()
         pass
 
@@ -156,8 +157,11 @@ class Capsule:
     def getName(self):
         return self.__name
 
-    def getMeta(self):
-        return self.__metadata
+    def getMeta(self, key=None):
+        if(key == None):
+            return self.__metadata
+        else:
+            return self.__metadata[key]
 
     def pull(self):
         self.__repo.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
@@ -219,6 +223,33 @@ class Capsule:
         #lock metadata into read-only mode
         os.chmod(self.metadataPath(), stat.S_IROTH | stat.S_IRGRP | stat.S_IREAD | stat.S_IRUSR)
         pass
+
+    def ports(self):
+        vhd_files = glob.glob(self.__localPath+"/**/*"+".vhd", recursive=True)
+        port_file = None
+        for vhd in vhd_files:
+            if(vhd.count(self.getMeta("toplevel")) > 0):
+                port_file = vhd
+                break
+        
+        port_txt = ''
+        rolling_entity = False
+        with open(port_file, 'r') as f:
+            for line in f:
+                if(line.lower() == ('entity '+self.getName().lower()+' is\n')):
+                    rolling_entity = True
+                
+                if(rolling_entity):
+                    port_txt = port_txt + line
+
+                if(line.lower() == "end entity "+self.getName().lower()+";\n" or \
+                    line.lower() == "end entity;\n" or \
+                    line.lower() == "end "+self.getName().lower()+";\n"):
+                    rolling_entity = False
+                    break
+                    pass
+            f.close()
+        print(port_txt)
 
     def log(self):
         pass
