@@ -236,20 +236,21 @@ class Capsule:
         rolling_entity = False
         with open(port_file, 'r') as f:
             for line in f:
+                #discover when the entity block begins
                 if(line.lower() == ('entity '+self.getName().lower()+' is\n')):
                     rolling_entity = True
                 
                 if(rolling_entity):
                     port_txt = port_txt + line
-
+                #handle the 3 variations of how to end a entity block
                 if(line.lower() == "end entity "+self.getName().lower()+";\n" or \
                     line.lower() == "end entity;\n" or \
                     line.lower() == "end "+self.getName().lower()+";\n"):
                     rolling_entity = False
                     break
-                    pass
             f.close()
         print(port_txt)
+        pass
 
     def log(self):
         pass
