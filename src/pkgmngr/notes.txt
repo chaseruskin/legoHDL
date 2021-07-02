@@ -1,5 +1,6 @@
 #<ideas>
 
+#allow user to disable-enable registry repo setting
 
 #export project as a vivado project, with symbolic links to the VHDL files
 

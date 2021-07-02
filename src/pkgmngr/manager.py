@@ -413,11 +413,14 @@ class legoHDL:
         elif(command == "template" and self.settings['editor'] != None):
             os.system(self.settings['editor']+" "+self.pkgmngPath+"/template")
             pass
-        elif(command == "set"):
+        elif(command == "config"):
             self.setSetting(options, package)
             pass
-        elif(command == "help"):
-            print("Command list\
+        elif(command == "help" or command == ''):
+            print('Usage: \
+            \n\tlegohdl <command> [options]\
+            \n')
+            print("Commands:\
             \n\tinstall <package> [-v0.0.0]\n\t\t-fetch package from the code base to be available in current project\
             \n\n\tuninstall <package>\n\t\t-remove package from current project along with all dependency packages\
             \n\n\tdownload <package> [-o]\n\t\t-pull package from remote code base for further development\
@@ -432,10 +435,10 @@ class legoHDL:
             \n\n\tports <package> [-v0.0.0]\n\t\t-print ports list of specified package\
             \n\n\tsumm \"description\"\n\t\t-add description to current project\
             \n\n\tnew <package> [-\"description\" -o -i <package> [-v0.0.0] , <package> [-v0.0.0] , ...]\n\t\t-create a standard empty package based on a template and pushes to remote code base\
-            \n\n\tset <value/path> [-local | -remote | -editor | -author]\n\t\t-adjust package manager settings\
+            \n\n\tconfig <value/path> [-local | -remote | -editor | -author]\n\t\t-adjust package manager settings\
             \n\n\ttemplate\n\t\t-open the template in the configured text-editor to make custom configuration\
             \n")
-            print("Optional flags\
+            print("Options:\
             \n\t-v0.0.0\t\tspecify package version (insert values replacing 0's)\
             \n\t-i\t\tset installation flag to install package(s) on project creation\
             \n\t-alpha\t\talphabetical order\
