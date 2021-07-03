@@ -93,6 +93,13 @@ use enconder.enconderPkg.encoder;
 
 PKG VHD file is simple component wrapper;
 
+#when a user utilizes a sub-module and releases a version with that sub-module, 
+they are saying "hey, my package requires this sub-module (latest v1.2.0), and
+so update the YML for the sub-module to say it integrates with upper-module, so 
+that moving forward, any new releases to sub-module, with this info we can chain 
+push CI jobs to try to see if upper-module will not break with new changes",
+...accordingly, it should not break with all minor and patch updates.
+
 #TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
 #installPkg = list()
 #if 'i' in options:
@@ -105,3 +112,4 @@ PKG VHD file is simple component wrapper;
 #    if(len(installPkg)): #perform last install
 #        self.install(installPkg[0], installPkg[1:])
 #</ideas>
+

@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 import os, sys, git, shutil
+import requests
+from bs4 import BeautifulSoup
 import yaml
 try:
     from pkgmngr import capsule as caps
+    from pkgmnger import registry as reg
 except:
     import capsule as caps
+    import registry as reg
 
 class legoHDL:
     def __init__(self):
-        
+
         self.capsulePKG = None
         self.capsuleCWD = None
         #defines path to working dir of 'legoHDL' tool
@@ -23,7 +27,10 @@ class legoHDL:
         
         #defines path to dir of remote code base
         self.remote = self.settings['remote']
-        self.remote = None #testing allowing option to not connect to a remote!
+        remote_reg = reg.Registry(self.remote)
+        remote_reg.fetch()
+        exit()
+        #self.remote = None #testing allowing option to not connect to a remote!
         #defines path to dir of local code base
         self.local = os.path.expanduser(self.settings['local'])+"/"
         self.hidden = os.path.expanduser("~/.legoHDL/") #path to registry and cache
@@ -427,10 +434,11 @@ class legoHDL:
             pass
         elif(command == "help" or command == ''):
             w = str(24)
-            print('Usage: \
+            print("VHDL's package manager")
+            print('USAGE: \
             \n\tlegohdl <command> <package> [options]\
             \n')
-            print("Commands:")
+            print("COMMANDS:")
             def formatHelp(cmd, des):
                 print('{:<60}'.format(cmd),des)
                 pass
