@@ -1,4 +1,5 @@
 name: template
+library: 
 version: 0.0.0
 summary:  
 toplevel: template.vhd

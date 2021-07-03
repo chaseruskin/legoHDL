@@ -8,7 +8,13 @@ class Capsule:
     settings = None
     pkgmngPath = ''
     def __init__(self, name='', new=False):
+        dot = name.find('.')
+        self.__lib = ''
         self.__name = name
+        if(dot > -1):
+            self.__lib = name[:dot]
+            self.__name = name[dot+1:]
+        
         self.__metadata = dict()
         self.__remoteURL = None
         self.__localPath = Capsule.settings['local']+"/"+self.__name+'/'
@@ -16,7 +22,7 @@ class Capsule:
 
         #configure remote url
         if(self.linkedRemote()):
-            self.__remoteURL = self.settings['remote']+self.__name+".git"
+            self.__remoteURL = self.settings['remote']+'/'+self.__name+".git"
 
         if(self.isValid()): #this package is already existing locally
             self.__repo = git.Repo(self.__localPath)
@@ -35,6 +41,17 @@ class Capsule:
                     pass
             self.create() #create the repo and directory structure
         pass
+
+    def cache(self, cache_dir):
+        git.Git(cache_dir).clone(self.__remoteURL)
+        pass
+
+    def install(self, options):
+
+        pass
+    
+    def getTitle(self):
+        return self.__lib+'.'+self.__name
 
     def __del__(self):
         if(self.isValid() and len(self.__metadata)):
@@ -142,7 +159,7 @@ class Capsule:
             os.remove(x[0])
 
         self.loadMeta() #generate fresh metadata fields
- 
+        self.__metadata['library'] = self.__lib
         self.save() #save current progress into yaml
 
         self.__repo.index.add(self.__repo.untracked_files)
@@ -156,6 +173,11 @@ class Capsule:
 
     def getName(self):
         return self.__name
+
+    def getLib(self):
+        if(self.getMeta("library") == None):
+            return ''
+        return self.getMeta("library")
 
     def getMeta(self, key=None):
         if(key == None):
@@ -224,28 +246,46 @@ class Capsule:
         os.chmod(self.metadataPath(), stat.S_IROTH | stat.S_IRGRP | stat.S_IREAD | stat.S_IRUSR)
         pass
 
+    def scanDependencies(self):
+        vhd_file = glob.glob(self.__localPath+"/**/"+self.getMeta("toplevel"), recursive=True)[0]
+        s = vhd_file.rfind('/')
+        src_dir = vhd_file[:s+1]
+        print(src_dir)
+        #open every src file and inspect lines for using libraries
+        derivatives = list()
+        for vhd in os.listdir(src_dir):
+            with open(src_dir+vhd) as file:
+                for line in file:
+                    line = line.lower()
+                    z = line.find("use")
+                    if(z >= 0):
+                        derivatives.append(line[z+3:].strip())
+                    if(line.count("entity") > 0):
+                        break
+                file.close()
+            print(vhd)
+            print(derivatives)
+            self.__metadata['derives'] = derivatives
+        pass
+
     def ports(self):
-        vhd_files = glob.glob(self.__localPath+"/**/*"+".vhd", recursive=True)
-        port_file = None
-        for vhd in vhd_files:
-            if(vhd.count(self.getMeta("toplevel")) > 0):
-                port_file = vhd
-                break
+        vhd_file = glob.glob(self.__localPath+"/**/"+self.getMeta("toplevel"), recursive=True)[0]
         
         port_txt = ''
         rolling_entity = False
-        with open(port_file, 'r') as f:
+        with open(vhd_file, 'r') as f:
             for line in f:
+                line = line.lower()
                 #discover when the entity block begins
-                if(line.lower() == ('entity '+self.getName().lower()+' is\n')):
+                if(line == ('entity '+self.getName().lower()+' is\n')):
                     rolling_entity = True
                 
                 if(rolling_entity):
                     port_txt = port_txt + line
                 #handle the 3 variations of how to end a entity block
-                if(line.lower() == "end entity "+self.getName().lower()+";\n" or \
-                    line.lower() == "end entity;\n" or \
-                    line.lower() == "end "+self.getName().lower()+";\n"):
+                if(line == "end entity "+self.getName().lower()+";\n" or \
+                    line == "end entity;\n" or \
+                    line == "end "+self.getName().lower()+";\n"):
                     rolling_entity = False
                     break
             f.close()

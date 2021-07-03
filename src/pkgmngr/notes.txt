@@ -74,4 +74,34 @@
 # for that specific version added to that project's pkg VHDL file. library "name"; use "name".projectpkg.component_ver (library.packagefile.comp)
 # continually updates. The top-level to a project is the only component that gets added to the pkg file. Adding versioning to the end
 # of component names may allow for preserving and using multiple designs
+
+#scan for dependencies to update YML anytime on a "show" "export" "upload" commands
+#option to disable auto-scanning thus requiring users to make a requirements.txt -> equiv as having users just type in the "use" statements
+#because it is there where they are specifying the version and component
+
+#SCAN command - update dependency list
+#EXPORT command - generate a txt file to be used on any backend scripts made by user
+
+packages can belong to a library or be their own library
+
+library utils;
+use utils.flipflopPkg.flipflop;
+use utils.clockdividerPkg.clockdivider;
+
+library encoder;
+use enconder.enconderPkg.encoder;
+
+PKG VHD file is simple component wrapper;
+
+#TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
+#installPkg = list()
+#if 'i' in options:
+#    for opt in options[1:]:
+#        if(opt == ','):
+#            self.install(installPkg[0], installPkg[1:])
+#            installPkg.clear()
+#        else:
+#            installPkg.append(opt)
+#    if(len(installPkg)): #perform last install
+#        self.install(installPkg[0], installPkg[1:])
 #</ideas>

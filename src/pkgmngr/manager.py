@@ -44,12 +44,11 @@ class legoHDL:
         zero = '0.0.0'
 
         if(self.registry == None and not skip): # must check for changes
-            folders=list()
+            capsules=list()
             if(caps.Capsule.linkedRemote()):
                 reg = git.Repo(self.hidden+"registry")
                 reg.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
             else: # check package directory for any changes to folder removals if only local setting
-                capsules = list()
                 for prj in os.listdir(self.local):
                     if self.isValidPkg(prj):
                         capsules.append(prj)
@@ -61,11 +60,13 @@ class legoHDL:
                     key = line[:m]
                     val = line[m+1:len(line)-1]
                     self.registry[key] = val
-            # if only local, keep registry in sync with all available folders in package dir
-            for prj in list(self.registry.keys()):
-                if not prj in capsules:
-                    self.registry.pop(prj, None)
-                    msg = 'Removes '+prj+' from the database.'
+            
+            if(not caps.Capsule.linkedRemote()):
+                # if only local, keep registry in sync with all available folders in package dir
+                for prj in list(self.registry.keys()):
+                    if not prj in capsules:
+                        self.registry.pop(prj, None)
+                        msg = 'Removes '+prj+' from the database.'
             
             for c in capsules:
                 if not c in list(self.registry.keys()):
@@ -75,19 +76,19 @@ class legoHDL:
 
          
         if(cap != None and rm == True): #looking to remove a value from the registry
-            self.registry.pop(cap.getName(), None)
-            msg = 'Removes '+cap.getName()+' from the database.'
+            self.registry.pop(cap.getTitle(), None)
+            msg = 'Removes '+cap.getTitle()+' from the database.'
 
         elif(cap != None): #looking to write a value to registry
-            if(cap.getName() in self.registry and (self.registry[cap.getName()] == cap.getVersion() \
+            if(cap.getTitle() in self.registry and (self.registry[cap.getTitle()] == cap.getVersion() \
                 or (cap.getVersion() == zero))):
                 return
             print('Syncing with registry...')
-            self.registry[cap.getName()] = cap.getVersion() if cap.getVersion() != '0.0.0' else ''
-            if(self.registry[cap.getName()] == ''):
-                msg = 'Introduces '+cap.getName() +' to the database.'
+            self.registry[cap.getTitle()] = cap.getVersion() if cap.getVersion() != '0.0.0' else ''
+            if(self.registry[cap.getTitle()] == ''):
+                msg = 'Introduces '+ cap.getTitle() +' to the database.'
             else:
-                msg = 'Updates '+cap.getName() +' version to '+cap.getVersion()+'.'
+                msg = 'Updates '+ cap.getTitle() +' version to ' + cap.getVersion()+'.'
 
         if(msg != ''):
             print(msg)
@@ -107,7 +108,8 @@ class legoHDL:
 
     def fetchVersion(self, cap, remote=True):
         self.syncRegistry()
-        ver = self.registry[cap.getName()]
+        print(self.registry)
+        ver = self.registry[cap.getTitle()]
         if(not remote):
             ver = cap.getVersion()
         if(ver == None):
@@ -133,17 +135,35 @@ class legoHDL:
         pass
     
     #to-do: REWORK INSTALL FUNCTION
-    def install(self, package, options):
-        #verify there is an existing module under this name
-        if(not os.path.isdir(self.findPath(package))):
-            print("ERROR- No module exists under the name \"",package,"\".",sep='')
+    def install(self, pkg, options):
+        if(not caps.Capsule.linkedRemote()):
+            print("ERROR- No remote link configured")
             return
         
-        if(not os.path.isdir(self.findPath(self.pkgName, False, 'derives'))):
-            os.mkdir('libraries')
+        self.syncRegistry()
+        #verify there is an existing module under this name
+        if (self.registry.count(pkg) <= 0):
+            print("ERROR- No module exists under the name \"",pkg,"\".",sep='')
+            return  
+
+        #perform install -> install will grab repo and put into cache, and then symlink src files to
+        #lib folder along with creating a pkg vhd file
+
+        cp = caps.Capsule(pkg)
 
         #checkout latest version number
-        version = self.fetchVersion(package)
+        version = self.fetchVersion(cp, True)
+        if(version == '0.0.0'):
+            print("ERROR- There are no available versions for this module! Cannot install.")
+
+        #clone to cache
+        cp.cache(self.hidden)
+        #create folder in library
+        os.makedirs(self.hidden+"lib/"+cp.getLib())
+        
+        cp.install(options)
+
+        return
         
         if(version == ''):
             print("ERROR- There are no available versions for this module! Cannot install.")
@@ -154,14 +174,14 @@ class legoHDL:
                 version = opt
             pass
 
-        print("\nInstalling", package, "version:",version,"\b...\n")
+        print("\nInstalling", pkg, "version:",version,"\b...\n")
 
         #formulate commands
         #suggestion: pull down from remote repo before doing checkouts
-        cmd = "cd "+self.remote+package+"; git checkout "+version+" -q;" #-q options silences git output
+        cmd = "cd "+self.remote+pkg+"; git checkout "+version+" -q;" #-q options silences git output
         error = os.system(cmd)
         if(error != 256):
-            cmd = "cd "+self.remote+package+\
+            cmd = "cd "+self.remote+pkg+\
             "; cp ./design/* "+self.projectPath+"/libraries/; git checkout - -q"
             os.system(cmd)
         else:
@@ -171,7 +191,7 @@ class legoHDL:
         #update metadata to list module under this project's dependency and compatible version
         self.metadata['derives'][package] = version
         
-        print("Successfully installed ", package, " [",version,"] to the current project.",sep='')
+        print("Successfully installed ", pkg, " [",version,"] to the current project.",sep='')
         pass
 
     def download(self, cap):
@@ -261,12 +281,12 @@ class legoHDL:
                 downloadedList[pkg] = True
             else:
                 downloadedList[pkg] = False
-
-        if(options.count('local') or self.remote == None):
+        print(catalog)
+        if(options.count('local') or not caps.Capsule.linkedRemote()):
             catalog = local_catalog
         if(options.count('alpha')):
             catalog = sorted(catalog)
-        
+        print(catalog)
         print("\nList of available modules:")
         print("\tModule\t\t\tlocal\t\tversion")
         print("-"*80)
@@ -282,7 +302,7 @@ class legoHDL:
                 if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
                     info = '(update)-> '+ver
                     ver = loc_ver
-            print("\t",'{:<24}'.format(pkg),'{:<14}'.format(isDownloaded),'{:<10}'.format(ver),info)
+            print("\t",'{:<24}'.format('.'+pkg),'{:<14}'.format(isDownloaded),'{:<10}'.format(ver),info)
         print()
         pass
 
@@ -316,21 +336,6 @@ class legoHDL:
         #delete the module remotely?
         pass
 
-        #c.metadata['summary'] = description
-        #TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
-        #installPkg = list()
-        #if 'i' in options:
-        #    for opt in options[1:]:
-        #        if(opt == ','):
-        #            self.install(installPkg[0], installPkg[1:])
-        #            installPkg.clear()
-        #        else:
-        #            installPkg.append(opt)
-        #    if(len(installPkg)): #perform last install
-        #        self.install(installPkg[0], installPkg[1:])
-
-        #add and commit package name to registry repo (pass in capsule obj)
-
     def parse(self):
         #set class capsule variable for user settings
         caps.Capsule.settings = self.settings
@@ -349,28 +354,31 @@ class legoHDL:
 
         #store args accordingly from command-line
         for i, arg in enumerate(sys.argv):
-            if(i == 1):
+            if(i == 0):
+                continue
+            elif(i == 1):
                 command = arg
-            elif(i > 1):
-                if(i == 2 and arg[0] != '-'):
-                    package = arg
-                if(arg[0] == '-'): #parse any options
-                    options.append(arg[1:])
-                elif(len(options) and options.count('i') > 0):
-                    options.append(arg)
-                else:
-                    pass
+            elif(arg[0] == '-'):
+                options.append(arg[1:])
+            elif(package == ''):
+                package = arg
+            else:
+                print("ERROR- Cannot parse input!")
+                return
 
+        for x in options:
+            if(x[0] == ':'):
+                description = x[1:]
+                break
 
-        description = package
         package = package.replace("-", "_")
         self.capsulePKG = caps.Capsule(package)
         
         #branching through possible commands
-        if(command == "install" and self.capsuleCWD.isValid()):
+        if(command == "install"):
             self.install(package, options) #TO-DO
             pass
-        elif(command == "uninstall" and self.capsuleCWD.isValid()):
+        elif(command == "uninstall"):
             self.uninstall(package, options) #TO-DO
             pass
         elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
@@ -395,6 +403,7 @@ class legoHDL:
         elif(command == "summ" and self.capsuleCWD.isValid()):
             self.capsuleCWD.getMeta()['summary'] = description
             self.capsuleCWD.pushYML("Updates project summary")
+            self.capsuleCWD.scanDependencies()
             pass
         elif(command == 'del'):
             self.cleanup(self.capsulePKG)
@@ -417,29 +426,33 @@ class legoHDL:
             self.setSetting(options, package)
             pass
         elif(command == "help" or command == ''):
+            w = str(24)
             print('Usage: \
-            \n\tlegohdl <command> [options]\
+            \n\tlegohdl <command> <package> [options]\
             \n')
-            print("Commands:\
-            \n\tinstall <package> [-v0.0.0]\n\t\t-fetch package from the code base to be available in current project\
-            \n\n\tuninstall <package>\n\t\t-remove package from current project along with all dependency packages\
-            \n\n\tdownload <package> [-o]\n\t\t-pull package from remote code base for further development\
-            \n\n\tupload <-v0.0.0 | -maj | -min | -fix>\n\t\t-release the next new version of package\
-            \n\n\tupdate <package> [-all]\n\t\t-update developed package to be to the latest version\
-            \n\n\tlist [-alpha -local]\n\t\t-print list of all packages available from code base\
-            \n\n\topen <package> \n\t\t-opens the package with the set text-editor\
-            \n\n\tdel <package> \n\t\t-deletes the package from the local code base\
-            \n\n\tconvert <package> \n\t\t-converts the current directory into a valid package format\
-            \n\n\tsearch <package> [-local]\n\t\t-search remote (default) or local code base for specified package\
-            \n\n\tshow <package> [-v0.0.0]\n\t\t-provide further detail into a specified package\
-            \n\n\tports <package> [-v0.0.0]\n\t\t-print ports list of specified package\
-            \n\n\tsumm \"description\"\n\t\t-add description to current project\
-            \n\n\tnew <package> [-\"description\" -o -i <package> [-v0.0.0] , <package> [-v0.0.0] , ...]\n\t\t-create a standard empty package based on a template and pushes to remote code base\
-            \n\n\tconfig <value/path> [-local | -remote | -editor | -author]\n\t\t-adjust package manager settings\
-            \n\n\ttemplate\n\t\t-open the template in the configured text-editor to make custom configuration\
-            \n")
-            print("Options:\
+            print("Commands:")
+            def formatHelp(cmd, des):
+                print('{:<60}'.format(cmd),des)
+                pass
+            formatHelp("install <package> [-v0.0.0]","fetch package from the code base to be available in current project")
+            formatHelp("uninstall <package>","remove package from current project along with all dependency packages")
+            formatHelp("download <package> [-o]","pull package from remote code base for further development")
+            formatHelp("upload [-v0.0.0 | -maj | -min | -fix]","release the next new version of package")
+            formatHelp("update <package> [-all]","update developed package to be to the latest version")
+            formatHelp("list [-alpha -local]","print list of all packages available from code base")
+            formatHelp("open <package>","opens the package with the set text-editor")
+            formatHelp("del <package>","deletes the package from the local code base")
+            formatHelp("search <package> [-local]","search remote (default) or local code base for specified package")
+            formatHelp("convert <package>","converts the current directory into a valid package format")
+            formatHelp("show <package> [-v0.0.0]","provide further detail into a specified package")
+            formatHelp("ports <package> [-v0.0.0]","print ports list of specified package")
+            formatHelp("summ [-:\"description\"]","add description to current project")
+            formatHelp("new <library.package> [-\"description\" -o]","create a standard empty package based on a template and pushes to remote code base")
+            formatHelp("config <value/path> [-local | -remote | -editor | -author]","adjust package manager settings")
+            formatHelp("template","open the template in the configured text-editor to make custom configuration")
+            print("\nOptions:\
             \n\t-v0.0.0\t\tspecify package version (insert values replacing 0's)\
+            \n\t-:\" \"\t\tproject summary (insert between quotes)\
             \n\t-i\t\tset installation flag to install package(s) on project creation\
             \n\t-alpha\t\talphabetical order\
             \n\t-o\t\topen the project\
