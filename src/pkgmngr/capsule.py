@@ -86,7 +86,11 @@ class Capsule:
         pass
 
     def clone(self):
-        self.__repo = git.Git(self.__localPath).clone(self.__remoteURL)
+        #grab library level path
+        n = self.__localPath.rfind(self.getName())
+        libPath = self.__localPath[:n]
+        os.makedirs(libPath, exist_ok=True)
+        self.__repo = git.Git(libPath).clone(self.__remoteURL)
 
     def getVersion(self):
         return self.getMeta('version')
@@ -158,6 +162,10 @@ class Capsule:
             self.__metadata['integrates'] = dict()
         pass
 
+    def getID(self):
+        return self.getMeta("id")
+
+
     def create(self):
         print('Initializing new project')
 
@@ -194,7 +202,9 @@ class Capsule:
         if(self.linkedRemote()):
             print('Generating new remote repository...')
             # !!! set it up to track
-            self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
+            print(str(self.__repo.head.reference))
+            self.__repo.git.push("-u","origin",str(self.__repo.head.reference))
+            #self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
         else:
             print('No remote code base attached to local repository')
         pass
@@ -210,17 +220,24 @@ class Capsule:
                     cw.set("url", self.__remoteURL)
                 #now set it up to track
                 # !!!
-
-            self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
+            self.__repo.remotes.origin.push("--set-upstream origin "+self.__repo.head.reference)
+            #self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
         pass
+
+    def pushRemote(self):
+        self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
+        self.__repo.remotes.origin.push("--tags")
 
     def getName(self):
         return self.__name
 
     def getLib(self):
-        if(self.getMeta("library") == None):
-            return ''
-        return self.getMeta("library")
+        try:
+            if(self.getMeta("library") == None):
+                return ''
+            return self.getMeta("library")
+        except:
+            return self.__lib
 
     def getMeta(self, key=None):
         if(key == None):
@@ -229,7 +246,7 @@ class Capsule:
             return self.__metadata[key]
 
     def pull(self):
-        self.__repo.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
+        self.__repo.remotes.origin.pull()
 
     def pushYML(self, msg):
         self.save()
@@ -237,7 +254,8 @@ class Capsule:
         
         self.__repo.index.commit(msg)
         if(self.linkedRemote()):
-            self.__repo.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
+            self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
+            #self.__repo.remotes.origin.push()
 
     #return true if the requested project folder is a valid capsule package
     def isValid(self):

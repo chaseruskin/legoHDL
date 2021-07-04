@@ -133,20 +133,20 @@ class legoHDL:
         pass
 
     def download(self, cap):
-
         if(not cap.linkedRemote()):
             print('No remote code base configured to download modules')
             return
 
-        loc_catalog = os.listdir(self.local)
+        iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
 
-        if cap.getName() in self.registry:
-            if cap.getName() in loc_catalog: #just give it an update!
-                cap.pull()
-            else: #oh man, go grab the whole thing!
-                cap.clone()
-        else:
+        if(iden == -1):
             print('ERROR- Package \''+cap.getName()+'\' does not exist in remote storage.')
+            return
+
+        if iden in self.db.getCurPrjs().keys(): #just give it an update!
+            cap.pull()
+        else: #oh man, go grab the whole thing!
+            cap.clone()
         pass
 
     def upload(self, cap, options=None):
@@ -161,14 +161,14 @@ class legoHDL:
             print(ver)
 
         cap.release(ver, options)        
-
-        if not cap.getName() in self.registry.keys():
+        print(cap.getVersion())
+        if not cap.getID() in self.db.getRemotePrjs().keys():
             print("Uploading a new package to remote storage...")
             #to-do: implement git python code for said commands
             #cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/chase800/"+self.pkgName+".git master"  
         elif caps.Capsule.linkedRemote():
             print("Updating remote package contents...")
-            cap.__repo.remotes.origin.push()
+            cap.pushRemote()
         pass
 
     def setSetting(self, options, choice):
@@ -206,6 +206,10 @@ class legoHDL:
         pass
 
     def cleanup(self, cap):
+        iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
+        print(iden)
+        cap = caps.Capsule(rp=rep)
+
         if(not cap.isValid()):
             print('No module '+cap.getName()+' exists locally')
             return
@@ -226,7 +230,8 @@ class legoHDL:
             # (if there is a remote then the project still lives on, can be "redownloaded") 
         #delete locally
         try:
-            shutil.rmtree(self.local+cap.getName())
+            shutil.rmtree(rep.local_path)
+            print('Deleted '+cap.getName()+' from local workspace')
         except:
             print('No module '+cap.getName()+' exists locally')
             return
@@ -235,14 +240,27 @@ class legoHDL:
         pass
 
     def parse(self):
-
+        #iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
         #check if we are in a project directory (necessary to run a majority of commands)
         pkgPath = os.getcwd()
+        print(pkgPath)
         lastSlash = pkgPath.rfind('/') #determine project's name to know the YAML to open
         pkgCWD = pkgPath[lastSlash+1:]
         self.capsuleCWD = caps.Capsule(pkgCWD)
+        #is there a .yaml here? if so, grab the id and then load the project from the repo
+        if(os.path.isfile(pkgPath+'/.'+pkgCWD+".yml")):
+            with open(pkgPath+'/.'+pkgCWD+".yml", 'r') as f:
+                tmp = yaml.load(f, Loader=yaml.FullLoader)
+                f.close()
+                pass
+            if tmp['id'] in self.db.getCurPrjs().keys():
+                self.capsuleCWD = caps.Capsule(rp=self.db.getCurPrjs()[tmp['id']])
+            pass
+
         if(not self.capsuleCWD.isValid()):
             print("NOT A CAPSULE DIRECTORY")
+        else:
+            print("VALID CAPSULE DIRECTORY")
         
         command = package = description = ""
         options = []
@@ -298,6 +316,7 @@ class legoHDL:
                 self.capsulePKG.load()
             pass
         elif(command == "upload" and self.capsuleCWD.isValid()):
+            print("UPLOADING")
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
             self.upload(self.capsuleCWD, options=options)

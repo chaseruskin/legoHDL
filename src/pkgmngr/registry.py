@@ -184,6 +184,21 @@ class Registry:
                     self.__cur_reg[int(tmp['id'])] = repo.Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
         pass
 
+    def findPrj(self, lib, name):
+        for key,r in self.getLocalPrjs().items(): #LOCAL = ALL, #REMOTE = REMOTE, #CUR = ONLY LOCAL
+            if(r.library == lib and r.name == name):
+                return key,r
+        return -1,None
+
+    def getCurPrjs(self):
+        return self.__cur_reg
+
+    def getRemotePrjs(self):
+        return self.__remote_reg
+
+    def getLocalPrjs(self):
+        return self.__local_reg
+
     def assignRandomID(self):
         id = random.randint(10000000, 99999999)
         while id in self.__local_reg.keys():
