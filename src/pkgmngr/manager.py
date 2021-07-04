@@ -27,9 +27,9 @@ class legoHDL:
         
         #defines path to dir of remote code base
         self.remote = self.settings['remote']
-        remote_reg = reg.Registry(self.remote)
-        remote_reg.fetch()
-        exit()
+        
+        self.db = reg.Registry(self.remote)
+        self.db.fetch()
         #self.remote = None #testing allowing option to not connect to a remote!
         #defines path to dir of local code base
         self.local = os.path.expanduser(self.settings['local'])+"/"
@@ -250,6 +250,9 @@ class legoHDL:
             print("ERROR- Invalid syntax; could not adjust setting")
             return
 
+        if(options[0] == 'gl-token' or options[0] == 'gh-token'):
+            self.db.encrypt(choice, options[0])
+
         if(not options[0] in self.settings.keys()):
             print("ERROR- Invalid setting")
             return
@@ -272,6 +275,8 @@ class legoHDL:
             pass
 
     def list(self, options):
+        self.db.listCaps()
+        return
         self.syncRegistry() 
         catalog = self.registry
 
@@ -465,10 +470,12 @@ class legoHDL:
             \n\t-alpha\t\talphabetical order\
             \n\t-o\t\topen the project\
             \n\t-d\t\tremoves the released package from your local codebase\
-            \n\t-local\t\tidentify local path setting\
-            \n\t-remote\t\tidentify remote path setting\
-            \n\t-editor\t\tidentify text-editor setting\
-            \n\t-author\t\tidentify author setting\
+            \n\t-local\t\tset local path setting\
+            \n\t-remote\t\tset remote path setting\
+            \n\t-editor\t\tset text-editor setting\
+            \n\t-author\t\tset author setting\
+            \n\t-gl-token\t\tset gitlab access token\
+            \n\t-gh-token\t\tset github access token\
             \n\t-maj\t\trelease as next major update (^.0.0)\
             \n\t-min\t\trelease as next minor update (-.^.0)\
             \n\t-fix\t\trelease as next patch update (-.-.^)\
