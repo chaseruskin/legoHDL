@@ -25,12 +25,20 @@ class legoHDL:
         
         self.registry = None #list of all available modules in remote
         
+        # !!!
+        self.settings['remote'] = None #testing allowing option to not connect to a remote!
         #defines path to dir of remote code base
         self.remote = self.settings['remote']
+
+        #set class capsule variable for user settings
+        caps.Capsule.settings = self.settings
+        caps.Capsule.pkgmngPath = self.pkgmngPath
         
         self.db = reg.Registry(self.remote)
-        self.db.fetch()
-        #self.remote = None #testing allowing option to not connect to a remote!
+
+        if(caps.Capsule.linkedRemote()): #fetch remote servers
+            self.db.fetch()
+        
         #defines path to dir of local code base
         self.local = os.path.expanduser(self.settings['local'])+"/"
         self.hidden = os.path.expanduser("~/.legoHDL/") #path to registry and cache
@@ -112,18 +120,6 @@ class legoHDL:
                 reg.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
         pass
 
-
-    def fetchVersion(self, cap, remote=True):
-        self.syncRegistry()
-        print(self.registry)
-        ver = self.registry[cap.getTitle()]
-        if(not remote):
-            ver = cap.getVersion()
-        if(ver == None):
-            return ''
-        else:
-            return ver
-
     def uninstall(self, package, options):
         #does this module exist in this project's scope?
         if not package in self.metadata['derives']:
@@ -159,7 +155,7 @@ class legoHDL:
         cp = caps.Capsule(pkg)
 
         #checkout latest version number
-        version = self.fetchVersion(cp, True)
+        version = '0.0.0'
         if(version == '0.0.0'):
             print("ERROR- There are no available versions for this module! Cannot install.")
 
@@ -275,46 +271,8 @@ class legoHDL:
             pass
 
     def list(self, options):
-        self.db.listCaps()
-        return
-        self.syncRegistry() 
-        catalog = self.registry
-
-        tmp = list(os.listdir(self.local))
-        local_catalog = list()
-        for d in tmp:
-            if(self.isValidPkg(d)):
-                local_catalog.append(d)
-
-        downloadedList = dict()
-        
-        for pkg in catalog:
-            if(pkg in local_catalog):
-                downloadedList[pkg] = True
-            else:
-                downloadedList[pkg] = False
-        print(catalog)
-        if(options.count('local') or not caps.Capsule.linkedRemote()):
-            catalog = local_catalog
-        if(options.count('alpha')):
-            catalog = sorted(catalog)
-        print(catalog)
-        print("\nList of available modules:")
-        print("\tModule\t\t\tlocal\t\tversion")
-        print("-"*80)
-        for pkg in catalog:
-            cp = caps.Capsule(pkg)
-            isDownloaded = '-'
-            info = ''
-            ver = self.fetchVersion(cp, True)
-            if (downloadedList[pkg]):
-                isDownloaded = 'y'
-                loc_ver = ''
-                loc_ver = self.fetchVersion(cp, False)
-                if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
-                    info = '(update)-> '+ver
-                    ver = loc_ver
-            print("\t",'{:<24}'.format('.'+pkg),'{:<14}'.format(isDownloaded),'{:<10}'.format(ver),info)
+        self.db.findProjectsLocal(self.local)
+        self.db.listCaps(options)
         print()
         pass
 
@@ -349,9 +307,6 @@ class legoHDL:
         pass
 
     def parse(self):
-        #set class capsule variable for user settings
-        caps.Capsule.settings = self.settings
-        caps.Capsule.pkgmngPath = self.pkgmngPath
 
         #check if we are in a project directory (necessary to run a majority of commands)
         pkgPath = os.getcwd()
@@ -394,8 +349,23 @@ class legoHDL:
             self.uninstall(package, options) #TO-DO
             pass
         elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
+            if caps.Capsule.linkedRemote():
+                i = package.find('.')
+                lib = package[:i]
+                name = package[i+1:]
+                if(len(lib) > 0 and caps.Capsule.linkedRemote()): #try to make new subgroup if DNE
+                    self.db.createSubgroup(lib, self.db.getGroup())
+
             self.capsulePKG = caps.Capsule(package, new=True)
-            self.syncRegistry(self.capsulePKG)
+            
+            if caps.Capsule.linkedRemote():
+                #now fetch from db to grab ID
+                self.capsulePKG.saveID(self.db.fetchProject(lib,name)['id'])
+            else:
+                #assign tmp local id
+                self.capsulePKG.saveID(self.db.assignRandomID())
+
+            #self.syncRegistry(self.capsulePKG)
             if(options.count("o") > 0):
                 self.capsulePKG.load()
             pass

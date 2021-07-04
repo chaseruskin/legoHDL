@@ -7,10 +7,12 @@ import requests
 import json
 from bs4 import BeautifulSoup
 import os
+from collections import OrderedDict
 try:
     from pkgmngr import capsule as caps
 except:
     import capsule as caps
+
 
 class Repo:
     def __init__(self, l_a, lib, name, l_v, g_url, m_b='master'):
@@ -23,43 +25,13 @@ class Repo:
         self.git_url = g_url
     pass
 
+
 class Registry:
     class Mode(Enum):
         GITLAB = 1,
         GITHUB = 2,
-        OTHER = 3
-        pass
-
-    def listCaps(self):
-        print("\nList of available modules:")
-        print("\tModule\t\t    local\t    version")
-        print("-"*80)
-        for key,repo in self.__remote_reg.items():
-            hdr = ''
-            if(repo.library != ''):
-                hdr = repo.library+'.'
-            title = hdr+repo.name
-        
-            cp = caps.Capsule(repo.name)
-            isDownloaded = '-'
-            info = ''
-            ver = repo.last_version
-            if (cp.isValid()):
-                isDownloaded = 'y'
-                loc_ver = ''
-                loc_ver = self.fetchVersion(cp, False)
-                if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
-                    info = '(update)-> '+ver
-                    ver = loc_ver
-            print("  ",'{:<26}'.format(title),'{:<14}'.format(isDownloaded),'{:<10}'.format(ver),info)
-        pass
-
-    def parseURL(self, website):
-        i =  self.__url.find(website)
-        i_2 = (self.__url[i:]).find('/')
-
-        self.__tail_url = self.__url[i+i_2:]
-        self.__base_url = self.__url[:i+i_2]
+        LOCAL = 3,
+        OTHER = 4
         pass
 
     def __init__(self, url):
@@ -77,7 +49,9 @@ class Registry:
         print(url)
         #determine what remote website is being used
         self.__mode = None
-        if(self.__url.count('gitlab') > 0):
+        if(not caps.Capsule.linkedRemote()):
+            self.__mode = self.Mode.LOCAL
+        elif(self.__url.count('gitlab') > 0):
             self.__mode = self.Mode.GITLAB
             self.parseURL('gitlab')
         elif(self.__url.count('github') > 0):
@@ -101,8 +75,50 @@ class Registry:
                 at = line.find('@')
                 iden = line[:spce]
                 self.__local_reg[int(iden)] = Repo(l_a=line[Rspce+1:spk], lib=line[spce+1:dot], g_url=line[at+1:], name=line[dot+1:eq], l_v=line[eq+1:Rspce], m_b=line[spk+1:at])
-                #print(self.__local_reg[int(iden)].last_activity)
             file.close()
+
+    def listCaps(self, options):
+        reg = self.__remote_reg
+        sorted_reg = OrderedDict()
+        if(caps.Capsule.linkedRemote()):
+            reg = self.__local_reg
+        if(options.count('alpha')):
+            for key,repo in reg.items():
+                sorted_reg[repo.library+repo.name] = repo
+            reg = sorted_reg
+
+        print("\nList of available modules:")
+        print("\tModule\t\t    local\t    version")
+        print("-"*80)
+        for key,repo in reg.items():
+            hdr = ''
+            if(repo.library != ''):
+                hdr = repo.library+'.'
+            title = hdr+repo.name
+        
+            cp = caps.Capsule(repo.name)
+            isDownloaded = '-'
+            info = ''
+            ver = repo.last_version
+            if (cp.isValid()):
+                isDownloaded = 'y'
+                loc_ver = ''
+                loc_ver = cp.getVersion()
+                if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
+                    info = '(update)-> '+ver
+                    ver = loc_ver
+            
+            if((options.count('local') and cp.isValid()) or not options.count('local')):
+                print("  ",'{:<26}'.format(title),'{:<14}'.format(isDownloaded),'{:<10}'.format(ver),info)
+        pass
+
+    def parseURL(self, website):
+        i =  self.__url.find(website)
+        i_2 = (self.__url[i:]).find('/')
+
+        self.__tail_url = self.__url[i+i_2:]
+        self.__base_url = self.__url[:i+i_2]
+        pass
 
     def localSync(self):
         for key,repo in self.__remote_reg.items():
@@ -116,8 +132,37 @@ class Registry:
             file.close()
         pass
 
+    def findProjectsLocal(self, path):
+        branches = list(os.listdir(path))
+        for leaf in branches:
+            if(os.path.isdir(path+leaf) and leaf[0] != '.'):
+                    self.findProjectsLocal(path+leaf+'/')
+            if(leaf.count(".yml") > 0):
+                print("valid project!")  
+                l = path.rfind('/')
+                print(path[l+1:])
+        pass
 
-    def findProjects(self):
+    def assignRandomID(self):
+        id = random.randint(0, 99999999)
+        while id in self.__local_reg.keys():
+            id = random.randint(0, 99999999)
+        return id
+
+    def createSubgroup(self, name, parent):
+        link = self.__base_url+"/api/v4/groups/?name="+name+"&path="+name+"&visibility=private&parent_id="+str(parent['id'])
+        tk = self.decrypt('gl-token')
+        z = requests.post(link, headers={'PRIVATE-TOKEN': tk})
+        print("status: ",z)
+
+    def getGroup(self, web_path_ext=''):
+        link = self.__base_url+"/api/v4/groups/"+self.__tail_url+"/"+web_path_ext
+        tk = self.decrypt('gl-token')
+        z = requests.get(link, headers={'PRIVATE-TOKEN': tk})
+        print("status: ",z)
+        return json.loads(z.text)
+
+    def findProjectsRemote(self):
         #using only requests module to print out project list
         link = self.__base_url+"/api/v4/groups/"+self.__tail_url+"/projects?include_subgroups=True&simple=True"
         print(link)
@@ -127,8 +172,20 @@ class Registry:
         print("status: ",z)
         return json.loads(z.text)
 
+    def fetchProject(self, library, name):
+        plist = self.findProjectsRemote()
+        for prj in plist:
+            lib = prj['name_with_namespace']
+            last_i = lib.rfind('/')
+            first_i = (lib[:last_i-1]).rfind('/')
+            lib = lib[first_i+2:last_i-1]
+            if(first_i == -1):
+                lib = ''
+            if(library == lib and name == prj['name']):
+                return prj
+
     def fetch(self):
-        projectList = self.findProjects()
+        projectList = self.findProjectsRemote()
         for x in projectList:
             #print(x['name'])
             #print(x['name_with_namespace'])
@@ -138,16 +195,12 @@ class Registry:
             lib = lib[first_i+2:last_i-1]
             if(first_i == -1):
                 lib = ''
-            #print(lib)
-            #print(x['web_url'])
-            #print(x['id'])
-            #check if there has been new activity
-            #print(x['last_activity_at'])
-            #print(x['default_branch'])
+            #print(lib)#print(x['web_url'])#print(x['id'])#check if there has been new activity#print(x['last_activity_at'])#print(x['default_branch'])
             #local registry already has a tab on this remote repo
             last_ver = '0.0.0'
             if((x['id'] in self.__local_reg)):
                 last_ver = self.__local_reg[x['id']].last_version
+                print(x['last_activity_at'])
                 if(x['last_activity_at'] > self.__local_reg[x['id']].last_activity):
                     #fetch version number to see if there is an update available
                     last_ver = self.grabTags(x)

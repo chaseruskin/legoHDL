@@ -17,12 +17,12 @@ class Capsule:
         
         self.__metadata = dict()
         self.__remoteURL = None
-        self.__localPath = Capsule.settings['local']+"/"+self.__name+'/'
+        self.__localPath = Capsule.settings['local']+"/"+self.__lib+"/"+self.__name+'/'
         self.__repo = None
 
         #configure remote url
         if(self.linkedRemote()):
-            self.__remoteURL = self.settings['remote']+'/'+self.__name+".git"
+            self.__remoteURL = self.settings['remote']+'/'+self.__lib+"/"+self.__name+".git"
 
         if(self.isValid()): #this package is already existing locally
             self.__repo = git.Repo(self.__localPath)
@@ -40,6 +40,11 @@ class Capsule:
                 except:
                     pass
             self.create() #create the repo and directory structure
+        pass
+
+    def saveID(self, id):
+        self.__metadata['id'] = id
+        self.pushYML("Adds ID to YML file")
         pass
 
     def cache(self, cache_dir):
@@ -135,7 +140,7 @@ class Capsule:
         print('Initializing new project')
         shutil.copytree(self.pkgmngPath+"template/", self.__localPath)
         self.__repo = git.Repo.init(self.__localPath)
-        
+    
         if(self.linkedRemote()):
             self.__repo.create_remote('origin', self.__remoteURL) #attach to remote code base
             
@@ -191,6 +196,7 @@ class Capsule:
     def pushYML(self, msg):
         self.save()
         self.__repo.index.add("."+self.__name+".yml")
+        
         self.__repo.index.commit(msg)
         if(self.linkedRemote()):
             self.__repo.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
