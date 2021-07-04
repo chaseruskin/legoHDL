@@ -17,7 +17,11 @@ class Capsule:
         self.__name = rp.name
         self.__lib = rp.library
         self.__localPath = rp.local_path
-        self.__repo = git.Repo(self.__localPath)
+        try:
+            self.__repo = git.Repo(self.__localPath)
+        except:
+            #repo DNE
+            pass
         if(self.linkedRemote()):
             self.__remoteURL = self.settings['remote']+'/'+self.__lib+"/"+self.__name+".git"
         if(self.isValid()):
@@ -102,7 +106,8 @@ class Capsule:
         major = int(self.getVersion()[:first_dot])
         minor = int(self.getVersion()[first_dot+1:last_dot])
         patch = int(self.getVersion()[last_dot+1:])
-        print('last version:',major,minor,patch)
+        print("Uploading ",end='')
+        print("v"+str(major),minor,patch,sep='.',end='')
         if(ver == ''):
             if(options[0] == "maj"):
                 major += 1
@@ -140,6 +145,7 @@ class Capsule:
             elif(r_major == major and r_minor == minor and r_patch <= patch):
                 return
             ver = 'v'+str(r_major)+'.'+str(r_minor)+'.'+str(r_patch)
+        print(" -> ",end='')
         print(ver)
         if(ver != '' and ver[0] == 'v'):
             self.__metadata['version'] = ver[1:]
@@ -148,6 +154,44 @@ class Capsule:
             self.__repo.index.commit("Release version -> "+self.getVersion())
             self.__repo.create_tag(ver)
         pass
+
+    @classmethod
+    def biggerVer(cls, lver, rver):
+        l1,l2,l3 = cls.sepVer(lver)
+        r1,r2,r3 = cls.sepVer(rver)
+        if(l1 < r1):
+            return rver
+        elif(l1 == r1 and l2 < r2):
+            return rver
+        elif(l1 == r1 and l2 == r2 and l3 <= r3):
+            return rver
+        return lver
+    
+    @classmethod
+    def sepVer(cls, ver):
+        if(ver[0] == 'v'):
+            ver = ver[1:]
+
+        first_dot = ver.find('.')
+        last_dot = ver.rfind('.')
+
+        major = int(ver[:first_dot])
+        minor = int(ver[first_dot+1:last_dot])
+        patch = int(ver[last_dot+1:])
+        try:
+            r_major = int(ver[:first_dot])
+        except:
+            r_major = 0
+        try:
+            r_minor = int(ver[first_dot+1:last_dot])
+        except:
+            r_minor = 0
+        try:
+            r_patch = int(ver[last_dot+1:])
+        except:
+            r_patch = 0
+        return r_major,r_minor,r_patch
+
 
     def loadMeta(self):
         #print("-",self.getName(),'-',end='')
@@ -220,7 +264,7 @@ class Capsule:
                     cw.set("url", self.__remoteURL)
                 #now set it up to track
                 # !!!
-            self.__repo.remotes.origin.push("--set-upstream origin "+self.__repo.head.reference)
+            self.__repo.git.push("-u","origin",str(self.__repo.head.reference))
             #self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
         pass
 

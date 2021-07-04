@@ -30,42 +30,32 @@ hidden_dir=os.path.expanduser("~/."+program_name+"/")
 print('Initializing working directory... '+working_dir)
 os.makedirs(working_dir, exist_ok=True)
 
-
 print('Initializing configuration directory... '+hidden_dir)
 os.makedirs(hidden_dir, exist_ok=True)
 
-
-print('Setting up package registry...')
+print('Setting up package registry... ',end='')
 #check the remote registry if package appears there
-if(not os.path.isdir(hidden_dir+"registry")):
-    try:
-        clone = git.Git(hidden_dir).clone(remote+"/registry.git") #grab if it exists
-        print('Grabbed package registry from remote')
-    except:
-        repo = git.Repo.init(hidden_dir+"registry")
-        open(hidden_dir+"registry/db.txt", 'wb').close()
-        repo.index.add("db.txt")
-        repo.index.commit("Initial commit.")
-        if(remote != None):
-            origin = repo.create_remote('origin', remote+"/registry.git")
-            origin.push(refspec='{}:{}'.format('master', 'master'))
-        print('Initialized package registry')
-        pass
+if(not os.path.isfile(hidden_dir+"registry/db.txt")):
+    os.makedirs(hidden_dir+"registry/", exist_ok=True)
+    open(hidden_dir+"registry/db.txt", 'w').close()
+    print('success')
+    pass
 else:
-    print('Package registry already initialized')
+    print('skipped')
 
-print('Setting up cache folder...')
+print('Setting up cache folder... ',end='')
 os.makedirs(hidden_dir+"cache", exist_ok=True)
-print('Cache folder created')
+print('success')
 
-print('Setting up libraries folder...')
+print('Setting up libraries folder... ',end='')
 os.makedirs(hidden_dir+"lib", exist_ok=True)
-print('Libraries folder created')
+print('success')
 
 path=os.path.realpath(__file__) #note for release: path <- working_dir
 path=path[:path.rfind('/')+1]
 try:
-    shutil.copytree(path, hidden_dir+program_name)
+    pass
+    #shutil.copytree(path, hidden_dir+program_name)
     #shutil.move(path, working_dir) #note for release: use this command
 except:
     pass

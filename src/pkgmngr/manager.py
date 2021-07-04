@@ -23,8 +23,6 @@ class legoHDL:
         with open(self.pkgmngPath+"settings.yml", "r") as file:
             self.settings = yaml.load(file, Loader=yaml.FullLoader)
         
-        self.registry = None #list of all available modules in remote
-        
         # !!! UNCOMMENT LINE BELOW TO DISABLE REMOTE !!!
         #self.settings['remote'] = None #testing allowing option to not connect to a remote!
         #defines path to dir of remote code base
@@ -140,35 +138,45 @@ class legoHDL:
         iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
 
         if(iden == -1):
-            print('ERROR- Package \''+cap.getName()+'\' does not exist in remote storage.')
+            print('ERROR- Package \''+cap.getName()+'\' does not exist in remote')
             return
 
         if iden in self.db.getCurPrjs().keys(): #just give it an update!
+            print("Project already exists in local workspace- pulling from remote... ",end='')
             cap.pull()
+            print("success")
         else: #oh man, go grab the whole thing!
+            print("Cloning from remote... ",end='')
             cap.clone()
+            print("success")
         pass
 
     def upload(self, cap, options=None):
+        err_msg = "ERROR- please flag the next version for release with one of the following args:\n"\
+                    "\t(-v0.0.0 | -maj | -min | -fix)"
         if(len(options) == 0):
-                print("ERROR- please flag the next version for release with one of the following args:\n"\
-                    "\t(-v0.0.0 | -maj | -min | -fix)")
+                print(err_msg)
                 exit()
             
         ver = ''
         if(options[0][0] == 'v'):
             ver = options[0]
-            print(ver)
+        
+        if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == ''):
+            print(err_msg)
+            exit()
 
         cap.release(ver, options)        
-        print(cap.getVersion())
+
         if not cap.getID() in self.db.getRemotePrjs().keys():
             print("Uploading a new package to remote storage...")
             #to-do: implement git python code for said commands
             #cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/chase800/"+self.pkgName+".git master"  
         elif caps.Capsule.linkedRemote():
-            print("Updating remote package contents...")
+            print("Updating remote package contents... ",end='')
             cap.pushRemote()
+            print("success")
+            print(cap.getLib()+"."+cap.getName()+" is now available as version "+cap.getVersion())
         pass
 
     def setSetting(self, options, choice):
@@ -243,7 +251,6 @@ class legoHDL:
         #iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
         #check if we are in a project directory (necessary to run a majority of commands)
         pkgPath = os.getcwd()
-        print(pkgPath)
         lastSlash = pkgPath.rfind('/') #determine project's name to know the YAML to open
         pkgCWD = pkgPath[lastSlash+1:]
         self.capsuleCWD = caps.Capsule(pkgCWD)
@@ -258,9 +265,11 @@ class legoHDL:
             pass
 
         if(not self.capsuleCWD.isValid()):
-            print("NOT A CAPSULE DIRECTORY")
+            #print("NOT A CAPSULE DIRECTORY")
+            pass
         else:
-            print("VALID CAPSULE DIRECTORY")
+            #print("VALID CAPSULE DIRECTORY")
+            pass
         
         command = package = description = ""
         options = []
@@ -300,7 +309,7 @@ class legoHDL:
                 lib = package[:i]
                 name = package[i+1:]
                 if(len(lib) > 0 and caps.Capsule.linkedRemote()): #try to make new subgroup if DNE
-                    self.db.createSubgroup(lib, self.db.getGroup())
+                    self.db.createSubgroup(lib, self.db.accessGitlabAPI())
 
             self.capsulePKG = caps.Capsule(package, new=True)
             
@@ -316,7 +325,6 @@ class legoHDL:
                 self.capsulePKG.load()
             pass
         elif(command == "upload" and self.capsuleCWD.isValid()):
-            print("UPLOADING")
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
             self.upload(self.capsuleCWD, options=options)

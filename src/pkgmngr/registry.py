@@ -24,6 +24,8 @@ class Registry:
         OTHER = 4
         pass
 
+    GL_PRJ_EXT = "/projects?include_subgroups=True&simple=True"
+
     def __init__(self, url):
         self.__url = url
         self.__base_url = url
@@ -37,7 +39,7 @@ class Registry:
 
         self.localLoad()
 
-        print(url)
+        #print(url)
         #determine what remote website is being used
         self.__mode = None
         if(not caps.Capsule.linkedRemote()):
@@ -129,7 +131,9 @@ class Registry:
 
         for key,repo in self.__remote_reg.items():
                 #update information and add to local if not registered
-                lp = self.__local_reg[key].local_path #must preserve local_path identified by localLoad
+                lp = repo.local_path
+                if(key in self.__local_reg.keys()):
+                    lp = self.__local_reg[key].local_path #must preserve local_path identified by localLoad
                 self.__local_reg[key] = repo
                 self.__local_reg[key].local_path = lp
 
@@ -156,7 +160,7 @@ class Registry:
         for key,r  in self.__local_reg.items():
             #create any unestablished libraries
             if(not r.library in subs):
-                self.createSubgroup(r.library, self.getGroup())
+                self.createSubgroup(r.library, self.accessGitlabAPI())
                 subs.append(r.library)
 
             if(not r.name in prjs):
@@ -172,15 +176,12 @@ class Registry:
             if(os.path.isdir(path+leaf) and leaf[0] != '.'):
                     self.findProjectsLocal(path+leaf+'/')
             if(leaf.count(".yml") > 0):
-                #print("valid project!")  
+                #print("valid project!") #print(path[l+1:])
                 l = path.rfind('/')
-                #print(path[l+1:])
                 with open (path+leaf, 'r') as f:
                     tmp = yaml.load(f, Loader=yaml.FullLoader)
                     f.close()
-                    #print(leaf)
-                    #print(tmp['id'])
-                    #print(path)
+                    #print(leaf)#print(tmp['id'])#print(path)
                     self.__cur_reg[int(tmp['id'])] = repo.Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
         pass
 
@@ -200,38 +201,39 @@ class Registry:
         return self.__local_reg
 
     def assignRandomID(self):
-        id = random.randint(10000000, 99999999)
+        MIN_ID = 10000000
+        MAX_ID = 99999999
+        id = random.randint(MIN_ID, MAX_ID)
         while id in self.__local_reg.keys():
-            id = random.randint(10000000, 99999999)
+            id = random.randint(MIN_ID, MAX_ID)
         return id
 
     def createSubgroup(self, name, parent):
+        print("Trying to create remote library "+name+"...",end=' ')
         link = self.__base_url+"/api/v4/groups/?name="+name+"&path="+name+"&visibility=private&parent_id="+str(parent['id'])
         tk = self.decrypt('gl-token')
         z = requests.post(link, headers={'PRIVATE-TOKEN': tk})
-        print("status: ",z)
+        if(z.status_code == 201):
+            print("success")
+        else:
+            print("error")
 
-    def getGroup(self, web_path_ext=''):
-        link = self.__base_url+"/api/v4/groups/"+self.__tail_url+"/"+web_path_ext
+    def accessGitlabAPI(self, api_ext=''):
+        print("Trying to access remote...",end=' ')
+        link = self.__base_url+"/api/v4/groups/"+self.__tail_url+"/"+api_ext
         tk = self.decrypt('gl-token')
         z = requests.get(link, headers={'PRIVATE-TOKEN': tk})
-        print("status: ",z)
-        return json.loads(z.text)
-
-    def findProjectsRemote(self):
-        #using only requests module to print out project list
-        link = self.__base_url+"/api/v4/groups/"+self.__tail_url+"/projects?include_subgroups=True&simple=True"
-        print(link)
-        tk = self.decrypt('gl-token')
-        z = requests.get(link, headers={'PRIVATE-TOKEN': tk})
-        print("status: ",z)
+        if(z.status_code == 200):
+            print("success")
+        else:
+            print("error")
         return json.loads(z.text)
 
     def fetchProject(self, library, name):
-        plist = self.findProjectsRemote()
+        plist = self.accessGitlabAPI(self.GL_PRJ_EXT)
 
-        if('error' in plist):
-            print("ERROR- "+plist['error'])
+        if('error' in plist and plist['error'] == 'invalid_token'):
+            print("ERROR- Please configure an access token for authorization")
             return None
 
         for prj in plist:
@@ -245,11 +247,11 @@ class Registry:
                 return prj
 
     def fetch(self):
-        projectList = self.findProjectsRemote()
+        projectList = self.accessGitlabAPI(self.GL_PRJ_EXT)
 
-        if('error' in projectList):
-            print("ERROR- "+projectList['error'])
-            return
+        if('error' in projectList and projectList['error'] == 'invalid_token'):
+            print("ERROR- Please configure an access token for authorization")
+            return None
         
         for x in projectList:
             #print(x['name']) #print(x['name_with_namespace'])
@@ -264,10 +266,15 @@ class Registry:
             #local registry already has a tab on this remote repo
             if((x['id'] in self.__local_reg)):
                 last_ver = self.__local_reg[x['id']].last_version
-                #print(x['last_activity_at'])
+                #print(x.keys())
+                #print(x['name'],x['last_activity_at'], self.__local_reg[x['id']].last_activity)
                 if(x['last_activity_at'] > self.__local_reg[x['id']].last_activity):
                     #fetch version number to see if there is an update available
                     last_ver = self.grabTags(x)
+                
+                if(x['id'] in self.__cur_reg):
+                    tmp_ver = self.__cur_reg[x['id']].last_version
+                    last_ver = caps.Capsule.biggerVer(tmp_ver,last_ver)
                 pass
             else: #local registry needs all info on this repo
                 last_ver = self.grabTags(x)
@@ -286,7 +293,10 @@ class Registry:
         if(len(tags) == 0):
             return '0.0.0'
         else:
-            return tags[0]['name'][1:]
+            for t in tags:
+                if(t['name'][0] == 'v' and t['name'].count('.') > 1):
+                    return t['name'][1:]
+        return '0.0.0'
 
     def encrypt(self, token, file):
         random.seed()
