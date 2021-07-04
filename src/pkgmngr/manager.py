@@ -234,21 +234,18 @@ class legoHDL:
             if(response.lower() == 'n'):
                 print(cap.getName()+' not deleted')
                 return
-            #update registry if there is no remote 
-            # (if there is a remote then the project still lives on, can be "redownloaded") 
+        # (if there is a remote then the project still lives on, can be "redownloaded") 
         #delete locally
         try:
             shutil.rmtree(rep.local_path)
             print('Deleted '+cap.getName()+' from local workspace')
         except:
             print('No module '+cap.getName()+' exists locally')
-            return
-            
+            return    
         #delete the module remotely?
         pass
 
     def parse(self):
-        #iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
         #check if we are in a project directory (necessary to run a majority of commands)
         pkgPath = os.getcwd()
         lastSlash = pkgPath.rfind('/') #determine project's name to know the YAML to open
@@ -363,31 +360,35 @@ class legoHDL:
             self.setSetting(options, package)
             pass
         elif(command == "help" or command == ''):
-            w = str(24)
-            print("VHDL's package manager")
+            if(package == "new"):
+                print("command help: new")
+                exit()
+            #print("VHDL's package manager")
             print('USAGE: \
-            \n\tlegohdl <command> <package> [options]\
+            \n\tlegohdl <command> [package] [args]\
             \n')
             print("COMMANDS:")
             def formatHelp(cmd, des):
-                print('{:<60}'.format(cmd),des)
+                print('  ','{:<12}'.format(cmd),des)
                 pass
-            formatHelp("install <package> [-v0.0.0]","fetch package from the code base to be available in current project")
-            formatHelp("uninstall <package>","remove package from current project along with all dependency packages")
-            formatHelp("download <package> [-o]","pull package from remote code base for further development")
-            formatHelp("upload [-v0.0.0 | -maj | -min | -fix]","release the next new version of package")
-            formatHelp("update <package> [-all]","update developed package to be to the latest version")
-            formatHelp("list [-alpha -local]","print list of all packages available from code base")
-            formatHelp("open <package>","opens the package with the set text-editor")
-            formatHelp("del <package>","deletes the package from the local code base")
-            formatHelp("search <package> [-local]","search remote (default) or local code base for specified package")
-            formatHelp("convert <package>","converts the current directory into a valid package format")
-            formatHelp("show <package> [-v0.0.0]","provide further detail into a specified package")
-            formatHelp("ports <package> [-v0.0.0]","print ports list of specified package")
-            formatHelp("summ [-:\"description\"]","add description to current project")
-            formatHelp("new <library.package> [-\"description\" -o]","create a standard empty package based on a template and pushes to remote code base")
-            formatHelp("config <value/path> [-local | -remote | -editor | -author]","adjust package manager settings")
-            formatHelp("template","open the template in the configured text-editor to make custom configuration")
+            formatHelp("install","grab package from remote for dependency use")
+            formatHelp("uninstall","remove package from cache")
+            formatHelp("download","grab package from remote for further development")
+            formatHelp("upload","release the next new version of the current package")
+            formatHelp("update","update cached package to be to the latest version")
+            formatHelp("list","print list of all packages available")
+            formatHelp("open","opens the package with the configured text-editor")
+            formatHelp("del","deletes the package from the local workspace")
+            formatHelp("search","search remote or local workspace for specified package")
+            formatHelp("convert","converts the current folder into a valid package format")
+            formatHelp("show","read further detail about a specified package")
+            formatHelp("ports","print ports list of specified package")
+            formatHelp("summ","add description to current project")
+            formatHelp("new","create a templated empty package")
+            formatHelp("config","set package manager settings")
+            formatHelp("template","open the template in the configured text-editor")
+            print("\nType \'legohdl help <command>\' to read more on entered command.")
+            exit()
             print("\nOptions:\
             \n\t-v0.0.0\t\tspecify package version (insert values replacing 0's)\
             \n\t-:\" \"\t\tproject summary (insert between quotes)\
@@ -411,7 +412,7 @@ class legoHDL:
     pass
 
 def main():
-    print('\n---legoHDL package manager---\n')
+    #print('\n---legoHDL package manager---\n')
     legoHDL()
 
 

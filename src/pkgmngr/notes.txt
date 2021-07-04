@@ -100,6 +100,17 @@ that moving forward, any new releases to sub-module, with this info we can chain
 push CI jobs to try to see if upper-module will not break with new changes",
 ...accordingly, it should not break with all minor and patch updates.
 
+_____Known issues:______
+-upon switching from local-only to remote, a new project that was first local will not appear in catalog
+until next command
+-checking activity log means it is not updated every single second
+-uploading and instantly dismissing a project causes the new version to not appear in catalog on next commands
+
+======Roadmap:===========
+-implement cache folder
+-implement install and uninstall commands
+-better formatting for help prompt
+
 #TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
 #installPkg = list()
 #if 'i' in options:
@@ -112,4 +123,23 @@ push CI jobs to try to see if upper-module will not break with new changes",
 #    if(len(installPkg)): #perform last install
 #        self.install(installPkg[0], installPkg[1:])
 #</ideas>
+
+saving for later use of the command structures for in-depth command help
+---
+formatHelp("install <package> [-v0.0.0]","fetch package from the code base to be available in current project")
+formatHelp("uninstall <package>","remove package from current project along with all dependency packages")
+formatHelp("download <package> [-o]","pull package from remote code base for further development")
+formatHelp("upload [-v0.0.0 | -maj | -min | -fix]","release the next new version of package")
+formatHelp("update <package> [-all]","update developed package to be to the latest version")
+formatHelp("list [-alpha -local]","print list of all packages available from code base")
+formatHelp("open <package>","opens the package with the set text-editor")
+formatHelp("del <package>","deletes the package from the local code base")
+formatHelp("search <package> [-local]","search remote (default) or local code base for specified package")
+formatHelp("convert <package>","converts the current directory into a valid package format")
+formatHelp("show <package> [-v0.0.0]","provide further detail into a specified package")
+formatHelp("ports <package> [-v0.0.0]","print ports list of specified package")
+formatHelp("summ [-:\"description\"]","add description to current project")
+formatHelp("new <library.package> [-\"description\" -o]","create a standard empty package based on a template and pushes to remote code base")
+formatHelp("config <value/path> [-local | -remote | -editor | -author]","adjust package manager settings")
+formatHelp("template","open the template in the configured text-editor to make custom configuration")
 
