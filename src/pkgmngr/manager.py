@@ -25,7 +25,7 @@ class legoHDL:
         
         self.registry = None #list of all available modules in remote
         
-        # !!!
+        # !!! UNCOMMENT LINE BELOW TO ACTIVATE REMOTE
         self.settings['remote'] = None #testing allowing option to not connect to a remote!
         #defines path to dir of remote code base
         self.remote = self.settings['remote']
@@ -35,15 +35,18 @@ class legoHDL:
         caps.Capsule.pkgmngPath = self.pkgmngPath
         
         self.db = reg.Registry(self.remote)
-
-        if(caps.Capsule.linkedRemote()): #fetch remote servers
-            self.db.fetch()
+        idList = list()
         
         #defines path to dir of local code base
         self.local = os.path.expanduser(self.settings['local'])+"/"
         self.hidden = os.path.expanduser("~/.legoHDL/") #path to registry and cache
         #defines how to open workspaces
         self.textEditor = self.settings['editor']
+
+        self.db.findProjectsLocal(self.local, idList)
+        if(caps.Capsule.linkedRemote()): #fetch remote servers
+            self.db.fetch()
+        self.db.localSync(idList)
         
         os.environ['VHDL_LS_CONFIG'] = self.hidden+"mapping.toml" #directly works with VHDL_LS
 
@@ -271,7 +274,10 @@ class legoHDL:
             pass
 
     def list(self, options):
-        self.db.findProjectsLocal(self.local)
+        idList = list()
+        self.db.findProjectsLocal(self.local, idList)
+        self.db.localSync(idList)
+        print(idList)
         self.db.listCaps(options)
         print()
         pass

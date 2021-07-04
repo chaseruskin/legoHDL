@@ -5,6 +5,7 @@ from enum import Enum
 import random
 import requests
 import json
+import yaml
 from bs4 import BeautifulSoup
 import os
 from collections import OrderedDict
@@ -23,6 +24,7 @@ class Repo:
         self.m_branch = m_b
         self.downloaded = False
         self.git_url = g_url
+        pass
     pass
 
 
@@ -120,7 +122,17 @@ class Registry:
         self.__base_url = self.__url[:i+i_2]
         pass
 
-    def localSync(self):
+    def localSync(self, idList):
+        oldKeys = self.__local_reg.copy().keys()
+        curKeys = idList
+
+        for k in oldKeys:
+            if(caps.Capsule.linkedRemote()):
+                if not k in curKeys and not k in self.__remote_reg.keys():
+                    del self.__local_reg[k]
+            elif not k in curKeys:
+                del self.__local_reg[k]
+
         for key,repo in self.__remote_reg.items():
                 #update information and add to local if not registered
                 self.__local_reg[key] = repo
@@ -132,15 +144,20 @@ class Registry:
             file.close()
         pass
 
-    def findProjectsLocal(self, path):
+    def findProjectsLocal(self, path, idList):
         branches = list(os.listdir(path))
         for leaf in branches:
             if(os.path.isdir(path+leaf) and leaf[0] != '.'):
-                    self.findProjectsLocal(path+leaf+'/')
+                    self.findProjectsLocal(path+leaf+'/', idList)
             if(leaf.count(".yml") > 0):
                 print("valid project!")  
                 l = path.rfind('/')
                 print(path[l+1:])
+                with open (path+leaf, 'r') as f:
+                    tmp = yaml.load(f, Loader=yaml.FullLoader)
+                    f.close()
+                    print(leaf)
+                    idList.append(tmp['id'])
         pass
 
     def assignRandomID(self):
@@ -174,6 +191,11 @@ class Registry:
 
     def fetchProject(self, library, name):
         plist = self.findProjectsRemote()
+
+        if('error' in plist):
+            print("ERROR- "+plist['error'])
+            return None
+
         for prj in plist:
             lib = prj['name_with_namespace']
             last_i = lib.rfind('/')
@@ -186,9 +208,13 @@ class Registry:
 
     def fetch(self):
         projectList = self.findProjectsRemote()
+
+        if('error' in projectList):
+            print("ERROR- "+projectList['error'])
+            return
+        
         for x in projectList:
-            #print(x['name'])
-            #print(x['name_with_namespace'])
+            #print(x['name']) #print(x['name_with_namespace'])
             lib = x['name_with_namespace']
             last_i = lib.rfind('/')
             first_i = (lib[:last_i-1]).rfind('/')
@@ -233,6 +259,7 @@ class Registry:
                 for x in range(len(secret)):
                     file.write(str(random.randint(0, 1)) + secret[x])
                 pass
+        print("Successfully encrypted access token")
         pass
 
     def decrypt(self, file):
