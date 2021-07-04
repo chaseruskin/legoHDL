@@ -26,10 +26,17 @@ class Capsule:
             self.__remoteURL = self.settings['remote']+'/'+self.__lib+"/"+self.__name+".git"
         if(self.isValid()):
             self.loadMeta()
+        else:
+            #self.__metadata['id'] = key
+            self.__metadata['version'] = rp.last_version
         pass
 
 
     def __init__(self, name='', new=False, rp=None):
+        self.__metadata = dict()
+        self.__repo = None
+        self.__remoteURL = None
+
         if(rp != None):
             self.absorbRepo(rp)
             return
@@ -41,10 +48,7 @@ class Capsule:
             self.__lib = name[:dot]
             self.__name = name[dot+1:]
         
-        self.__metadata = dict()
-        self.__remoteURL = None
         self.__localPath = Capsule.settings['local']+"/"+self.__lib+"/"+self.__name+'/'
-        self.__repo = None
 
         #configure remote url
         if(self.linkedRemote()):
@@ -77,10 +81,6 @@ class Capsule:
         git.Git(cache_dir).clone(self.__remoteURL)
         pass
 
-    def install(self, options):
-
-        pass
-    
     def getTitle(self):
         return self.__lib+'.'+self.__name
 
@@ -352,6 +352,16 @@ class Capsule:
         os.chmod(self.metadataPath(), stat.S_IROTH | stat.S_IRGRP | stat.S_IREAD | stat.S_IRUSR)
         pass
 
+    def install(self, cache_dir):
+        #CMD: git clone (rep.git_url) (location) --branch (rep.last_version) --single-branch
+        try:
+            git.Git(cache_dir).clone(self.__remoteURL,"--branch","v"+self.getVersion(),"--single-branch")
+        except:
+            pass
+            self.__localPath = cache_dir+self.getName()+"/"
+            self.loadMeta()
+        return
+
     def scanDependencies(self):
         vhd_file = glob.glob(self.__localPath+"/**/"+self.getMeta("toplevel"), recursive=True)[0]
         s = vhd_file.rfind('/')
@@ -395,7 +405,7 @@ class Capsule:
                     rolling_entity = False
                     break
             f.close()
-        print(port_txt)
+        return port_txt
         pass
 
     pass

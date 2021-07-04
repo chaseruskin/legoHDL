@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os, sys, shutil
-import yaml
+import yaml, git
 try:
     from pkgmngr import capsule as caps
     from pkgmnger import registry as reg
@@ -49,11 +49,70 @@ class legoHDL:
         pass
 
     #TO-DO: IMPLEMENT
-    def uninstall(self, pkg, opt):
+    def install(self, cap, opt):
+        cache_path = self.hidden+"cache/"
+        lib_path = self.hidden+"lib/"+cap.getLib()+"/"
+        # grab the ID to search for the project
+        iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
+        cap = caps.Capsule(rp=rep) #update info into a capsule obj
+        # clone the repo -> cache
+        if(iden != -1):
+            print(rep.name)
+        self.db.findProjectsLocal(cache_path, cached=True)
+        #does the package already exist in the cache directory?
+        if(iden in self.db.getCachePrjs().keys()):
+            print("Package is already installed.")
+            return
+        #possibly make directory for cached project
+        print("Installing... ",end='')
+        cache_path = cache_path+cap.getLib()+"/"
+        os.makedirs(cache_path, exist_ok=True)
+        #see what the latest version available is and clone from that version unless specified
+        #print(rep.git_url)#print(rep.last_version)
+        cap.install(cache_path)
+        print("success")
+        print("library files path:")
+        #make library grouping
+        os.makedirs(lib_path, exist_ok=True)
+        tmp_pkg = open(self.pkgmngPath+"/template_pkg.vhd", 'r')
+        vhd_pkg = open(lib_path+cap.getName()+"_pkg.vhd", 'w')
+
+        #need to look at toplevel VHD file to transfer correct library uses
+        #search through all library uses and see what are chained dependencies
+        cap.scanDependencies()
+        #write in all library and uses
+        libs = set()
+        for dep in cap.getMeta("derives"):
+            dot = dep.find('.')
+            libline = "library "+dep[:dot]+";\n"
+            if(not libline in libs):
+                vhd_pkg.write(libline)
+                libs.add(libline)
+            vhd_pkg.write("use "+dep+"\n")
+
+        # generate a PKG VHD file -> lib
+        addedCompDec = False
+        for line in tmp_pkg:
+            line = line.replace("template", cap.getName())
+            if not addedCompDec and line.count("package") > 0:
+                addedCompDec = True
+                comp = cap.ports().replace("entity", "component")
+                line = line + "\n" + comp
+                pass
+            vhd_pkg.write(line)
+            print(line,end='')
+        print()
+        vhd_pkg.close()
+        tmp_pkg.close()
+        
+        #link it all together through writing paths into "mapping.toml"
+        mapper = open(self.hidden+"mapping.toml", 'a')
+
+        mapper.close()
         pass
-    
+
     #TO-DO: IMPLEMENT
-    def install(self, pkg, opt):
+    def uninstall(self, pkg, opt):
         pass
 
     def download(self, cap):
@@ -214,7 +273,7 @@ class legoHDL:
         
         #branching through possible commands
         if(command == "install"):
-            self.install(package, options) #TO-DO
+            self.install(self.capsulePKG, options) #TO-DO
             pass
         elif(command == "uninstall"):
             self.uninstall(package, options) #TO-DO
@@ -267,7 +326,7 @@ class legoHDL:
             self.capsulePKG.show()
             pass
         elif(command == "ports" and self.capsulePKG.isValid()):
-            self.capsulePKG.ports()
+            print(self.capsulePKG.ports())
         elif(command == "template" and self.settings['editor'] != None):
             os.system(self.settings['editor']+" "+self.pkgmngPath+"/template")
             pass

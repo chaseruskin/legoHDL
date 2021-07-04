@@ -33,6 +33,9 @@ os.makedirs(working_dir, exist_ok=True)
 print('Initializing configuration directory... '+hidden_dir)
 os.makedirs(hidden_dir, exist_ok=True)
 
+open(hidden_dir+"mapping.toml", 'w').write("[libraries]").close()
+
+
 print('Setting up package registry... ',end='')
 #check the remote registry if package appears there
 if(not os.path.isfile(hidden_dir+"registry/db.txt")):

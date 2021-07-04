@@ -8,7 +8,6 @@ class Repo:
         self.name = name
         self.last_version = l_v
         self.m_branch = m_b
-        self.downloaded = False
         self.git_url = g_url
         self.local_path = l_path
         pass

@@ -1,13 +1,9 @@
 #registry.py is in charge of seeing what packages are hosted remotely and syncing
 #packages between user and remote
-
 from enum import Enum
-import random
-import requests
-import json
+import os, random, requests, json
 import yaml
 from bs4 import BeautifulSoup
-import os
 from collections import OrderedDict
 try:
     from pkgmngr import capsule as caps
@@ -36,6 +32,7 @@ class Registry:
         self.__local_reg = dict()
         self.__remote_reg = dict()
         self.__cur_reg = dict()
+        self.__cache_reg = dict()
 
         self.localLoad()
         #print(url)
@@ -164,11 +161,11 @@ class Registry:
             if(not r.name in prjs):
                 c = caps.Capsule(rp=r)
                 c.genRemote()
-                c.saveID(self.fetchProject(r.library,r.name)['id'])
+                c.saveID(self.fetchProjectShallow(r.library,r.name)['id'])
                 prjs.append(r.name)
         pass
 
-    def findProjectsLocal(self, path):
+    def findProjectsLocal(self, path, cached=False):
         branches = list(os.listdir(path))
         for leaf in branches:
             if(os.path.isdir(path+leaf) and leaf[0] != '.'):
@@ -180,7 +177,10 @@ class Registry:
                     tmp = yaml.load(f, Loader=yaml.FullLoader)
                     f.close()
                     #print(leaf)#print(tmp['id'])#print(path)
-                    self.__cur_reg[int(tmp['id'])] = repo.Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
+                    if(cached):
+                        self.__cache_reg[int(tmp['id'])] = repo.Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
+                    else:
+                        self.__cur_reg[int(tmp['id'])] = repo.Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
         pass
 
     def findPrj(self, lib, name):
@@ -198,6 +198,9 @@ class Registry:
 
     def getLocalPrjs(self):
         return self.__local_reg
+
+    def getCachePrjs(self):
+        return self.__cache_reg
 
     def assignRandomID(self):
         MIN_ID = 10000000
@@ -228,7 +231,7 @@ class Registry:
             print("error")
         return json.loads(z.text)
 
-    def fetchProject(self, library, name):
+    def fetchProjectShallow(self, library, name):
         plist = self.accessGitlabAPI(self.GL_PRJ_EXT)
 
         if('error' in plist and plist['error'] == 'invalid_token'):
