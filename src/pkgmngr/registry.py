@@ -11,22 +11,10 @@ import os
 from collections import OrderedDict
 try:
     from pkgmngr import capsule as caps
+    from pkgmngr import repo
 except:
     import capsule as caps
-
-
-class Repo:
-    def __init__(self, l_a, lib, name, l_v, g_url, m_b='master'):
-        self.last_activity = l_a
-        self.library = lib
-        self.name = name
-        self.last_version = l_v
-        self.m_branch = m_b
-        self.downloaded = False
-        self.git_url = g_url
-        pass
-    pass
-
+    import repo
 
 class Registry:
     class Mode(Enum):
@@ -45,6 +33,7 @@ class Registry:
         
         self.__local_reg = dict()
         self.__remote_reg = dict()
+        self.__cur_reg = dict()
 
         self.localLoad()
 
@@ -76,13 +65,13 @@ class Registry:
                 spk = line.find('*')
                 at = line.find('@')
                 iden = line[:spce]
-                self.__local_reg[int(iden)] = Repo(l_a=line[Rspce+1:spk], lib=line[spce+1:dot], g_url=line[at+1:], name=line[dot+1:eq], l_v=line[eq+1:Rspce], m_b=line[spk+1:at])
+                self.__local_reg[int(iden)] = repo.Repo(l_a=line[Rspce+1:spk], lib=line[spce+1:dot], g_url=line[at+1:], name=line[dot+1:eq], l_v=line[eq+1:Rspce], m_b=line[spk+1:at], l_path='')
             file.close()
 
     def listCaps(self, options):
         reg = self.__remote_reg
         sorted_reg = OrderedDict()
-        if(caps.Capsule.linkedRemote()):
+        if(not caps.Capsule.linkedRemote()):
             reg = self.__local_reg
         if(options.count('alpha')):
             for key,repo in reg.items():
@@ -97,8 +86,8 @@ class Registry:
             if(repo.library != ''):
                 hdr = repo.library+'.'
             title = hdr+repo.name
-        
-            cp = caps.Capsule(repo.name)
+            
+            cp = caps.Capsule(rp=repo)
             isDownloaded = '-'
             info = ''
             ver = repo.last_version
@@ -122,20 +111,27 @@ class Registry:
         self.__base_url = self.__url[:i+i_2]
         pass
 
-    def localSync(self, idList):
+    def localSync(self):
         oldKeys = self.__local_reg.copy().keys()
-        curKeys = idList
-
+        curKeys = self.__cur_reg.copy().keys()
+        #print("LOCAL",self.__local_reg)
+        #remove any projects not found remotely and not found locally
         for k in oldKeys:
             if(caps.Capsule.linkedRemote()):
                 if not k in curKeys and not k in self.__remote_reg.keys():
                     del self.__local_reg[k]
             elif not k in curKeys:
                 del self.__local_reg[k]
+        
+        #add any found projects that are not currently in local reg
+        for k in curKeys:
+            self.__local_reg[k] = self.__cur_reg[k] 
 
         for key,repo in self.__remote_reg.items():
                 #update information and add to local if not registered
+                lp = self.__local_reg[key].local_path #must preserve local_path identified by localLoad
                 self.__local_reg[key] = repo
+                self.__local_reg[key].local_path = lp
 
         with open(self.__local_path+"db.txt", 'w') as file:
             for key,repo in self.__local_reg.items():
@@ -144,26 +140,54 @@ class Registry:
             file.close()
         pass
 
-    def findProjectsLocal(self, path, idList):
+    def sync(self):
+        self.localSync()
+        if(caps.Capsule.linkedRemote()):
+            self.remoteSync()
+
+    def remoteSync(self):
+        subs = list()
+        prjs = list()
+        for key,r  in self.__remote_reg.items():
+            subs.append(r.library)
+            prjs.append(r.name)
+
+
+        for key,r  in self.__local_reg.items():
+            #create any unestablished libraries
+            if(not r.library in subs):
+                self.createSubgroup(r.library, self.getGroup())
+                subs.append(r.library)
+
+            if(not r.name in prjs):
+                c = caps.Capsule(rp=r)
+                c.genRemote()
+                c.saveID(self.fetchProject(r.library,r.name)['id'])
+                prjs.append(r.name)
+        pass
+
+    def findProjectsLocal(self, path):
         branches = list(os.listdir(path))
         for leaf in branches:
             if(os.path.isdir(path+leaf) and leaf[0] != '.'):
-                    self.findProjectsLocal(path+leaf+'/', idList)
+                    self.findProjectsLocal(path+leaf+'/')
             if(leaf.count(".yml") > 0):
-                print("valid project!")  
+                #print("valid project!")  
                 l = path.rfind('/')
-                print(path[l+1:])
+                #print(path[l+1:])
                 with open (path+leaf, 'r') as f:
                     tmp = yaml.load(f, Loader=yaml.FullLoader)
                     f.close()
-                    print(leaf)
-                    idList.append(tmp['id'])
+                    #print(leaf)
+                    #print(tmp['id'])
+                    #print(path)
+                    self.__cur_reg[int(tmp['id'])] = repo.Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
         pass
 
     def assignRandomID(self):
-        id = random.randint(0, 99999999)
+        id = random.randint(10000000, 99999999)
         while id in self.__local_reg.keys():
-            id = random.randint(0, 99999999)
+            id = random.randint(10000000, 99999999)
         return id
 
     def createSubgroup(self, name, parent):
@@ -183,7 +207,6 @@ class Registry:
         #using only requests module to print out project list
         link = self.__base_url+"/api/v4/groups/"+self.__tail_url+"/projects?include_subgroups=True&simple=True"
         print(link)
-        #z = requests.get(link, headers={'PRIVATE-TOKEN': tk}))
         tk = self.decrypt('gl-token')
         z = requests.get(link, headers={'PRIVATE-TOKEN': tk})
         print("status: ",z)
@@ -222,11 +245,11 @@ class Registry:
             if(first_i == -1):
                 lib = ''
             #print(lib)#print(x['web_url'])#print(x['id'])#check if there has been new activity#print(x['last_activity_at'])#print(x['default_branch'])
-            #local registry already has a tab on this remote repo
             last_ver = '0.0.0'
+            #local registry already has a tab on this remote repo
             if((x['id'] in self.__local_reg)):
                 last_ver = self.__local_reg[x['id']].last_version
-                print(x['last_activity_at'])
+                #print(x['last_activity_at'])
                 if(x['last_activity_at'] > self.__local_reg[x['id']].last_activity):
                     #fetch version number to see if there is an update available
                     last_ver = self.grabTags(x)
@@ -234,7 +257,7 @@ class Registry:
             else: #local registry needs all info on this repo
                 last_ver = self.grabTags(x)
 
-            self.__remote_reg[x['id']] = Repo(l_a=x['last_activity_at'], lib=lib, g_url=x['web_url']+'.git', name=x['name'], l_v=last_ver, m_b=x['default_branch'])
+            self.__remote_reg[x['id']] = repo.Repo(l_a=x['last_activity_at'], lib=lib, g_url=x['web_url']+'.git', name=x['name'], l_v=last_ver, m_b=x['default_branch'], l_path='')
         
         self.localSync()
         pass

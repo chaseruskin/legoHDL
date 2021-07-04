@@ -2,12 +2,34 @@ import os, yaml, git, shutil
 from datetime import date
 import collections, stat
 import glob
+try:
+    from pkgmngr import repo
+except:
+    import repo
 
 #a capsule is a package/module that is signified by having the capsule.yml
 class Capsule:
     settings = None
     pkgmngPath = ''
-    def __init__(self, name='', new=False):
+
+    #initialze capsule from a repo obj
+    def absorbRepo(self, rp):
+        self.__name = rp.name
+        self.__lib = rp.library
+        self.__localPath = rp.local_path
+        self.__repo = git.Repo(self.__localPath)
+        if(self.linkedRemote()):
+            self.__remoteURL = self.settings['remote']+'/'+self.__lib+"/"+self.__name+".git"
+        if(self.isValid()):
+            self.loadMeta()
+        pass
+
+
+    def __init__(self, name='', new=False, rp=None):
+        if(rp != None):
+            self.absorbRepo(rp)
+            return
+        
         dot = name.find('.')
         self.__lib = ''
         self.__name = name
@@ -138,6 +160,7 @@ class Capsule:
 
     def create(self):
         print('Initializing new project')
+
         shutil.copytree(self.pkgmngPath+"template/", self.__localPath)
         self.__repo = git.Repo.init(self.__localPath)
     
@@ -166,14 +189,29 @@ class Capsule:
         self.loadMeta() #generate fresh metadata fields
         self.__metadata['library'] = self.__lib
         self.save() #save current progress into yaml
-
         self.__repo.index.add(self.__repo.untracked_files)
         self.__repo.index.commit("Initializes project")
         if(self.linkedRemote()):
             print('Generating new remote repository...')
-            self.__repo.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
+            # !!! set it up to track
+            self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
         else:
             print('No remote code base attached to local repository')
+        pass
+
+    #generate new link to remote if previously unestablished
+    def genRemote(self):
+        if(self.linkedRemote()):
+            try: #attach to remote code base
+                self.__repo.create_remote('origin', self.__remoteURL) 
+            except: #relink origin to new remote url
+                print(self.__repo.remotes.origin.url)
+                with self.__repo.remotes.origin.config_writer as cw:
+                    cw.set("url", self.__remoteURL)
+                #now set it up to track
+                # !!!
+
+            self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
         pass
 
     def getName(self):

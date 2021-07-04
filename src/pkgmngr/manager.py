@@ -25,8 +25,8 @@ class legoHDL:
         
         self.registry = None #list of all available modules in remote
         
-        # !!! UNCOMMENT LINE BELOW TO ACTIVATE REMOTE
-        self.settings['remote'] = None #testing allowing option to not connect to a remote!
+        # !!! UNCOMMENT LINE BELOW TO DISABLE REMOTE !!!
+        #self.settings['remote'] = None #testing allowing option to not connect to a remote!
         #defines path to dir of remote code base
         self.remote = self.settings['remote']
 
@@ -35,7 +35,6 @@ class legoHDL:
         caps.Capsule.pkgmngPath = self.pkgmngPath
         
         self.db = reg.Registry(self.remote)
-        idList = list()
         
         #defines path to dir of local code base
         self.local = os.path.expanduser(self.settings['local'])+"/"
@@ -43,10 +42,10 @@ class legoHDL:
         #defines how to open workspaces
         self.textEditor = self.settings['editor']
 
-        self.db.findProjectsLocal(self.local, idList)
+        self.db.findProjectsLocal(self.local)
         if(caps.Capsule.linkedRemote()): #fetch remote servers
             self.db.fetch()
-        self.db.localSync(idList)
+        self.db.sync()
         
         os.environ['VHDL_LS_CONFIG'] = self.hidden+"mapping.toml" #directly works with VHDL_LS
 
@@ -273,11 +272,7 @@ class legoHDL:
             yaml.dump(self.settings, file)
             pass
 
-    def list(self, options):
-        idList = list()
-        self.db.findProjectsLocal(self.local, idList)
-        self.db.localSync(idList)
-        print(idList)
+    def inventory(self, options):
         self.db.listCaps(options)
         print()
         pass
@@ -368,9 +363,9 @@ class legoHDL:
                 #now fetch from db to grab ID
                 self.capsulePKG.saveID(self.db.fetchProject(lib,name)['id'])
             else:
-                #assign tmp local id
+                #assign tmp local id if no remote
                 self.capsulePKG.saveID(self.db.assignRandomID())
-
+            
             #self.syncRegistry(self.capsulePKG)
             if(options.count("o") > 0):
                 self.capsulePKG.load()
@@ -396,7 +391,7 @@ class legoHDL:
         elif(command == 'del'):
             self.cleanup(self.capsulePKG)
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
-            self.list(options)
+            self.inventory(options)
             pass
         elif(command == "open"):
             self.capsulePKG.load()
