@@ -79,7 +79,7 @@ class legoHDL:
 
         #need to look at toplevel VHD file to transfer correct library uses
         #search through all library uses and see what are chained dependencies
-        cap.scanDependencies()
+        src_dir = cap.scanDependencies()
         #write in all library and uses
         libs = set()
         for dep in cap.getMeta("derives"):
@@ -106,8 +106,12 @@ class legoHDL:
         tmp_pkg.close()
         
         #link it all together through writing paths into "mapping.toml"
-        mapper = open(self.hidden+"mapping.toml", 'a')
-
+        mapper = open(self.hidden+"mapping.toml", 'w')
+        mapper.write("[libraries]\n") #necessary header
+        mapper.write(cap.getLib()+".files = [\n")
+        mapper.write("\'"+lib_path+"*.vhd"+"\',\n")
+        mapper.write("\'"+src_dir+"*.vhd"+"\',\n")
+        mapper.write("]\n")
         mapper.close()
         pass
 

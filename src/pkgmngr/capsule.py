@@ -382,6 +382,7 @@ class Capsule:
             print(vhd)
             print(derivatives)
             self.__metadata['derives'] = derivatives
+        return src_dir
         pass
 
     def ports(self):
