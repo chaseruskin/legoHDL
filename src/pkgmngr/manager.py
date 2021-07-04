@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-import os, sys, git, shutil
-import requests
-from bs4 import BeautifulSoup
+import os, sys, shutil
 import yaml
 try:
     from pkgmngr import capsule as caps
@@ -50,84 +48,12 @@ class legoHDL:
         self.parse()
         pass
 
-    def isValidPkg(self, pkg):
-        return os.path.isfile(self.local+pkg+"/."+pkg+".yml")
-        pass
-
-    def uninstall(self, package, options):
-        #does this module exist in this project's scope?
-        if not package in self.metadata['derives']:
-            print("ERROR- No installed module exists under the name \"",package,"\".",sep='')
-            return
-
-        version = self.metadata['derives'][package]
-        print("\nUninstalling", package, "version:",version,"\b...\n")
-
-        #delete file from dependency directory
-        os.remove(self.projectPath+"/libraries/"+package+".vhd")
-
-        #update metadata of new removal
-        del self.metadata['derives'][package]
-        print("Successfully uninstalled ", package, " [",version,"] from the current project.",sep='')
+    #TO-DO: IMPLEMENT
+    def uninstall(self, pkg, opt):
         pass
     
-    #to-do: REWORK INSTALL FUNCTION
-    def install(self, pkg, options):
-        if(not caps.Capsule.linkedRemote()):
-            print("ERROR- No remote link configured")
-            return
-        
-        #verify there is an existing module under this name
-        if (self.registry.count(pkg) <= 0):
-            print("ERROR- No module exists under the name \"",pkg,"\".",sep='')
-            return  
-
-        #perform install -> install will grab repo and put into cache, and then symlink src files to
-        #lib folder along with creating a pkg vhd file
-
-        cp = caps.Capsule(pkg)
-
-        #checkout latest version number
-        version = '0.0.0'
-        if(version == '0.0.0'):
-            print("ERROR- There are no available versions for this module! Cannot install.")
-
-        #clone to cache
-        cp.cache(self.hidden)
-        #create folder in library
-        os.makedirs(self.hidden+"lib/"+cp.getLib())
-        
-        cp.install(options)
-
-        return
-        
-        if(version == ''):
-            print("ERROR- There are no available versions for this module! Cannot install.")
-            return
-        
-        for opt in options:
-            if(opt[0]=='v'): #checkout specified version number
-                version = opt
-            pass
-
-        print("\nInstalling", pkg, "version:",version,"\b...\n")
-
-        #formulate commands
-        #suggestion: pull down from remote repo before doing checkouts
-        cmd = "cd "+self.remote+pkg+"; git checkout "+version+" -q;" #-q options silences git output
-        error = os.system(cmd)
-        if(error != 256):
-            cmd = "cd "+self.remote+pkg+\
-            "; cp ./design/* "+self.projectPath+"/libraries/; git checkout - -q"
-            os.system(cmd)
-        else:
-            print("ERROR- The version you are requesting for this module does not exist.")
-            return
-
-        #update metadata to list module under this project's dependency and compatible version
-        self.metadata['derives'][package] = version
-        
-        print("Successfully installed ", pkg, " [",version,"] to the current project.",sep='')
+    #TO-DO: IMPLEMENT
+    def install(self, pkg, opt):
         pass
 
     def download(self, cap):
@@ -167,12 +93,8 @@ class legoHDL:
             exit()
 
         cap.release(ver, options)        
-
-        if not cap.getID() in self.db.getRemotePrjs().keys():
-            print("Uploading a new package to remote storage...")
-            #to-do: implement git python code for said commands
-            #cmd = "git init; git add .; git commit -m \"Initial project creation.\"; git push --tags --set-upstream https://gitlab.com/chase800/"+self.pkgName+".git master"  
-        elif caps.Capsule.linkedRemote():
+ 
+        if caps.Capsule.linkedRemote():
             print("Updating remote package contents... ",end='')
             cap.pushRemote()
             print("success")
@@ -215,15 +137,14 @@ class legoHDL:
 
     def cleanup(self, cap):
         iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
-        print(iden)
         cap = caps.Capsule(rp=rep)
-
         if(not cap.isValid()):
             print('No module '+cap.getName()+' exists locally')
             return
         
         if(self.remote == None):
-            print('WARNING- No remote code base is configured, if this module is deleted it may be unrecoverable.\n \
+            print('\
+                WARNING- No remote code base is configured, if this module is deleted it may be unrecoverable.\n \
                 DELETE '+cap.getName()+'? [y/n]\
                 ')
             response = ''
@@ -234,9 +155,8 @@ class legoHDL:
             if(response.lower() == 'n'):
                 print(cap.getName()+' not deleted')
                 return
-        # (if there is a remote then the project still lives on, can be "redownloaded") 
-        #delete locally
-        try:
+        #if there is a remote then the project still lives on, can be "redownloaded"
+        try: #delete locallys
             shutil.rmtree(rep.local_path)
             print('Deleted '+cap.getName()+' from local workspace')
         except:
@@ -270,7 +190,6 @@ class legoHDL:
         
         command = package = description = ""
         options = []
-
         #store args accordingly from command-line
         for i, arg in enumerate(sys.argv):
             if(i == 0):
@@ -310,14 +229,11 @@ class legoHDL:
 
             self.capsulePKG = caps.Capsule(package, new=True)
             
-            if caps.Capsule.linkedRemote():
-                #now fetch from db to grab ID
+            if caps.Capsule.linkedRemote(): #now fetch from db to grab ID
                 self.capsulePKG.saveID(self.db.fetchProject(lib,name)['id'])
-            else:
-                #assign tmp local id if no remote
+            else: #assign tmp local id if no remote
                 self.capsulePKG.saveID(self.db.assignRandomID())
             
-            #self.syncRegistry(self.capsulePKG)
             if(options.count("o") > 0):
                 self.capsulePKG.load()
             pass
@@ -344,12 +260,11 @@ class legoHDL:
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             self.inventory(options)
             pass
-        elif(command == "open"):
+        elif(command == "open" and self.capsulePKG.isValid()):
             self.capsulePKG.load()
             pass
-        elif(command == "show"):
-            if(self.capsulePKG.isValid()):
-                self.capsulePKG.show()
+        elif(command == "show" and self.capsulePKG.isValid()):
+            self.capsulePKG.show()
             pass
         elif(command == "ports" and self.capsulePKG.isValid()):
             self.capsulePKG.ports()
@@ -360,9 +275,8 @@ class legoHDL:
             self.setSetting(options, package)
             pass
         elif(command == "help" or command == ''):
-            if(package == "new"):
-                print("command help: new")
-                exit()
+            #list all of command details
+            self.commandHelp(package)
             #print("VHDL's package manager")
             print('USAGE: \
             \n\tlegohdl <command> [package] [args]\
@@ -408,6 +322,13 @@ class legoHDL:
             ")
         else:
             print("Invalid command; type \"help\" to see a list of available commands")
+        pass
+
+    def commandHelp(self, cmd):
+        if(cmd == ''):
+            return
+        #TO-DO: if-elif block of all commands
+        exit()
         pass
     pass
 

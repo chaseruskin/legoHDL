@@ -38,7 +38,6 @@ class Registry:
         self.__cur_reg = dict()
 
         self.localLoad()
-
         #print(url)
         #determine what remote website is being used
         self.__mode = None
@@ -81,7 +80,7 @@ class Registry:
             reg = sorted_reg
 
         print("\nList of available modules:")
-        print("\tModule\t\t    local\t    version")
+        print("\tModule\t\t    status\t    version")
         print("-"*80)
         for key,repo in reg.items():
             hdr = ''
@@ -90,11 +89,11 @@ class Registry:
             title = hdr+repo.name
             
             cp = caps.Capsule(rp=repo)
-            isDownloaded = '-'
+            status = '-'
             info = ''
             ver = repo.last_version
             if (cp.isValid()):
-                isDownloaded = 'y'
+                status = 'downloaded'
                 loc_ver = ''
                 loc_ver = cp.getVersion()
                 if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
@@ -102,7 +101,7 @@ class Registry:
                     ver = loc_ver
             
             if((options.count('local') and cp.isValid()) or not options.count('local')):
-                print("  ",'{:<26}'.format(title),'{:<14}'.format(isDownloaded),'{:<10}'.format(ver),info)
+                print("  ",'{:<24}'.format(title),'{:<14}'.format(status),'{:<10}'.format(ver),info)
         pass
 
     def parseURL(self, website):
@@ -116,7 +115,6 @@ class Registry:
     def localSync(self):
         oldKeys = self.__local_reg.copy().keys()
         curKeys = self.__cur_reg.copy().keys()
-        #print("LOCAL",self.__local_reg)
         #remove any projects not found remotely and not found locally
         for k in oldKeys:
             if(caps.Capsule.linkedRemote()):
@@ -191,6 +189,7 @@ class Registry:
                 return key,r
         return -1,None
 
+    #TO-DO: rename all reg dictionaries to better reflect which they are for future thanking
     def getCurPrjs(self):
         return self.__cur_reg
 
@@ -285,10 +284,15 @@ class Registry:
         pass
 
     def grabTags(self, prj):
-        print("GRABBING TAGS")
+        print("Accessing remote project "+prj['name']+"... ",end='')
         tk = self.decrypt('gl-token')
         link = self.__base_url+"/api/v4/projects/"+str(prj['id'])+"/repository/tags"
         z = requests.get(link, headers={'PRIVATE-TOKEN': tk})
+        if(z.status_code == 200):
+            print("success")
+        else:
+            print("error")
+            return '0.0.0'
         tags = json.loads(z.text)
         if(len(tags) == 0):
             return '0.0.0'
@@ -299,6 +303,7 @@ class Registry:
         return '0.0.0'
 
     def encrypt(self, token, file):
+        print("Encrypting access token... ",end='')
         random.seed()
         with open(self.__hidden+file+".bin", 'w') as file:
             for letter in token:
@@ -307,7 +312,8 @@ class Registry:
                 for x in range(len(secret)):
                     file.write(str(random.randint(0, 1)) + secret[x])
                 pass
-        print("Successfully encrypted access token")
+            file.close()
+        print("success")
         pass
 
     def decrypt(self, file):

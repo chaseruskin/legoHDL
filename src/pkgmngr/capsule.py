@@ -398,9 +398,6 @@ class Capsule:
         print(port_txt)
         pass
 
-    def log(self):
-        pass
-
     pass
 
 
