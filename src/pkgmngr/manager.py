@@ -56,72 +56,6 @@ class legoHDL:
         return os.path.isfile(self.local+pkg+"/."+pkg+".yml")
         pass
 
-    def syncRegistry(self, cap=None, rm=False, skip=False):
-        msg = ''
-        zero = '0.0.0'
-
-        if(self.registry == None and not skip): # must check for changes
-            capsules=list()
-            if(caps.Capsule.linkedRemote()):
-                reg = git.Repo(self.hidden+"registry")
-                reg.remotes.origin.pull(refspec='{}:{}'.format('master', 'master'))
-            else: # check package directory for any changes to folder removals if only local setting
-                for prj in os.listdir(self.local):
-                    if self.isValidPkg(prj):
-                        capsules.append(prj)
-
-            self.registry = dict()
-            with open(self.hidden+"registry/db.txt", 'r') as file:
-                for line in file.readlines():
-                    m = line.find('=')
-                    key = line[:m]
-                    val = line[m+1:len(line)-1]
-                    self.registry[key] = val
-            
-            if(not caps.Capsule.linkedRemote()):
-                # if only local, keep registry in sync with all available folders in package dir
-                for prj in list(self.registry.keys()):
-                    if not prj in capsules:
-                        self.registry.pop(prj, None)
-                        msg = 'Removes '+prj+' from the database.'
-            
-            for c in capsules:
-                if not c in list(self.registry.keys()):
-                    print("Found a new local valid package",c)
-                    #load settings
-                    self.syncRegistry(caps.Capsule(c), skip=True)
-
-         
-        if(cap != None and rm == True): #looking to remove a value from the registry
-            self.registry.pop(cap.getTitle(), None)
-            msg = 'Removes '+cap.getTitle()+' from the database.'
-
-        elif(cap != None): #looking to write a value to registry
-            if(cap.getTitle() in self.registry and (self.registry[cap.getTitle()] == cap.getVersion() \
-                or (cap.getVersion() == zero))):
-                return
-            print('Syncing with registry...')
-            self.registry[cap.getTitle()] = cap.getVersion() if cap.getVersion() != '0.0.0' else ''
-            if(self.registry[cap.getTitle()] == ''):
-                msg = 'Introduces '+ cap.getTitle() +' to the database.'
-            else:
-                msg = 'Updates '+ cap.getTitle() +' version to ' + cap.getVersion()+'.'
-
-        if(msg != ''):
-            print(msg)
-            with open(self.hidden+"registry/db.txt", 'w') as file:
-                for key,val in self.registry.items():
-                    if(val == zero):
-                        val = ''
-                    file.write(key+"="+val+"\n")
-            
-            reg = git.Repo(self.hidden+"registry")
-            reg.git.add(update=True)
-            reg.index.commit(msg)
-            if(self.remote != None):
-                reg.remotes.origin.push(refspec='{}:{}'.format('master', 'master'))
-        pass
-
     def uninstall(self, package, options):
         #does this module exist in this project's scope?
         if not package in self.metadata['derives']:
@@ -145,7 +79,6 @@ class legoHDL:
             print("ERROR- No remote link configured")
             return
         
-        self.syncRegistry()
         #verify there is an existing module under this name
         if (self.registry.count(pkg) <= 0):
             print("ERROR- No module exists under the name \"",pkg,"\".",sep='')
@@ -200,7 +133,6 @@ class legoHDL:
         pass
 
     def download(self, cap):
-        self.syncRegistry()
 
         if(not cap.linkedRemote()):
             print('No remote code base configured to download modules')
@@ -228,8 +160,6 @@ class legoHDL:
             ver = options[0]
             print(ver)
 
-        self.syncRegistry()
-
         cap.release(ver, options)        
 
         if not cap.getName() in self.registry.keys():
@@ -239,8 +169,6 @@ class legoHDL:
         elif caps.Capsule.linkedRemote():
             print("Updating remote package contents...")
             cap.__repo.remotes.origin.push()
-        
-        self.syncRegistry(cap)
         pass
 
     def setSetting(self, options, choice):
@@ -295,8 +223,7 @@ class legoHDL:
                 print(cap.getName()+' not deleted')
                 return
             #update registry if there is no remote 
-            # (if there is a remote then the project still lives on, can be "redownloaded")
-            self.syncRegistry(cap, rm=True)   
+            # (if there is a remote then the project still lives on, can be "redownloaded") 
         #delete locally
         try:
             shutil.rmtree(self.local+cap.getName())
