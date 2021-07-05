@@ -31,6 +31,8 @@ class Capsule:
             self.__metadata['version'] = rp.last_version
         pass
 
+    def getPath(self):
+        return self.__localPath
 
     def __init__(self, name='', new=False, rp=None):
         self.__metadata = dict()
@@ -367,7 +369,7 @@ class Capsule:
         self.loadMeta()
         return
 
-    def scanDependencies(self):
+    def scanDependencies(self, vhd_file=None):
         vhd_file = glob.glob(self.__localPath+"/**/"+self.getMeta("toplevel"), recursive=True)[0]
         s = vhd_file.rfind('/')
         src_dir = vhd_file[:s+1]
@@ -387,7 +389,7 @@ class Capsule:
             print(vhd)
             print(derivatives)
             #self.__metadata['derives'] = derivatives
-        return src_dir
+        return src_dir, derivatives
         pass
 
     def ports(self):

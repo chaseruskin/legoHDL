@@ -34,7 +34,7 @@ class legoHDL:
         
         #defines path to dir of local code base
         self.local = os.path.expanduser(self.settings['local'])+"/"
-        self.hidden = os.path.expanduser("~/.legoHDL/") #path to registry and cache
+        self.hidden = os.path.expanduser("~/.legohdl/") #path to registry and cache
         #defines how to open workspaces
         self.textEditor = self.settings['editor']
 
@@ -86,10 +86,10 @@ class legoHDL:
 
         #need to look at toplevel VHD file to transfer correct library uses
         #search through all library uses and see what are chained dependencies
-        src_dir = cap.scanDependencies()
+        src_dir,derivatives = cap.scanDependencies()
         #write in all library and uses
         libs = set()
-        for dep in cap.getMeta("derives"):
+        for dep in derivatives:
             dot = dep.find('.')
             libline = "library "+dep[:dot]+";\n"
             if(not libline in libs):
@@ -159,6 +159,63 @@ class legoHDL:
         #remove from lib
         pass
 
+    def siftLibName(self, dep):
+        dot = dep.find('.')
+        lib = dep[:dot]
+        dot2 = dep[dot+1:].find('.')
+        name = dep[dot+1:dot+1+dot2]
+        return lib,name
+
+    def libExists(self, lib):
+        return os.path.isdir(self.hidden+"lib/"+lib)
+
+    def export(self, cap):
+        print("Exporting...",end=' ')
+
+        build_dir = cap.getPath()+"/build/"
+        #create a clean build folder
+        try:
+            os.mkdir(build_dir)
+        except:
+            shutil.rmtree(build_dir)
+            os.mkdir(build_dir)
+        
+        output = open(build_dir+"recipe", 'w')
+        #mission: recursively search through every "used" VHD file for what else needs to be included
+        src_dir,derivatives = cap.scanDependencies()
+        
+        library = dict() #stores lists at dictionary keys
+        for d in derivatives:
+            l,n = self.siftLibName(d)
+            print(l,n)
+            #library must exist in lib to be included in recipe.txt (avoids writing external libs like IEEE)
+            if(self.libExists(l)): #check lib exists
+                if not l in library.keys():
+                    library[l] = list() 
+                library[l].append(n)
+
+        #before writing recipe, the nodes must be topologically sorted as dependency tree
+                
+        #write these libraries and their required file paths to a file for exporting
+        library['basic'] = list()
+        library['util'] = list()
+
+        library['basic'].append("path1")
+        library['basic'].append("path2")
+        library['util'].append("path3")
+        for lib in library.keys():
+            for pkg in library[lib]:
+                output.write("LIB "+lib+" "+self.hidden+"cache/"+lib+"/"+pkg+"/*.vhd\n")
+                output.write("LIB "+lib+" "+self.hidden+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
+
+        #write current src dir where all src files are as "work" lib
+        output.write("SRC "+src_dir+"*.vhd\n")
+        #write current test dir where all testbench files are
+        output.write("TB "+cap.getPath()+"testbench/"+cap.getMeta("verification")+"\n")
+        output.close()
+        print("success")
+        pass
+
     def download(self, cap):
         if(not cap.linkedRemote()):
             print('No remote code base configured to download modules')
@@ -171,11 +228,11 @@ class legoHDL:
             return
 
         if iden in self.db.getCurPrjs().keys(): #just give it an update!
-            print("Project already exists in local workspace- pulling from remote... ",end='')
+            print("Project already exists in local workspace- pulling from remote...",end=' ')
             cap.pull()
             print("success")
         else: #oh man, go grab the whole thing!
-            print("Cloning from remote... ",end='')
+            print("Cloning from remote...",end=' ')
             cap.clone()
             print("success")
         pass
@@ -198,7 +255,7 @@ class legoHDL:
         cap.release(ver, options)        
  
         if caps.Capsule.linkedRemote():
-            print("Updating remote package contents... ",end='')
+            print("Updating remote package contents...",end=' ')
             cap.pushRemote()
             print("success")
             print(cap.getLib()+"."+cap.getName()+" is now available as version "+cap.getVersion())
@@ -363,6 +420,9 @@ class legoHDL:
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             self.inventory(options)
             pass
+        elif(command == "export"): #a visual aide to help a developer see what package's are at the ready to use
+            self.export(self.capsuleCWD)
+            pass
         elif(command == "open" and self.capsulePKG.isValid()):
             self.capsulePKG.load()
             pass
@@ -398,13 +458,14 @@ class legoHDL:
             formatHelp("del","deletes the package from the local workspace")
             formatHelp("search","search remote or local workspace for specified package")
             formatHelp("convert","converts the current folder into a valid package format")
-            formatHelp("gen","generate a file of necessary paths to build the project")
+            formatHelp("export","generate a file of necessary paths to build the project")
             formatHelp("show","read further detail about a specified package")
             formatHelp("ports","print ports list of specified package")
             formatHelp("summ","add description to current project")
             formatHelp("new","create a templated empty package")
             formatHelp("config","set package manager settings")
             formatHelp("template","open the template in the configured text-editor")
+            formatHelp("recipe","open the recipe file in the configured text-editor")
             print("\nType \'legohdl help <command>\' to read more on entered command.")
             exit()
             print("\nOptions:\
