@@ -69,7 +69,14 @@ class legoHDL:
         os.makedirs(cache_path, exist_ok=True)
         #see what the latest version available is and clone from that version unless specified
         #print(rep.git_url)#print(rep.last_version)
-        cap.install(cache_path)
+        ver = None
+        if(len(opt) and opt[0][0] != 'v'):
+            print("ERROR- Invalid args")
+            return
+        elif(len(opt)):
+            ver = opt[0]
+
+        cap.install(cache_path, ver)
         print("success")
         print("library files path:")
         #make library grouping
@@ -106,17 +113,50 @@ class legoHDL:
         tmp_pkg.close()
         
         #link it all together through writing paths into "mapping.toml"
+        cur_lines = list()
+        mapper = open(self.hidden+"mapping.toml", 'r')
+        cur_lines = mapper.readlines()
+        mapper.close()
+
         mapper = open(self.hidden+"mapping.toml", 'w')
-        mapper.write("[libraries]\n") #necessary header
-        mapper.write(cap.getLib()+".files = [\n")
-        mapper.write("\'"+lib_path+"*.vhd"+"\',\n")
-        mapper.write("\'"+src_dir+"*.vhd"+"\',\n")
-        mapper.write("]\n")
+        inc_paths = list()
+        inc_paths.append("\'"+lib_path+"*.vhd"+"\',\n")
+        inc_paths.append("\'"+src_dir+"*.vhd"+"\',\n")
+        inc = False
+        found_lib = False
+        if(len(cur_lines) <= 1):
+            cur_lines.clear()
+            mapper.write("[libraries]\n")
+        for line in cur_lines:
+            if(line.count(cap.getLib()+".files") > 0): #include into already established library section
+                inc = True
+                found_lib = True
+            elif(inc and not line.count("]") > 0):
+                if(line in inc_paths):
+                    inc_paths.remove(line)   
+            elif(inc and line.count("]") > 0): # end of section
+                for p in inc_paths: #append rest of inc_paths
+                    mapper.write(p)
+                inc = False
+            mapper.write(line)
+
+        if(len(cur_lines) == 0 or not found_lib):
+            if(line.count(cap.getLib()+".files") == 0): #create new library section
+                mapper.write(cap.getLib()+".files = [\n")
+                for p in inc_paths:
+                    mapper.write(p)
+                mapper.write("]\n")
+
         mapper.close()
         pass
 
     #TO-DO: IMPLEMENT
     def uninstall(self, pkg, opt):
+        #remove from cache
+
+        #remove from 'mapping.toml'
+
+        #remove from lib
         pass
 
     def download(self, cap):
@@ -293,7 +333,7 @@ class legoHDL:
             self.capsulePKG = caps.Capsule(package, new=True)
             
             if caps.Capsule.linkedRemote(): #now fetch from db to grab ID
-                self.capsulePKG.saveID(self.db.fetchProject(lib,name)['id'])
+                self.capsulePKG.saveID(self.db.fetchProjectShallow(lib,name)['id'])
             else: #assign tmp local id if no remote
                 self.capsulePKG.saveID(self.db.assignRandomID())
             
@@ -358,6 +398,7 @@ class legoHDL:
             formatHelp("del","deletes the package from the local workspace")
             formatHelp("search","search remote or local workspace for specified package")
             formatHelp("convert","converts the current folder into a valid package format")
+            formatHelp("gen","generate a file of necessary paths to build the project")
             formatHelp("show","read further detail about a specified package")
             formatHelp("ports","print ports list of specified package")
             formatHelp("summ","add description to current project")

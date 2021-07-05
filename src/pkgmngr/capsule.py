@@ -352,14 +352,19 @@ class Capsule:
         os.chmod(self.metadataPath(), stat.S_IROTH | stat.S_IRGRP | stat.S_IREAD | stat.S_IRUSR)
         pass
 
-    def install(self, cache_dir):
+    def install(self, cache_dir, ver):
         #CMD: git clone (rep.git_url) (location) --branch (rep.last_version) --single-branch
+        if(ver == None):
+            ver = "v"+self.getVersion()
+
+        self.__localPath = cache_dir+self.getName()+"/"
         try:
             git.Git(cache_dir).clone(self.__remoteURL,"--branch","v"+self.getVersion(),"--single-branch")
         except:
             pass
-            self.__localPath = cache_dir+self.getName()+"/"
-            self.loadMeta()
+        self.__repo = git.Repo(self.__localPath)
+        self.__repo.git.checkout(ver)
+        self.loadMeta()
         return
 
     def scanDependencies(self):
@@ -381,7 +386,7 @@ class Capsule:
                 file.close()
             print(vhd)
             print(derivatives)
-            self.__metadata['derives'] = derivatives
+            #self.__metadata['derives'] = derivatives
         return src_dir
         pass
 

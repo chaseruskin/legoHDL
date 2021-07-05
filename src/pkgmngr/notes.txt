@@ -1,8 +1,10 @@
-#<ideas>
+q#<ideas>
 
 #allow user to disable-enable registry repo setting
 
 #export project as a vivado project, with symbolic links to the VHDL files
+
+#have downloads be referenced over installs?
 
 #on a version release, have a dedicated zipped file of the vhd and .yaml?
 #faster for an install, but may have to be reworked if then deciding to download

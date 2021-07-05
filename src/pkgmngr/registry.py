@@ -1,7 +1,7 @@
 #registry.py is in charge of seeing what packages are hosted remotely and syncing
 #packages between user and remote
 from enum import Enum
-import os, random, requests, json
+import os, random, requests, json, glob
 import yaml
 from bs4 import BeautifulSoup
 from collections import OrderedDict
@@ -75,7 +75,8 @@ class Registry:
             for key,repo in reg.items():
                 sorted_reg[repo.library+repo.name] = repo
             reg = sorted_reg
-
+        
+        cached_ids = self.installedPkgs()
         print("\nList of available modules:")
         print("\tModule\t\t    status\t    version")
         print("-"*80)
@@ -87,10 +88,14 @@ class Registry:
             
             cp = caps.Capsule(rp=repo)
             status = '-'
-            info = ''
             ver = repo.last_version
-            if (cp.isValid()):
-                status = 'downloaded'
+            info = ''
+
+            if key in cached_ids.keys(): #check for installations
+                status = 'instl'
+                ver = cached_ids[key]
+            if (cp.isValid()): #check for downloads
+                status = 'dnld'
                 loc_ver = ''
                 loc_ver = cp.getVersion()
                 if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
@@ -98,7 +103,7 @@ class Registry:
                     ver = loc_ver
             
             if((options.count('local') and cp.isValid()) or not options.count('local')):
-                print("  ",'{:<24}'.format(title),'{:<14}'.format(status),'{:<10}'.format(ver),info)
+                print("  ",'{:<24}'.format(title),'{:<16}'.format(status),'{:<10}'.format(ver),info)
         pass
 
     def parseURL(self, website):
@@ -210,6 +215,16 @@ class Registry:
             id = random.randint(MIN_ID, MAX_ID)
         return id
 
+    def installedPkgs(self):
+        meta_dir = glob.glob(self.__hidden+"/cache/**/.*.yml", recursive=True)
+        id_dict = dict()
+        for md in meta_dir:
+            with open(md, 'r') as f:
+                tmp = yaml.load(f, Loader=yaml.FullLoader)
+                id_dict[tmp['id']] = tmp['version']
+                f.close()
+        return id_dict
+
     def createSubgroup(self, name, parent):
         print("Trying to create remote library "+name+"...",end=' ')
         link = self.__base_url+"/api/v4/groups/?name="+name+"&path="+name+"&visibility=private&parent_id="+str(parent['id'])
@@ -308,7 +323,7 @@ class Registry:
     def encrypt(self, token, file):
         print("Encrypting access token... ",end='')
         random.seed()
-        with open(self.__hidden+file+".bin", 'w') as file:
+        with open(self.__hidden+"registry/"+file+".bin", 'w') as file:
             for letter in token:
                 secret = bin(ord(letter))[2:]
                 secret = ((8-len(secret))*"0")+secret #pad to make fixed 8-bits
@@ -321,7 +336,7 @@ class Registry:
 
     def decrypt(self, file):
         token = ''
-        with open(self.__hidden+file+".bin", 'r') as file:
+        with open(self.__hidden+"registry/"+file+".bin", 'r') as file:
             binary_str = file.read()
             while len(binary_str):
                 tmp = ''
