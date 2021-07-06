@@ -97,6 +97,7 @@ class Capsule:
         libPath = self.__localPath[:n]
         os.makedirs(libPath, exist_ok=True)
         self.__repo = git.Git(libPath).clone(self.__remoteURL)
+        self.loadMeta()
 
     def getVersion(self):
         return self.getMeta('version')
@@ -354,14 +355,17 @@ class Capsule:
         os.chmod(self.metadataPath(), stat.S_IROTH | stat.S_IRGRP | stat.S_IREAD | stat.S_IRUSR)
         pass
 
-    def install(self, cache_dir, ver):
+    def install(self, cache_dir, ver, src_url=None):
         #CMD: git clone (rep.git_url) (location) --branch (rep.last_version) --single-branch
         if(ver == None):
             ver = "v"+self.getVersion()
+        
+        if(src_url == None):
+            src_url = self.__remoteURL
 
         self.__localPath = cache_dir+self.getName()+"/"
         try:
-            git.Git(cache_dir).clone(self.__remoteURL,"--branch","v"+self.getVersion(),"--single-branch")
+            git.Git(cache_dir).clone(src_url,"--branch","v"+self.getVersion(),"--single-branch")
         except:
             pass
         self.__repo = git.Repo(self.__localPath)

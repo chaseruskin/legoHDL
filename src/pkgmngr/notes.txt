@@ -107,6 +107,7 @@ _____Known issues:______
 until next command
 -checking activity log means it is not updated every single second
 -uploading and instantly dismissing a project causes the new version to not appear in catalog on next commands
+-better determine when it is necessary to request from remote to improve speed of some commands
 
 ======Roadmap:===========
 -implement cache folder

@@ -48,38 +48,8 @@ class legoHDL:
         self.parse()
         pass
 
-    #TO-DO: IMPLEMENT
-    def install(self, cap, opt):
-        cache_path = self.hidden+"cache/"
+    def genPKG(self, cap):
         lib_path = self.hidden+"lib/"+cap.getLib()+"/"
-        # grab the ID to search for the project
-        iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
-        cap = caps.Capsule(rp=rep) #update info into a capsule obj
-        # clone the repo -> cache
-        if(iden != -1):
-            print(rep.name)
-        self.db.findProjectsLocal(cache_path, cached=True)
-        #does the package already exist in the cache directory?
-        if(iden in self.db.getCachePrjs().keys()):
-            print("Package is already installed.")
-            return
-        #possibly make directory for cached project
-        print("Installing... ",end='')
-        cache_path = cache_path+cap.getLib()+"/"
-        os.makedirs(cache_path, exist_ok=True)
-        #see what the latest version available is and clone from that version unless specified
-        #print(rep.git_url)#print(rep.last_version)
-        ver = None
-        if(len(opt) and opt[0][0] != 'v'):
-            print("ERROR- Invalid args")
-            return
-        elif(len(opt)):
-            ver = opt[0]
-
-        cap.install(cache_path, ver)
-        print("success")
-        print("library files path:")
-        #make library grouping
         os.makedirs(lib_path, exist_ok=True)
         tmp_pkg = open(self.pkgmngPath+"/template_pkg.vhd", 'r')
         vhd_pkg = open(lib_path+cap.getName()+"_pkg.vhd", 'w')
@@ -111,6 +81,41 @@ class legoHDL:
         print()
         vhd_pkg.close()
         tmp_pkg.close()
+        pass
+
+    #TO-DO: IMPLEMENT
+    def install(self, cap, opt):
+        cache_path = self.hidden+"cache/"
+        lib_path = self.hidden+"lib/"+cap.getLib()+"/"
+        # grab the ID to search for the project
+        iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
+        cap = caps.Capsule(rp=rep) #update info into a capsule obj
+        # clone the repo -> cache
+        if(iden != -1):
+            print(rep.name)
+        self.db.findProjectsLocal(cache_path, cached=True)
+        #does the package already exist in the cache directory?
+        if(iden in self.db.getCachePrjs().keys()):
+            print("Package is already installed.")
+            return
+        #possibly make directory for cached project
+        print("Installing... ",end='')
+        cache_path = cache_path+cap.getLib()+"/"
+        os.makedirs(cache_path, exist_ok=True)
+        #see what the latest version available is and clone from that version unless specified
+        #print(rep.git_url)#print(rep.last_version)
+        ver = None
+        if(len(opt) and opt[0][0] != 'v'):
+            print("ERROR- Invalid args")
+            return
+        elif(len(opt)):
+            ver = opt[0]
+
+        cap.install(cache_path, ver)
+        print("success")
+        print("library files path:")
+        #generate PKG VHD
+        self.genPKG(cap)
         
         #link it all together through writing paths into "mapping.toml"
         cur_lines = list()
@@ -121,7 +126,7 @@ class legoHDL:
         mapper = open(self.hidden+"mapping.toml", 'w')
         inc_paths = list()
         inc_paths.append("\'"+lib_path+"*.vhd"+"\',\n")
-        inc_paths.append("\'"+src_dir+"*.vhd"+"\',\n")
+        inc_paths.append("\'"+cap.findPath(cap.getMeta("toplevel")).replace(cap.getMeta("toplevel"),"*.vhd")+"\',\n")
         inc = False
         found_lib = False
         if(len(cur_lines) <= 1):
@@ -229,6 +234,7 @@ class legoHDL:
             return
 
         iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
+        print(rep.local_path)
 
         if(iden == -1):
             print('ERROR- Package \''+cap.getName()+'\' does not exist in remote')
@@ -236,12 +242,22 @@ class legoHDL:
 
         if iden in self.db.getCurPrjs().keys(): #just give it an update!
             print("Project already exists in local workspace- pulling from remote...",end=' ')
-            cap.pull()
-            print("success")
+            cap.pull() 
         else: #oh man, go grab the whole thing!
             print("Cloning from remote...",end=' ')
             cap.clone()
-            print("success")
+        
+    
+        try: #symbolically link the downloaded project folder to the cache
+            shutil.rmtree(self.hidden+"cache/"+cap.getLib()+"/"+cap.getName()+"/")
+        except:
+            pass
+        #generate PKG VHD
+        opt = list()
+        opt.append("v"+cap.getVersion())   
+        self.install(caps.Capsule(rp=rep), opt)
+
+        print("success")
         pass
 
     def upload(self, cap, options=None):
@@ -260,8 +276,14 @@ class legoHDL:
             exit()
 
         cap.autoDetectTop()
-        cap.release(ver, options)        
- 
+        cap.release(ver, options) 
+
+        try: shutil.rmtree(self.hidden+"cache/"+cap.getLib()+"/"+cap.getName())
+        except: pass
+        #clone new project's progress into cache
+        tmp = caps.Capsule(cap.getLib()+'.'+cap.getName())
+        tmp.install(self.hidden+"cache/"+cap.getLib()+"/", "v"+cap.getVersion(), src_url=cap.getPath())
+
         if caps.Capsule.linkedRemote():
             print("Updating remote package contents...",end=' ')
             cap.pushRemote()
@@ -304,14 +326,14 @@ class legoHDL:
         print()
         pass
 
-    def cleanup(self, cap):
+    def cleanup(self, cap, force):
         iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
         cap = caps.Capsule(rp=rep)
         if(not cap.isValid()):
             print('No module '+cap.getName()+' exists locally')
             return
         
-        if(self.remote == None):
+        if(self.remote == None and force):
             print('\
                 WARNING- No remote code base is configured, if this module is deleted it may be unrecoverable.\n \
                 DELETE '+cap.getName()+'? [y/n]\
@@ -323,14 +345,24 @@ class legoHDL:
                     break
             if(response.lower() == 'n'):
                 print(cap.getName()+' not deleted')
-                return
+                force = False
         #if there is a remote then the project still lives on, can be "redownloaded"
-        try: #delete locallys
-            shutil.rmtree(rep.local_path)
+        #MOVES THE PROJECT TO THE CACHE AND GENERATES A PKG FILE
+        
+        try: #unlink if previously in cache
+            os.unlink(self.hidden+"cache/"+cap.getLib()+"/"+cap.getName())
+        except:
+            pass
+
+        try:
+            if(force):
+                shutil.rmtree(rep.local_path)
+            else:
+                shutil.move(rep.local_path, self.hidden+"cache/"+cap.getLib()+"/"+cap.getName())
             print('Deleted '+cap.getName()+' from local workspace')
         except:
             print('No module '+cap.getName()+' exists locally')
-            return    
+            return
         #delete the module remotely?
         pass
 
@@ -425,7 +457,11 @@ class legoHDL:
             self.capsuleCWD.scanDependencies()
             pass
         elif(command == 'del'):
-            self.cleanup(self.capsulePKG)
+            force = False
+            if(len(options) > 0):
+                if(options[0].lower() == 'f'):
+                    force = True
+            self.cleanup(self.capsulePKG, force)
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             self.inventory(options)
             pass
@@ -491,6 +527,7 @@ class legoHDL:
             \n\t-alpha\t\talphabetical order\
             \n\t-o\t\topen the project\
             \n\t-d\t\tremoves the released package from your local codebase\
+            \n\t-F\t\tforce project uninstallation alongside deletion from local codebase\
             \n\t-local\t\tset local path setting\
             \n\t-remote\t\tset remote path setting\
             \n\t-editor\t\tset text-editor setting\
