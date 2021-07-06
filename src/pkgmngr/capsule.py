@@ -223,8 +223,8 @@ class Capsule:
             
         #run the commands to generate new project from template
         #file to find/replace word 'template'
-        file_swaps = [(self.__localPath+'.template.yml',self.metadataPath()),(self.__localPath+'design/template.vhd', self.__localPath+'design/'+self.__name+'.vhd'),
-        (self.__localPath+'testbench/template_tb.vhd', self.__localPath+'testbench/'+self.__name+'_tb.vhd')]
+        file_swaps = [(self.__localPath+'.template.yml',self.metadataPath()),(self.findPath('template.vhd'), self.findPath('template.vhd').replace('template', self.__name)),
+        (self.findPath('template_tb.vhd'), self.findPath('template_tb.vhd').replace("template", self.__name))]
 
         today = date.today().strftime("%B %d, %Y")
         for x in file_swaps:
@@ -370,10 +370,10 @@ class Capsule:
         return
 
     def scanDependencies(self, vhd_file=None):
-        vhd_file = glob.glob(self.__localPath+"/**/"+self.getMeta("toplevel"), recursive=True)[0]
+        vhd_file = self.findPath(self.getMeta("toplevel"))
         s = vhd_file.rfind('/')
         src_dir = vhd_file[:s+1]
-        print(src_dir)
+        #print(src_dir)
         #open every src file and inspect lines for using libraries
         derivatives = list()
         for vhd in os.listdir(src_dir):
@@ -386,10 +386,156 @@ class Capsule:
                     if(line.count("entity") > 0):
                         break
                 file.close()
-            print(vhd)
-            print(derivatives)
+            #print(vhd)
+            #print(derivatives)
             #self.__metadata['derives'] = derivatives
         return src_dir, derivatives
+        pass
+    
+    #auto detect the toplevel file
+    def autoDetectTop(self):
+        #find all possible files
+        vhd_files = glob.glob(self.__localPath+"/**/*.vhd", recursive=True)
+        #remove all files containing "tb_" or "_tb"
+        comps = dict() #store a dict of all components to look for that are instantiated
+        toplvl = None
+        tmplist = vhd_files.copy()
+        for vhd in tmplist:
+            if (vhd.count("tb_") + vhd.count("_tb") > 0):
+                vhd_files.remove(vhd)
+            else:
+                s = vhd.rfind('/')
+                d = vhd.rfind('.')
+                comps[vhd[s+1:d]] = vhd
+
+        if(len(vhd_files) == 1):
+            toplvl = vhd_files[0]
+        
+        #go through every file, if a file contains one of the keys in comps, the file named with that key is removed
+        #print("DETECTING TOPLEVEL DESIGN MODULE")
+        if(toplvl == None):
+            for comp,vhd in comps.items():
+                with open(vhd, 'r') as file:
+                    in_entity = in_arch = False #reset detectors
+
+                    for line in file.readlines():
+                        if(line.count("entity") > 0):
+                            in_entity = not in_entity
+
+                        if(line.count("architecture") > 0):
+                            in_arch = not in_arch
+                        #remove file attached to key if...
+                        #if before entity, the key is found in line starting with "use"
+                        if(line.count("use") and not in_entity and line.count("work")):
+                            l,n = self.siftLibName(line)
+                            if(n in comps.keys()):
+                                vhd_files.remove(comps[n])
+                                #print("REMOVE:",comps[n])
+                                break
+                        #if inside architecture and before begin, the key is found in line with "component"
+                        if(line.count("component") and in_arch):
+                            t = line.find("component")+len("component")+1
+                            while line[t] == ' ':
+                                t = t+1
+                            spc = (line[t:]).find(' ')
+                            n = line[t:t+spc]
+                            if(n in comps.keys()):
+                                #print("REMOVE:",comps[n])
+                                vhd_files.remove(comps[n])
+                                break
+                    file.close()
+                    pass
+        #grab contender's name
+        if(len(vhd_files) == 1):
+            toplvl = vhd_files[0]
+        else:
+            print("ERROR- Could not resolve toplevel design module.")
+            return
+        
+        s = toplvl.rfind('/')
+        d = toplvl.rfind('.')
+        toplvlName = toplvl[s+1:d]
+        toplvlPath = toplvl[:s+1]
+    
+        #break up into src_dir and file name
+        #add to metadata, ensure to push meta data if results differ from previously loaded
+        if(toplvlName+".vhd" != self.getMeta("toplevel")):
+            print("TOPLEVEL:",toplvlName)
+            self.__metadata['toplevel'] = toplvlName+".vhd"
+            self.autoDetectBench()
+            self.pushYML("Auto updates top level design module to "+self.getMeta("toplevel"))
+        pass
+    
+    @classmethod
+    def siftLibName(cls, dep):
+        dot = dep.find('.')
+        lib = dep[:dot]
+        dot2 = dep[dot+1:].find('.')
+        if(dot2 == -1):
+            #use semi-colon if only 1 dot is marked
+            dot2 = dep[dot+1:].find(';') 
+        name = dep[dot+1:dot+1+dot2]
+        return lib,name
+    
+    #auto detect testbench file
+    def autoDetectBench(self, comp=None):
+        #print("DETECTING TOP-LEVEL TESTBENCH")
+        #based on toplevel, find which file instantiates a component of toplevel
+        #find all possible files
+        vhd_files = glob.glob(self.__localPath+"/**/*.vhd", recursive=True)
+        #keep only files containing "tb_" or "_tb"
+        if(comp == None):
+            comp = self.getMeta("toplevel") #looking for a testbench that uses this component
+        ext_i = comp.find(".vhd")
+        if(ext_i > -1):
+            comp = comp[:ext_i]
+        #print("LOOKING:",comp)
+        bench = None
+        tmplist = vhd_files.copy()
+        for vhd in tmplist:
+            if (vhd.count("tb_") + vhd.count("_tb") == 0):
+                vhd_files.remove(vhd)
+            elif(vhd.count(comp)):
+                bench = vhd
+                break
+
+        if(len(vhd_files) == 1):
+            bench = vhd_files
+        
+        if(bench == None):
+            for vhd in vhd_files:
+                with open(vhd, 'r') as file:
+                    for line in file.readlines():
+                        if(line.count("use") and line.count(comp) and line.count("work")):
+                            bench = vhd
+                            break
+                        if(line.count("component") and line.count(comp)):
+                            bench = vhd
+                            break
+                    file.close()
+                    if(bench != None):
+                        break
+                    pass
+        
+        if(bench == None):
+            print("ERROR- Could not resolve top-level testbench")
+            return
+        print("TESTBENCH:",bench)
+        s = bench.rfind('/')
+        d = bench.rfind('.')
+        benchName = bench[s+1:d]
+        benchPath = bench[:s+1]
+        
+        if(benchName+".vhd" != self.getMeta("verification")):
+            self.__metadata['verification'] = benchName+".vhd"
+        pass
+
+    def findPath(self, file="*.vhd"):
+        vhd_files = glob.glob(self.__localPath+"/**/"+file, recursive=True)
+        if(len(vhd_files) > 0):
+            return vhd_files[0]
+        else:
+            return None
         pass
 
     def ports(self):

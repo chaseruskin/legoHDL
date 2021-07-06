@@ -159,19 +159,11 @@ class legoHDL:
         #remove from lib
         pass
 
-    def siftLibName(self, dep):
-        dot = dep.find('.')
-        lib = dep[:dot]
-        dot2 = dep[dot+1:].find('.')
-        name = dep[dot+1:dot+1+dot2]
-        return lib,name
-
     def libExists(self, lib):
         return os.path.isdir(self.hidden+"lib/"+lib)
 
-    def export(self, cap):
+    def export(self, cap, top=None, tb=None):
         print("Exporting...",end=' ')
-
         build_dir = cap.getPath()+"/build/"
         #create a clean build folder
         try:
@@ -180,14 +172,29 @@ class legoHDL:
             shutil.rmtree(build_dir)
             os.mkdir(build_dir)
         
+        #add export option to override auto detection
+        if(top == None):
+            cap.autoDetectTop()
+            cap.autoDetectBench()
+            top = cap.getMeta("toplevel")
+            tb = cap.getMeta("verification")
+        elif(top != None and tb == None):
+            cap.autoDetectBench(top)
+            tb = cap.getMeta("verification")
+        
+        if(top.count(".vhd") == 0):
+            top = top+".vhd"
+        if(tb.count(".vhd")== 0):
+            tb = tb+".vhd"
+
         output = open(build_dir+"recipe", 'w')
         #mission: recursively search through every "used" VHD file for what else needs to be included
         src_dir,derivatives = cap.scanDependencies()
         
         library = dict() #stores lists at dictionary keys
         for d in derivatives:
-            l,n = self.siftLibName(d)
-            print(l,n)
+            l,n = caps.Capsule.siftLibName(d)
+            #print(l,n)
             #library must exist in lib to be included in recipe.txt (avoids writing external libs like IEEE)
             if(self.libExists(l)): #check lib exists
                 if not l in library.keys():
@@ -209,9 +216,9 @@ class legoHDL:
                 output.write("LIB "+lib+" "+self.hidden+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
 
         #write current src dir where all src files are as "work" lib
-        output.write("SRC "+src_dir+"*.vhd\n")
+        output.write("SRC "+cap.findPath(top).replace(top, "*.vhd")+"\n")
         #write current test dir where all testbench files are
-        output.write("TB "+cap.getPath()+"testbench/"+cap.getMeta("verification")+"\n")
+        output.write("TB "+cap.findPath(tb)+"\n")
         output.close()
         print("success")
         pass
@@ -252,6 +259,7 @@ class legoHDL:
             print(err_msg)
             exit()
 
+        cap.autoDetectTop()
         cap.release(ver, options)        
  
         if caps.Capsule.linkedRemote():
@@ -268,6 +276,7 @@ class legoHDL:
 
         if(options[0] == 'gl-token' or options[0] == 'gh-token'):
             self.db.encrypt(choice, options[0])
+            return
 
         if(not options[0] in self.settings.keys()):
             print("ERROR- Invalid setting")
@@ -421,7 +430,14 @@ class legoHDL:
             self.inventory(options)
             pass
         elif(command == "export"): #a visual aide to help a developer see what package's are at the ready to use
-            self.export(self.capsuleCWD)
+            #'' and list() are default to pkg and options
+            mod = package
+            tb = None
+            if(mod == ''):
+                mod = None
+            if(len(options) > 0):
+                tb = options[0]
+            self.export(self.capsuleCWD, mod, tb)
             pass
         elif(command == "open" and self.capsulePKG.isValid()):
             self.capsulePKG.load()
