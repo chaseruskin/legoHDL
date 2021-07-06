@@ -320,6 +320,12 @@ class legoHDL:
         with open(self.pkgmngPath+"settings.yml", "w") as file:
             yaml.dump(self.settings, file)
             pass
+    
+    def convert(self, package):
+        #find the src dir and testbench dir through autodetect top-level modules
+        #see if there is a .git folder
+        #create a YML
+        pass
 
     def inventory(self, options):
         self.db.listCaps(options)
@@ -465,6 +471,8 @@ class legoHDL:
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             self.inventory(options)
             pass
+        elif(command == "convert"):
+            self.convert(package)
         elif(command == "export"): #a visual aide to help a developer see what package's are at the ready to use
             #'' and list() are default to pkg and options
             mod = package
