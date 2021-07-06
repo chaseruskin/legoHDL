@@ -101,7 +101,8 @@ class Registry:
                 if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
                     info = '(update)-> '+ver
                     ver = loc_ver
-            
+
+            ver = '' if (ver == '0.0.0') else ver
             if((options.count('local') and cp.isValid()) or not options.count('local')):
                 print("  ",'{:<24}'.format(title),'{:<16}'.format(status),'{:<10}'.format(ver),info)
         pass

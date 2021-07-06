@@ -188,7 +188,7 @@ class legoHDL:
             tb = tb+".vhd"
 
         output = open(build_dir+"recipe", 'w')
-        #mission: recursively search through every "used" VHD file for what else needs to be included
+        #mission: recursively search through every src VHD file for what else needs to be included
         src_dir,derivatives = cap.scanDependencies()
         
         library = dict() #stores lists at dictionary keys

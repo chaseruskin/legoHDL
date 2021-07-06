@@ -110,7 +110,9 @@ until next command
 
 ======Roadmap:===========
 -implement cache folder
--implement install and uninstall commands
+-fix "-alpha" option for list command to correctly display modules' status
+-implement uninstall command
+-implement recursive nature on install for other dependencies
 -better formatting for help prompt
 
 #TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
