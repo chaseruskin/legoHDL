@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os, sys, shutil
-import yaml, git
+import yaml, git, glob
 try:
     from pkgmngr import capsule as caps
     from pkgmnger import registry as reg
@@ -60,6 +60,7 @@ class legoHDL:
         #search through all library uses and see what are chained dependencies
         src_dir,derivatives = cap.scanDependencies()
         #write in all library and uses
+        print(derivatives)
         libs = set()
         for dep in derivatives:
             dot = dep.find('.')
@@ -166,9 +167,9 @@ class legoHDL:
         #remove from lib
         pass
 
-    def recurseScan(self, grp, d_list):
+    def recurseScan(self, grp, d_list, top_mp):
         if(len(d_list) == 0):
-            return grp
+            return grp,top_mp
         #go to YML of dependencies and add edges to build dependency tree
         for d in d_list:
             l,n = caps.Capsule.siftLibName(d)
@@ -178,10 +179,11 @@ class legoHDL:
                     tmp = yaml.load(file, Loader=yaml.FullLoader)
             except:
                 continue
-            grp = self.recurseScan(grp, tmp['derives'])
+            top_mp[l+'.'+n] = tmp['toplevel']
+            grp,top_mp = self.recurseScan(grp, tmp['derives'], top_mp)
             for z in tmp['derives']:
                 grp.addEdge(d, z)
-        return grp
+        return grp,top_mp
 
     def libExists(self, lib):
         return os.path.isdir(self.hidden+"lib/"+lib)
@@ -211,14 +213,15 @@ class legoHDL:
         if(tb.count(".vhd")== 0):
             tb = tb+".vhd"
 
-        g = graph.Graph()
-
+        g= graph.Graph()
+        top_mp = dict()
+        top_mp[cap.getLib()+'.'+cap.getName()] = cap.getMeta('toplevel')
         output = open(build_dir+"recipe", 'w')
         #mission: recursively search through every src VHD file for what else needs to be included
         src_dir,derivatives = cap.scanDependencies()
         for d in derivatives:
             g.addEdge(top, d)
-        g = self.recurseScan(g, derivatives)
+        g,top_mp = self.recurseScan(g, derivatives, top_mp)
 
         g.output()
         #before writing recipe, the nodes must be topologically sorted as dependency tree
@@ -239,7 +242,10 @@ class legoHDL:
         #write these libraries and their required file paths to a file for exporting
         for lib in library.keys():
             for pkg in library[lib]:
-                output.write("LIB "+lib+" "+self.hidden+"cache/"+lib+"/"+pkg+"/*.vhd\n")
+                key = lib+'.'+pkg
+                root_dir = self.hidden+"cache/"+lib+"/"+pkg+"/"
+                src_dir = glob.glob(root_dir+"/**/"+top_mp[key], recursive=True)
+                output.write("LIB "+lib+" "+src_dir[0].replace(top_mp[key], "*.vhd")+"\n")
                 output.write("LIB "+lib+" "+self.hidden+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
 
         #write current src dir where all src files are as "work" lib
@@ -378,17 +384,14 @@ class legoHDL:
                 force = False
         #if there is a remote then the project still lives on, can be "redownloaded"
         #MOVES THE PROJECT TO THE CACHE AND GENERATES A PKG FILE
-        
-        try: #unlink if previously in cache
-            os.unlink(self.hidden+"cache/"+cap.getLib()+"/"+cap.getName())
-        except:
-            pass
 
         try:
             if(force):
                 shutil.rmtree(rep.local_path)
             else:
-                shutil.move(rep.local_path, self.hidden+"cache/"+cap.getLib()+"/"+cap.getName())
+                shutil.rmtree(rep.local_path, ignore_errors=True)
+                shutil.move(rep.local_path, self.hidden+"cache/"+cap.getLib()+"/")
+                self.genPKG(cap)
             print('Deleted '+cap.getName()+' from local workspace')
         except:
             print('No module '+cap.getName()+' exists locally')
@@ -473,7 +476,7 @@ class legoHDL:
             # remote codebase (all CI should pass locally before pushing up)
             self.upload(self.capsuleCWD, options=options)
             if(len(options) == 2 and options[1] == 'd'):
-                self.cleanup(self.capsuleCWD)
+                self.cleanup(self.capsuleCWD, True)
             pass
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
