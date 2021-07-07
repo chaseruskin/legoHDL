@@ -11,6 +11,7 @@ except:
 class Capsule:
     settings = None
     pkgmngPath = ''
+    hidden = os.path.expanduser("~/.legohdl/")
 
     #initialze capsule from a repo obj
     def absorbRepo(self, rp):
@@ -374,25 +375,43 @@ class Capsule:
         return
 
     def scanDependencies(self, vhd_file=None):
-        vhd_file = self.findPath(self.getMeta("toplevel"))
+        vhd_file = self.findPath(self.getMeta("toplevel")) #find top-level
         s = vhd_file.rfind('/')
-        src_dir = vhd_file[:s+1]
-        #print(src_dir)
+        src_dir = vhd_file[:s+1] #print(src_dir)
         #open every src file and inspect lines for using libraries
-        derivatives = list()
+        derivatives = set()
         for vhd in os.listdir(src_dir):
             with open(src_dir+vhd) as file:
                 for line in file:
                     line = line.lower()
                     z = line.find("use")
-                    if(z >= 0):
-                        derivatives.append(line[z+3:].strip())
+                    c = line.find('--')
+                    if(z >= 0 and (c == -1 or z < c)):
+                        derivatives.add(line[z+3:].strip())
                     if(line.count("entity") > 0):
                         break
                 file.close()
             #print(vhd)
-            #print(derivatives)
-            #self.__metadata['derives'] = derivatives
+        
+        #if the pkg does not exist in the lib folder, remove it!
+        tmp = derivatives.copy()
+        for d in tmp:
+            l,n = self.siftLibName(d)
+            print(l,n)
+            if(not os.path.isfile(self.hidden+"lib/"+l+"/"+n+".vhd")):
+                derivatives.remove(d)
+
+        print(derivatives)
+        update = False
+        if(len(self.__metadata['derives']) != len(derivatives)):
+            update = True
+        for d in derivatives:
+            if(d not in self.__metadata['derives']):
+                update = True
+                break
+        if(update):
+            self.__metadata['derives'] = list(derivatives)
+            self.pushYML("Updates module derivatives")
         return src_dir, derivatives
         pass
     
@@ -504,7 +523,7 @@ class Capsule:
                 break
 
         if(len(vhd_files) == 1):
-            bench = vhd_files
+            bench = vhd_files[0]
         
         if(bench == None):
             for vhd in vhd_files:

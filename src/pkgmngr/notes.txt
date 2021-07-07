@@ -91,7 +91,7 @@ use utils.flipflopPkg.flipflop;
 use utils.clockdividerPkg.clockdivider;
 
 library encoder;
-use enconder.enconderPkg.encoder;
+use util.enconder_pkg.encoder;
 
 PKG VHD file is simple component wrapper;
 

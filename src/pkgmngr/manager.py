@@ -4,9 +4,11 @@ import yaml, git
 try:
     from pkgmngr import capsule as caps
     from pkgmnger import registry as reg
+    from pkgmnger import graph
 except:
     import capsule as caps
     import registry as reg
+    import graph
 
 class legoHDL:
     def __init__(self):
@@ -164,6 +166,23 @@ class legoHDL:
         #remove from lib
         pass
 
+    def recurseScan(self, grp, d_list):
+        if(len(d_list) == 0):
+            return grp
+        #go to YML of dependencies and add edges to build dependency tree
+        for d in d_list:
+            l,n = caps.Capsule.siftLibName(d)
+            n = n.replace("_pkg", "")
+            try:
+                with open(self.hidden+"cache/"+l+"/"+n+"/."+n+".yml", "r") as file:
+                    tmp = yaml.load(file, Loader=yaml.FullLoader)
+            except:
+                continue
+            grp = self.recurseScan(grp, tmp['derives'])
+            for z in tmp['derives']:
+                grp.addEdge(d, z)
+        return grp
+
     def libExists(self, lib):
         return os.path.isdir(self.hidden+"lib/"+lib)
 
@@ -192,29 +211,32 @@ class legoHDL:
         if(tb.count(".vhd")== 0):
             tb = tb+".vhd"
 
+        g = graph.Graph()
+
         output = open(build_dir+"recipe", 'w')
         #mission: recursively search through every src VHD file for what else needs to be included
         src_dir,derivatives = cap.scanDependencies()
-        
-        library = dict() #stores lists at dictionary keys
         for d in derivatives:
-            l,n = caps.Capsule.siftLibName(d)
+            g.addEdge(top, d)
+        g = self.recurseScan(g, derivatives)
+
+        g.output()
+        #before writing recipe, the nodes must be topologically sorted as dependency tree
+        hierarchy = g.topologicalSort() #flatten dependency tree
+        print(hierarchy)
+
+        library = dict() #stores lists at dictionary keys
+        for h in hierarchy:
+            l,n = caps.Capsule.siftLibName(h)
+            n = n.replace("_pkg", "")
             #print(l,n)
             #library must exist in lib to be included in recipe.txt (avoids writing external libs like IEEE)
             if(self.libExists(l)): #check lib exists
                 if not l in library.keys():
                     library[l] = list() 
                 library[l].append(n)
-
-        #before writing recipe, the nodes must be topologically sorted as dependency tree
                 
         #write these libraries and their required file paths to a file for exporting
-        library['basic'] = list()
-        library['util'] = list()
-
-        library['basic'].append("path1")
-        library['basic'].append("path2")
-        library['util'].append("path3")
         for lib in library.keys():
             for pkg in library[lib]:
                 output.write("LIB "+lib+" "+self.hidden+"cache/"+lib+"/"+pkg+"/*.vhd\n")
@@ -276,7 +298,7 @@ class legoHDL:
             exit()
 
         cap.autoDetectTop()
-        cap.release(ver, options) 
+        cap.release(ver, options)
 
         try: shutil.rmtree(self.hidden+"cache/"+cap.getLib()+"/"+cap.getName())
         except: pass
@@ -321,8 +343,10 @@ class legoHDL:
             yaml.dump(self.settings, file)
             pass
     
+    #TO-DO: implement
     def convert(self, package):
         #find the src dir and testbench dir through autodetect top-level modules
+
         #see if there is a .git folder
         #create a YML
         pass
@@ -444,7 +468,7 @@ class legoHDL:
             if(options.count("o") > 0):
                 self.capsulePKG.load()
             pass
-        elif(command == "upload" and self.capsuleCWD.isValid()):
+        elif(command == "release" and self.capsuleCWD.isValid()):
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
             self.upload(self.capsuleCWD, options=options)
@@ -471,7 +495,7 @@ class legoHDL:
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             self.inventory(options)
             pass
-        elif(command == "convert"):
+        elif(command == "init"):
             self.convert(package)
         elif(command == "export"): #a visual aide to help a developer see what package's are at the ready to use
             #'' and list() are default to pkg and options
@@ -511,13 +535,13 @@ class legoHDL:
             formatHelp("install","grab package from remote for dependency use")
             formatHelp("uninstall","remove package from cache")
             formatHelp("download","grab package from remote for further development")
-            formatHelp("upload","release the next new version of the current package")
-            formatHelp("update","update cached package to be to the latest version")
+            formatHelp("release","release the next new version of the current package")
+            formatHelp("update","update installed package to be to the latest version")
             formatHelp("list","print list of all packages available")
             formatHelp("open","opens the package with the configured text-editor")
             formatHelp("del","deletes the package from the local workspace")
             formatHelp("search","search remote or local workspace for specified package")
-            formatHelp("convert","converts the current folder into a valid package format")
+            formatHelp("init","initialize the current folder into a valid package format")
             formatHelp("export","generate a file of necessary paths to build the project")
             formatHelp("show","read further detail about a specified package")
             formatHelp("ports","print ports list of specified package")
