@@ -11,8 +11,7 @@ class Vertex:
 
 class Graph:
     def __init__(self):
-        #store with adj list
-        #list of vertices
+        #store with adj list (list of vertices)
         self.__adj_list = dict()
         pass
 
@@ -26,6 +25,11 @@ class Graph:
         self.__adj_list[to].append(fromm)
         #to.__requires.append(fromm)
         #fromm.__required_by.append(to)
+        pass
+
+    def removeEdge(self, to, fromm):
+        if(fromm in self.__adj_list[to]):
+            self.__adj_list[to].remove(fromm)
         pass
 
     def topologicalSort(self):

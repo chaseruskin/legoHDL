@@ -4,6 +4,6 @@ id:
 version: 0.0.0
 summary:  
 toplevel: template.vhd
-verification: template_tb.vhd
+bench: template_tb.vhd
 derives: {}
 integrates: {}

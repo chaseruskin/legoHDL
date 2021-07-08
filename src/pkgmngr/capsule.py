@@ -361,12 +361,16 @@ class Capsule:
         if(ver == None):
             ver = "v"+self.getVersion()
         
+        if(ver == 'v0.0.0'):
+            print('error- no available version')
+            exit()
+        
         if(src_url == None):
             src_url = self.__remoteURL
 
         self.__localPath = cache_dir+self.getName()+"/"
         try:
-            git.Git(cache_dir).clone(src_url,"--branch","v"+self.getVersion(),"--single-branch")
+            git.Git(cache_dir).clone(src_url,"--branch",ver,"--single-branch")
         except:
             pass
         self.__repo = git.Repo(self.__localPath)
@@ -374,7 +378,7 @@ class Capsule:
         self.loadMeta()
         return
 
-    def scanDependencies(self, vhd_file=None):
+    def scanDependencies(self, yml=True, vhd_file=None):
         vhd_file = self.findPath(self.getMeta("toplevel")) #find top-level
         s = vhd_file.rfind('/')
         src_dir = vhd_file[:s+1] #print(src_dir)
@@ -392,6 +396,9 @@ class Capsule:
                         break
                 file.close()
             #print(vhd)
+        #option to keep all library usages (for gen package files)
+        if(yml == False):
+            return src_dir,derivatives
         
         #if the pkg does not exist in the lib folder, remove it!
         tmp = derivatives.copy()
@@ -549,8 +556,8 @@ class Capsule:
         benchName = bench[s+1:d]
         benchPath = bench[:s+1]
         
-        if(benchName+".vhd" != self.getMeta("verification")):
-            self.__metadata['verification'] = benchName+".vhd"
+        if(benchName+".vhd" != self.getMeta("bench")):
+            self.__metadata['bench'] = benchName+".vhd"
         pass
 
     def findPath(self, file="*.vhd"):
@@ -561,7 +568,7 @@ class Capsule:
             return None
         pass
 
-    def ports(self):
+    def ports(self, mapp):
         vhd_file = glob.glob(self.__localPath+"/**/"+self.getMeta("toplevel"), recursive=True)[0]
         
         port_txt = ''
@@ -582,6 +589,70 @@ class Capsule:
                     rolling_entity = False
                     break
             f.close()
+        port_txt = port_txt.replace("entity", "component")
+
+        #manipulate port list into port map if mapp=True
+        if(mapp):
+            print()
+            print(port_txt,end='')
+
+            signals = dict() #store all like signals together to output later
+
+            nl = port_txt.find('\n')
+            txt_list = list()
+            while nl > -1:
+                txt_list.append(port_txt[:nl])
+                port_txt = port_txt[nl+1:]
+                nl = port_txt.find('\n')
+            #format header
+            port_txt = txt_list[0].replace("component", "uX :")
+            port_txt = port_txt.replace("is", "")+"\n"
+            
+            #format ports
+            isGens = False
+            for num in range(1, len(txt_list)-2):
+                line = txt_list[num]
+                if(line.count("port")):
+                    port_txt = port_txt + line.replace("port", "port map").strip()+"\n"
+                    continue
+                if(line.count("generic")):
+                    port_txt = port_txt + line.replace("generic", "generic map").strip()+"\n"
+                    isGens = True
+                    continue
+                col = line.find(':')
+                if(isGens and line.count(')')):
+                    isGens = False
+                    port_txt = port_txt+")\n"
+                    continue
+                
+                sig_dec = line[col+1:].strip()
+                spce = sig_dec.find(' ')
+                sig_type = sig_dec[spce:].strip()
+                if(sig_type.count(';') == 0):
+                    sig_type = sig_type + ';'
+                sig = line[:col].strip()
+                if(not isGens):
+                    if(not sig_type in signals):
+                        signals[sig_type] = list()
+                    signals[sig_type].append(sig)
+                
+                line = "    "+line[:col].strip()+"=>"+sig
+                if((not isGens and num < len(txt_list)-3) or (isGens and txt_list[num+1].count(')') == 0)):
+                    line = line + ',' #only append ',' to all ports but last
+                port_txt = port_txt+line+"\n"
+            
+            #format footer
+            port_txt = port_txt + txt_list[len(txt_list)-2].strip()+"\n"
+
+            #print signal declarations
+            print()
+            for sig,pts in signals.items():
+                line = "signal "
+                for p in pts:
+                    line = line + p +', '
+                line = line[:len(line)-2] + ' : ' + sig
+                print(line)
+        print()
         return port_txt
         pass
 

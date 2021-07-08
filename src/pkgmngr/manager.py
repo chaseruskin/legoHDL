@@ -45,7 +45,7 @@ class legoHDL:
             self.db.fetch()
         self.db.sync()
         
-        os.environ['VHDL_LS_CONFIG'] = self.hidden+"mapping.toml" #directly works with VHDL_LS
+        os.environ['VHDL_LS_CONFIG'] = self.hidden+"map.toml" #directly works with VHDL_LS
 
         self.parse()
         pass
@@ -58,7 +58,7 @@ class legoHDL:
 
         #need to look at toplevel VHD file to transfer correct library uses
         #search through all library uses and see what are chained dependencies
-        src_dir,derivatives = cap.scanDependencies()
+        src_dir,derivatives = cap.scanDependencies(yml=False)
         #write in all library and uses
         print(derivatives)
         libs = set()
@@ -122,11 +122,11 @@ class legoHDL:
         
         #link it all together through writing paths into "mapping.toml"
         cur_lines = list()
-        mapper = open(self.hidden+"mapping.toml", 'r')
+        mapper = open(self.hidden+"map.toml", 'r')
         cur_lines = mapper.readlines()
         mapper.close()
 
-        mapper = open(self.hidden+"mapping.toml", 'w')
+        mapper = open(self.hidden+"map.toml", 'w')
         inc_paths = list()
         inc_paths.append("\'"+lib_path+"*.vhd"+"\',\n")
         inc_paths.append("\'"+cap.findPath(cap.getMeta("toplevel")).replace(cap.getMeta("toplevel"),"*.vhd")+"\',\n")
@@ -203,10 +203,10 @@ class legoHDL:
             cap.autoDetectTop()
             cap.autoDetectBench()
             top = cap.getMeta("toplevel")
-            tb = cap.getMeta("verification")
+            tb = cap.getMeta("bench")
         elif(top != None and tb == None):
             cap.autoDetectBench(top)
-            tb = cap.getMeta("verification")
+            tb = cap.getMeta("bench")
         
         if(top.count(".vhd") == 0):
             top = top+".vhd"
@@ -311,6 +311,7 @@ class legoHDL:
         #clone new project's progress into cache
         tmp = caps.Capsule(cap.getLib()+'.'+cap.getName())
         tmp.install(self.hidden+"cache/"+cap.getLib()+"/", "v"+cap.getVersion(), src_url=cap.getPath())
+        self.genPKG(tmp)
 
         if caps.Capsule.linkedRemote():
             print("Updating remote package contents...",end=' ')
@@ -386,12 +387,7 @@ class legoHDL:
         #MOVES THE PROJECT TO THE CACHE AND GENERATES A PKG FILE
 
         try:
-            if(force):
-                shutil.rmtree(rep.local_path)
-            else:
-                shutil.rmtree(rep.local_path, ignore_errors=True)
-                shutil.move(rep.local_path, self.hidden+"cache/"+cap.getLib()+"/")
-                self.genPKG(cap)
+            shutil.rmtree(rep.local_path)
             print('Deleted '+cap.getName()+' from local workspace')
         except:
             print('No module '+cap.getName()+' exists locally')
@@ -476,7 +472,7 @@ class legoHDL:
             # remote codebase (all CI should pass locally before pushing up)
             self.upload(self.capsuleCWD, options=options)
             if(len(options) == 2 and options[1] == 'd'):
-                self.cleanup(self.capsuleCWD, True)
+                self.cleanup(self.capsuleCWD, False)
             pass
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
@@ -487,7 +483,6 @@ class legoHDL:
         elif(command == "summ" and self.capsuleCWD.isValid()):
             self.capsuleCWD.getMeta()['summary'] = description
             self.capsuleCWD.pushYML("Updates project summary")
-            self.capsuleCWD.scanDependencies()
             pass
         elif(command == 'del'):
             force = False
@@ -517,7 +512,10 @@ class legoHDL:
             self.capsulePKG.show()
             pass
         elif(command == "ports" and self.capsulePKG.isValid()):
-            print(self.capsulePKG.ports())
+            mapp = False
+            if(len(options) and 'map' in options):
+                mapp = True
+            print(self.capsulePKG.ports(mapp))
         elif(command == "template" and self.settings['editor'] != None):
             os.system(self.settings['editor']+" "+self.pkgmngPath+"/template")
             pass
@@ -535,21 +533,21 @@ class legoHDL:
             def formatHelp(cmd, des):
                 print('  ','{:<12}'.format(cmd),des)
                 pass
+            formatHelp("init","initialize the current folder into a valid package format")
+            formatHelp("new","create a templated empty package")
+            formatHelp("open","opens the package with the configured text-editor")
+            formatHelp("release","release the next new version of the current package")
+            formatHelp("list","print list of all packages available")
             formatHelp("install","grab package from remote for dependency use")
             formatHelp("uninstall","remove package from cache")
             formatHelp("download","grab package from remote for further development")
-            formatHelp("release","release the next new version of the current package")
             formatHelp("update","update installed package to be to the latest version")
-            formatHelp("list","print list of all packages available")
-            formatHelp("open","opens the package with the configured text-editor")
+            formatHelp("export","generate a file of necessary paths to build the project")
             formatHelp("del","deletes the package from the local workspace")
             formatHelp("search","search remote or local workspace for specified package")
-            formatHelp("init","initialize the current folder into a valid package format")
-            formatHelp("export","generate a file of necessary paths to build the project")
-            formatHelp("show","read further detail about a specified package")
             formatHelp("ports","print ports list of specified package")
+            formatHelp("show","read further detail about a specified package")
             formatHelp("summ","add description to current project")
-            formatHelp("new","create a templated empty package")
             formatHelp("config","set package manager settings")
             formatHelp("template","open the template in the configured text-editor")
             formatHelp("recipe","open the recipe file in the configured text-editor")
@@ -562,7 +560,8 @@ class legoHDL:
             \n\t-alpha\t\talphabetical order\
             \n\t-o\t\topen the project\
             \n\t-d\t\tremoves the released package from your local codebase\
-            \n\t-F\t\tforce project uninstallation alongside deletion from local codebase\
+            \n\t-f\t\tforce project uninstallation alongside deletion from local codebase\
+            \n\t-map\t\tprint port mapping of specified package\
             \n\t-local\t\tset local path setting\
             \n\t-remote\t\tset remote path setting\
             \n\t-editor\t\tset text-editor setting\
