@@ -6,11 +6,11 @@ with open("README.md", "r", encoding="utf-8") as fh:
     entire_description = fh.read()
 
 setuptools.setup(
-    name="legoHDL",
+    name="legohdl",
     version="0.0.1",
     author="Chase Ruskin",
     author_email="c.ruskin@ufl.edu",
-    description="A lightweight HDL package manager",
+    description="A complete HDL package manager",
     long_description=entire_description,
     long_description_content_type="text/markdown",
     url="https://github.com/c-rus/legoHDL",
@@ -19,7 +19,7 @@ setuptools.setup(
     ],
     entry_points='''
             [console_scripts]
-            legoHDL=pkgmngr.manager:main
+            legohdl=pkgmngr.manager:main
         ''',
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
