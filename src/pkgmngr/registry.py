@@ -5,14 +5,9 @@ import os, random, requests, json, glob
 import yaml
 from bs4 import BeautifulSoup
 from collections import OrderedDict
-try:
-    from pkgmngr import capsule as caps
-    from pkgmngr import repo
-    from pkgmngr import apparatus
-except:
-    import capsule as caps
-    import repo
-    import apparatus as apt
+from capsule import Capsule
+from repo import Repo
+from apparatus import Apparatus as apt
 
 class Registry:
     class Mode(Enum):
@@ -28,7 +23,7 @@ class Registry:
         self.__url = url
         self.__base_url = url
         self.__tail_url = url
-        self.__local_path = apt.Apparatus.HIDDEN+"registry/"
+        self.__local_path = apt.HIDDEN+"registry/"
         
         self.__local_reg = dict()
         self.__remote_reg = dict()
@@ -39,7 +34,7 @@ class Registry:
         #print(url)
         #determine what remote website is being used
         self.__mode = None
-        if(not caps.Capsule.linkedRemote()):
+        if(not Capsule.linkedRemote()):
             self.__mode = self.Mode.LOCAL
         elif(self.__url.count('gitlab') > 0):
             self.__mode = self.Mode.GITLAB
@@ -64,13 +59,13 @@ class Registry:
                 spk = line.find('*')
                 at = line.find('@')
                 iden = line[:spce]
-                self.__local_reg[int(iden)] = repo.Repo(l_a=line[Rspce+1:spk], lib=line[spce+1:dot], g_url=line[at+1:], name=line[dot+1:eq], l_v=line[eq+1:Rspce], m_b=line[spk+1:at], l_path='')
+                self.__local_reg[int(iden)] = Repo(l_a=line[Rspce+1:spk], lib=line[spce+1:dot], g_url=line[at+1:], name=line[dot+1:eq], l_v=line[eq+1:Rspce], m_b=line[spk+1:at], l_path='')
             file.close()
 
     def listCaps(self, options):
         reg = self.__remote_reg #grab all remotes
         sorted_reg = OrderedDict()
-        if(not caps.Capsule.linkedRemote()):
+        if(not Capsule.linkedRemote()):
             reg = self.__local_reg
         if(options.count('alpha')):
             for key,repo in reg.items():
@@ -90,7 +85,7 @@ class Registry:
                 hdr = repo.library+'.'
             title = hdr+repo.name
             
-            cp = caps.Capsule(rp=repo)
+            cp = Capsule(rp=repo)
             status = '-'
             ver = repo.last_version
             info = ''
@@ -131,7 +126,7 @@ class Registry:
         curKeys = self.__cur_reg.copy().keys()
         #remove any projects not found remotely and not found locally
         for k in oldKeys:
-            if(caps.Capsule.linkedRemote()):
+            if(Capsule.linkedRemote()):
                 if not k in curKeys and not k in self.__remote_reg.keys():
                     del self.__local_reg[k]
             elif not k in curKeys:
@@ -158,7 +153,7 @@ class Registry:
 
     def sync(self):
         self.localSync()
-        if(caps.Capsule.linkedRemote()):
+        if(Capsule.linkedRemote()):
             self.remoteSync()
 
     def remoteSync(self):
@@ -176,7 +171,7 @@ class Registry:
                 subs.append(r.library)
 
             if(not r.name in prjs):
-                c = caps.Capsule(rp=r)
+                c = Capsule(rp=r)
                 c.genRemote()
                 c.saveID(self.fetchProjectShallow(r.library,r.name)['id'])
                 prjs.append(r.name)
@@ -186,7 +181,7 @@ class Registry:
         if hasattr(self,"__cache_prjs"):
             return self.__cache_prjs
 
-        path = apt.Apparatus.HIDDEN+"cache/"
+        path = apt.HIDDEN+"cache/"
         self.__cache_prjs = dict()
         libs = os.listdir(path)
         for l in libs:
@@ -204,11 +199,11 @@ class Registry:
         if hasattr(self,"__local_prjs"):
             return self.__local_prjs
         self.__local_prjs = dict()
-        folders = glob.glob(apt.Apparatus.SETTINGS['local']+"/**/.*.yml", recursive=True)
+        folders = glob.glob(apt.SETTINGS['local']+"/**/.*.yml", recursive=True)
         for num in range(len(folders)):
             s = folders[num].rfind('/')
             d = folders[num].rfind('.')
-            c = caps.Capsule(name=folders[num][s+2:d],path=folders[num][:s+1])
+            c = Capsule(name=folders[num][s+2:d],path=folders[num][:s+1])
             if(c.getLib() not in self.__local_prjs.keys()):
                 self.__local_prjs[c.getLib()] = dict()
             self.__local_prjs[c.getLib()][c.getName()] = folders[num][:s+1]
@@ -218,7 +213,7 @@ class Registry:
 
     def prjExists(self, title, place):
         folder = None
-        l,n = caps.Capsule.siftLibName(title)
+        l,n = Capsule.siftLibName(title)
         if(place == "local"):
             folder = self.getProjectsLocal()
         elif(place == "cache"):
@@ -246,9 +241,9 @@ class Registry:
                     f.close()
                     #print(leaf)#print(tmp['id'])#print(path)
                     if(cached):
-                        self.__cache_reg[int(tmp['id'])] = repo.Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
+                        self.__cache_reg[int(tmp['id'])] = Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
                     else:
-                        self.__cur_reg[int(tmp['id'])] = repo.Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
+                        self.__cur_reg[int(tmp['id'])] = Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
         pass
 
     def findPrj(self, lib, name):
@@ -279,7 +274,7 @@ class Registry:
         return id
 
     def installedPkgs(self):
-        meta_dir = glob.glob(apt.Apparatus.HIDDEN+"/cache/**/.*.yml", recursive=True)
+        meta_dir = glob.glob(apt.HIDDEN+"/cache/**/.*.yml", recursive=True)
         id_dict = dict()
         for md in meta_dir:
             with open(md, 'r') as f:
@@ -354,12 +349,12 @@ class Registry:
                 
                 if(x['id'] in self.__cur_reg):
                     tmp_ver = self.__cur_reg[x['id']].last_version
-                    last_ver = caps.Capsule.biggerVer(tmp_ver,last_ver)
+                    last_ver = Capsule.biggerVer(tmp_ver,last_ver)
                 pass
             else: #local registry needs all info on this repo
                 last_ver = self.grabTags(x)
 
-            self.__remote_reg[x['id']] = repo.Repo(l_a=x['last_activity_at'], lib=lib, g_url=x['web_url']+'.git', name=x['name'], l_v=last_ver, m_b=x['default_branch'], l_path='')
+            self.__remote_reg[x['id']] = Repo(l_a=x['last_activity_at'], lib=lib, g_url=x['web_url']+'.git', name=x['name'], l_v=last_ver, m_b=x['default_branch'], l_path='')
         
         self.localSync()
         pass
@@ -386,7 +381,7 @@ class Registry:
     def encrypt(self, token, file):
         print("Encrypting access token... ",end='')
         random.seed()
-        with open(apt.Apparatus.HIDDEN+"registry/"+file+".bin", 'w') as file:
+        with open(apt.HIDDEN+"registry/"+file+".bin", 'w') as file:
             for letter in token:
                 secret = bin(ord(letter))[2:]
                 secret = ((8-len(secret))*"0")+secret #pad to make fixed 8-bits
@@ -399,7 +394,7 @@ class Registry:
 
     def decrypt(self, file):
         token = ''
-        with open(apt.Apparatus.HIDDEN+"registry/"+file+".bin", 'r') as file:
+        with open(apt.HIDDEN+"registry/"+file+".bin", 'r') as file:
             binary_str = file.read()
             while len(binary_str):
                 tmp = ''

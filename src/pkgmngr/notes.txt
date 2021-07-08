@@ -116,8 +116,8 @@ until next command
 -implement recursive nature on install for other dependencies
 -better formatting for help prompt
 
--fix when releasing a module to update cache and lib
--give option to update and commit all changes with next "release" -ac
+-fix when releasing a module to update cache and lib                            ( * )
+-give option to update and commit all changes with next "release" -ac           (   )
 
 #TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
 #installPkg = list()

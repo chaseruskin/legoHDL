@@ -2,12 +2,9 @@ import os, yaml, git, shutil
 from datetime import date
 import collections, stat
 import glob
-try:
-    from pkgmngr import repo
-    from pkgmnger import apparatus as apt
-except:
-    import apparatus as apt
-    import repo
+from repo import Repo
+from apparatus import Apparatus as apt
+
 
 #a capsule is a package/module that is signified by having the capsule.yml
 class Capsule:
@@ -22,7 +19,7 @@ class Capsule:
             #repo DNE
             pass
         if(self.linkedRemote()):
-            self.__remoteURL = apt.Apparatus.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
+            self.__remoteURL = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
         if(self.isValid()):
             self.loadMeta()
         else:
@@ -47,7 +44,6 @@ class Capsule:
                 self.loadMeta()
             return
 
-        
         self.__repo = None
         self.__remoteURL = None
 
@@ -62,11 +58,11 @@ class Capsule:
                 self.__lib = name[:dot]
                 self.__name = name[dot+1:]
         
-        self.__localPath = apt.Apparatus.SETTINGS['local']+"/"+self.__lib+"/"+self.__name+'/'
+        self.__localPath = apt.SETTINGS['local']+"/"+self.__lib+"/"+self.__name+'/'
 
         #configure remote url
         if(self.linkedRemote()):
-            self.__remoteURL = apt.Apparatus.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
+            self.__remoteURL = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
 
         if(self.isValid()): #this package is already existing locally
             self.__repo = git.Repo(self.__localPath)
@@ -327,7 +323,7 @@ class Capsule:
 
     @classmethod
     def linkedRemote(cls):
-        return (apt.Apparatus.SETTINGS['remote'] != None)
+        return (apt.SETTINGS['remote'] != None)
 
     def metadataPath(self):
         return self.__localPath+"."+self.__name+".yml"
@@ -341,7 +337,7 @@ class Capsule:
                 print(line,sep='',end='')
     
     def load(self):
-        cmd = apt.Apparatus.SETTINGS['editor']+" "+self.__localPath
+        cmd = apt.SETTINGS['editor']+" "+self.__localPath
         os.system(cmd)
         pass
 
@@ -417,7 +413,7 @@ class Capsule:
         for d in tmp:
             l,n = self.siftLibName(d)
             print(l,n)
-            if(not os.path.isfile(apt.Apparatus.HIDDEN+"lib/"+l+"/"+n+".vhd")):
+            if(not os.path.isfile(apt.HIDDEN+"lib/"+l+"/"+n+".vhd")):
                 derivatives.remove(d)
 
         print(derivatives)
@@ -669,7 +665,6 @@ class Capsule:
         print()
         return port_txt
         pass
-
     pass
 
 

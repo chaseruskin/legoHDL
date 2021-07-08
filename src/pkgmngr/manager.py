@@ -1,39 +1,34 @@
 #!/usr/bin/env python3
 import os, sys, shutil
 import yaml, git, glob
-try:
-    from pkgmngr import capsule as caps
-    from pkgmnger import registry as reg
-    from pkgmnger import graph
-    from pkgmnger import apparatus as apt
-except:
-    import capsule as caps
-    import registry as reg
-    import apparatus as apt
-    import graph
+from capsule import Capsule
+from registry import Registry
+from graph import Graph
+from apparatus import Apparatus as apt
 
 class legoHDL:
     def __init__(self):
+        apt.load()
         self.capsulePKG = None
         self.capsuleCWD = None
         
         # !!! UNCOMMENT LINE BELOW TO DISABLE REMOTE !!!
         #self.settings['remote'] = None #testing allowing option to not connect to a remote!
         #defines path to dir of remote code base
-        self.db = reg.Registry(apt.Apparatus.SETTINGS['remote'])
+        self.db = Registry(apt.SETTINGS['remote'])
 
         #defines how to open workspaces
-        self.textEditor = apt.Apparatus.SETTINGS['editor']
+        self.textEditor = apt.SETTINGS['editor']
 
         self.db.getProjectsLocal()
         #exit()
 
-        self.db.findProjectsLocal(apt.Apparatus.SETTINGS['local'])
-        if(caps.Capsule.linkedRemote()): #fetch remote servers
+        self.db.findProjectsLocal(apt.SETTINGS['local'])
+        if(Capsule.linkedRemote()): #fetch remote servers
             self.db.fetch()
         self.db.sync()
         #directly works with VHDL_LS
-        os.environ['VHDL_LS_CONFIG'] = apt.Apparatus.HIDDEN+"map.toml" 
+        os.environ['VHDL_LS_CONFIG'] = apt.HIDDEN+"map.toml" 
 
         self.parse()
         pass
@@ -42,15 +37,15 @@ class legoHDL:
         cap = None
         if(self.db.prjExists(title, "cache")):
             cache = self.db.getProjectsCache()
-            l,n = caps.Capsule.siftLibName(title)
-            cap = caps.Capsule(title=title,path=cache[l][n])
+            l,n = Capsule.siftLibName(title)
+            cap = Capsule(title=title,path=cache[l][n])
         else:
             print("Error- the project is not located in the cache")
             return
 
-        lib_path = apt.Apparatus.HIDDEN+"lib/"+cap.getLib()+"/"
+        lib_path = apt.HIDDEN+"lib/"+cap.getLib()+"/"
         os.makedirs(lib_path, exist_ok=True)
-        tmp_pkg = open(apt.Apparatus.PKGMNG_PATH+"/template_pkg.vhd", 'r')
+        tmp_pkg = open(apt.PKGMNG_PATH+"/template_pkg.vhd", 'r')
         vhd_pkg = open(lib_path+cap.getName()+"_pkg.vhd", 'w')
 
         #need to look at toplevel VHD file to transfer correct library uses
@@ -82,8 +77,8 @@ class legoHDL:
         pass
 
     def install(self, cap, opt):
-        cache_path = apt.Apparatus.HIDDEN+"cache/"
-        lib_path = apt.Apparatus.HIDDEN+"lib/"+cap.getLib()+"/"
+        cache_path = apt.HIDDEN+"cache/"
+        lib_path = apt.HIDDEN+"lib/"+cap.getLib()+"/"
         #does the package already exist in the cache directory?
         if(self.db.prjExists(cap.getTitle(), "cache")):
             print("Package is already installed.")
@@ -93,7 +88,7 @@ class legoHDL:
      
         # grab the ID to search for the project
         iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
-        cap = caps.Capsule(rp=rep,title=cap.getTitle()) #update info into a capsule obj
+        cap = Capsule(rp=rep,title=cap.getTitle()) #update info into a capsule obj
         # clone the repo -> cache
         
         #possibly make directory for cached project
@@ -118,11 +113,11 @@ class legoHDL:
         
         #link it all together through writing paths into "mapping.toml"
         cur_lines = list()
-        mapper = open(apt.Apparatus.HIDDEN+"map.toml", 'r')
+        mapper = open(apt.HIDDEN+"map.toml", 'r')
         cur_lines = mapper.readlines()
         mapper.close()
 
-        mapper = open(apt.Apparatus.HIDDEN+"map.toml", 'w')
+        mapper = open(apt.HIDDEN+"map.toml", 'w')
         inc_paths = list()
         inc_paths.append("\'"+lib_path+cap.getName()+"_pkg.vhd"+"\',\n")
         inc_paths.append("\'"+cap.findPath(cap.getMeta("toplevel")).replace(cap.getMeta("toplevel"),"*.vhd")+"\',\n")
@@ -157,7 +152,7 @@ class legoHDL:
 
     def uninstall(self, pkg, opt):
         #remove from cache
-        l,n = caps.Capsule.siftLibName(pkg)
+        l,n = Capsule.siftLibName(pkg)
         if(self.db.prjExists(pkg, "cache")):
             cache = self.db.getProjectsCache()
             shutil.rmtree(cache[l][n])
@@ -168,10 +163,10 @@ class legoHDL:
 
         #remove from 'mapping.toml'
         lines = list()
-        with open(apt.Apparatus.HIDDEN+"map.toml", 'r') as file:
+        with open(apt.HIDDEN+"map.toml", 'r') as file:
             lines = file.readlines()
             file.close()
-        with open(apt.Apparatus.HIDDEN+"map.toml", 'w') as file:
+        with open(apt.HIDDEN+"map.toml", 'w') as file:
             for lin in lines:
                 if(lin.count(l) and (lin.count("/"+n+"/") or lin.count("/"+n+"_pkg"))):
                     continue
@@ -184,10 +179,10 @@ class legoHDL:
             return grp,top_mp
         #go to YML of dependencies and add edges to build dependency tree
         for d in d_list:
-            l,n = caps.Capsule.siftLibName(d)
+            l,n = Capsule.siftLibName(d)
             n = n.replace("_pkg", "")
-            if(os.path.isfile(apt.Apparatus.HIDDEN+"cache/"+l+"/"+n+"/."+n+".yml")):
-                with open(apt.Apparatus.HIDDEN+"cache/"+l+"/"+n+"/."+n+".yml", "r") as file:
+            if(os.path.isfile(apt.HIDDEN+"cache/"+l+"/"+n+"/."+n+".yml")):
+                with open(apt.HIDDEN+"cache/"+l+"/"+n+"/."+n+".yml", "r") as file:
                     tmp = yaml.load(file, Loader=yaml.FullLoader)
             else:
                 continue
@@ -221,7 +216,7 @@ class legoHDL:
         if(tb.count(".vhd")== 0):
             tb = tb+".vhd"
 
-        g= graph.Graph()
+        g= Graph()
         top_mp = dict()
         top_mp[cap.getTitle()] = cap.getMeta('toplevel')
         output = open(build_dir+"recipe", 'w')
@@ -238,11 +233,11 @@ class legoHDL:
 
         library = dict() #stores lists at dictionary keys
         for h in hierarchy:
-            l,n = caps.Capsule.siftLibName(h)
+            l,n = Capsule.siftLibName(h)
             n = n.replace("_pkg", "")
             #print(l,n)
             #library must exist in lib to be included in recipe.txt (avoids writing external libs like IEEE)
-            if(os.path.isdir(apt.Apparatus.HIDDEN+"lib/"+l)): #check lib exists
+            if(os.path.isdir(apt.HIDDEN+"lib/"+l)): #check lib exists
                 if not l in library.keys():
                     library[l] = list() 
                 library[l].append(n)
@@ -251,10 +246,10 @@ class legoHDL:
         for lib in library.keys():
             for pkg in library[lib]:
                 key = lib+'.'+pkg
-                root_dir = apt.Apparatus.HIDDEN+"cache/"+lib+"/"+pkg+"/"
+                root_dir = apt.HIDDEN+"cache/"+lib+"/"+pkg+"/"
                 src_dir = glob.glob(root_dir+"/**/"+top_mp[key], recursive=True)
                 output.write("LIB "+lib+" "+src_dir[0].replace(top_mp[key], "*.vhd")+"\n")
-                output.write("LIB "+lib+" "+apt.Apparatus.HIDDEN+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
+                output.write("LIB "+lib+" "+apt.HIDDEN+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
 
         #write current src dir where all src files are as "work" lib
         output.write("SRC "+cap.findPath(top).replace(top, "*.vhd")+"\n")
@@ -284,13 +279,13 @@ class legoHDL:
             cap.clone()
     
         try: #symbolically link the downloaded project folder to the cache
-            shutil.rmtree(apt.Apparatus.HIDDEN+"cache/"+cap.getLib()+"/"+cap.getName()+"/")
+            shutil.rmtree(apt.HIDDEN+"cache/"+cap.getLib()+"/"+cap.getName()+"/")
         except:
             pass
         #generate PKG VHD
         opt = list()
         opt.append("v"+cap.getVersion())   
-        self.install(caps.Capsule(rp=rep), opt)
+        self.install(Capsule(rp=rep), opt)
 
         print("success")
         pass
@@ -313,14 +308,14 @@ class legoHDL:
         cap.autoDetectTop()
         cap.release(ver, options)
 
-        try: shutil.rmtree(apt.Apparatus.HIDDEN+"cache/"+cap.getLib()+"/"+cap.getName())
+        try: shutil.rmtree(apt.HIDDEN+"cache/"+cap.getLib()+"/"+cap.getName())
         except: pass
         #clone new project's progress into cache
-        tmp = caps.Capsule(cap.getLib()+'.'+cap.getName())
-        tmp.install(apt.Apparatus.HIDDEN+"cache/"+cap.getLib()+"/", "v"+cap.getVersion(), src_url=cap.getPath())
+        tmp = Capsule(cap.getLib()+'.'+cap.getName())
+        tmp.install(apt.HIDDEN+"cache/"+cap.getLib()+"/", "v"+cap.getVersion(), src_url=cap.getPath())
         self.genPKG(tmp)
 
-        if caps.Capsule.linkedRemote():
+        if Capsule.linkedRemote():
             print("Updating remote package contents...",end=' ')
             cap.pushRemote()
             print("success")
@@ -336,7 +331,7 @@ class legoHDL:
             self.db.encrypt(choice, options[0])
             return
 
-        if(not options[0] in apt.Apparatus.SETTINGS.keys()):
+        if(not options[0] in apt.SETTINGS.keys()):
             print("ERROR- Invalid setting")
             return
 
@@ -351,9 +346,9 @@ class legoHDL:
         if(options[0] == 'local'):
             os.makedirs(choice, exist_ok=True)
 
-        apt.Apparatus.SETTINGS[options[0]] = choice
+        apt.SETTINGS[options[0]] = choice
 
-        apt.Apparatus.save()
+        apt.save()
         pass
     
     #TO-DO: implement
@@ -371,12 +366,12 @@ class legoHDL:
 
     def cleanup(self, cap, force):
         iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
-        cap = caps.Capsule(rp=rep)
+        cap = Capsule(rp=rep)
         if(not cap.isValid()):
             print('No module '+cap.getName()+' exists locally')
             return
         
-        if(apt.Apparatus.SETTINGS['remote'] == None and force):
+        if(apt.SETTINGS['remote'] == None and force):
             print('\
                 WARNING- No remote code base is configured, if this module is deleted it may be unrecoverable.\n \
                 DELETE '+cap.getName()+'? [y/n]\
@@ -407,7 +402,7 @@ class legoHDL:
         lastSlash = pkgPath.rfind('/') #determine project's name to know the YAML to open
         pkgCWD = pkgPath[lastSlash+1:]
 
-        self.capsuleCWD = caps.Capsule(name=pkgCWD,path=pkgPath+"/")
+        self.capsuleCWD = Capsule(name=pkgCWD,path=pkgPath+"/")
         
         command = package = description = ""
         options = []
@@ -431,7 +426,7 @@ class legoHDL:
                 break
 
         package = package.replace("-", "_")
-        self.capsulePKG = caps.Capsule(title=package)
+        self.capsulePKG = Capsule(title=package)
         
         #branching through possible commands
         if(command == "install"):
@@ -442,16 +437,16 @@ class legoHDL:
             self.uninstall(package, options) #TO-DO
             pass
         elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
-            if caps.Capsule.linkedRemote():
+            if Capsule.linkedRemote():
                 i = package.find('.')
                 lib = package[:i]
                 name = package[i+1:]
-                if(len(lib) > 0 and caps.Capsule.linkedRemote()): #try to make new subgroup if DNE
+                if(len(lib) > 0 and Capsule.linkedRemote()): #try to make new subgroup if DNE
                     self.db.createSubgroup(lib, self.db.accessGitlabAPI())
 
-            self.capsulePKG = caps.Capsule(package, new=True)
+            self.capsulePKG = Capsule(package, new=True)
             
-            if caps.Capsule.linkedRemote(): #now fetch from db to grab ID
+            if Capsule.linkedRemote(): #now fetch from db to grab ID
                 self.capsulePKG.saveID(self.db.fetchProjectShallow(lib,name)['id'])
             else: #assign tmp local id if no remote
                 self.capsulePKG.saveID(self.db.assignRandomID())
@@ -510,13 +505,13 @@ class legoHDL:
             if(self.capsulePKG.isValid()):
                 print(self.capsulePKG.ports(mapp))
             else:
-                l,n = caps.Capsule.siftLibName(package)
+                l,n = Capsule.siftLibName(package)
                 cache = self.db.getProjectsCache()
                 if(l in cache.keys() and n in cache[l].keys()):
-                    print(caps.Capsule(name=n,path=cache[l][n]).ports(mapp))
+                    print(Capsule(name=n,path=cache[l][n]).ports(mapp))
                     pass
-        elif(command == "template" and apt.Apparatus.SETTINGS['editor'] != None):
-            os.system(apt.Apparatus.SETTINGS['editor']+" "+apt.Apparatus.PKGMNG_PATH+"/template")
+        elif(command == "template" and apt.SETTINGS['editor'] != None):
+            os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
             pass
         elif(command == "config"):
             self.setSetting(options, package)
@@ -585,7 +580,6 @@ class legoHDL:
 
 def main():
     #print('\n---legoHDL package manager---\n')
-    apt.Apparatus.load()
     legoHDL()
 
 
