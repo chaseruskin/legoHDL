@@ -8,9 +8,11 @@ from collections import OrderedDict
 try:
     from pkgmngr import capsule as caps
     from pkgmngr import repo
+    from pkgmngr import apparatus
 except:
     import capsule as caps
     import repo
+    import apparatus as apt
 
 class Registry:
     class Mode(Enum):
@@ -26,8 +28,7 @@ class Registry:
         self.__url = url
         self.__base_url = url
         self.__tail_url = url
-        self.__hidden = os.path.expanduser("~/.legoHDL/") #TO-DO: fix dupe writing
-        self.__local_path = self.__hidden+"registry/"
+        self.__local_path = apt.Apparatus.HIDDEN+"registry/"
         
         self.__local_reg = dict()
         self.__remote_reg = dict()
@@ -67,7 +68,7 @@ class Registry:
             file.close()
 
     def listCaps(self, options):
-        reg = self.__remote_reg
+        reg = self.__remote_reg #grab all remotes
         sorted_reg = OrderedDict()
         if(not caps.Capsule.linkedRemote()):
             reg = self.__local_reg
@@ -75,7 +76,10 @@ class Registry:
             for key,repo in reg.items():
                 sorted_reg[repo.library+repo.name] = repo
             reg = sorted_reg
-        
+
+        cache = self.getProjectsCache()
+        locality = self.getProjectsLocal()
+
         cached_ids = self.installedPkgs()
         print("\nList of available modules:")
         print("\tModule\t\t    status\t    version")
@@ -90,6 +94,13 @@ class Registry:
             status = '-'
             ver = repo.last_version
             info = ''
+            
+            if(self.prjExists(title, "local")):
+                status = 'dnld'
+                ver = 'unknown'
+            elif(self.prjExists(title, "cache")):
+                status = 'instl'
+                ver = 'unknown'
 
             if key in cached_ids.keys(): #check for installations
                 status = 'instl'
@@ -171,6 +182,57 @@ class Registry:
                 prjs.append(r.name)
         pass
 
+    def getProjectsCache(self):
+        if hasattr(self,"__cache_prjs"):
+            return self.__cache_prjs
+
+        path = apt.Apparatus.HIDDEN+"cache/"
+        self.__cache_prjs = dict()
+        libs = os.listdir(path)
+        for l in libs:
+            if(l[0] == '.'):
+                continue
+            self.__cache_prjs[l] = dict()
+            pkgs = os.listdir(path+l+"/")
+            for p in pkgs:
+                if(p[0] == '.'):
+                    continue
+                self.__cache_prjs[l][p] = path+l+"/"+p+"/"
+        return self.__cache_prjs
+
+    def getProjectsLocal(self):
+        if hasattr(self,"__local_prjs"):
+            return self.__local_prjs
+        self.__local_prjs = dict()
+        folders = glob.glob(apt.Apparatus.SETTINGS['local']+"/**/.*.yml", recursive=True)
+        for num in range(len(folders)):
+            s = folders[num].rfind('/')
+            d = folders[num].rfind('.')
+            c = caps.Capsule(name=folders[num][s+2:d],path=folders[num][:s+1])
+            if(c.getLib() not in self.__local_prjs.keys()):
+                self.__local_prjs[c.getLib()] = dict()
+            self.__local_prjs[c.getLib()][c.getName()] = folders[num][:s+1]
+        #print(self.__local_prjs)
+        return self.__local_prjs
+        pass
+
+    def prjExists(self, title, place):
+        folder = None
+        l,n = caps.Capsule.siftLibName(title)
+        if(place == "local"):
+            folder = self.getProjectsLocal()
+        elif(place == "cache"):
+            folder = self.getProjectsCache()
+        elif(place == "remote"): #TO-DO-> get projects from remote
+            return False
+            pass
+
+        return (l in folder.keys() and (n in folder[l].keys() or n == '*'))
+
+    def prjLocation(self, title):
+        pass
+
+
     def findProjectsLocal(self, path, cached=False):
         branches = list(os.listdir(path))
         for leaf in branches:
@@ -217,7 +279,7 @@ class Registry:
         return id
 
     def installedPkgs(self):
-        meta_dir = glob.glob(self.__hidden+"/cache/**/.*.yml", recursive=True)
+        meta_dir = glob.glob(apt.Apparatus.HIDDEN+"/cache/**/.*.yml", recursive=True)
         id_dict = dict()
         for md in meta_dir:
             with open(md, 'r') as f:
@@ -324,7 +386,7 @@ class Registry:
     def encrypt(self, token, file):
         print("Encrypting access token... ",end='')
         random.seed()
-        with open(self.__hidden+"registry/"+file+".bin", 'w') as file:
+        with open(apt.Apparatus.HIDDEN+"registry/"+file+".bin", 'w') as file:
             for letter in token:
                 secret = bin(ord(letter))[2:]
                 secret = ((8-len(secret))*"0")+secret #pad to make fixed 8-bits
@@ -337,7 +399,7 @@ class Registry:
 
     def decrypt(self, file):
         token = ''
-        with open(self.__hidden+"registry/"+file+".bin", 'r') as file:
+        with open(apt.Apparatus.HIDDEN+"registry/"+file+".bin", 'r') as file:
             binary_str = file.read()
             while len(binary_str):
                 tmp = ''

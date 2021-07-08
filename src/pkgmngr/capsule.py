@@ -4,15 +4,13 @@ import collections, stat
 import glob
 try:
     from pkgmngr import repo
+    from pkgmnger import apparatus as apt
 except:
+    import apparatus as apt
     import repo
 
 #a capsule is a package/module that is signified by having the capsule.yml
 class Capsule:
-    settings = None
-    pkgmngPath = ''
-    hidden = os.path.expanduser("~/.legohdl/")
-
     #initialze capsule from a repo obj
     def absorbRepo(self, rp):
         self.__name = rp.name
@@ -24,7 +22,7 @@ class Capsule:
             #repo DNE
             pass
         if(self.linkedRemote()):
-            self.__remoteURL = self.settings['remote']+'/'+self.__lib+"/"+self.__name+".git"
+            self.__remoteURL = apt.Apparatus.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
         if(self.isValid()):
             self.loadMeta()
         else:
@@ -35,27 +33,40 @@ class Capsule:
     def getPath(self):
         return self.__localPath
 
-    def __init__(self, name='', new=False, rp=None):
+
+    def __init__(self, name='', new=False, rp=None, path=None, title=None):
         self.__metadata = dict()
+        self.__lib = ''
+        self.__name = ''
+        if(title != None):
+            self.__lib,self.__name = self.siftLibName(title)
+        if(path != None):
+            if(name != ''): self.__name = name
+            self.__localPath = path
+            if(self.isValid()):
+                self.loadMeta()
+            return
+
+        
         self.__repo = None
         self.__remoteURL = None
 
         if(rp != None):
             self.absorbRepo(rp)
             return
+        if(title == None):
+            dot = name.find('.')
+            self.__lib = ''
+            self.__name = name
+            if(dot > -1):
+                self.__lib = name[:dot]
+                self.__name = name[dot+1:]
         
-        dot = name.find('.')
-        self.__lib = ''
-        self.__name = name
-        if(dot > -1):
-            self.__lib = name[:dot]
-            self.__name = name[dot+1:]
-        
-        self.__localPath = Capsule.settings['local']+"/"+self.__lib+"/"+self.__name+'/'
+        self.__localPath = apt.Apparatus.SETTINGS['local']+"/"+self.__lib+"/"+self.__name+'/'
 
         #configure remote url
         if(self.linkedRemote()):
-            self.__remoteURL = self.settings['remote']+'/'+self.__lib+"/"+self.__name+".git"
+            self.__remoteURL = apt.Apparatus.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
 
         if(self.isValid()): #this package is already existing locally
             self.__repo = git.Repo(self.__localPath)
@@ -85,7 +96,7 @@ class Capsule:
         pass
 
     def getTitle(self):
-        return self.__lib+'.'+self.__name
+        return self.getLib()+'.'+self.getName()
 
     def __del__(self):
         if(self.isValid() and len(self.__metadata)):
@@ -217,7 +228,7 @@ class Capsule:
     def create(self):
         print('Initializing new project')
 
-        shutil.copytree(self.pkgmngPath+"template/", self.__localPath)
+        shutil.copytree(apt.Apparatus.PKGMNG_PATH+"template/", self.__localPath)
         self.__repo = git.Repo.init(self.__localPath)
     
         if(self.linkedRemote()):
@@ -235,7 +246,7 @@ class Capsule:
             for line in file_in:
                 line = line.replace("template", self.__name)
                 line = line.replace("%DATE%", today)
-                line = line.replace("%AUTHOR%", self.settings["author"])
+                line = line.replace("%AUTHOR%", apt.Apparatus.SETTINGS["author"])
                 line = line.replace("%PROJECT%", self.__name)
                 file_out.write(line) #insert date into template
             file_in.close()
@@ -279,6 +290,7 @@ class Capsule:
     def getName(self):
         return self.__name
 
+
     def getLib(self):
         try:
             if(self.getMeta("library") == None):
@@ -315,7 +327,7 @@ class Capsule:
 
     @classmethod
     def linkedRemote(cls):
-        return (cls.settings['remote'] != None)
+        return (apt.Apparatus.SETTINGS['remote'] != None)
 
     def metadataPath(self):
         return self.__localPath+"."+self.__name+".yml"
@@ -329,7 +341,7 @@ class Capsule:
                 print(line,sep='',end='')
     
     def load(self):
-        cmd = self.settings['editor']+" "+self.__localPath
+        cmd = apt.Apparatus.SETTINGS['editor']+" "+self.__localPath
         os.system(cmd)
         pass
 
@@ -378,7 +390,7 @@ class Capsule:
         self.loadMeta()
         return
 
-    def scanDependencies(self, yml=True, vhd_file=None):
+    def scanDependencies(self, update=True, vhd_file=None):
         vhd_file = self.findPath(self.getMeta("toplevel")) #find top-level
         s = vhd_file.rfind('/')
         src_dir = vhd_file[:s+1] #print(src_dir)
@@ -397,7 +409,7 @@ class Capsule:
                 file.close()
             #print(vhd)
         #option to keep all library usages (for gen package files)
-        if(yml == False):
+        if(update == False):
             return src_dir,derivatives
         
         #if the pkg does not exist in the lib folder, remove it!
@@ -405,7 +417,7 @@ class Capsule:
         for d in tmp:
             l,n = self.siftLibName(d)
             print(l,n)
-            if(not os.path.isfile(self.hidden+"lib/"+l+"/"+n+".vhd")):
+            if(not os.path.isfile(apt.Apparatus.HIDDEN+"lib/"+l+"/"+n+".vhd")):
                 derivatives.remove(d)
 
         print(derivatives)
@@ -503,7 +515,9 @@ class Capsule:
         dot2 = dep[dot+1:].find('.')
         if(dot2 == -1):
             #use semi-colon if only 1 dot is marked
-            dot2 = dep[dot+1:].find(';') 
+            dot2 = dep[dot+1:].find(';')
+        if(dot2 == -1):
+            dot2 = len(dep)
         name = dep[dot+1:dot+1+dot2]
         return lib,name
     
@@ -624,7 +638,7 @@ class Capsule:
                     isGens = False
                     port_txt = port_txt+")\n"
                     continue
-                
+
                 sig_dec = line[col+1:].strip()
                 spce = sig_dec.find(' ')
                 sig_type = sig_dec[spce:].strip()
