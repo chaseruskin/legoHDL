@@ -223,6 +223,7 @@ class Registry:
             return self.__local_prjs
         self.__local_prjs = dict()
         folders = glob.glob(apt.SETTINGS['local']+"/**/.lego.lock", recursive=True)
+        folders = folders + glob.glob(apt.SETTINGS['local']+"/*/.lego.lock", recursive=False)
         for file in folders:
             #read .lock to get information
             with open(file, 'r') as f:

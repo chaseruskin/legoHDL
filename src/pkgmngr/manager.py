@@ -148,17 +148,25 @@ class legoHDL:
         mapfile.close()
         pass
 
-    def uninstall(self, pkg, opt):
+    def uninstall(self, pkg, opt=None):
         #remove from cache
         l,n = Capsule.split(pkg)
         if(self.db.capExists(pkg, "cache")):
             cache = self.db.getCaps("cache")
             cache_path = cache[l][n].getPath()
             shutil.rmtree(cache_path)
+            #if empty dir then do some cleaning
+            if(len(os.listdir(apt.HIDDEN+"cache/"+l)) == 0):
+                os.rmdir(apt.HIDDEN+"cache/"+l)
+                pass
             #remove from lib
             lib_path = cache_path.replace("cache","lib")
             lib_path = lib_path[:len(lib_path)-1]+"_pkg.vhd"
             os.remove(lib_path)
+            #if empty dir then do some cleaning
+            if(len(os.listdir(apt.HIDDEN+"lib/"+l)) == 0):
+                os.rmdir(apt.HIDDEN+"lib/"+l)
+                pass
 
         #remove from 'map.toml'
         lines = list()
@@ -265,7 +273,13 @@ class legoHDL:
 
     #will also install project into cache and have respective pkg in lib
     def download(self, title):
+        l,n = Capsule.split(title)
+
         if(not apt.linkedRemote()):
+            if(self.db.capExists(title, "cache") and not self.db.capExists(title, "local")):
+                instl = self.db.getCaps("cache")[l][n]
+                instl.clone(src=instl.getPath(), dst=apt.SETTINGS['local']+"/"+l)
+                return
             print('No remote code base configured to download modules')
             return
 
@@ -273,7 +287,7 @@ class legoHDL:
             print('ERROR- Package \''+title+'\' does not exist in remote')
             return
 
-        l,n = Capsule.split(title)
+        
         #TO-DO: retesting
         if(self.db.capExists(title, "local")):
             print("Project already exists in local workspace- pulling from remote...",end=' ')
@@ -374,8 +388,8 @@ class legoHDL:
         
         if(apt.SETTINGS['remote'] == None and force):
             print('\
-                WARNING- No remote code base is configured, if this module is deleted it may be unrecoverable.\n \
-                DELETE '+cap.getName()+'? [y/n]\
+            WARNING- No remote code base is configured, if this module is deleted and uninstalled\n\
+            it may be unrecoverable. PERMANENTLY REMOVE '+cap.getTitle()+'? [y/n]\
                 ')
             response = ''
             while(True):
@@ -383,17 +397,21 @@ class legoHDL:
                 if(response.lower() == 'y' or response.lower() == 'n'):
                     break
             if(response.lower() == 'n'):
-                print(cap.getName()+' not deleted')
+                print("Module "+cap.getTitle()+' not uninstalled')
                 force = False
         #if there is a remote then the project still lives on, can be "redownloaded"
-        #MOVES THE PROJECT TO THE CACHE AND GENERATES A PKG FILE
+        shutil.rmtree(cap.getPath())
+            
+        #if empty dir then do some cleaning
+        slash = cap.getPath()[:len(cap.getPath())-2].rfind('/')
+        root = cap.getPath()[:slash+1]
+        if(len(os.listdir(root)) == 0):
+            os.rmdir(root)
+        print('Deleted '+cap.getTitle()+' from local workspace')
+        if(force):
+            self.uninstall(cap.getTitle())
+            print("Uninstalled "+cap.getTitle()+" from cache")
 
-        try:
-            shutil.rmtree(cap.getPath())
-            print('Deleted '+cap.getName()+' from local workspace')
-        except:
-            print('No module '+cap.getName()+' exists locally')
-            return
         #delete the module remotely?
         pass
 
@@ -498,24 +516,21 @@ class legoHDL:
                 tb = options[0]
             self.export(self.capsuleCWD, mod, tb)
             pass
-        elif(command == "open" and self.capsulePKG.isValid()):
-            self.capsulePKG.load()
+        elif(command == "open" and self.db.capExists(package, "local")):
+            l,n = Capsule.split(package)
+            self.db.getCaps("local")[l][n].load()
             pass
-        elif(command == "show" and self.capsulePKG.isValid()):
-            self.capsulePKG.show()
+        elif(command == "show" and (self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
+            l,n = Capsule.split(package)
+            self.db.getCaps("local","cache")[l][n].show()
             pass
         elif(command == "ports"):
             mapp = False
             if(len(options) and 'map' in options):
                 mapp = True
-            if(self.capsulePKG.isValid()):
-                print(self.capsulePKG.ports(mapp))
-            else:
+            if((self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
                 l,n = Capsule.split(package)
-                cache = self.db.getCaps("cache")
-                if(l in cache.keys() and n in cache[l].keys()):
-                    print(Capsule(name=n,path=cache[l][n]).ports(mapp))
-                    pass
+                print(self.db.getCaps("local","cache")[l][n].ports(mapp))
         elif(command == "template" and apt.SETTINGS['editor'] != None):
             os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
             pass

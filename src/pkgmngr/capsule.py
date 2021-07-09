@@ -100,24 +100,27 @@ class Capsule:
     def __del__(self):
         pass
 
-    def clone(self):
-        #grab library level path
-        n = self.__local_path.rfind(self.getName())
-        libPath = self.__local_path[:n]
-        os.makedirs(libPath, exist_ok=True)
-        self.__repo = git.Git(libPath).clone(self.__remote_url)
+    def clone(self, src=None, dst=None):
+        if(src == None):
+            src = self.__remote_url
+        if(dst == None): #grab library level path (default location)
+            n = self.__local_path.rfind(self.getName())
+            dst = self.__local_path[:n] 
+        
+        os.makedirs(dst, exist_ok=True)
+        self.__repo = git.Git(dst).clone(src)
         self.loadMeta()
+        self.__repo = git.Repo(dst+"/"+self.getName())
+        #if downloaded from cache, make a master branch
+        if(len(self.__repo.heads) == 0):
+            self.__repo.git.checkout("-b","master")
 
     def getVersion(self):
         return self.getMeta('version')
 
     def release(self, ver='', options=None):
-        first_dot = self.getVersion().find('.')
-        last_dot = self.getVersion().rfind('.')
+        major,minor,patch = self.sepVer(ver)
 
-        major = int(self.getVersion()[:first_dot])
-        minor = int(self.getVersion()[first_dot+1:last_dot])
-        patch = int(self.getVersion()[last_dot+1:])
         print("Uploading ",end='')
         print("v"+str(major),minor,patch,sep='.',end='')
         if(ver == ''):
@@ -165,6 +168,8 @@ class Capsule:
     
     @classmethod
     def sepVer(cls, ver):
+        if(ver == ''):
+            return 0,0,0
         if(ver[0] == 'v'):
             ver = ver[1:]
 
@@ -349,7 +354,7 @@ class Capsule:
         os.chmod(self.metadataPath(), stat.S_IROTH | stat.S_IRGRP | stat.S_IREAD | stat.S_IRUSR)
         pass
 
-    def install(self, cache_dir, ver=None, src_url=None):
+    def install(self, cache_dir, ver=None, src=None):
         #CMD: git clone (rep.git_url) (location) --branch (rep.last_version) --single-branch
         if(ver == None):
             ver = self.getVersion()
@@ -360,13 +365,13 @@ class Capsule:
 
         print("version",ver)
         
-        if(src_url == None and apt.linkedRemote()):
-            src_url = self.__remote_url
-        elif(src_url == None):
-            src_url = self.__local_path
+        if(src == None and apt.linkedRemote()):
+            src = self.__remote_url
+        elif(src == None):
+            src = self.__local_path
 
         ver = "v"+ver
-        git.Git(cache_dir).clone(src_url,"--branch",ver,"--single-branch")
+        git.Git(cache_dir).clone(src,"--branch",ver,"--single-branch")
         self.__local_path = cache_dir+self.getName()+"/"
         self.__repo = git.Repo(self.__local_path)
         self.__repo.git.checkout(ver)
