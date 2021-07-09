@@ -14,12 +14,12 @@ class Capsule:
         self.__lib = rp.library
         self.__localPath = rp.local_path
         try:
-            self.__repo = git.Repo(self.__localPath)
+            self.__repo = git.Repo(self.__local_path)
         except:
             #repo DNE
             pass
         if(self.linkedRemote()):
-            self.__remoteURL = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
+            self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
         if(self.isValid()):
             self.loadMeta()
         else:
@@ -28,24 +28,27 @@ class Capsule:
         pass
 
     def getPath(self):
-        return self.__localPath
+        return self.__local_path
 
 
-    def __init__(self, name='', new=False, rp=None, path=None, title=None):
+    def __init__(self, name='', new=False, rp=None, path=None, title=None, lockfile=None):
         self.__metadata = dict()
         self.__lib = ''
         self.__name = ''
+        if(lockfile != None):
+            slash = lockfile.rfind('/')
         if(title != None):
-            self.__lib,self.__name = self.siftLibName(title)
+            self.__lib,self.__name = self.split(title)
         if(path != None):
-            if(name != ''): self.__name = name
-            self.__localPath = path
+            self.__local_path = path
             if(self.isValid()):
                 self.loadMeta()
+                self.__repo = git.Repo(self.__local_path)
+                self.__name = self.getMeta("name")
             return
 
         self.__repo = None
-        self.__remoteURL = None
+        self.__remote_url = None
 
         if(rp != None):
             self.absorbRepo(rp)
@@ -58,14 +61,14 @@ class Capsule:
                 self.__lib = name[:dot]
                 self.__name = name[dot+1:]
         
-        self.__localPath = apt.SETTINGS['local']+"/"+self.__lib+"/"+self.__name+'/'
+        self.__local_path = apt.SETTINGS['local']+"/"+self.__lib+"/"+self.__name+'/'
 
         #configure remote url
         if(self.linkedRemote()):
-            self.__remoteURL = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
+            self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
 
         if(self.isValid()): #this package is already existing locally
-            self.__repo = git.Repo(self.__localPath)
+            self.__repo = git.Repo(self.__local_path)
             if(new):
                 print('This project already locally exists')
             #load in metadata from YML
@@ -74,7 +77,7 @@ class Capsule:
         elif(new): #create a new project
             if(self.linkedRemote()):
                 try:
-                    git.Git(self.route).clone(self.__remoteURL)
+                    git.Git(self.route).clone(self.__remote_url)
                     print('Project already exists on remote code base; downloading now...')
                     return
                 except:
@@ -88,23 +91,24 @@ class Capsule:
         pass
 
     def cache(self, cache_dir):
-        git.Git(cache_dir).clone(self.__remoteURL)
+        git.Git(cache_dir).clone(self.__remote_url)
         pass
+
+    def getLocalPath(self):
+        return self.__local_path
 
     def getTitle(self):
         return self.getLib()+'.'+self.getName()
 
     def __del__(self):
-        if(self.isValid() and len(self.__metadata)):
-            self.save()
         pass
 
     def clone(self):
         #grab library level path
-        n = self.__localPath.rfind(self.getName())
-        libPath = self.__localPath[:n]
+        n = self.__local_path.rfind(self.getName())
+        libPath = self.__local_path[:n]
         os.makedirs(libPath, exist_ok=True)
-        self.__repo = git.Git(libPath).clone(self.__remoteURL)
+        self.__repo = git.Git(libPath).clone(self.__remote_url)
         self.loadMeta()
 
     def getVersion(self):
@@ -123,44 +127,28 @@ class Capsule:
             if(options[0] == "maj"):
                 major += 1
                 minor = patch = 0
-                pass
             elif(options[0] == "min"):
                 minor += 1
                 patch = 0
-                pass
             elif(options[0] == "fix"):
                 patch += 1
-                pass
             else:
                 return
             ver = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
         else:
             ver = ver[1:]
-            try:
-                r_major = int(ver[:first_dot])
-            except:
+            r_major,r_minor,r_patch = self.sepVer(ver)
+            
+            if(self.biggerVer(ver,self.getVersion()) == self.getVersion()):
                 return
-            try:
-                r_minor = int(ver[first_dot+1:last_dot])
-            except:
-                r_minor = 0
-            try:
-                r_patch = int(ver[last_dot+1:])
-            except:
-                r_patch = 0
-                
-            if(r_major < major):
-                return
-            elif(r_major == major and r_minor < minor):
-                return
-            elif(r_major == major and r_minor == minor and r_patch <= patch):
-                return
+
             ver = 'v'+str(r_major)+'.'+str(r_minor)+'.'+str(r_patch)
         print(" -> ",end='')
         print(ver)
         if(ver != '' and ver[0] == 'v'):
             self.__metadata['version'] = ver[1:]
             self.save()
+            print("saving")
             self.__repo.git.add(update=True)
             self.__repo.index.commit("Release version -> "+self.getVersion())
             self.__repo.create_tag(ver)
@@ -203,7 +191,6 @@ class Capsule:
             r_patch = 0
         return r_major,r_minor,r_patch
 
-
     def loadMeta(self):
         #print("-",self.getName(),'-',end='')
         with open(self.metadataPath(), "r") as file:
@@ -224,16 +211,19 @@ class Capsule:
     def create(self):
         print('Initializing new project')
 
-        shutil.copytree(apt.Apparatus.PKGMNG_PATH+"template/", self.__localPath)
-        self.__repo = git.Repo.init(self.__localPath)
+        shutil.copytree(apt.PKGMNG_PATH+"template/", self.__local_path)
+        
+        self.__repo = git.Repo.init(self.__local_path)
     
         if(self.linkedRemote()):
-            self.__repo.create_remote('origin', self.__remoteURL) #attach to remote code base
-            
+            self.__repo.create_remote('origin', self.__remote_url) #attach to remote code base
+
         #run the commands to generate new project from template
         #file to find/replace word 'template'
-        file_swaps = [(self.__localPath+'.template.yml',self.metadataPath()),(self.findPath('template.vhd'), self.findPath('template.vhd').replace('template', self.__name)),
-        (self.findPath('template_tb.vhd'), self.findPath('template_tb.vhd').replace("template", self.__name))]
+        replacements = glob.glob(self.__local_path+"/**/*template*", recursive=True)
+        file_swaps = list()
+        for f in replacements:
+            file_swaps.append((f,f.replace('template', self.__name)))
 
         today = date.today().strftime("%B %d, %Y")
         for x in file_swaps:
@@ -242,15 +232,18 @@ class Capsule:
             for line in file_in:
                 line = line.replace("template", self.__name)
                 line = line.replace("%DATE%", today)
-                line = line.replace("%AUTHOR%", apt.Apparatus.SETTINGS["author"])
+                line = line.replace("%AUTHOR%", apt.SETTINGS["author"])
                 line = line.replace("%PROJECT%", self.__name)
                 file_out.write(line) #insert date into template
             file_in.close()
             file_out.close()
             os.remove(x[0])
-
+        
         self.loadMeta() #generate fresh metadata fields
+        self.__metadata['name'] = self.__name
         self.__metadata['library'] = self.__lib
+        self.__metadata['version'] = '0.0.0'
+        self.autoDetectTop()
         self.save() #save current progress into yaml
         self.__repo.index.add(self.__repo.untracked_files)
         self.__repo.index.commit("Initializes project")
@@ -268,11 +261,11 @@ class Capsule:
     def genRemote(self):
         if(self.linkedRemote()):
             try: #attach to remote code base
-                self.__repo.create_remote('origin', self.__remoteURL) 
+                self.__repo.create_remote('origin', self.__remote_url) 
             except: #relink origin to new remote url
                 print(self.__repo.remotes.origin.url)
                 with self.__repo.remotes.origin.config_writer as cw:
-                    cw.set("url", self.__remoteURL)
+                    cw.set("url", self.__remote_url)
                 #now set it up to track
                 # !!!
             self.__repo.git.push("-u","origin",str(self.__repo.head.reference))
@@ -306,7 +299,7 @@ class Capsule:
 
     def pushYML(self, msg):
         self.save()
-        self.__repo.index.add("."+self.__name+".yml")
+        self.__repo.index.add(".lego.lock")
         
         self.__repo.index.commit(msg)
         if(self.linkedRemote()):
@@ -326,7 +319,7 @@ class Capsule:
         return (apt.SETTINGS['remote'] != None)
 
     def metadataPath(self):
-        return self.__localPath+"."+self.__name+".yml"
+        return self.__local_path+".lego.lock"
 
     def push_remote(self):
         pass
@@ -337,7 +330,7 @@ class Capsule:
                 print(line,sep='',end='')
     
     def load(self):
-        cmd = apt.SETTINGS['editor']+" "+self.__localPath
+        cmd = apt.SETTINGS['editor']+" "+self.__local_path
         os.system(cmd)
         pass
 
@@ -348,7 +341,7 @@ class Capsule:
         tmp = collections.OrderedDict(self.__metadata)
         tmp.move_to_end('derives')
         tmp.move_to_end('name', last=False)
-
+        print(tmp['version'])
         #a little magic to save YAML in custom order for easier readability
         with open(self.metadataPath(), "w") as file:
             while len(tmp):
@@ -374,14 +367,14 @@ class Capsule:
             exit()
         
         if(src_url == None):
-            src_url = self.__remoteURL
+            src_url = self.__remote_url
 
-        self.__localPath = cache_dir+self.getName()+"/"
+        self.__local_path = cache_dir+self.getName()+"/"
         try:
             git.Git(cache_dir).clone(src_url,"--branch",ver,"--single-branch")
         except:
             pass
-        self.__repo = git.Repo(self.__localPath)
+        self.__repo = git.Repo(self.__local_path)
         self.__repo.git.checkout(ver)
         self.loadMeta()
         return
@@ -411,7 +404,7 @@ class Capsule:
         #if the pkg does not exist in the lib folder, remove it!
         tmp = derivatives.copy()
         for d in tmp:
-            l,n = self.siftLibName(d)
+            l,n = self.split(d)
             print(l,n)
             if(not os.path.isfile(apt.HIDDEN+"lib/"+l+"/"+n+".vhd")):
                 derivatives.remove(d)
@@ -433,7 +426,7 @@ class Capsule:
     #auto detect the toplevel file
     def autoDetectTop(self):
         #find all possible files
-        vhd_files = glob.glob(self.__localPath+"/**/*.vhd", recursive=True)
+        vhd_files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
         #remove all files containing "tb_" or "_tb"
         comps = dict() #store a dict of all components to look for that are instantiated
         toplvl = None
@@ -465,7 +458,7 @@ class Capsule:
                         #remove file attached to key if...
                         #if before entity, the key is found in line starting with "use"
                         if(line.count("use") and not in_entity and line.count("work")):
-                            l,n = self.siftLibName(line)
+                            l,n = self.split(line)
                             if(n in comps.keys()):
                                 vhd_files.remove(comps[n])
                                 #print("REMOVE:",comps[n])
@@ -505,7 +498,7 @@ class Capsule:
         pass
     
     @classmethod
-    def siftLibName(cls, dep):
+    def split(cls, dep):
         dot = dep.find('.')
         lib = dep[:dot]
         dot2 = dep[dot+1:].find('.')
@@ -522,7 +515,7 @@ class Capsule:
         #print("DETECTING TOP-LEVEL TESTBENCH")
         #based on toplevel, find which file instantiates a component of toplevel
         #find all possible files
-        vhd_files = glob.glob(self.__localPath+"/**/*.vhd", recursive=True)
+        vhd_files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
         #keep only files containing "tb_" or "_tb"
         if(comp == None):
             comp = self.getMeta("toplevel") #looking for a testbench that uses this component
@@ -571,7 +564,7 @@ class Capsule:
         pass
 
     def findPath(self, file="*.vhd"):
-        vhd_files = glob.glob(self.__localPath+"/**/"+file, recursive=True)
+        vhd_files = glob.glob(self.__local_path+"/**/"+file, recursive=True)
         if(len(vhd_files) > 0):
             return vhd_files[0]
         else:
@@ -579,7 +572,7 @@ class Capsule:
         pass
 
     def ports(self, mapp):
-        vhd_file = glob.glob(self.__localPath+"/**/"+self.getMeta("toplevel"), recursive=True)[0]
+        vhd_file = glob.glob(self.__local_path+"/**/"+self.getMeta("toplevel"), recursive=True)[0]
         
         port_txt = ''
         rolling_entity = False

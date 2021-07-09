@@ -13,8 +13,9 @@ class Registry:
     class Mode(Enum):
         GITLAB = 1,
         GITHUB = 2,
-        LOCAL = 3,
-        OTHER = 4
+        NONE = 3,
+        GIT = 4,
+        OTHER = 5
         pass
 
     GL_PRJ_EXT = "/projects?include_subgroups=True&simple=True"
@@ -34,8 +35,10 @@ class Registry:
         #print(url)
         #determine what remote website is being used
         self.__mode = None
-        if(not Capsule.linkedRemote()):
-            self.__mode = self.Mode.LOCAL
+        if(not apt.linkedRemote()):
+            self.__mode = self.Mode.NONE
+        elif(self.__url.count('.git') > 0):
+            self.__mode = self.Mode.GIT
         elif(self.__url.count('gitlab') > 0):
             self.__mode = self.Mode.GITLAB
             self.parseURL('gitlab')
@@ -65,6 +68,7 @@ class Registry:
     def listCaps(self, options):
         reg = self.__remote_reg #grab all remotes
         sorted_reg = OrderedDict()
+        print(sorted_reg)
         if(not Capsule.linkedRemote()):
             reg = self.__local_reg
         if(options.count('alpha')):
@@ -72,45 +76,38 @@ class Registry:
                 sorted_reg[repo.library+repo.name] = repo
             reg = sorted_reg
 
-        cache = self.getProjectsCache()
-        locality = self.getProjectsLocal()
+        if(not apt.linkedRemote()):
+            reg = self.getCaps("local","cache")
 
-        cached_ids = self.installedPkgs()
+        for lib,prjs in reg.items():
+            sorted_reg[lib] = OrderedDict(prjs)
         print("\nList of available modules:")
         print("\tModule\t\t    status\t    version")
         print("-"*80)
-        for key,repo in reg.items():
-            hdr = ''
-            if(repo.library != ''):
-                hdr = repo.library+'.'
-            title = hdr+repo.name
-            
-            cp = Capsule(rp=repo)
-            status = '-'
-            ver = repo.last_version
-            info = ''
-            
-            if(self.prjExists(title, "local")):
-                status = 'dnld'
-                ver = 'unknown'
-            elif(self.prjExists(title, "cache")):
-                status = 'instl'
-                ver = 'unknown'
+        for lib,prjs in reg.items():
+            for name,cp in prjs.items():
+                status = '-'
+                ver = cp.getVersion()
+                info = ''
+                l,n = Capsule.split(cp.getTitle())
+                if(self.capExists(cp.getTitle(), "local")):
+                    status = 'dnld'
+                    ver = self.getProjectsLocal()[l][n].getMeta("version")
+                elif(self.capExists(cp.getTitle(), "cache")):
+                    status = 'instl' 
+                    ver = self.getProjectsCache()[l][n].getMeta("version")
 
-            if key in cached_ids.keys(): #check for installations
-                status = 'instl'
-                ver = cached_ids[key]
-            if (cp.isValid()): #check for downloads
-                status = 'dnld'
-                loc_ver = ''
-                loc_ver = cp.getVersion()
-                if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
-                    info = '(update)-> '+ver
-                    ver = loc_ver
+                if (cp.isValid() and False): #check for downloads
+                    status = 'dnld'
+                    loc_ver = ''
+                    loc_ver = cp.getVersion()
+                    if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
+                        info = '(update)-> '+ver
+                        ver = loc_ver
 
-            ver = '' if (ver == '0.0.0') else ver
-            if((options.count('local') and cp.isValid()) or not options.count('local')):
-                print("  ",'{:<24}'.format(title),'{:<16}'.format(status),'{:<10}'.format(ver),info)
+                ver = '' if (ver == '0.0.0') else ver
+                if((options.count('local') and cp.isValid()) or not options.count('local')):
+                    print("  ",'{:<24}'.format(cp.getTitle()),'{:<16}'.format(status),'{:<10}'.format(ver),info)
         pass
 
     def parseURL(self, website):
@@ -162,8 +159,6 @@ class Registry:
         for key,r  in self.__remote_reg.items():
             subs.append(r.library)
             prjs.append(r.name)
-
-
         for key,r  in self.__local_reg.items():
             #create any unestablished libraries
             if(not r.library in subs):
@@ -192,28 +187,75 @@ class Registry:
             for p in pkgs:
                 if(p[0] == '.'):
                     continue
-                self.__cache_prjs[l][p] = path+l+"/"+p+"/"
+                self.__cache_prjs[l][p] = Capsule(path=path+l+"/"+p+"/")
         return self.__cache_prjs
+
+    def getCaps(self, *args):
+        folders = None
+        self.merge(self.getProjectsLocal(),self.getProjectsCache())
+        if(args.count("remote")):
+            if(folders == None):
+                folders = self.getProjectsRemote()
+            else:
+                folders = folders + self.getProjectsRemote()
+        if(args.count("cache")):
+            if(folders == None):
+                folders = self.getProjectsCache()
+            else:
+                folders = self.merge(folders,self.getProjectsCache())
+        if(args.count("local")):
+            if(folders == None):
+                folders = self.getProjectsLocal()
+            else:
+                folders = self.merge(folders,self.getProjectsLocal())
+        
+        return folders
+
+    #merge: place1 <- place2 (place2 has precedence)
+    def merge(self, place1, place2):
+        for lib,prjs in place1.items():
+            if lib in place2.keys():
+                for prj in place2[lib]:
+                    place1[lib][prj] = place2[lib][prj]
+        return place1
 
     def getProjectsLocal(self):
         if hasattr(self,"__local_prjs"):
             return self.__local_prjs
         self.__local_prjs = dict()
-        folders = glob.glob(apt.SETTINGS['local']+"/**/.*.yml", recursive=True)
-        for num in range(len(folders)):
-            s = folders[num].rfind('/')
-            d = folders[num].rfind('.')
-            c = Capsule(name=folders[num][s+2:d],path=folders[num][:s+1])
+        folders = glob.glob(apt.SETTINGS['local']+"/**/.lego.lock", recursive=True)
+        for file in folders:
+            #read .lock to get information
+            with open(file, 'r') as f:
+                tmp = yaml.load(f, Loader=yaml.FullLoader)
+                #print(tmp)
+            s = file.rfind('/')
+            c = Capsule(path=file[:s+1])
             if(c.getLib() not in self.__local_prjs.keys()):
                 self.__local_prjs[c.getLib()] = dict()
-            self.__local_prjs[c.getLib()][c.getName()] = folders[num][:s+1]
+            self.__local_prjs[c.getLib()][c.getName()] = c
         #print(self.__local_prjs)
         return self.__local_prjs
         pass
 
-    def prjExists(self, title, place):
+    #TO-DO
+    def getProjectsRemote(self):
+        if(self.__mode == Registry.Mode.GITLAB):
+            pass
+        elif(self.__mode == Registry.Mode.GITHUB):
+            pass
+        elif(self.__mode == Registry.Mode.GIT):
+            pass
+        elif(self.__mode == Registry.Mode.NONE):
+            pass
+        elif(self.__mode == Registry.Mode.OTHER):
+            pass
+        pass
+
+    #use title="lib.*" to check if library exists
+    def capExists(self, title, place):
         folder = None
-        l,n = Capsule.siftLibName(title)
+        l,n = Capsule.split(title)
         if(place == "local"):
             folder = self.getProjectsLocal()
         elif(place == "cache"):
@@ -226,7 +268,6 @@ class Registry:
 
     def prjLocation(self, title):
         pass
-
 
     def findProjectsLocal(self, path, cached=False):
         branches = list(os.listdir(path))

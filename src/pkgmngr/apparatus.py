@@ -23,4 +23,8 @@ class Apparatus:
             yaml.dump(cls.SETTINGS, file)
         pass
 
+    @classmethod
+    def linkedRemote(cls):
+        return cls.SETTINGS['remote'] != None
+
     pass

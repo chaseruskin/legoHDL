@@ -20,13 +20,13 @@ class legoHDL:
         #defines how to open workspaces
         self.textEditor = apt.SETTINGS['editor']
 
-        self.db.getProjectsLocal()
+        self.db.getCaps("local")
         #exit()
 
         self.db.findProjectsLocal(apt.SETTINGS['local'])
         if(Capsule.linkedRemote()): #fetch remote servers
             self.db.fetch()
-        self.db.sync()
+        #self.db.sync()
         #directly works with VHDL_LS
         os.environ['VHDL_LS_CONFIG'] = apt.HIDDEN+"map.toml" 
 
@@ -35,10 +35,10 @@ class legoHDL:
 
     def genPKG(self, title):
         cap = None
-        if(self.db.prjExists(title, "cache")):
-            cache = self.db.getProjectsCache()
-            l,n = Capsule.siftLibName(title)
-            cap = Capsule(title=title,path=cache[l][n])
+        if(self.db.capExists(title, "cache")):
+            cache = self.db.getCaps("cache")
+            l,n = Capsule.split(title)
+            cap = cache[l][n]
         else:
             print("Error- the project is not located in the cache")
             return
@@ -80,10 +80,10 @@ class legoHDL:
         cache_path = apt.HIDDEN+"cache/"
         lib_path = apt.HIDDEN+"lib/"+cap.getLib()+"/"
         #does the package already exist in the cache directory?
-        if(self.db.prjExists(cap.getTitle(), "cache")):
+        if(self.db.capExists(cap.getTitle(), "cache")):
             print("Package is already installed.")
             return
-        elif(not self.db.prjExists(cap.getTitle(), "remote")):
+        elif(not self.db.capExists(cap.getTitle(), "remote")):
             pass
      
         # grab the ID to search for the project
@@ -152,9 +152,9 @@ class legoHDL:
 
     def uninstall(self, pkg, opt):
         #remove from cache
-        l,n = Capsule.siftLibName(pkg)
-        if(self.db.prjExists(pkg, "cache")):
-            cache = self.db.getProjectsCache()
+        l,n = Capsule.split(pkg)
+        if(self.db.capExists(pkg, "cache")):
+            cache = self.db.getCaps("cache")
             shutil.rmtree(cache[l][n])
             #remove from lib
             lib_path = cache[l][n].replace("cache","lib")
@@ -179,7 +179,7 @@ class legoHDL:
             return grp,top_mp
         #go to YML of dependencies and add edges to build dependency tree
         for d in d_list:
-            l,n = Capsule.siftLibName(d)
+            l,n = Capsule.split(d)
             n = n.replace("_pkg", "")
             if(os.path.isfile(apt.HIDDEN+"cache/"+l+"/"+n+"/."+n+".yml")):
                 with open(apt.HIDDEN+"cache/"+l+"/"+n+"/."+n+".yml", "r") as file:
@@ -233,7 +233,7 @@ class legoHDL:
 
         library = dict() #stores lists at dictionary keys
         for h in hierarchy:
-            l,n = Capsule.siftLibName(h)
+            l,n = Capsule.split(h)
             n = n.replace("_pkg", "")
             #print(l,n)
             #library must exist in lib to be included in recipe.txt (avoids writing external libs like IEEE)
@@ -271,7 +271,7 @@ class legoHDL:
             print('ERROR- Package \''+cap.getName()+'\' does not exist in remote')
             return
 
-        if(self.db.prjExists(cap.getTitle(), "local")):
+        if(self.db.capExists(cap.getTitle(), "local")):
             print("Project already exists in local workspace- pulling from remote...",end=' ')
             cap.pull()
         else:
@@ -294,16 +294,14 @@ class legoHDL:
         err_msg = "ERROR- please flag the next version for release with one of the following args:\n"\
                     "\t(-v0.0.0 | -maj | -min | -fix)"
         if(len(options) == 0):
-                print(err_msg)
-                exit()
+                exit(err_msg)
             
         ver = ''
         if(options[0][0] == 'v'):
             ver = options[0]
         
         if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == ''):
-            print(err_msg)
-            exit()
+            exit(err_msg)
 
         cap.autoDetectTop()
         cap.release(ver, options)
@@ -313,7 +311,7 @@ class legoHDL:
         #clone new project's progress into cache
         tmp = Capsule(cap.getLib()+'.'+cap.getName())
         tmp.install(apt.HIDDEN+"cache/"+cap.getLib()+"/", "v"+cap.getVersion(), src_url=cap.getPath())
-        self.genPKG(tmp)
+        self.genPKG(tmp.getTitle())
 
         if Capsule.linkedRemote():
             print("Updating remote package contents...",end=' ')
@@ -365,10 +363,8 @@ class legoHDL:
         pass
 
     def cleanup(self, cap, force):
-        iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
-        cap = Capsule(rp=rep)
         if(not cap.isValid()):
-            print('No module '+cap.getName()+' exists locally')
+            print('Module '+cap.getName()+' does not exist locally')
             return
         
         if(apt.SETTINGS['remote'] == None and force):
@@ -388,7 +384,7 @@ class legoHDL:
         #MOVES THE PROJECT TO THE CACHE AND GENERATES A PKG FILE
 
         try:
-            shutil.rmtree(rep.local_path)
+            shutil.rmtree(cap.getLocalPath())
             print('Deleted '+cap.getName()+' from local workspace')
         except:
             print('No module '+cap.getName()+' exists locally')
@@ -402,7 +398,7 @@ class legoHDL:
         lastSlash = pkgPath.rfind('/') #determine project's name to know the YAML to open
         pkgCWD = pkgPath[lastSlash+1:]
 
-        self.capsuleCWD = Capsule(name=pkgCWD,path=pkgPath+"/")
+        self.capsuleCWD = Capsule(path=pkgPath+"/")
         
         command = package = description = ""
         options = []
@@ -426,6 +422,7 @@ class legoHDL:
                 break
 
         package = package.replace("-", "_")
+        
         self.capsulePKG = Capsule(title=package)
         
         #branching through possible commands
@@ -471,12 +468,13 @@ class legoHDL:
             self.capsuleCWD.getMeta()['summary'] = description
             self.capsuleCWD.pushYML("Updates project summary")
             pass
-        elif(command == 'del'):
+        elif(command == 'del' and self.db.capExists(package, "local")):
+            l,n = Capsule.split(package)
             force = False
             if(len(options) > 0):
                 if(options[0].lower() == 'f'):
                     force = True
-            self.cleanup(self.capsulePKG, force)
+            self.cleanup(self.db.getCaps("local")[l][n], force)
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             self.inventory(options)
             pass
@@ -505,8 +503,8 @@ class legoHDL:
             if(self.capsulePKG.isValid()):
                 print(self.capsulePKG.ports(mapp))
             else:
-                l,n = Capsule.siftLibName(package)
-                cache = self.db.getProjectsCache()
+                l,n = Capsule.split(package)
+                cache = self.db.getCaps("cache")
                 if(l in cache.keys() and n in cache[l].keys()):
                     print(Capsule(name=n,path=cache[l][n]).ports(mapp))
                     pass
