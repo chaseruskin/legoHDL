@@ -11,6 +11,9 @@ class legoHDL:
         apt.load()
         self.capsulePKG = None
         self.capsuleCWD = None
+
+        if(apt.SETTINGS['local'] == None):
+            exit("ERROR- Please specify a local path! See \'legohdl help config\' for more details")
         
         # !!! UNCOMMENT LINE BELOW TO DISABLE REMOTE !!!
         #self.settings['remote'] = None #testing allowing option to not connect to a remote!
@@ -24,7 +27,7 @@ class legoHDL:
         #exit()
 
         self.db.findProjectsLocal(apt.SETTINGS['local'])
-        if(Capsule.linkedRemote()): #fetch remote servers
+        if(apt.linkedRemote()): #fetch remote servers
             self.db.fetch()
         #self.db.sync()
         #directly works with VHDL_LS
@@ -76,34 +79,29 @@ class legoHDL:
         tmp_pkg.close()
         pass
 
-    def install(self, cap, opt):
+    def install(self, title, ver=None, opt=list()):
+        l,n = Capsule.split(title)
+        cap = None
         cache_path = apt.HIDDEN+"cache/"
-        lib_path = apt.HIDDEN+"lib/"+cap.getLib()+"/"
+        lib_path = apt.HIDDEN+"lib/"+l+"/"
         #does the package already exist in the cache directory?
-        if(self.db.capExists(cap.getTitle(), "cache")):
+        if(self.db.capExists(title, "cache")):
             print("Package is already installed.")
             return
-        elif(not self.db.capExists(cap.getTitle(), "remote")):
+        elif(not self.db.capExists(title, "remote") and False):
             pass
-     
-        # grab the ID to search for the project
-        iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
-        cap = Capsule(rp=rep,title=cap.getTitle()) #update info into a capsule obj
-        # clone the repo -> cache
-        
+        elif(self.db.capExists(title, "local")):
+            cap = self.db.getCaps("local")[l][n]
+        else:
+            print("Not found anywhere!")
+            return
+        # clone the repo -> cache      
         #possibly make directory for cached project
         print("Installing... ",end='')
         cache_path = cache_path+cap.getLib()+"/"
         os.makedirs(cache_path, exist_ok=True)
         #see what the latest version available is and clone from that version unless specified
         #print(rep.git_url)#print(rep.last_version)
-        ver = None
-        if(len(opt) and opt[0][0] != 'v'):
-            print("ERROR- Invalid args")
-            return
-        elif(len(opt)):
-            ver = opt[0]
-
         cap.install(cache_path, ver)
         print("success")
         print("library files path:")
@@ -112,12 +110,12 @@ class legoHDL:
         self.genPKG(cap.getTitle())
         
         #link it all together through writing paths into "mapping.toml"
-        cur_lines = list()
-        mapper = open(apt.HIDDEN+"map.toml", 'r')
-        cur_lines = mapper.readlines()
-        mapper.close()
+        filename = apt.HIDDEN+"map.toml"
+        mapfile = open(filename, 'r')
+        cur_lines = mapfile.readlines()
+        mapfile.close()
 
-        mapper = open(apt.HIDDEN+"map.toml", 'w')
+        mapfile = open(filename, 'w')
         inc_paths = list()
         inc_paths.append("\'"+lib_path+cap.getName()+"_pkg.vhd"+"\',\n")
         inc_paths.append("\'"+cap.findPath(cap.getMeta("toplevel")).replace(cap.getMeta("toplevel"),"*.vhd")+"\',\n")
@@ -125,7 +123,7 @@ class legoHDL:
         found_lib = False
         if(len(cur_lines) <= 1):
             cur_lines.clear()
-            mapper.write("[libraries]\n")
+            mapfile.write("[libraries]\n")
 
         for line in cur_lines:
             if(line.count(cap.getLib()+".files") > 0): #include into already established library section
@@ -136,18 +134,18 @@ class legoHDL:
                     inc_paths.remove(line)   
             elif(inc and line.count("]") > 0): # end of section
                 for p in inc_paths: #append rest of inc_paths
-                    mapper.write(p)
+                    mapfile.write(p)
                 inc = False
-            mapper.write(line)
+            mapfile.write(line)
 
         if(len(cur_lines) == 0 or not found_lib):
             #create new library section
-            mapper.write(cap.getLib()+".files = [\n")
+            mapfile.write(cap.getLib()+".files = [\n")
             for p in inc_paths:
-                mapper.write(p)
-            mapper.write("]\n")
+                mapfile.write(p)
+            mapfile.write("]\n")
 
-        mapper.close()
+        mapfile.close()
         pass
 
     def uninstall(self, pkg, opt):
@@ -155,18 +153,20 @@ class legoHDL:
         l,n = Capsule.split(pkg)
         if(self.db.capExists(pkg, "cache")):
             cache = self.db.getCaps("cache")
-            shutil.rmtree(cache[l][n])
+            cache_path = cache[l][n].getPath()
+            shutil.rmtree(cache_path)
             #remove from lib
-            lib_path = cache[l][n].replace("cache","lib")
+            lib_path = cache_path.replace("cache","lib")
             lib_path = lib_path[:len(lib_path)-1]+"_pkg.vhd"
             os.remove(lib_path)
 
-        #remove from 'mapping.toml'
+        #remove from 'map.toml'
         lines = list()
-        with open(apt.HIDDEN+"map.toml", 'r') as file:
+        filename = apt.HIDDEN+"map.toml"
+        with open(filename, 'r') as file:
             lines = file.readlines()
             file.close()
-        with open(apt.HIDDEN+"map.toml", 'w') as file:
+        with open(filename, 'w') as file:
             for lin in lines:
                 if(lin.count(l) and (lin.count("/"+n+"/") or lin.count("/"+n+"_pkg"))):
                     continue
@@ -191,6 +191,10 @@ class legoHDL:
             for z in tmp['derives']:
                 grp.addEdge(d, z)
         return grp,top_mp
+
+    #TO-DO: make std version option checker
+    def validVersion(self, ver):
+        pass
 
     def export(self, cap, top=None, tb=None):
         print("Exporting...",end=' ')
@@ -259,33 +263,32 @@ class legoHDL:
         print("success")
         pass
 
-    def download(self, cap):
-        if(not cap.linkedRemote()):
+    #will also install project into cache and have respective pkg in lib
+    def download(self, title):
+        if(not apt.linkedRemote()):
             print('No remote code base configured to download modules')
             return
 
-        iden,rep = self.db.findPrj(cap.getLib(), cap.getName())
-        print(rep.local_path)
-
-        if(iden == -1):
-            print('ERROR- Package \''+cap.getName()+'\' does not exist in remote')
+        if(not self.db.capExists(title, "remote")):
+            print('ERROR- Package \''+title+'\' does not exist in remote')
             return
 
-        if(self.db.capExists(cap.getTitle(), "local")):
+        l,n = Capsule.split(title)
+        #TO-DO: retesting
+        if(self.db.capExists(title, "local")):
             print("Project already exists in local workspace- pulling from remote...",end=' ')
-            cap.pull()
+            self.db.getPrjs("local")[l][n].pull()
         else:
             print("Cloning from remote...",end=' ')
-            cap.clone()
+            self.db.getPrjs("remote")[l][n].clone()
     
-        try: #symbolically link the downloaded project folder to the cache
-            shutil.rmtree(apt.HIDDEN+"cache/"+cap.getLib()+"/"+cap.getName()+"/")
+        try: #remove cached project already there
+            shutil.rmtree(apt.HIDDEN+"cache/"+l+"/"+n+"/")
         except:
             pass
-        #generate PKG VHD
-        opt = list()
-        opt.append("v"+cap.getVersion())   
-        self.install(Capsule(rp=rep), opt)
+        #install to cache and generate PKG VHD 
+        cap = self.db.getPrjs("local")[l][n]  
+        self.install(cap.getTitle(), cap.getVersion())
 
         print("success")
         pass
@@ -306,14 +309,12 @@ class legoHDL:
         cap.autoDetectTop()
         cap.release(ver, options)
 
-        try: shutil.rmtree(apt.HIDDEN+"cache/"+cap.getLib()+"/"+cap.getName())
-        except: pass
+        if(os.path.isdir(apt.HIDDEN+"cache/"+cap.getLib()+"/"+cap.getName())):
+            shutil.rmtree(apt.HIDDEN+"cache/"+cap.getLib()+"/"+cap.getName())
         #clone new project's progress into cache
-        tmp = Capsule(cap.getLib()+'.'+cap.getName())
-        tmp.install(apt.HIDDEN+"cache/"+cap.getLib()+"/", "v"+cap.getVersion(), src_url=cap.getPath())
-        self.genPKG(tmp.getTitle())
+        self.install(cap.getTitle(), cap.getVersion())
 
-        if Capsule.linkedRemote():
+        if apt.linkedRemote():
             print("Updating remote package contents...",end=' ')
             cap.pushRemote()
             print("success")
@@ -328,6 +329,9 @@ class legoHDL:
         if(options[0] == 'gl-token' or options[0] == 'gh-token'):
             self.db.encrypt(choice, options[0])
             return
+        
+        if(choice == 'null'):
+            choice = ''
 
         if(not options[0] in apt.SETTINGS.keys()):
             print("ERROR- Invalid setting")
@@ -340,13 +344,14 @@ class legoHDL:
             elif(options[0] == 'local'):
                 print('ERROR- Must include a local code base path')
                 return
-
+        
         if(options[0] == 'local'):
             os.makedirs(choice, exist_ok=True)
 
         apt.SETTINGS[options[0]] = choice
 
         apt.save()
+        print("Saved setting successfully")
         pass
     
     #TO-DO: implement
@@ -384,7 +389,7 @@ class legoHDL:
         #MOVES THE PROJECT TO THE CACHE AND GENERATES A PKG FILE
 
         try:
-            shutil.rmtree(cap.getLocalPath())
+            shutil.rmtree(cap.getPath())
             print('Deleted '+cap.getName()+' from local workspace')
         except:
             print('No module '+cap.getName()+' exists locally')
@@ -428,22 +433,25 @@ class legoHDL:
         #branching through possible commands
         if(command == "install"):
             print(self.capsulePKG.getTitle())
-            self.install(self.capsulePKG, options) #TO-DO
+            ver = None
+            if(len(options)):
+                ver = options[0]
+            self.install(self.capsulePKG, ver) #TO-DO
             pass
         elif(command == "uninstall"):
             self.uninstall(package, options) #TO-DO
             pass
         elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
-            if Capsule.linkedRemote():
+            if apt.linkedRemote():
                 i = package.find('.')
                 lib = package[:i]
                 name = package[i+1:]
-                if(len(lib) > 0 and Capsule.linkedRemote()): #try to make new subgroup if DNE
+                if(len(lib) > 0 and apt.linkedRemote()): #try to make new subgroup if DNE
                     self.db.createSubgroup(lib, self.db.accessGitlabAPI())
 
             self.capsulePKG = Capsule(package, new=True)
             
-            if Capsule.linkedRemote(): #now fetch from db to grab ID
+            if apt.linkedRemote(): #now fetch from db to grab ID
                 self.capsulePKG.saveID(self.db.fetchProjectShallow(lib,name)['id'])
             else: #assign tmp local id if no remote
                 self.capsulePKG.saveID(self.db.assignRandomID())
@@ -460,9 +468,9 @@ class legoHDL:
             pass
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
-            self.download(self.capsulePKG)
+            cap = self.download(package)
             if('o' in options):
-                self.capsulePKG.load()
+                cap.load()
             pass
         elif(command == "summ" and self.capsuleCWD.isValid()):
             self.capsuleCWD.getMeta()['summary'] = description

@@ -118,6 +118,8 @@ until next command
 
 -fix when releasing a module to update cache and lib                            ( * )
 -give option to update and commit all changes with next "release" -ac           (   )
+-try moving source files around and then releasing                              ( * )
+
 
 #TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
 #installPkg = list()

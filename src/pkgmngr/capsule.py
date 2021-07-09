@@ -18,7 +18,7 @@ class Capsule:
         except:
             #repo DNE
             pass
-        if(self.linkedRemote()):
+        if(apt.linkedRemote()):
             self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
         if(self.isValid()):
             self.loadMeta()
@@ -64,7 +64,7 @@ class Capsule:
         self.__local_path = apt.SETTINGS['local']+"/"+self.__lib+"/"+self.__name+'/'
 
         #configure remote url
-        if(self.linkedRemote()):
+        if(apt.linkedRemote()):
             self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
 
         if(self.isValid()): #this package is already existing locally
@@ -75,7 +75,7 @@ class Capsule:
             self.loadMeta()
             pass
         elif(new): #create a new project
-            if(self.linkedRemote()):
+            if(apt.linkedRemote()):
                 try:
                     git.Git(self.route).clone(self.__remote_url)
                     print('Project already exists on remote code base; downloading now...')
@@ -93,9 +93,6 @@ class Capsule:
     def cache(self, cache_dir):
         git.Git(cache_dir).clone(self.__remote_url)
         pass
-
-    def getLocalPath(self):
-        return self.__local_path
 
     def getTitle(self):
         return self.getLib()+'.'+self.getName()
@@ -215,7 +212,7 @@ class Capsule:
         
         self.__repo = git.Repo.init(self.__local_path)
     
-        if(self.linkedRemote()):
+        if(apt.linkedRemote()):
             self.__repo.create_remote('origin', self.__remote_url) #attach to remote code base
 
         #run the commands to generate new project from template
@@ -247,7 +244,7 @@ class Capsule:
         self.save() #save current progress into yaml
         self.__repo.index.add(self.__repo.untracked_files)
         self.__repo.index.commit("Initializes project")
-        if(self.linkedRemote()):
+        if(apt.linkedRemote()):
             print('Generating new remote repository...')
             # !!! set it up to track
             print(str(self.__repo.head.reference))
@@ -259,7 +256,7 @@ class Capsule:
 
     #generate new link to remote if previously unestablished
     def genRemote(self):
-        if(self.linkedRemote()):
+        if(apt.linkedRemote()):
             try: #attach to remote code base
                 self.__repo.create_remote('origin', self.__remote_url) 
             except: #relink origin to new remote url
@@ -302,7 +299,7 @@ class Capsule:
         self.__repo.index.add(".lego.lock")
         
         self.__repo.index.commit(msg)
-        if(self.linkedRemote()):
+        if(apt.linkedRemote()):
             self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
             #self.__repo.remotes.origin.push()
 
@@ -313,10 +310,6 @@ class Capsule:
         except:
             return False
         pass
-
-    @classmethod
-    def linkedRemote(cls):
-        return (apt.SETTINGS['remote'] != None)
 
     def metadataPath(self):
         return self.__local_path+".lego.lock"
@@ -341,7 +334,6 @@ class Capsule:
         tmp = collections.OrderedDict(self.__metadata)
         tmp.move_to_end('derives')
         tmp.move_to_end('name', last=False)
-        print(tmp['version'])
         #a little magic to save YAML in custom order for easier readability
         with open(self.metadataPath(), "w") as file:
             while len(tmp):
@@ -357,23 +349,25 @@ class Capsule:
         os.chmod(self.metadataPath(), stat.S_IROTH | stat.S_IRGRP | stat.S_IREAD | stat.S_IRUSR)
         pass
 
-    def install(self, cache_dir, ver, src_url=None):
+    def install(self, cache_dir, ver=None, src_url=None):
         #CMD: git clone (rep.git_url) (location) --branch (rep.last_version) --single-branch
         if(ver == None):
-            ver = "v"+self.getVersion()
+            ver = self.getVersion()
         
         if(ver == 'v0.0.0'):
             print('error- no available version')
             exit()
-        
-        if(src_url == None):
-            src_url = self.__remote_url
 
+        print("version",ver)
+        
+        if(src_url == None and apt.linkedRemote()):
+            src_url = self.__remote_url
+        elif(src_url == None):
+            src_url = self.__local_path
+
+        ver = "v"+ver
+        git.Git(cache_dir).clone(src_url,"--branch",ver,"--single-branch")
         self.__local_path = cache_dir+self.getName()+"/"
-        try:
-            git.Git(cache_dir).clone(src_url,"--branch",ver,"--single-branch")
-        except:
-            pass
         self.__repo = git.Repo(self.__local_path)
         self.__repo.git.checkout(ver)
         self.loadMeta()
@@ -386,16 +380,17 @@ class Capsule:
         #open every src file and inspect lines for using libraries
         derivatives = set()
         for vhd in os.listdir(src_dir):
-            with open(src_dir+vhd) as file:
-                for line in file:
-                    line = line.lower()
-                    z = line.find("use")
-                    c = line.find('--')
-                    if(z >= 0 and (c == -1 or z < c)):
-                        derivatives.add(line[z+3:].strip())
-                    if(line.count("entity") > 0):
-                        break
-                file.close()
+            if os.path.isfile(src_dir+vhd):
+                with open(src_dir+vhd) as file:
+                    for line in file:
+                        line = line.lower()
+                        z = line.find("use")
+                        c = line.find('--')
+                        if(z >= 0 and (c == -1 or z < c)):
+                            derivatives.add(line[z+3:].strip())
+                        if(line.count("entity") > 0):
+                            break
+                    file.close()
             #print(vhd)
         #option to keep all library usages (for gen package files)
         if(update == False):
@@ -568,7 +563,10 @@ class Capsule:
         if(len(vhd_files) > 0):
             return vhd_files[0]
         else:
-            return None
+            vhd_files = glob.glob(self.__local_path+"/"+file, recursive=True)
+            if(len(vhd_files) > 0):
+                return vhd_files[0]
+        return None
         pass
 
     def ports(self, mapp):

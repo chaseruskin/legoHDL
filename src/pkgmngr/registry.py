@@ -68,8 +68,7 @@ class Registry:
     def listCaps(self, options):
         reg = self.__remote_reg #grab all remotes
         sorted_reg = OrderedDict()
-        print(sorted_reg)
-        if(not Capsule.linkedRemote()):
+        if(not apt.linkedRemote()):
             reg = self.__local_reg
         if(options.count('alpha')):
             for key,repo in reg.items():
@@ -123,7 +122,7 @@ class Registry:
         curKeys = self.__cur_reg.copy().keys()
         #remove any projects not found remotely and not found locally
         for k in oldKeys:
-            if(Capsule.linkedRemote()):
+            if(apt.linkedRemote()):
                 if not k in curKeys and not k in self.__remote_reg.keys():
                     del self.__local_reg[k]
             elif not k in curKeys:
@@ -150,7 +149,7 @@ class Registry:
 
     def sync(self):
         self.localSync()
-        if(Capsule.linkedRemote()):
+        if(apt.linkedRemote()):
             self.remoteSync()
 
     def remoteSync(self):
