@@ -119,7 +119,16 @@ until next command
 -fix when releasing a module to update cache and lib                            ( * )
 -give option to update and commit all changes with next "release" -ac           (   )
 -try moving source files around and then releasing                              ( * )
+-give user option to customize recipe export file, example vars are %ID% %LIB% %PATH% %TOP% %BENCH% %NAME%
+	*set keywords are used to indicate how recipe should handle when writing those types
+	-ex: @LIB ghdl -a    --std=08 --work=%LIB% %PATH%
+	     @TB  ghdl -a -r --std=08 		 %PATH%
+	     @TOP ghdl -a -e --std=$VER 		 %PATH%
+	-the script will insert the line at where LIB starts and perform this for all library files at this step
+	-if a section of the recipe template doesn't start with a keyword, it skips over it
+	-extra option "-b" will attempt to build/run your recipe file through python os.system.
 
+-need ability to set custom parameters from command line, like make
 
 #TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
 #installPkg = list()
