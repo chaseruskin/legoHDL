@@ -128,6 +128,18 @@ until next command
 	-if a section of the recipe template doesn't start with a keyword, it skips over it
 	-extra option "-b" will attempt to build/run your recipe file through python os.system.
 
+-ability to set a master_build file, (can be any file (TCL, make, py)), to avoid copying file
+-master_build file will run by default when running build option and no build file is present
+in current project. Current project build file overrides master_build and therefore master_build will have
+to be called explicitly
+-when setting a master_build script, you specify how to call it (python3, sh, make) and the file
+
+-if no path is specified, it will auto open a blank file to fill in
+
+-recipe file gives you the order of all required user files to build the design
+
+-user is able to open and edite the master_build script through legohdl
+
 -need ability to set custom parameters from command line, like make
 
 #TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file

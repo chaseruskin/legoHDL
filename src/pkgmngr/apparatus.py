@@ -10,7 +10,6 @@ class Apparatus:
 
     @classmethod
     def load(cls):
-        print(cls.PKGMNG_PATH)
         with open(cls.PKGMNG_PATH+"settings.yml", "r") as file:
             cls.SETTINGS = yaml.load(file, Loader=yaml.FullLoader)
         if(cls.SETTINGS['local'][len(cls.SETTINGS['local'])-1] != '/'):

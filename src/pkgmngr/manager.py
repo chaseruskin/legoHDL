@@ -204,6 +204,29 @@ class legoHDL:
     def validVersion(self, ver):
         pass
 
+    def build(self, script):
+        arg_start = 3
+        if(not isinstance(apt.SETTINGS['build'],dict)): #no scripts exist
+            exit("No scripts are configured!")
+        elif(script in apt.SETTINGS['build'].keys()): #is it a name?
+            cmd = apt.SETTINGS['build'][script]
+        elif("master" in apt.SETTINGS['build'].keys()): #try to resort to default
+            cmd = apt.SETTINGS['build']['master']
+            arg_start = 2
+        elif(len(apt.SETTINGS['build'].keys()) == 1): #if only 1 then try to run the one
+            cmd = apt.SETTINGS['build'][list(apt.SETTINGS['build'].keys())[0]]
+            arg_start = 2
+        else:
+            exit("No scripts are configured!")
+
+        cmd = "\""+cmd+"\" "
+        for i,arg in enumerate(sys.argv):
+            if(i < arg_start):
+                continue
+            else:
+                cmd = cmd + arg + " "
+        os.system(cmd)
+
     def export(self, cap, top=None, tb=None):
         print("Exporting...",end=' ')
         print(cap.getPath())
@@ -260,13 +283,13 @@ class legoHDL:
                 key = lib+'.'+pkg
                 root_dir = apt.HIDDEN+"cache/"+lib+"/"+pkg+"/"
                 src_dir = glob.glob(root_dir+"/**/"+top_mp[key], recursive=True)
-                output.write("LIB "+lib+" "+src_dir[0].replace(top_mp[key], "*.vhd")+"\n")
-                output.write("LIB "+lib+" "+apt.HIDDEN+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
+                output.write("@LIB "+lib+" "+src_dir[0].replace(top_mp[key], "*.vhd")+"\n")
+                output.write("@LIB "+lib+" "+apt.HIDDEN+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
 
         #write current src dir where all src files are as "work" lib
-        output.write("SRC "+cap.findPath(top).replace(top, "*.vhd")+"\n")
+        output.write("@SRC "+cap.findPath(top).replace(top, "*.vhd")+"\n")
         #write current test dir where all testbench files are
-        output.write("TB "+cap.findPath(tb)+"\n")
+        output.write("@TB "+cap.findPath(tb)+"\n")
         output.close()
         print("success")
         pass
@@ -287,7 +310,6 @@ class legoHDL:
             print('ERROR- Package \''+title+'\' does not exist in remote')
             return
 
-        
         #TO-DO: retesting
         if(self.db.capExists(title, "local")):
             print("Project already exists in local workspace- pulling from remote...",end=' ')
@@ -358,11 +380,42 @@ class legoHDL:
             elif(options[0] == 'local'):
                 print('ERROR- Must include a local code base path')
                 return
+
         
         if(options[0] == 'local'):
             os.makedirs(choice, exist_ok=True)
 
-        apt.SETTINGS[options[0]] = choice
+        if(options[0] == 'build'):
+            #parse into key/value around '='
+            eq = choice.find("=")
+            key = choice[:eq]
+            val = choice[eq+1:] #write whole path
+            ext = val[val.rfind('.'):]
+            cmd = val[:val.find(' ')]
+            path = val[val.find(' '):].strip()
+            if(path == ''): #signal for deletion
+                    if(isinstance(apt.SETTINGS[options[0]],dict)):
+                        if(key in apt.SETTINGS[options[0]].keys()):
+                            val = apt.SETTINGS[options[0]][key]
+                            ext = val[val.rfind('.'):len(val)-1]
+                            del apt.SETTINGS[options[0]][key]
+                            try:
+                                os.remove(apt.HIDDEN+"scripts/"+key+ext)
+                            except:
+                                pass
+
+            elif(options.count("lnk") == 0):  #copy file and rename it same as name  
+                dst = apt.HIDDEN+"scripts/"+key+ext
+                shutil.copyfile(path, dst)
+                val = cmd+' '+dst
+            
+            if(not isinstance(apt.SETTINGS[options[0]],dict)):
+                apt.SETTINGS[options[0]] = dict()
+            if(path != ''):
+                apt.SETTINGS[options[0]][key] = "\""+val+"\""
+            pass
+        else:
+            apt.SETTINGS[options[0]] = choice
 
         apt.save()
         print("Saved setting successfully")
@@ -415,6 +468,21 @@ class legoHDL:
         #delete the module remotely?
         pass
 
+    def listScripts(self):
+        if(isinstance(apt.SETTINGS['build'],dict)):
+            print("\nList of build scripts:")
+            print("  ",'{:<12}'.format("Name"),'{:<14}'.format("CMD"),'{:<10}'.format("Path"))
+            print("-"*80)
+            for key,val in apt.SETTINGS['build'].items():
+                spce = val.find(' ')
+                cmd = val[1:spce]
+                path = val[spce:len(val)-1].strip()
+                print("  ",'{:<12}'.format(key),'{:<14}'.format(cmd),'{:<10}'.format(path))
+                pass
+        else:
+            print("No scripts added!")
+        pass
+
     def parse(self):
         #check if we are in a project directory (necessary to run a majority of commands)
         pkgPath = os.getcwd()
@@ -435,9 +503,6 @@ class legoHDL:
                 options.append(arg[1:])
             elif(package == ''):
                 package = arg
-            else:
-                print("ERROR- Cannot parse input!")
-                return
 
         for x in options:
             if(x[0] == ':'):
@@ -459,6 +524,8 @@ class legoHDL:
         elif(command == "uninstall"):
             self.uninstall(package, options) #TO-DO
             pass
+        elif(command == "build" and self.capsuleCWD.isValid()):
+            self.build(package)
         elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
             if apt.linkedRemote():
                 i = package.find('.')
@@ -502,7 +569,10 @@ class legoHDL:
                     force = True
             self.cleanup(self.db.getCaps("local")[l][n], force)
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
-            self.inventory(options)
+            if(options.count("build")):
+                self.listScripts()
+            else:
+                self.inventory(options)
             pass
         elif(command == "init"):
             self.convert(package)
@@ -516,9 +586,20 @@ class legoHDL:
                 tb = options[0]
             self.export(self.capsuleCWD, mod, tb)
             pass
-        elif(command == "open" and self.db.capExists(package, "local")):
-            l,n = Capsule.split(package)
-            self.db.getCaps("local")[l][n].load()
+        elif(command == "open"):
+            if(options.count("template") or package.lower() == "template"):
+                if(apt.SETTINGS['editor'] != None):
+                    os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
+                else:
+                    print("No text-editor configured!")
+            elif(options.count("build") or package.lower() == "build"):
+                if(apt.SETTINGS['editor'] != None):
+                    os.system(apt.SETTINGS['editor']+" "+apt.HIDDEN+"/scripts")
+                else:
+                    print("No text-editor configured!")
+            elif(self.db.capExists(package, "local")):
+                l,n = Capsule.split(package)
+                self.db.getCaps("local")[l][n].load()
             pass
         elif(command == "show" and (self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
             l,n = Capsule.split(package)
@@ -558,14 +639,13 @@ class legoHDL:
             formatHelp("download","grab package from remote for further development")
             formatHelp("update","update installed package to be to the latest version")
             formatHelp("export","generate a file of necessary paths to build the project")
+            formatHelp("build","run a custom configured script")
             formatHelp("del","deletes the package from the local workspace")
             formatHelp("search","search remote or local workspace for specified package")
             formatHelp("ports","print ports list of specified package")
             formatHelp("show","read further detail about a specified package")
             formatHelp("summ","add description to current project")
             formatHelp("config","set package manager settings")
-            formatHelp("template","open the template in the configured text-editor")
-            formatHelp("recipe","open the recipe file in the configured text-editor")
             print("\nType \'legohdl help <command>\' to read more on entered command.")
             exit()
             print("\nOptions:\
@@ -579,6 +659,7 @@ class legoHDL:
             \n\t-map\t\tprint port mapping of specified package\
             \n\t-local\t\tset local path setting\
             \n\t-remote\t\tset remote path setting\
+            \n\t-scripts\t\tenable listing build scripts\
             \n\t-editor\t\tset text-editor setting\
             \n\t-author\t\tset author setting\
             \n\t-gl-token\t\tset gitlab access token\
@@ -586,6 +667,9 @@ class legoHDL:
             \n\t-maj\t\trelease as next major update (^.0.0)\
             \n\t-min\t\trelease as next minor update (-.^.0)\
             \n\t-fix\t\trelease as next patch update (-.-.^)\
+            \n\t-build\t\tset default build script setting\
+            \n\t-template\t\ttrigger the project template to open\
+            \n\t-lnk\t\tuse the build script from its specified location- default is to copy\
             ")
         else:
             print("Invalid command; type \"help\" to see a list of available commands")
@@ -595,6 +679,9 @@ class legoHDL:
         if(cmd == ''):
             return
         #TO-DO: if-elif block of all commands
+
+        # legohdl build <script_name> [all args passed to script]
+        # legohdl export -b <script_name?> [all args passed to script]
         exit()
         pass
     pass

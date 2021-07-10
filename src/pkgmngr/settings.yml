@@ -1,4 +1,6 @@
 author: 'Chase Ruskin: double-bladed lightsaber wielder'
+build:
+  master: '"python3 /Users/Chase/.legohdl/scripts/master.py"'
 editor: code
 local: /Users/Chase/develop/hdl-dev
 remote: null

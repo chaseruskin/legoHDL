@@ -81,7 +81,7 @@ class Registry:
         for lib,prjs in reg.items():
             sorted_reg[lib] = OrderedDict(prjs)
         print("\nList of available modules:")
-        print("\tModule\t\t    status\t    version")
+        print("  ",'{:<24}'.format("Module"),'{:<16}'.format("Status"),'{:<10}'.format("Version"))
         print("-"*80)
         for lib,prjs in reg.items():
             for name,cp in prjs.items():
