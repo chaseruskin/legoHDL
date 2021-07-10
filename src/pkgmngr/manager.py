@@ -424,9 +424,25 @@ class legoHDL:
     #TO-DO: implement
     def convert(self, package):
         #find the src dir and testbench dir through autodetect top-level modules
-
-        #see if there is a .git folder
-        #create a YML
+        #name of package reflects folder, a library name must be specified though
+        cap = None
+        files = os.listdir(os.getcwd())
+        prjName = os.getcwd()[apt.fs(os.getcwd()).rfind('/')+1:]
+        print(prjName)
+        if ".lego.lock" in files:
+            print("Already a packaged project")
+            return
+        else:
+            #create .lego.lock file
+            cap = Capsule(title=package+"."+prjName, path=apt.fs(os.getcwd()+"/"))
+            print("Creating .lego.lock file...")
+            cap.create(fresh=False)
+            pass
+        if ".git" not in files:
+            #see if there is a .git folder and create if needed
+            print("Initializing git repository...")
+            pass
+        
         pass
 
     def inventory(self, options):
@@ -679,9 +695,11 @@ class legoHDL:
         if(cmd == ''):
             return
         #TO-DO: if-elif block of all commands
-
-        # legohdl build <script_name> [all args passed to script]
-        # legohdl export -b <script_name?> [all args passed to script]
+        # legohdl config name="cmd path" -build
+        # legohdl list -build
+        # legohdl build <script> [$*] [*]
+        # NOT IMPLEMENTED: legohdl export -b <script_name?> [all args passed to script]
+        # legohdl export <module> -bench
         exit()
         pass
     pass

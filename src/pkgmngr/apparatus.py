@@ -26,4 +26,9 @@ class Apparatus:
     def linkedRemote(cls):
         return cls.SETTINGS['remote'] != None
 
+    #forward-slash fixer
+    @classmethod
+    def fs(cls, path):
+        return path.replace('\\','/')
+
     pass

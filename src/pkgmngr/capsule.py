@@ -31,12 +31,11 @@ class Capsule:
         return self.__local_path
 
 
-    def __init__(self, name='', new=False, rp=None, path=None, title=None, lockfile=None):
+    def __init__(self, name='', new=False, rp=None, path=None, title=None):
         self.__metadata = dict()
         self.__lib = ''
         self.__name = ''
-        if(lockfile != None):
-            slash = lockfile.rfind('/')
+ 
         if(title != None):
             self.__lib,self.__name = self.split(title)
         if(path != None):
@@ -83,6 +82,10 @@ class Capsule:
                 except:
                     pass
             self.create() #create the repo and directory structure
+        pass
+
+    def initYML(self):
+
         pass
 
     def saveID(self, id):
@@ -210,36 +213,42 @@ class Capsule:
         return self.getMeta("id")
 
 
-    def create(self):
+    def create(self, fresh=True, hasGit=False):
         print('Initializing new project')
-
-        shutil.copytree(apt.PKGMNG_PATH+"template/", self.__local_path)
+        if(fresh):
+            shutil.copytree(apt.PKGMNG_PATH+"template/", self.__local_path)
+        else:
+            shutil.copy(apt.PKGMNG_PATH+"template/.lego.lock", self.__local_path+".lego.lock")
         
-        self.__repo = git.Repo.init(self.__local_path)
+        if(not hasGit):
+            self.__repo = git.Repo.init(self.__local_path)
+        else:
+            self.__repo = git.Repo(self.__local_path)
     
         if(apt.linkedRemote()):
             self.__repo.create_remote('origin', self.__remote_url) #attach to remote code base
 
         #run the commands to generate new project from template
         #file to find/replace word 'template'
-        replacements = glob.glob(self.__local_path+"/**/*template*", recursive=True)
-        file_swaps = list()
-        for f in replacements:
-            file_swaps.append((f,f.replace('template', self.__name)))
+        if(fresh):
+            replacements = glob.glob(self.__local_path+"/**/*template*", recursive=True)
+            file_swaps = list()
+            for f in replacements:
+                file_swaps.append((f,f.replace('template', self.__name)))
 
-        today = date.today().strftime("%B %d, %Y")
-        for x in file_swaps:
-            file_in = open(x[0], "r")
-            file_out = open(x[1], "w")
-            for line in file_in:
-                line = line.replace("template", self.__name)
-                line = line.replace("%DATE%", today)
-                line = line.replace("%AUTHOR%", apt.SETTINGS["author"])
-                line = line.replace("%PROJECT%", self.__name)
-                file_out.write(line) #insert date into template
-            file_in.close()
-            file_out.close()
-            os.remove(x[0])
+            today = date.today().strftime("%B %d, %Y")
+            for x in file_swaps:
+                file_in = open(x[0], "r")
+                file_out = open(x[1], "w")
+                for line in file_in:
+                    line = line.replace("template", self.__name)
+                    line = line.replace("%DATE%", today)
+                    line = line.replace("%AUTHOR%", apt.SETTINGS["author"])
+                    line = line.replace("%PROJECT%", self.__name)
+                    file_out.write(line) #insert date into template
+                file_in.close()
+                file_out.close()
+                os.remove(x[0])
         
         self.loadMeta() #generate fresh metadata fields
         self.__metadata['name'] = self.__name
