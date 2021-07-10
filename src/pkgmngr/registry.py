@@ -77,9 +77,9 @@ class Registry:
 
         if(not apt.linkedRemote()):
             reg = self.getCaps("local","cache")
-
-        for lib,prjs in reg.items():
-            sorted_reg[lib] = OrderedDict(prjs)
+        #print(self.getCaps("cache","local"))
+        #for lib,prjs in reg.items():
+            #sorted_reg[lib] = OrderedDict(prjs)
         print("\nList of available modules:")
         print("  ",'{:<24}'.format("Module"),'{:<16}'.format("Status"),'{:<10}'.format("Version"))
         print("-"*80)
@@ -207,13 +207,19 @@ class Registry:
                 folders = self.getProjectsLocal()
             else:
                 folders = self.merge(folders,self.getProjectsLocal())
-        
+
         return folders
 
     #merge: place1 <- place2 (place2 has precedence)
     def merge(self, place1, place2):
-        for lib,prjs in place1.items():
-            if lib in place2.keys():
+        for lib,prjs in place1.items(): #go through each current lib
+            if lib in place2.keys(): #is this lib already in merging lib?
+                for prj in place2[lib]:
+                    place1[lib][prj] = place2[lib][prj]
+        
+        for lib,prjs in place2.items(): #go through all libs not in current lib
+            if not lib in place1.keys():
+                place1[lib] = dict()
                 for prj in place2[lib]:
                     place1[lib][prj] = place2[lib][prj]
         return place1

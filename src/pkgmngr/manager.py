@@ -189,8 +189,8 @@ class legoHDL:
         for d in d_list:
             l,n = Capsule.split(d)
             n = n.replace("_pkg", "")
-            if(os.path.isfile(apt.HIDDEN+"cache/"+l+"/"+n+"/."+n+".yml")):
-                with open(apt.HIDDEN+"cache/"+l+"/"+n+"/."+n+".yml", "r") as file:
+            if(os.path.isfile(apt.HIDDEN+"cache/"+l+"/"+n+"/.lego.lock")):
+                with open(apt.HIDDEN+"cache/"+l+"/"+n+"/.lego.lock", "r") as file:
                     tmp = yaml.load(file, Loader=yaml.FullLoader)
             else:
                 continue
@@ -253,14 +253,14 @@ class legoHDL:
 
         g= Graph()
         top_mp = dict()
-        top_mp[cap.getTitle()] = cap.getMeta('toplevel')
+        top_mp[cap.getTitle()] = top
         output = open(build_dir+"recipe", 'w')
         #mission: recursively search through every src VHD file for what else needs to be included
-        src_dir,derivatives = cap.scanDependencies()
+        src_dir,derivatives = cap.scanDependencies(vhd_file=top)
         for d in derivatives:
             g.addEdge(top, d)
         g,top_mp = self.recurseScan(g, derivatives, top_mp)
-
+     
         g.output()
         #before writing recipe, the nodes must be topologically sorted as dependency tree
         hierarchy = g.topologicalSort() #flatten dependency tree
@@ -270,7 +270,6 @@ class legoHDL:
         for h in hierarchy:
             l,n = Capsule.split(h)
             n = n.replace("_pkg", "")
-            #print(l,n)
             #library must exist in lib to be included in recipe.txt (avoids writing external libs like IEEE)
             if(os.path.isdir(apt.HIDDEN+"lib/"+l)): #check lib exists
                 if not l in library.keys():
@@ -422,26 +421,36 @@ class legoHDL:
         pass
     
     #TO-DO: implement
-    def convert(self, package):
+    def convert(self, title):
+        #add .GITIGNORE file if not present?
+        #must look through tags of already established repo
+        l,n = Capsule.split(title)
+        cwd = apt.fs(os.getcwd()).lower()
         #find the src dir and testbench dir through autodetect top-level modules
         #name of package reflects folder, a library name must be specified though
+        if(cwd.count(apt.SETTINGS['local'].lower()) == 0 or (cwd+"/" == apt.SETTINGS['local'].lower())):
+            exit("Cannot initialize outside of local workspace")
         cap = None
-        files = os.listdir(os.getcwd())
-        prjName = os.getcwd()[apt.fs(os.getcwd()).rfind('/')+1:]
-        print(prjName)
+        files = os.listdir(cwd)
+        #rename current folder to 
+        cwdb1 = cwd[:cwd.rfind('/')]+"/"+n+"/"
+        os.rename(cwd, cwdb1)
+        git_exists = True
+        if ".git" not in files:
+            #see if there is a .git folder and create if needed
+            print("Initializing git repository...")
+            git_exists = False
+            pass
         if ".lego.lock" in files:
             print("Already a packaged project")
             return
         else:
             #create .lego.lock file
-            cap = Capsule(title=package+"."+prjName, path=apt.fs(os.getcwd()+"/"))
+            cap = Capsule(title=title, path=cwdb1)
             print("Creating .lego.lock file...")
-            cap.create(fresh=False)
+            cap.create(fresh=False, git_exists=git_exists)
             pass
-        if ".git" not in files:
-            #see if there is a .git folder and create if needed
-            print("Initializing git repository...")
-            pass
+        
         
         pass
 
@@ -470,7 +479,7 @@ class legoHDL:
                 force = False
         #if there is a remote then the project still lives on, can be "redownloaded"
         shutil.rmtree(cap.getPath())
-            
+    
         #if empty dir then do some cleaning
         slash = cap.getPath()[:len(cap.getPath())-2].rfind('/')
         root = cap.getPath()[:slash+1]

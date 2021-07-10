@@ -213,14 +213,14 @@ class Capsule:
         return self.getMeta("id")
 
 
-    def create(self, fresh=True, hasGit=False):
+    def create(self, fresh=True, git_exists=False):
         print('Initializing new project')
         if(fresh):
             shutil.copytree(apt.PKGMNG_PATH+"template/", self.__local_path)
         else:
             shutil.copy(apt.PKGMNG_PATH+"template/.lego.lock", self.__local_path+".lego.lock")
         
-        if(not hasGit):
+        if(not git_exists):
             self.__repo = git.Repo.init(self.__local_path)
         else:
             self.__repo = git.Repo(self.__local_path)
@@ -388,7 +388,10 @@ class Capsule:
         return
 
     def scanDependencies(self, update=True, vhd_file=None):
-        vhd_file = self.findPath(self.getMeta("toplevel")) #find top-level
+        if(vhd_file == None):
+            vhd_file = self.findPath(self.getMeta("toplevel")) #find top-level
+        else:
+            vhd_file = self.findPath(vhd_file)
         s = vhd_file.rfind('/')
         src_dir = vhd_file[:s+1] #print(src_dir)
         #open every src file and inspect lines for using libraries
