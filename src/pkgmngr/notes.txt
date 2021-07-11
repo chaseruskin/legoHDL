@@ -1,52 +1,57 @@
-q#<ideas>
+##########################
+|						 |
+|		legoHDL			 |
+|						 |
+##########################
 
-#allow user to disable-enable registry repo setting
+[ ]		-allow user to disable-enable registry repo setting
 
-#export project as a vivado project, with symbolic links to the VHDL files
+[ ]		-export project as a vivado project, with symbolic links to the VHDL files
 
-#have downloads be referenced over installs?
+@IDEA	have downloads be referenced over installs?
 
-#on a version release, have a dedicated zipped file of the vhd and .yaml?
-#faster for an install, but may have to be reworked if then deciding to download
+@IDEA	on a version release, have a dedicated zipped file of the vhd and .yaml?
+		faster for an install, but may have to be reworked if then deciding to download
 
-#allow remote to be null,
-#allow user to open settings file
-#allow user to open template folder
-#movtivation behind building a Hardware HDL manager:
-#   -direct control and flexibility to design to meet our needs/worklfow/situation
-#   -complete customization to tackle our problem of managing our modules
-#   -promotes more experimentation => seeks to find the best solution (not trying to conform to other's standards)
+[ ]		allow remote to be null,
+[ ]		allow user to open settings file
+[ ]		allow user to open template folder
 
-#some idea python scripts to be made:
-#   toolbelt.py // helps automate use of tools for lint, anaylsis, sim
-#   testkit.py // module to store common functions related to testbenches
-#   manager.py // package manager to handle collections of IPs
+@IDEA	movtivation behind building a Hardware HDL manager:
+	  	-direct control and flexibility to design to meet our needs/worklfow/situation
+	   	-complete customization to tackle our problem of managing our modules
+	   	-promotes more experimentation => seeks to find the best solution (not trying to conform to other's standards)
 
-#the dependencies folder is not tracked by git because there would be major overlap of code/resources. Code should be 
-# tried to restricted into a single location. Tracking the YAML file and its list of dependencies will be enough and 
-# will trigger installs when required by a download
+@IDEA	some idea python scripts to be made:
+   			toolbelt.py // helps automate use of tools for lint, anaylsis, sim
+			testkit.py // module to store common functions related to testbenches
+			manager.py // package manager to handle collections of IPs (THIS PROJECT!!!)
 
-#when installing dependency, follow directed acyclic graph with topological sort
-#when installing dependency, automatically paste the component declaration into top-level design
-#when installing dependency, allow for adding multiple dependencies in one command by using ',' between modules
-#example: legoHDL install flipflop -v1.0 , combinational , asyncCounter -v2.1
+@IDEA	the dependencies folder is not tracked by git because there would be major overlap of code/resources. Code should be 
+		tried to restricted into a single location. Tracking the YAML file and its list of dependencies will be enough and 
+		will trigger installs when required by a download
 
-#use filenames with the version (in dependency folder) to allow for designs that require multiple versions of a module that 
-# is used by different entities
+@NOTE	when installing dependency, follow directed acyclic graph with topological sort
+@IDEA	when installing dependency, automatically paste the component declaration into top-level design
 
-#prompt to move all current projects to new local directory when changing setting? nah
 
-#seperate program/framework to perform lint, synth, simulation/verification, place-and-route, bitstream? 
+@IDEA	use filenames with the version (in dependency folder) to allow for designs that require multiple versions of a module that 
+		is used by different entities
 
-#add pin mapping to YAML file to allow program to place-and-route design post-synthesis
+@IDEA	prompt to move all current projects to new local directory when changing setting? -> NO
 
-#search all design VHD files to determine which is top-level design
-#then find which testbench instantiates that design
+@IDEA	seperate program/framework to perform lint, synth, simulation/verification, place-and-route, bitstream? 
+		-> this is handled by developer's creating their own build scripts
 
-#alternate method: dependency folder has files that point to the git commits of those versions?
 
-#use 'sync tb' to sync ports of design to the testbench vhdl and across testbench.py file for use 
-# -(will also auto make generic testbench) (can be embedded into CI with analysis of design file) -toolkit.py-
+[x]		-search all design VHD files to determine which is top-level design
+		then find which testbench instantiates that design
+
+@IDEA	alternate method: dependency folder has files that point to the git commits of those versions?
+
+@IDEA	use 'sync tb' to sync ports of design to the testbench vhdl and across testbench.py file for use 	
+		-(will also auto make generic testbench) (can be embedded into CI with analysis of design file) -toolkit.py-
+		-> this is handled by "port" command printing ports to use
 
 #eventually make a GUI with tkinter for easier & visual package management
 
@@ -102,23 +107,62 @@ that moving forward, any new releases to sub-module, with this info we can chain
 push CI jobs to try to see if upper-module will not break with new changes",
 ...accordingly, it should not break with all minor and patch updates.
 
-_____Known issues:______
+##################
+======ISSUES======
+##################
+
 -upon switching from local-only to remote, a new project that was first local will not appear in catalog
 until next command
 -checking activity log means it is not updated every single second
 -uploading and instantly dismissing a project causes the new version to not appear in catalog on next commands
 -better determine when it is necessary to request from remote to improve speed of some commands
 
-======Roadmap:===========
--implement cache folder
--fix "-alpha" option for list command to correctly display modules' status
--implement uninstall command
--implement recursive nature on install for other dependencies
--better formatting for help prompt
+##################
+======ROADMAP=====
+##################
 
--fix when releasing a module to update cache and lib                            ( * )
--give option to update and commit all changes with next "release" -ac           (   )
--try moving source files around and then releasing                              ( * )
+[x]		-implement cache folder
+[ ]		-fix "-alpha" option for list command to correctly display modules' status
+[ ]		-implement uninstall command
+[x]		-implement recursive nature on install for other dependencies
+[ ]		-implement additional "help" command documentation
+
+[x]		-fix when releasing a module to update cache and lib
+[ ]		-give option to update and commit all changes with next "release" -ac
+[x]		-try moving source files around and then releasing  
+[ ]         
+[x]		-user is able to open and edite the build scripts through legohdl
+[x]		-need ability to set custom parameters from command line, like make (args can be passed to build file)
+
+	RECIPES/BUILDING
+[x] 	-ability to set a build script file, (can be any file (TCL, make, py)) to house in 1 place
+[x]		-master build script will try to run by default when running build option and no file specified
+[ ]		-users specify external ext. and what the tag is to search for adding to recipe		
+[x] 	-when setting a build script, you specify how to call it (python3, sh, make) and the file
+[x]		-entering blank path to build script in config will delete it or unlink it
+
+	OVERALL STRUCTURE
+[ ]		-ability to set mulitple remotes to 1 local path
+[ ]		-ability to set multiple local path places
+
+
+@TEST	config run="file-path" -build -lnk
+
+@NOTE 	recipe file gives you the order of all required user files to build the design
+
+@IDEA	if working with others, house build scripts in a repository and link to their local paths
+		in legoHDL to be able to continually improve them in the same spot
+
+
+##############
+===ARCHIVES===
+##############
+
+@IDEA	add pin mapping to YAML file to allow program to place-and-route design post-synthesis
+
+@IDEA	when installing dependency, allow for adding multiple dependencies in one command by using ',' between modules
+		example: legoHDL install flipflop -v1.0 , combinational , asyncCounter -v2.1
+
 -give user option to customize recipe export file, example vars are %ID% %LIB% %PATH% %TOP% %BENCH% %NAME%
 	*set keywords are used to indicate how recipe should handle when writing those types
 	-ex: @LIB ghdl -a    --std=08 --work=%LIB% %PATH%
@@ -128,32 +172,9 @@ until next command
 	-if a section of the recipe template doesn't start with a keyword, it skips over it
 	-extra option "-b" will attempt to build/run your recipe file through python os.system.
 
--ability to set a master_build file, (can be any file (TCL, make, py)), to avoid copying file
--master_build file will run by default when running build option and no build file is present
-in current project. Current project build file overrides master_build and therefore master_build will have
+Current project build file overrides master_build and therefore master_build will have
 to be called explicitly
--when setting a master_build script, you specify how to call it (python3, sh, make) and the file
-
 -if no path is specified, it will auto open a blank file to fill in
-
--recipe file gives you the order of all required user files to build the design
-
--user is able to open and edite the master_build script through legohdl
-
--need ability to set custom parameters from command line, like make
-
-#TO-DO: possibly scrap if going to auto-gen dependencies from vhdl file
-#installPkg = list()
-#if 'i' in options:
-#    for opt in options[1:]:
-#        if(opt == ','):
-#            self.install(installPkg[0], installPkg[1:])
-#            installPkg.clear()
-#        else:
-#            installPkg.append(opt)
-#    if(len(installPkg)): #perform last install
-#        self.install(installPkg[0], installPkg[1:])
-#</ideas>
 
 saving for later use of the command structures for in-depth command help
 ---
