@@ -125,6 +125,7 @@ until next command
 ======ROADMAP=====
 ##################
 
+[ ]		-add verilog/systemverilog file support
 [ ]		-set up remote using registry design and git repo (ex: winget)
 [ ]		-fix "-alpha" option for list command to correctly display modules' status
 [ ]		-implement uninstall command
@@ -140,8 +141,8 @@ until next command
 [x]		-implement cache folder
 
 	RECIPES/BUILDING
-
-[ ]		-users specify external ext. and what the tag is to search for adding to recipe	("tags" option)	
+[ ]		-add way to add a recursive label (useful for labelling IP files that are needed inside dependencies)
+[x]		-users specify external ext. and what the tag is to search for adding to recipe	("tags" option)	
 		ex: you can set:
 			@XILINX_CONSTR -> .XDC
 			@QUARTUS_ROUTE -> .qpr

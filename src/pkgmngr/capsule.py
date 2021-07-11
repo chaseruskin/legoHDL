@@ -122,7 +122,7 @@ class Capsule:
         return self.getMeta('version')
 
     def release(self, ver='', options=None):
-        major,minor,patch = self.sepVer(ver)
+        major,minor,patch = self.sepVer(self.getVersion())
 
         print("Uploading ",end='')
         print("v"+str(major),minor,patch,sep='.',end='')

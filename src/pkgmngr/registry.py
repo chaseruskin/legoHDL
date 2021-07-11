@@ -171,8 +171,8 @@ class Registry:
                 prjs.append(r.name)
         pass
 
-    def getProjectsCache(self):
-        if hasattr(self,"_cache_prjs"):
+    def getProjectsCache(self, updt=False):
+        if hasattr(self,"_cache_prjs") and not updt:
             return self._cache_prjs
         path = apt.HIDDEN+"cache/"
         self._cache_prjs = dict()
@@ -188,24 +188,23 @@ class Registry:
                 self._cache_prjs[l][p] = Capsule(path=path+l+"/"+p+"/")
         return self._cache_prjs
 
-    def getCaps(self, *args):
+    def getCaps(self, *args, updt=False):
         folders = None
-        self.merge(self.getProjectsLocal(),self.getProjectsCache())
         if(args.count("remote")):
             if(folders == None):
-                folders = self.getProjectsRemote()
+                folders = self.getProjectsRemote(updt)
             else:
-                folders = folders + self.getProjectsRemote()
+                folders = folders + self.getProjectsRemote(updt)
         if(args.count("cache")):
             if(folders == None):
-                folders = self.getProjectsCache()
+                folders = self.getProjectsCache(updt)
             else:
-                folders = self.merge(folders,self.getProjectsCache())
+                folders = self.merge(folders,self.getProjectsCache(updt))
         if(args.count("local")):
             if(folders == None):
-                folders = self.getProjectsLocal()
+                folders = self.getProjectsLocal(updt)
             else:
-                folders = self.merge(folders,self.getProjectsLocal())
+                folders = self.merge(folders,self.getProjectsLocal(updt))
 
         return folders
 
@@ -223,8 +222,8 @@ class Registry:
                     place1[lib][prj] = place2[lib][prj]
         return place1
 
-    def getProjectsLocal(self):
-        if hasattr(self,"_local_prjs"):
+    def getProjectsLocal(self, updt=False):
+        if hasattr(self,"_local_prjs") and not updt:
             return self._local_prjs
         self._local_prjs = dict()
         folders = glob.glob(apt.SETTINGS['local']+"/**/.lego.lock", recursive=True)
@@ -244,7 +243,7 @@ class Registry:
         pass
 
     #TO-DO
-    def getProjectsRemote(self):
+    def getProjectsRemote(self, updt=False):
         if(self.__mode == Registry.Mode.GITLAB):
             pass
         elif(self.__mode == Registry.Mode.GITHUB):
@@ -258,13 +257,13 @@ class Registry:
         pass
 
     #use title="lib.*" to check if library exists
-    def capExists(self, title, place):
+    def capExists(self, title, place, updt=False):
         folder = None
         l,n = Capsule.split(title)
         if(place == "local"):
-            folder = self.getProjectsLocal()
+            folder = self.getProjectsLocal(updt)
         elif(place == "cache"):
-            folder = self.getProjectsCache()
+            folder = self.getProjectsCache(updt)
         elif(place == "remote"): #TO-DO-> get projects from remote
             return False
             pass
@@ -274,6 +273,7 @@ class Registry:
     def prjLocation(self, title):
         pass
 
+    @DeprecationWarning
     def findProjectsLocal(self, path, cached=False):
         branches = list(os.listdir(path))
         for leaf in branches:

@@ -8,29 +8,17 @@ from apparatus import Apparatus as apt
 
 class legoHDL:
     def __init__(self):
-        apt.load()
+        apt.load() #load settings.yml
         self.capsulePKG = None
         self.capsuleCWD = None
 
         if(apt.SETTINGS['local'] == None):
             exit("ERROR- Please specify a local path! See \'legohdl help config\' for more details")
         
-        # !!! UNCOMMENT LINE BELOW TO DISABLE REMOTE !!!
-        #self.settings['remote'] = None #testing allowing option to not connect to a remote!
         #defines path to dir of remote code base
         self.db = Registry(apt.SETTINGS['remote'])
 
-        #defines how to open workspaces
-        self.textEditor = apt.SETTINGS['editor']
-
-        self.db.getCaps("local")
-        #exit()
-
-        self.db.findProjectsLocal(apt.SETTINGS['local'])
-        if(apt.linkedRemote()): #fetch remote servers
-            self.db.fetch()
-        #self.db.sync()
-        #directly works with VHDL_LS
+        #set env variable for VHDL_LS
         os.environ['VHDL_LS_CONFIG'] = apt.HIDDEN+"map.toml" 
 
         self.parse()
@@ -38,7 +26,7 @@ class legoHDL:
 
     def genPKG(self, title):
         cap = None
-        if(self.db.capExists(title, "cache")):
+        if(self.db.capExists(title, "cache", updt=True)):
             cache = self.db.getCaps("cache")
             l,n = Capsule.split(title)
             cap = cache[l][n]
@@ -483,7 +471,7 @@ class legoHDL:
         print()
         pass
 
-    def cleanup(self, cap, force):
+    def cleanup(self, cap, force=False):
         if(not cap.isValid()):
             print('Module '+cap.getName()+' does not exist locally')
             return
@@ -502,6 +490,7 @@ class legoHDL:
                 print("Module "+cap.getTitle()+' not uninstalled')
                 force = False
         #if there is a remote then the project still lives on, can be "redownloaded"
+        print(cap.getPath())
         shutil.rmtree(cap.getPath())
     
         #if empty dir then do some cleaning
@@ -510,10 +499,10 @@ class legoHDL:
         if(len(os.listdir(root)) == 0):
             os.rmdir(root)
         print('Deleted '+cap.getTitle()+' from local workspace')
+        
         if(force):
             self.uninstall(cap.getTitle())
             print("Uninstalled "+cap.getTitle()+" from cache")
-
         #delete the module remotely?
         pass
 
