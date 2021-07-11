@@ -153,6 +153,7 @@ class Capsule:
             self.save()
             print("saving")
             self.__repo.git.add(update=True)
+            self.__repo.index.add(self.__repo.untracked_files)
             self.__repo.index.commit("Release version -> "+self.getVersion())
             self.__repo.create_tag(ver)
         pass
@@ -387,26 +388,24 @@ class Capsule:
         self.loadMeta()
         return
 
-    def scanDependencies(self, update=True, file_target=None):
-        if(file_target == None):
-            file_target = self.findPath(self.getMeta("toplevel")) #find top-level
-        else:
-            file_target = self.findPath(file_target)
-        s = file_target.rfind('/')
-        src_dir = file_target[:s+1] #print(src_dir)
+    def scanDependencies(self, file_target, update=True):
+        found_files = self.fileSearch(file_target)
+        s = found_files[0].rfind('/')
+        src_dir = found_files[0][:s+1] #print(src_dir)
         #open every src file and inspect lines for using libraries
         derivatives = set()
-        for vhd in os.listdir(src_dir):
-            if os.path.isfile(src_dir+vhd):
-                with open(src_dir+vhd) as file:
-                    for line in file:
-                        line = line.lower()
-                        z = line.find("use")
-                        c = line.find('--')
-                        if(z >= 0 and (c == -1 or z < c)):
-                            derivatives.add(line[z+3:].strip())
-                        if(line.count("entity") > 0):
-                            break
+        for match in found_files:
+            if os.path.isfile(match):
+                with open(match) as file:
+                    if(self.getExt(match) == 'vhd'): #source file
+                        for line in file:
+                            line = line.lower()
+                            z = line.find("use")
+                            c = line.find('--')
+                            if(z >= 0 and (c == -1 or z < c)):
+                                derivatives.add(line[z+3:].strip())
+                            if(line.count("entity") > 0):
+                                break
                     file.close()
             #print(vhd)
         #option to keep all library usages (for gen package files)
@@ -510,6 +509,14 @@ class Capsule:
         pass
     
     @classmethod
+    def getExt(cls, file_path):
+        dot = file_path.rfind('.')
+        if(dot == -1):
+            return None
+        else:
+            return file_path[dot+1:]
+    
+    @classmethod
     def split(cls, dep):
         dot = dep.find('.')
         lib = dep[:dot]
@@ -527,7 +534,7 @@ class Capsule:
         #print("DETECTING TOP-LEVEL TESTBENCH")
         #based on toplevel, find which file instantiates a component of toplevel
         #find all possible files
-        vhd_files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
+        vhd_files = self.fileSearch()
         #keep only files containing "tb_" or "_tb"
         if(comp == None):
             comp = self.getMeta("toplevel") #looking for a testbench that uses this component
@@ -575,19 +582,12 @@ class Capsule:
             self.__metadata['bench'] = benchName+".vhd"
         pass
 
-    def findPath(self, file="*.vhd"):
-        found_files = glob.glob(self.__local_path+"/**/"+file, recursive=True)
-        if(len(found_files) > 0):
-            return found_files[0]
-        else:
-            found_files = glob.glob(self.__local_path+"/"+file, recursive=True)
-            if(len(found_files) > 0):
-                return found_files[0]
-        return None
+    def fileSearch(self, file="*.vhd"):
+        return glob.glob(self.__local_path+"/**/"+file, recursive=True)
         pass
 
     def ports(self, mapp):
-        vhd_file = glob.glob(self.__local_path+"/**/"+self.getMeta("toplevel"), recursive=True)[0]
+        vhd_file = self.fileSearch(self.getMeta("toplevel"))[0]
         toplvl = self.getMeta("toplevel").replace(".vhd", "").lower()
 
         port_txt = ''

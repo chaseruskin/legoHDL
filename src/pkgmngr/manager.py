@@ -41,7 +41,7 @@ class legoHDL:
 
         #need to look at toplevel VHD file to transfer correct library uses
         #search through all library uses and see what are chained dependencies
-        src_dir,derivatives = cap.scanDependencies(update=False)
+        src_dir,derivatives = cap.scanDependencies(cap.getMeta("toplevel"), update=False)
         #write in all library and uses
         print(derivatives)
         libs = set()
@@ -97,7 +97,7 @@ class legoHDL:
         #generate PKG VHD    
         self.genPKG(cap.getTitle())
         
-        #link it all together through writing paths into "mapping.toml"
+        #link it all together through writing paths into "map.toml"
         filename = apt.HIDDEN+"map.toml"
         mapfile = open(filename, 'r')
         cur_lines = mapfile.readlines()
@@ -106,7 +106,7 @@ class legoHDL:
         mapfile = open(filename, 'w')
         inc_paths = list()
         inc_paths.append("\'"+lib_path+cap.getName()+"_pkg.vhd"+"\',\n")
-        inc_paths.append("\'"+cap.findPath(cap.getMeta("toplevel")).replace(cap.getMeta("toplevel"),"*.vhd")+"\',\n")
+        inc_paths.append("\'"+cap.fileSearch(cap.getMeta("toplevel"))[0].replace(cap.getMeta("toplevel"),"*.vhd")+"\',\n")
         inc = False
         found_lib = False
         if(len(cur_lines) <= 1):
@@ -170,23 +170,32 @@ class legoHDL:
             file.close()
         pass
 
-    def recurseScan(self, grp, d_list, top_mp):
-        if(len(d_list) == 0):
-            return grp,top_mp
+    def recurseScan(self, grp, dep_list, top_mp, label_list):
+        if(len(dep_list) == 0):
+            return grp,top_mp,label_list
         #go to YML of dependencies and add edges to build dependency tree
-        for d in d_list:
+        for d in dep_list:
             l,n = Capsule.split(d)
             n = n.replace("_pkg", "")
             if(os.path.isfile(apt.HIDDEN+"cache/"+l+"/"+n+"/.lego.lock")):
+                #here is where we check for matching files with custom recursive labels
+                for key,val in apt.SETTINGS['label'].items():
+                    ext,recur = val
+                    if(recur == True): #recursive
+                        results = glob.glob(apt.HIDDEN+"cache/"+l+"/"+n+"/**/*"+ext, recursive=True)
+                        for find in results:
+                            label_list.append("@"+key+" "+find)
+                        pass
+                #open the metadata to retrieve data to be used to build dependency chain
                 with open(apt.HIDDEN+"cache/"+l+"/"+n+"/.lego.lock", "r") as file:
                     tmp = yaml.load(file, Loader=yaml.FullLoader)
             else:
                 continue
             top_mp[l+'.'+n] = tmp['toplevel']
-            grp,top_mp = self.recurseScan(grp, tmp['derives'], top_mp)
+            grp,top_mp,label_list = self.recurseScan(grp, tmp['derives'], top_mp, label_list)
             for z in tmp['derives']:
                 grp.addEdge(d, z)
-        return grp,top_mp
+        return grp,top_mp,label_list
 
     #TO-DO: make std version option checker
     def validVersion(self, ver):
@@ -246,15 +255,16 @@ class legoHDL:
         top_mp = dict()
         top_mp[cap.getTitle()] = top
         output = open(build_dir+"recipe", 'w')
+        label_list = list()
         #mission: recursively search through every src VHD file for what else needs to be included
         src_dir,derivatives = cap.scanDependencies(file_target=top)
         for d in derivatives:
             g.addEdge(top, d)
-        g,top_mp = self.recurseScan(g, derivatives, top_mp)
+        g,top_mp,label_list = self.recurseScan(g, derivatives, top_mp, label_list)
      
         g.output()
         #before writing recipe, the nodes must be topologically sorted as dependency tree
-        hierarchy = g.topologicalSort() #flatten dependency tree
+        hierarchy = g.topologicalSort() #flatten dependency tree into a list
         print(hierarchy)
 
         library = dict() #stores lists at dictionary keys
@@ -267,24 +277,16 @@ class legoHDL:
                     library[l] = list() 
                 library[l].append(n)
 
-        #any user-defined labels to add?
+        #any user-defined labels to add? adds project-level labels (both recursive and non-recursive)
         for label,val in apt.SETTINGS['label'].items():
             ext,recur = val
-            if(not recur):
-                results = glob.glob(apt.fs(os.getcwd())+"/**/*"+ext, recursive=True)
-                for r in results:
-                    output.write("@"+label+" "+r+"\n")
+            results = glob.glob(apt.fs(os.getcwd())+"/**/*"+ext, recursive=True)
+            for r in results:
+                label_list.append("@"+label+" "+r)
 
-        #TO-DO: recursive scan for all files matching label
-        #use the scan dependencies function but with the recursive user labels
-        for label,val in apt.SETTINGS['label'].items():
-            ext,recur = val
-            if(recur):
-                #src_d,derivs = cap.scanDependencies(update=False, file_target=ext)
-                #for r in src_d:
-                    #print(r)
-                    #output.write("@"+label+" "+r+"\n")
-                pass
+        #write all custom labels
+        for finding in label_list:
+            output.write(finding+"\n")
                 
         #write these libraries and their required file paths to a file for exporting
         for lib in library.keys():
@@ -297,9 +299,9 @@ class legoHDL:
                 output.write("@LIB "+lib+" "+apt.HIDDEN+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
 
         #write current src dir where all src files are as "work" lib
-        output.write("@SRC "+cap.findPath(top).replace(top, "*.vhd")+"\n")
+        output.write("@SRC "+cap.fileSearch(top)[0].replace(top, "*.vhd")+"\n")
         #write current test dir where all testbench files are
-        output.write("@TB "+cap.findPath(tb)+"\n")
+        output.write("@TB "+cap.fileSearch(tb)[0]+"\n")
         output.close()
         print("success")
         pass
@@ -562,6 +564,7 @@ class legoHDL:
         pkgCWD = pkgPath[lastSlash+1:]
 
         self.capsuleCWD = Capsule(path=pkgPath+"/")
+
         
         command = package = description = ""
         options = []
@@ -672,7 +675,8 @@ class legoHDL:
                     print("No text-editor configured!")
             elif(self.db.capExists(package, "local")):
                 self.db.getCaps("local")[L][N].load()
-            pass
+            else:
+                exit("ERROR- No package exists in your local workspace")
         elif(command == "show" and (self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
             self.db.getCaps("local","cache")[L][N].show()
             pass

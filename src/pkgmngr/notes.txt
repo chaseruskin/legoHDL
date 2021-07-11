@@ -18,9 +18,11 @@
 [ ]		allow user to open template folder
 
 @IDEA	movtivation behind building a Hardware HDL manager:
-	  	-direct control and flexibility to design to meet our needs/worklfow/situation
-	   	-complete customization to tackle our problem of managing our modules
-	   	-promotes more experimentation => seeks to find the best solution (not trying to conform to other's standards)
+	  	-direct control and flexibility to design to meet variety of needs/worklfow/situations
+	   	-complete customization to tackle problem of module management
+		-HDL is strictly heirarchic by design. HDL is also very complex with many stages beyond simply designing a package.
+		-By giving developer's the freedom, flexibility, and power to manage modules as well as provide a framework for 
+		endless possibilities to building a design
 
 @IDEA	some idea python scripts to be made:
    			toolbelt.py // helps automate use of tools for lint, anaylsis, sim
@@ -30,6 +32,7 @@
 @IDEA	the dependencies folder is not tracked by git because there would be major overlap of code/resources. Code should be 
 		tried to restricted into a single location. Tracking the YAML file and its list of dependencies will be enough and 
 		will trigger installs when required by a download
+		-> this is handled by having a cache folder where all installs are located
 
 @NOTE	when installing dependency, follow directed acyclic graph with topological sort
 @IDEA	when installing dependency, automatically paste the component declaration into top-level design
@@ -42,7 +45,6 @@
 
 @IDEA	seperate program/framework to perform lint, synth, simulation/verification, place-and-route, bitstream? 
 		-> this is handled by developer's creating their own build scripts
-
 
 [x]		-search all design VHD files to determine which is top-level design
 		then find which testbench instantiates that design
@@ -126,11 +128,12 @@ until next command
 ======ROADMAP=====
 ##################
 
-[ ]		-revisit using makefile as script
+
 [ ]		-add verilog/systemverilog file support
 [ ]		-set up remote using registry design and git repo (ex: winget)
 [ ]		-implement additional "help" command documentation
 
+[x]		-revisit using makefile as script
 [x]		-give option to update and commit all changes with next "release" -ac (already was!)
 [x]		-fix "-alpha" option for list command to correctly display modules' status
 [x]		-implement uninstall command       
@@ -142,8 +145,8 @@ until next command
 [x]		-implement cache folder
 
 	RECIPES/BUILDING
-[!]		-add way to add a recursive label (useful for labelling IP files that are needed inside dependencies)
 
+[x]		-add way to add a recursive label (useful for labelling IP files that are needed inside dependencies)
 [x]		-users specify external ext. and what the tag is to search for adding to recipe	("tags" option)	
 		ex: you can set:
 			@XILINX_CONSTR -> .XDC
