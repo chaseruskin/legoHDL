@@ -128,7 +128,7 @@ until next command
 ======ROADMAP=====
 ##################
 
-
+[ ]		-implement -strict option to "release" command
 [ ]		-add verilog/systemverilog file support
 [ ]		-set up remote using registry design and git repo (ex: winget)
 [ ]		-implement additional "help" command documentation
@@ -145,6 +145,7 @@ until next command
 [x]		-implement cache folder
 
 	RECIPES/BUILDING
+[ ] 	-organize recur labels to print with associated project
 
 [x]		-add way to add a recursive label (useful for labelling IP files that are needed inside dependencies)
 [x]		-users specify external ext. and what the tag is to search for adding to recipe	("tags" option)	
@@ -160,6 +161,8 @@ until next command
 [x]		-master build script will try to run by default when running build option and no file specified
 
 	OVERALL STRUCTURE
+[!]		-organize workspaces
+[ ]		-print neater lists
 [ ]		-ability to set mulitple remotes to 1 local path
 [ ]		-ability to set multiple local path places
 [ ]		-don't set * to src dir of top level, individually add every current level vhd file from glob.glob

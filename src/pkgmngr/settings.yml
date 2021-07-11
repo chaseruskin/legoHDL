@@ -11,7 +11,13 @@ label:
   TEST-GEN:
   - testbench.py
   - false
-label-r:
-  IP: .xci
-local: /Users/Chase/develop/hdl-dev
-remote: null
+active-workspace: myWorkspace
+local:
+remote:
+workspace:
+  myWorkspace:
+    local: /Users/Chase/develop/hdl-dev/
+    remote: {}
+  otherWorkspace:
+    local:
+    remote: {}

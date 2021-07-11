@@ -7,13 +7,11 @@ from graph import Graph
 from apparatus import Apparatus as apt
 
 class legoHDL:
+
     def __init__(self):
         apt.load() #load settings.yml
         self.capsulePKG = None
         self.capsuleCWD = None
-
-        if(apt.SETTINGS['local'] == None):
-            exit("ERROR- Please specify a local path! See \'legohdl help config\' for more details")
         
         #defines path to dir of remote code base
         self.db = Registry(apt.SETTINGS['remote'])
@@ -385,6 +383,9 @@ class legoHDL:
             print("ERROR- Invalid setting")
             return
 
+        if(options[0] == 'active-workspace' and choice not in apt.SETTINGS['workspace'].keys()):
+            exit("ERROR- Workspace not found!")
+
         if(choice == ''):
             if(options[0] == 'remote'):
                 print('WARNING- No remote code base is configured')
@@ -393,46 +394,60 @@ class legoHDL:
                 print('ERROR- Must include a local code base path')
                 return
 
-        
+        eq = choice.find("=")
+        key = choice[:eq]
+        val = choice[eq+1:] #write whole value
+    
         if(options[0] == 'local'):
             os.makedirs(choice, exist_ok=True)
 
+        # WORKSPACE CONFIGURATION
+        if(options[0] == 'workspace'):
+            #will not delete old workspace directories but can remove from list
+            #will make new directories if needed when setting local path
+            if(not isinstance(apt.SETTINGS[options[0]],dict)):
+                apt.SETTINGS[options[0]] = dict()
+            if(val != ''):
+                if(not isinstance(apt.SETTINGS[options[0]][key],dict)):
+                    apt.SETTINGS[options[0]][key] = dict()
+                
+                    #apt.SETTINGS[options[0]][key] = "\""+val+"\"" 
+            else:
+                if(key in apt.SETTINGS[options[0]].keys()):
+                    del apt.SETTINGS[options[0]][key]
+            pass
+        # BUILD SCRIPT CONFIGURATION
         if(options[0] == 'build'):
-            #parse into key/value around '='
-            eq = choice.find("=")
-            key = choice[:eq]
-            val = choice[eq+1:] #write whole value
-            ext = val[val.rfind('.'):]
+            #parse into cmd and filepath
+            ext = Capsule.getExt(val)
             cmd = val[:val.find(' ')]
             path = val[val.find(' '):].strip()
-            if(path == ''): #signal for deletion
-                    if(isinstance(apt.SETTINGS[options[0]],dict)):
-                        if(key in apt.SETTINGS[options[0]].keys()):
-                            val = apt.SETTINGS[options[0]][key]
-                            ext = val[val.rfind('.'):len(val)-1]
-                            del apt.SETTINGS[options[0]][key]
-                            try:
-                                os.remove(apt.HIDDEN+"scripts/"+key+ext)
-                            except:
-                                pass
-
-            elif(options.count("lnk") == 0):  #copy file and rename it same as name  
+            #link option- copy file and rename it same as name 
+            if(options.count("lnk") == 0):   
                 dst = apt.HIDDEN+"scripts/"+key+ext
                 shutil.copyfile(path, dst)
                 val = cmd+' '+dst
-            
+            #initialization
             if(not isinstance(apt.SETTINGS[options[0]],dict)):
                 apt.SETTINGS[options[0]] = dict()
+            #insertion
             if(path != ''):
                 apt.SETTINGS[options[0]][key] = "\""+val+"\""
+            #deletion
+            elif(isinstance(apt.SETTINGS[options[0]],dict) and key in apt.SETTINGS[options[0]].keys()):
+                val = apt.SETTINGS[options[0]][key]
+                ext = Capsule.getExt(val)
+                del apt.SETTINGS[options[0]][key]
+                try:
+                    os.remove(apt.HIDDEN+"scripts/"+key+ext)
+                except:
+                    pass
             pass
+        # LABEL CONFIGURATION
         elif(options[0] == 'label'):
             recur = False
             if(options.count("recur")):
                 recur = True
-            eq = choice.find("=")
-            key = choice[:eq]
-            val = choice[eq+1:] #write whole value
             if(val == ''): #signal for deletion
                 if(isinstance(apt.SETTINGS[options[0]],dict)):
                     if(key in apt.SETTINGS[options[0]].keys()):
@@ -442,6 +457,7 @@ class legoHDL:
             if(val != ''):
                 apt.SETTINGS[options[0]][key] = [val, recur]
             pass
+        # ALL OTHER CONFIGURATION
         else:
             apt.SETTINGS[options[0]] = choice
         
@@ -767,8 +783,8 @@ class legoHDL:
             printFmt("open","<package>","[-template -build]")
             pass
         elif(cmd == "release"):
-            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d -ac]")
-            print("\n   -ac -> add and commit all changes with release")
+            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d -strict]")
+            print("\n   -strict -> won't add any uncommitted changes along with release")
             pass
         elif(cmd == "list"):
             printFmt("list","\b","[-alpha -local -build -label]")
@@ -809,17 +825,18 @@ class legoHDL:
             printFmt("summ","[-:\"summary\"]")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","[-local | -remote | -author | -build [-lnk] | -label [-recur] | -editor]")
-            print("\n   Setting [-build] or [-label] requires <value> to be key=\"value\"")
+            printFmt("config","<value>","""[-local | -remote | -author | -build [-lnk] | -label [-recur] | -editor |\n\
+                    \t\t-workspace [-<remote> ...] | -active-workspace]\
+            """)
+            print("\n   Setting [-build], [-label], [-workspace] requires <value> to be <key>=\"<value>\"")
+            print("   legohdl config myWorkspace=\"~/users/chase/develop/hdl-pm/\" -workspace") 
             pass
         exit()
         pass
     pass
 
 def main():
-    #print('\n---legoHDL package manager---\n')
     legoHDL()
-
 
 
 if __name__ == "__main__":
