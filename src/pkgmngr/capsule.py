@@ -588,25 +588,25 @@ class Capsule:
 
     def ports(self, mapp):
         vhd_file = glob.glob(self.__local_path+"/**/"+self.getMeta("toplevel"), recursive=True)[0]
-        
+        toplvl = self.getMeta("toplevel").replace(".vhd", "").lower()
+
         port_txt = ''
         rolling_entity = False
         with open(vhd_file, 'r') as f:
             for line in f:
                 line = line.lower()
                 #discover when the entity block begins
-                if(line == ('entity '+self.getName().lower()+' is\n')):
+                if(line.count('entity') and line.count(toplvl) and line.count("is")):
                     rolling_entity = True
-                
+                #capture all text in entity block
                 if(rolling_entity):
                     port_txt = port_txt + line
                 #handle the 3 variations of how to end a entity block
-                if(line == "end entity "+self.getName().lower()+";\n" or \
-                    line == "end entity;\n" or \
-                    line == "end "+self.getName().lower()+";\n"):
+                if(line.count("end") and line.count(";") and (line.count("entity") or line.count(toplvl))):
                     rolling_entity = False
                     break
             f.close()
+        print(port_txt)
         port_txt = port_txt.replace("entity", "component")
 
         #manipulate port list into port map if mapp=True
