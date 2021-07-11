@@ -172,22 +172,21 @@ class Registry:
         pass
 
     def getProjectsCache(self):
-        if hasattr(self,"__cache_prjs"):
-            return self.__cache_prjs
-
+        if hasattr(self,"_cache_prjs"):
+            return self._cache_prjs
         path = apt.HIDDEN+"cache/"
-        self.__cache_prjs = dict()
+        self._cache_prjs = dict()
         libs = os.listdir(path)
         for l in libs:
             if(l[0] == '.'):
                 continue
-            self.__cache_prjs[l] = dict()
+            self._cache_prjs[l] = dict()
             pkgs = os.listdir(path+l+"/")
             for p in pkgs:
                 if(p[0] == '.'):
                     continue
-                self.__cache_prjs[l][p] = Capsule(path=path+l+"/"+p+"/")
-        return self.__cache_prjs
+                self._cache_prjs[l][p] = Capsule(path=path+l+"/"+p+"/")
+        return self._cache_prjs
 
     def getCaps(self, *args):
         folders = None
@@ -225,9 +224,9 @@ class Registry:
         return place1
 
     def getProjectsLocal(self):
-        if hasattr(self,"__local_prjs"):
-            return self.__local_prjs
-        self.__local_prjs = dict()
+        if hasattr(self,"_local_prjs"):
+            return self._local_prjs
+        self._local_prjs = dict()
         folders = glob.glob(apt.SETTINGS['local']+"/**/.lego.lock", recursive=True)
         folders = folders + glob.glob(apt.SETTINGS['local']+"/*/.lego.lock", recursive=False)
         for file in folders:
@@ -237,11 +236,11 @@ class Registry:
                 #print(tmp)
             s = file.rfind('/')
             c = Capsule(path=file[:s+1])
-            if(c.getLib() not in self.__local_prjs.keys()):
-                self.__local_prjs[c.getLib()] = dict()
-            self.__local_prjs[c.getLib()][c.getName()] = c
-        #print(self.__local_prjs)
-        return self.__local_prjs
+            if(c.getLib() not in self._local_prjs.keys()):
+                self._local_prjs[c.getLib()] = dict()
+            self._local_prjs[c.getLib()][c.getName()] = c
+        #print(self._local_prjs)
+        return self._local_prjs
         pass
 
     #TO-DO
