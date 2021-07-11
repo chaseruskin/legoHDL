@@ -107,6 +107,10 @@ that moving forward, any new releases to sub-module, with this info we can chain
 push CI jobs to try to see if upper-module will not break with new changes",
 ...accordingly, it should not break with all minor and patch updates.
 
+@RELEASE 	move settings.yml to ~/.legohdl
+@RELEASE	move template to ~/.legohdl
+
+
 ##################
 ======ISSUES======
 ##################
@@ -121,42 +125,53 @@ until next command
 ======ROADMAP=====
 ##################
 
-[x]		-implement cache folder
+[ ]		-set up remote using registry design and git repo (ex: winget)
 [ ]		-fix "-alpha" option for list command to correctly display modules' status
 [ ]		-implement uninstall command
-[x]		-implement recursive nature on install for other dependencies
-[ ]		-implement additional "help" command documentation
 
-[x]		-fix when releasing a module to update cache and lib
+[ ]		-implement additional "help" command documentation
 [ ]		-give option to update and commit all changes with next "release" -ac
-[x]		-try moving source files around and then releasing  
-[ ]         
+        
 [x]		-user is able to open and edite the build scripts through legohdl
 [x]		-need ability to set custom parameters from command line, like make (args can be passed to build file)
+[x]		-try moving source files around and then releasing  
+[x]		-fix when releasing a module to update cache and lib
+[x]		-implement recursive nature on install for other dependencies
+[x]		-implement cache folder
 
 	RECIPES/BUILDING
-[x] 	-ability to set a build script file, (can be any file (TCL, make, py)) to house in 1 place
-[x]		-master build script will try to run by default when running build option and no file specified
-[ ]		-users specify external ext. and what the tag is to search for adding to recipe		
+
+[ ]		-users specify external ext. and what the tag is to search for adding to recipe	("tags" option)	
+		ex: you can set:
+			@XILINX_CONSTR -> .XDC
+			@QUARTUS_ROUTE -> .qpr
+			@PYTHON 	   -> .py
+			-when these are set (at user level), the export command will build the recipe and include these
+			first
 [x] 	-when setting a build script, you specify how to call it (python3, sh, make) and the file
 [x]		-entering blank path to build script in config will delete it or unlink it
+[x] 	-ability to set a build script file, (can be any file (TCL, make, py)) to house in 1 place
+[x]		-master build script will try to run by default when running build option and no file specified
 
 	OVERALL STRUCTURE
 [ ]		-ability to set mulitple remotes to 1 local path
 [ ]		-ability to set multiple local path places
 
 
-@TEST	config run="file-path" -build -lnk
+@IDEA	a useful byproduct of setting scripts is you cant set any file you want to be located there
 
 @NOTE 	recipe file gives you the order of all required user files to build the design
 
 @IDEA	if working with others, house build scripts in a repository and link to their local paths
 		in legoHDL to be able to continually improve them in the same spot
 
-
+@NOTE 	as of NOW, "build" is the same as "scripts", and for future should be renamed all to "scripts"
+		for potential for user to store/link more than build stuff into scripts location
 ##############
 ===ARCHIVES===
 ##############
+
+@TEST [x]	config run="file-path" -build -lnk
 
 @IDEA	add pin mapping to YAML file to allow program to place-and-route design post-synthesis
 

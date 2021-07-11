@@ -1,8 +1,12 @@
 author: 'Chase Ruskin: double-bladed lightsaber wielder'
 build:
-  linker: '"make -f  /Users/Chase/develop/hdl-dev/util/ram/makefile"'
-  makefile: '"make -f  /Users/Chase/develop/hdl-dev/util/ram/makefile"'
+  maker: '"make -f ''/Users/Chase/develop/hdl-dev/util/ram/makefile''"'
   master: '"python3 /Users/Chase/.legohdl/scripts/master.py"'
+  zybo_xdc: '"''/Users/Chase/develop/hdl-dev/util/ram/makefile''"'
 editor: code
+label:
+  A_XDC: linux.xdc
+  XDC: .xdc
+  Z_XDC: zybo.xdc
 local: /Users/Chase/develop/hdl-dev
 remote: null

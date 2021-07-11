@@ -278,13 +278,23 @@ class legoHDL:
                 if not l in library.keys():
                     library[l] = list() 
                 library[l].append(n)
+
+        #any user-defined labels to add?
+        for label,ext in apt.SETTINGS['label'].items():
+            print(label)
+            print(ext)
+            results = glob.glob(apt.fs(os.getcwd())+"/**/*"+ext, recursive=True)
+            print(results)
+            for r in results:
+                output.write("@"+label+" "+r+"\n")
                 
         #write these libraries and their required file paths to a file for exporting
         for lib in library.keys():
             for pkg in library[lib]:
                 key = lib+'.'+pkg
                 root_dir = apt.HIDDEN+"cache/"+lib+"/"+pkg+"/"
-                src_dir = glob.glob(root_dir+"/**/"+top_mp[key], recursive=True)
+                #TO-DO: find better way to fix glob search to include root prj directory in search
+                src_dir = glob.glob(root_dir+"/**/"+top_mp[key], recursive=True) 
                 output.write("@LIB "+lib+" "+src_dir[0].replace(top_mp[key], "*.vhd")+"\n")
                 output.write("@LIB "+lib+" "+apt.HIDDEN+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
 
@@ -391,7 +401,7 @@ class legoHDL:
             #parse into key/value around '='
             eq = choice.find("=")
             key = choice[:eq]
-            val = choice[eq+1:] #write whole path
+            val = choice[eq+1:] #write whole value
             ext = val[val.rfind('.'):]
             cmd = val[:val.find(' ')]
             path = val[val.find(' '):].strip()
@@ -416,9 +426,23 @@ class legoHDL:
             if(path != ''):
                 apt.SETTINGS[options[0]][key] = "\""+val+"\""
             pass
+        elif(options[0] == 'label'):
+            eq = choice.find("=")
+            key = choice[:eq]
+            val = choice[eq+1:] #write whole value
+            if(val == ''): #signal for deletion
+                print("deleting")
+                if(isinstance(apt.SETTINGS[options[0]],dict)):
+                    if(key in apt.SETTINGS[options[0]].keys()):
+                        del apt.SETTINGS[options[0]][key]
+            if(not isinstance(apt.SETTINGS[options[0]],dict)):
+                apt.SETTINGS[options[0]] = dict()
+            if(val != ''):
+                apt.SETTINGS[options[0]][key] = val
+                
         else:
             apt.SETTINGS[options[0]] = choice
-
+        
         apt.save()
         print("Saved setting successfully")
         pass
@@ -496,15 +520,31 @@ class legoHDL:
         #delete the module remotely?
         pass
 
+    def listLabels(self):
+        if(isinstance(apt.SETTINGS['label'],dict)):
+            print("\nList of custom labels:")
+            print("  ",'{:<12}'.format("Label"),'{:<14}'.format("ext"))
+            print("-"*80)
+            for key,val in apt.SETTINGS['label'].items():
+                print("  ",'{:<12}'.format(key),'{:<14}'.format(val))
+                pass
+        else:
+            print("No Labels added!")
+        pass
+
+
     def listScripts(self):
         if(isinstance(apt.SETTINGS['build'],dict)):
-            print("\nList of build scripts:")
+            print("\nList of scripts:")
             print("  ",'{:<12}'.format("Name"),'{:<14}'.format("CMD"),'{:<10}'.format("Path"))
             print("-"*80)
             for key,val in apt.SETTINGS['build'].items():
                 spce = val.find(' ')
                 cmd = val[1:spce]
                 path = val[spce:len(val)-1].strip()
+                if(spce == -1): #command not found
+                    path = cmd
+                    cmd = ''
                 print("  ",'{:<12}'.format(key),'{:<14}'.format(cmd),'{:<10}'.format(path))
                 pass
         else:
@@ -598,6 +638,8 @@ class legoHDL:
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             if(options.count("build")):
                 self.listScripts()
+            elif(options.count("label")):
+                self.listLabels()
             else:
                 self.inventory(options)
             pass
@@ -691,7 +733,8 @@ class legoHDL:
             \n\t-maj\t\trelease as next major update (^.0.0)\
             \n\t-min\t\trelease as next minor update (-.^.0)\
             \n\t-fix\t\trelease as next patch update (-.-.^)\
-            \n\t-build\t\tset default build script setting\
+            \n\t-build\t\tset a build script setting\
+            \n\t-label\t\tset a export label setting\
             \n\t-template\t\ttrigger the project template to open\
             \n\t-lnk\t\tuse the build script from its specified location- default is to copy\
             ")
