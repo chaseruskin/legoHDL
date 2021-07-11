@@ -123,7 +123,7 @@ class Capsule:
 
     def release(self, ver='', options=None):
         major,minor,patch = self.sepVer(self.getVersion())
-
+        print(self.getVersion())
         print("Uploading ",end='')
         print("v"+str(major),minor,patch,sep='.',end='')
         if(ver == ''):

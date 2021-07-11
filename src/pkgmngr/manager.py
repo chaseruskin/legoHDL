@@ -299,13 +299,13 @@ class legoHDL:
             if(self.db.capExists(title, "cache") and not self.db.capExists(title, "local")):
                 instl = self.db.getCaps("cache")[l][n]
                 instl.clone(src=instl.getPath(), dst=apt.SETTINGS['local']+"/"+l)
-                return
+                return self.db.getCaps("local",updt=True)[l][n]
             print('No remote code base configured to download modules')
-            return
+            exit()
 
         if(not self.db.capExists(title, "remote")):
             print('ERROR- Package \''+title+'\' does not exist in remote')
-            return
+            exit()
 
         #TO-DO: retesting
         if(self.db.capExists(title, "local")):
@@ -711,7 +711,7 @@ class legoHDL:
             \n\t-map\t\tprint port mapping of specified package\
             \n\t-local\t\tset local path setting\
             \n\t-remote\t\tset remote path setting\
-            \n\t-scripts\t\tenable listing build scripts\
+            \n\t-build\t\tenable listing build scripts\
             \n\t-editor\t\tset text-editor setting\
             \n\t-author\t\tset author setting\
             \n\t-gl-token\t\tset gitlab access token\
@@ -729,14 +729,66 @@ class legoHDL:
         pass
 
     def commandHelp(self, cmd):
+        def printFmt(cmd,val,options=''):
+            print("USAGE:")
+            print("\tlegohdl "+cmd+" "+val+" "+options)
+            pass
         if(cmd == ''):
             return
-        #TO-DO: if-elif block of all commands
-        # legohdl config name="cmd path" -build
-        # legohdl list -build
-        # legohdl build <script> [$*] [*]
-        # NOT IMPLEMENTED: legohdl export -b <script_name?> [all args passed to script]
-        # legohdl export <module> -bench
+        elif(cmd == "init"):
+            printFmt("init", "<package>")
+            pass
+        elif(cmd == "new"):
+            printFmt("new","<package>","[-o]")
+            pass
+        elif(cmd == "open"):
+            printFmt("open","<package>","[-template -build]")
+            pass
+        elif(cmd == "release"):
+            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d]")
+            pass
+        elif(cmd == "list"):
+            printFmt("list","\b","[-alpha -local -build -label]")
+            pass
+        elif(cmd == "install"):
+            printFmt("install","<package>","[-v0.0.0]")
+            pass
+        elif(cmd == "uninstall"):
+            printFmt("uninstall","<package>")
+            pass
+        elif(cmd == "download"):
+            printFmt("download","<package>","[-v0.0.0 -o]")
+            pass
+        elif(cmd == "update"):
+            printFmt("update","<package>")
+            pass
+        elif(cmd == "export"):
+            printFmt("export","[toplevel]","[-testbench]")
+            pass
+        elif(cmd == "build"):
+            printFmt("build","[@<script>]","[...]")
+            print("\n   [...] is all additional arguments and will be passed directly into the called script")
+            print("   If no script name is specified, it will default to looking for script \"master\"")
+            pass
+        elif(cmd == "del"):
+            printFmt("del","<package>","[-f]")
+            pass
+        elif(cmd == "search"):
+            printFmt("search","<package>")
+            pass
+        elif(cmd == "port"):
+            printFmt("port","<package>","[-map]")
+            pass
+        elif(cmd == "show"):
+            printFmt("show","<package>")
+            pass
+        elif(cmd == "summ"):
+            printFmt("summ","[-:\"summary\"]")
+            pass
+        elif(cmd == "config"):
+            printFmt("config","<value>","[-local | -remote | -author | -build [-lnk] | -label | -editor]")
+            print("\n   Setting [-build] or [-label] requires <value> to be key=\"value\"")
+            pass
         exit()
         pass
     pass

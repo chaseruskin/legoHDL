@@ -121,18 +121,20 @@ until next command
 -uploading and instantly dismissing a project causes the new version to not appear in catalog on next commands
 -better determine when it is necessary to request from remote to improve speed of some commands
 
+
 ##################
 ======ROADMAP=====
 ##################
 
+[!]		-implement additional "help" command documentation
+[!]		-give option to update and commit all changes with next "release" -ac
+
+[ ]		-revisit using makefile as script
 [ ]		-add verilog/systemverilog file support
 [ ]		-set up remote using registry design and git repo (ex: winget)
-[ ]		-fix "-alpha" option for list command to correctly display modules' status
-[ ]		-implement uninstall command
 
-[ ]		-implement additional "help" command documentation
-[ ]		-give option to update and commit all changes with next "release" -ac
-        
+[x]		-fix "-alpha" option for list command to correctly display modules' status
+[x]		-implement uninstall command       
 [x]		-user is able to open and edite the build scripts through legohdl
 [x]		-need ability to set custom parameters from command line, like make (args can be passed to build file)
 [x]		-try moving source files around and then releasing  
@@ -141,7 +143,8 @@ until next command
 [x]		-implement cache folder
 
 	RECIPES/BUILDING
-[ ]		-add way to add a recursive label (useful for labelling IP files that are needed inside dependencies)
+[!]		-add way to add a recursive label (useful for labelling IP files that are needed inside dependencies)
+
 [x]		-users specify external ext. and what the tag is to search for adding to recipe	("tags" option)	
 		ex: you can set:
 			@XILINX_CONSTR -> .XDC
@@ -169,6 +172,9 @@ until next command
 
 @NOTE 	as of NOW, "build" is the same as "scripts", and for future should be renamed all to "scripts"
 		for potential for user to store/link more than build stuff into scripts location
+
+@IDEA	legohdl export -b <script_name?> [...] -> leaning toward no because of options already in place for export
+
 ##############
 ===ARCHIVES===
 ##############
