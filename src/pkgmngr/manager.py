@@ -208,8 +208,11 @@ class legoHDL:
         arg_start = 3
         if(not isinstance(apt.SETTINGS['build'],dict)): #no scripts exist
             exit("No scripts are configured!")
-        elif(script in apt.SETTINGS['build'].keys()): #is it a name?
-            cmd = apt.SETTINGS['build'][script]
+        elif(len(script) and script[0] == "@"):
+            if(script[1:] in apt.SETTINGS['build'].keys()): #is it a name?
+                cmd = apt.SETTINGS['build'][script[1:]]
+            else:
+                exit("Build script name not found!")
         elif("master" in apt.SETTINGS['build'].keys()): #try to resort to default
             cmd = apt.SETTINGS['build']['master']
             arg_start = 2
@@ -357,7 +360,7 @@ class legoHDL:
         pass
 
     def setSetting(self, options, choice):
-        if(len(options) != 1):
+        if(len(options) == 0):
             print("ERROR- Invalid syntax; could not adjust setting")
             return
 
@@ -533,10 +536,13 @@ class legoHDL:
             if(x[0] == ':'):
                 description = x[1:]
                 break
-
+        
+        value = package
         package = package.replace("-", "_")
         
         self.capsulePKG = Capsule(title=package)
+
+        L,N = Capsule.split(package)
         
         #branching through possible commands
         if(command == "install"):
@@ -550,19 +556,16 @@ class legoHDL:
             self.uninstall(package, options) #TO-DO
             pass
         elif(command == "build" and self.capsuleCWD.isValid()):
-            self.build(package)
+            self.build(value)
         elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
             if apt.linkedRemote():
-                i = package.find('.')
-                lib = package[:i]
-                name = package[i+1:]
-                if(len(lib) > 0 and apt.linkedRemote()): #try to make new subgroup if DNE
-                    self.db.createSubgroup(lib, self.db.accessGitlabAPI())
+                if(len(L) > 0 and apt.linkedRemote()): #try to make new subgroup if DNE
+                    self.db.createSubgroup(L, self.db.accessGitlabAPI())
 
             self.capsulePKG = Capsule(package, new=True)
             
             if apt.linkedRemote(): #now fetch from db to grab ID
-                self.capsulePKG.saveID(self.db.fetchProjectShallow(lib,name)['id'])
+                self.capsulePKG.saveID(self.db.fetchProjectShallow(L,N)['id'])
             else: #assign tmp local id if no remote
                 self.capsulePKG.saveID(self.db.assignRandomID())
             
@@ -587,12 +590,11 @@ class legoHDL:
             self.capsuleCWD.pushYML("Updates project summary")
             pass
         elif(command == 'del' and self.db.capExists(package, "local")):
-            l,n = Capsule.split(package)
             force = False
             if(len(options) > 0):
                 if(options[0].lower() == 'f'):
                     force = True
-            self.cleanup(self.db.getCaps("local")[l][n], force)
+            self.cleanup(self.db.getCaps("local")[L][N], force)
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             if(options.count("build")):
                 self.listScripts()
@@ -623,25 +625,22 @@ class legoHDL:
                 else:
                     print("No text-editor configured!")
             elif(self.db.capExists(package, "local")):
-                l,n = Capsule.split(package)
-                self.db.getCaps("local")[l][n].load()
+                self.db.getCaps("local")[L][N].load()
             pass
         elif(command == "show" and (self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
-            l,n = Capsule.split(package)
-            self.db.getCaps("local","cache")[l][n].show()
+            self.db.getCaps("local","cache")[L][N].show()
             pass
-        elif(command == "ports"):
+        elif(command == "port"):
             mapp = False
             if(len(options) and 'map' in options):
                 mapp = True
             if((self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
-                l,n = Capsule.split(package)
-                print(self.db.getCaps("local","cache")[l][n].ports(mapp))
+                print(self.db.getCaps("local","cache")[L][N].ports(mapp))
         elif(command == "template" and apt.SETTINGS['editor'] != None):
             os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
             pass
         elif(command == "config"):
-            self.setSetting(options, package)
+            self.setSetting(options, value)
             pass
         elif(command == "help" or command == ''):
             #list all of command details
@@ -667,7 +666,7 @@ class legoHDL:
             formatHelp("build","run a custom configured script")
             formatHelp("del","deletes the package from the local workspace")
             formatHelp("search","search remote or local workspace for specified package")
-            formatHelp("ports","print ports list of specified package")
+            formatHelp("port","print ports list of specified package")
             formatHelp("show","read further detail about a specified package")
             formatHelp("summ","add description to current project")
             formatHelp("config","set package manager settings")

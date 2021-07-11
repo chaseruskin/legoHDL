@@ -606,7 +606,7 @@ class Capsule:
                     rolling_entity = False
                     break
             f.close()
-        print(port_txt)
+            
         port_txt = port_txt.replace("entity", "component")
 
         #manipulate port list into port map if mapp=True

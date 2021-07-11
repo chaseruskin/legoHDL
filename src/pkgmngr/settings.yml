@@ -1,5 +1,7 @@
 author: 'Chase Ruskin: double-bladed lightsaber wielder'
 build:
+  linker: '"make -f  /Users/Chase/develop/hdl-dev/util/ram/makefile"'
+  makefile: '"make -f  /Users/Chase/develop/hdl-dev/util/ram/makefile"'
   master: '"python3 /Users/Chase/.legohdl/scripts/master.py"'
 editor: code
 local: /Users/Chase/develop/hdl-dev
