@@ -126,13 +126,12 @@ until next command
 ======ROADMAP=====
 ##################
 
-[!]		-implement additional "help" command documentation
-[!]		-give option to update and commit all changes with next "release" -ac
-
 [ ]		-revisit using makefile as script
 [ ]		-add verilog/systemverilog file support
 [ ]		-set up remote using registry design and git repo (ex: winget)
+[ ]		-implement additional "help" command documentation
 
+[x]		-give option to update and commit all changes with next "release" -ac (already was!)
 [x]		-fix "-alpha" option for list command to correctly display modules' status
 [x]		-implement uninstall command       
 [x]		-user is able to open and edite the build scripts through legohdl

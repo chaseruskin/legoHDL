@@ -5,9 +5,13 @@ build:
   zybo_xdc: '"''/Users/Chase/develop/hdl-dev/util/ram/makefile''"'
 editor: code
 label:
-  A_XDC: linux.xdc
-  TEST-GEN: testbench.py
-  XDC: .xdc
-  Z_XDC: zybo.xdc
+  IP:
+  - .xci
+  - true
+  TEST-GEN:
+  - testbench.py
+  - false
+label-r:
+  IP: .xci
 local: /Users/Chase/develop/hdl-dev
 remote: null

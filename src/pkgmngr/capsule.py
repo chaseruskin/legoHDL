@@ -6,7 +6,7 @@ from repo import Repo
 from apparatus import Apparatus as apt
 
 
-#a capsule is a package/module that is signified by having the capsule.yml
+#a capsule is a package/module that is signified by having the .lego.lock
 class Capsule:
     #initialze capsule from a repo obj
     def absorbRepo(self, rp):
@@ -127,13 +127,13 @@ class Capsule:
         print("Uploading ",end='')
         print("v"+str(major),minor,patch,sep='.',end='')
         if(ver == ''):
-            if(options[0] == "maj"):
+            if(options.count("maj")):
                 major += 1
                 minor = patch = 0
-            elif(options[0] == "min"):
+            elif(options.count("min")):
                 minor += 1
                 patch = 0
-            elif(options[0] == "fix"):
+            elif(options.count("fix")):
                 patch += 1
             else:
                 return
@@ -387,13 +387,13 @@ class Capsule:
         self.loadMeta()
         return
 
-    def scanDependencies(self, update=True, vhd_file=None):
-        if(vhd_file == None):
-            vhd_file = self.findPath(self.getMeta("toplevel")) #find top-level
+    def scanDependencies(self, update=True, file_target=None):
+        if(file_target == None):
+            file_target = self.findPath(self.getMeta("toplevel")) #find top-level
         else:
-            vhd_file = self.findPath(vhd_file)
-        s = vhd_file.rfind('/')
-        src_dir = vhd_file[:s+1] #print(src_dir)
+            file_target = self.findPath(file_target)
+        s = file_target.rfind('/')
+        src_dir = file_target[:s+1] #print(src_dir)
         #open every src file and inspect lines for using libraries
         derivatives = set()
         for vhd in os.listdir(src_dir):
@@ -576,13 +576,13 @@ class Capsule:
         pass
 
     def findPath(self, file="*.vhd"):
-        vhd_files = glob.glob(self.__local_path+"/**/"+file, recursive=True)
-        if(len(vhd_files) > 0):
-            return vhd_files[0]
+        found_files = glob.glob(self.__local_path+"/**/"+file, recursive=True)
+        if(len(found_files) > 0):
+            return found_files[0]
         else:
-            vhd_files = glob.glob(self.__local_path+"/"+file, recursive=True)
-            if(len(vhd_files) > 0):
-                return vhd_files[0]
+            found_files = glob.glob(self.__local_path+"/"+file, recursive=True)
+            if(len(found_files) > 0):
+                return found_files[0]
         return None
         pass
 

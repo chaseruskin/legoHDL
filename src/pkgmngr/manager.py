@@ -247,7 +247,7 @@ class legoHDL:
         top_mp[cap.getTitle()] = top
         output = open(build_dir+"recipe", 'w')
         #mission: recursively search through every src VHD file for what else needs to be included
-        src_dir,derivatives = cap.scanDependencies(vhd_file=top)
+        src_dir,derivatives = cap.scanDependencies(file_target=top)
         for d in derivatives:
             g.addEdge(top, d)
         g,top_mp = self.recurseScan(g, derivatives, top_mp)
@@ -268,10 +268,23 @@ class legoHDL:
                 library[l].append(n)
 
         #any user-defined labels to add?
-        for label,ext in apt.SETTINGS['label'].items():
-            results = glob.glob(apt.fs(os.getcwd())+"/**/*"+ext, recursive=True)
-            for r in results:
-                output.write("@"+label+" "+r+"\n")
+        for label,val in apt.SETTINGS['label'].items():
+            ext,recur = val
+            if(not recur):
+                results = glob.glob(apt.fs(os.getcwd())+"/**/*"+ext, recursive=True)
+                for r in results:
+                    output.write("@"+label+" "+r+"\n")
+
+        #TO-DO: recursive scan for all files matching label
+        #use the scan dependencies function but with the recursive user labels
+        for label,val in apt.SETTINGS['label'].items():
+            ext,recur = val
+            if(recur):
+                #src_d,derivs = cap.scanDependencies(update=False, file_target=ext)
+                #for r in src_d:
+                    #print(r)
+                    #output.write("@"+label+" "+r+"\n")
+                pass
                 
         #write these libraries and their required file paths to a file for exporting
         for lib in library.keys():
@@ -412,19 +425,21 @@ class legoHDL:
                 apt.SETTINGS[options[0]][key] = "\""+val+"\""
             pass
         elif(options[0] == 'label'):
+            recur = False
+            if(options.count("recur")):
+                recur = True
             eq = choice.find("=")
             key = choice[:eq]
             val = choice[eq+1:] #write whole value
             if(val == ''): #signal for deletion
-                print("deleting")
                 if(isinstance(apt.SETTINGS[options[0]],dict)):
                     if(key in apt.SETTINGS[options[0]].keys()):
                         del apt.SETTINGS[options[0]][key]
             if(not isinstance(apt.SETTINGS[options[0]],dict)):
                 apt.SETTINGS[options[0]] = dict()
             if(val != ''):
-                apt.SETTINGS[options[0]][key] = val
-                
+                apt.SETTINGS[options[0]][key] = [val, recur]
+            pass
         else:
             apt.SETTINGS[options[0]] = choice
         
@@ -509,10 +524,13 @@ class legoHDL:
     def listLabels(self):
         if(isinstance(apt.SETTINGS['label'],dict)):
             print("\nList of custom labels:")
-            print("  ",'{:<12}'.format("Label"),'{:<14}'.format("ext"))
+            print("  ",'{:<14}'.format("Label"),'{:<20}'.format("ext"),'{:<10}'.format("recursive"))
             print("-"*80)
             for key,val in apt.SETTINGS['label'].items():
-                print("  ",'{:<12}'.format(key),'{:<14}'.format(val))
+                rec = 'no'
+                if(val[1]):
+                    rec = 'yes'
+                print("  ",'{:<14}'.format(key),'{:<22}'.format(val[0]),'{:<10}'.format(rec))
                 pass
         else:
             print("No Labels added!")
@@ -745,7 +763,8 @@ class legoHDL:
             printFmt("open","<package>","[-template -build]")
             pass
         elif(cmd == "release"):
-            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d]")
+            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d -ac]")
+            print("\n   -ac -> add and commit all changes with release")
             pass
         elif(cmd == "list"):
             printFmt("list","\b","[-alpha -local -build -label]")
@@ -786,7 +805,7 @@ class legoHDL:
             printFmt("summ","[-:\"summary\"]")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","[-local | -remote | -author | -build [-lnk] | -label | -editor]")
+            printFmt("config","<value>","[-local | -remote | -author | -build [-lnk] | -label [-recur] | -editor]")
             print("\n   Setting [-build] or [-label] requires <value> to be key=\"value\"")
             pass
         exit()
