@@ -281,10 +281,7 @@ class legoHDL:
 
         #any user-defined labels to add?
         for label,ext in apt.SETTINGS['label'].items():
-            print(label)
-            print(ext)
             results = glob.glob(apt.fs(os.getcwd())+"/**/*"+ext, recursive=True)
-            print(results)
             for r in results:
                 output.write("@"+label+" "+r+"\n")
                 

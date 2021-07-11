@@ -6,6 +6,7 @@ build:
 editor: code
 label:
   A_XDC: linux.xdc
+  TEST-GEN: testbench.py
   XDC: .xdc
   Z_XDC: zybo.xdc
 local: /Users/Chase/develop/hdl-dev
