@@ -128,11 +128,18 @@ until next command
 ======ROADMAP=====
 ##################
 
-[ ]		-implement -strict option to "release" command
+[ ]		-revisit capsule dependency functions to be more versatile
+[!]		-be sure to scan every inner-project component for its dependencies
+
+[ ]		-add cool logging
+
+[ ]		-add extra folder layer to house cache,lib,map.toml,registry for a given workspace
+
 [ ]		-add verilog/systemverilog file support
 [ ]		-set up remote using registry design and git repo (ex: winget)
 [ ]		-implement additional "help" command documentation
 
+[x]		-implement -strict option to "release" command
 [x]		-revisit using makefile as script
 [x]		-give option to update and commit all changes with next "release" -ac (already was!)
 [x]		-fix "-alpha" option for list command to correctly display modules' status
@@ -162,10 +169,13 @@ until next command
 
 	OVERALL STRUCTURE
 [!]		-organize workspaces
-[ ]		-print neater lists
+
 [ ]		-ability to set mulitple remotes to 1 local path
-[ ]		-ability to set multiple local path places
 [ ]		-don't set * to src dir of top level, individually add every current level vhd file from glob.glob
+
+[x]		-ability to set multiple local path places
+		-> achieved with 'workspaces'
+[x]		-print neater lists
 
 
 @IDEA	a useful byproduct of setting scripts is you cant set any file you want to be located there

@@ -1,5 +1,5 @@
 #load in settings
-import yaml,os
+import yaml,os,logging as log
 
 class Apparatus:
     SETTINGS = dict()
@@ -10,8 +10,12 @@ class Apparatus:
 
     __active_workspace = None
 
+    LOG = log.getLogger("main")
+
     @classmethod
     def load(cls):
+        log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.INFO)
+
         with open(cls.PKGMNG_PATH+"settings.yml", "r") as file:
             cls.SETTINGS = yaml.load(file, Loader=yaml.FullLoader)
         

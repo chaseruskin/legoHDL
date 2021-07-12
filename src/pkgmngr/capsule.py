@@ -122,6 +122,8 @@ class Capsule:
         return self.getMeta('version')
 
     def release(self, ver='', options=None):
+        if(ver != '' and self.biggerVer(ver,self.getVersion()) == self.getVersion()):
+            exit("ERROR- Invalid version selection!")
         major,minor,patch = self.sepVer(self.getVersion())
         print(self.getVersion())
         print("Uploading ",end='')
@@ -141,9 +143,6 @@ class Capsule:
         else:
             ver = ver[1:]
             r_major,r_minor,r_patch = self.sepVer(ver)
-            
-            if(self.biggerVer(ver,self.getVersion()) == self.getVersion()):
-                return
 
             ver = 'v'+str(r_major)+'.'+str(r_minor)+'.'+str(r_patch)
         print(" -> ",end='')
@@ -152,10 +151,14 @@ class Capsule:
             self.__metadata['version'] = ver[1:]
             self.save()
             print("saving")
-            self.__repo.git.add(update=True)
-            self.__repo.index.add(self.__repo.untracked_files)
+            if(options != None and options.count('strict')):
+                self.__repo.index.add(".lego.lock")
+            else:   
+                self.__repo.git.add(update=True)
+                self.__repo.index.add(self.__repo.untracked_files)
             self.__repo.index.commit("Release version -> "+self.getVersion())
             self.__repo.create_tag(ver)
+            #TO-DO: push to remote codebase!!
         pass
 
     @classmethod
@@ -314,6 +317,7 @@ class Capsule:
         self.__repo.index.add(".lego.lock")
         
         self.__repo.index.commit(msg)
+        
         if(apt.linkedRemote()):
             self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
             #self.__repo.remotes.origin.push()
@@ -400,8 +404,8 @@ class Capsule:
                     if(self.getExt(match) == 'vhd'): #source file
                         for line in file:
                             line = line.lower()
-                            z = line.find("use")
-                            c = line.find('--')
+                            z = line.find("use") #look for library use calls
+                            c = line.find('--') #is is a comment?
                             if(z >= 0 and (c == -1 or z < c)):
                                 derivatives.add(line[z+3:].strip())
                             if(line.count("entity") > 0):
@@ -468,12 +472,13 @@ class Capsule:
                             in_arch = not in_arch
                         #remove file attached to key if...
                         #if before entity, the key is found in line starting with "use"
+                        #checking for any user package files that contain this module's name
                         if(line.count("use") and not in_entity and line.count("work")):
                             l,n = self.split(line)
-                            if(n in comps.keys()):
-                                vhd_files.remove(comps[n])
-                                #print("REMOVE:",comps[n])
-                                break
+                            for val in comps.keys():
+                                if(n.count(val)): #the package file contains this name
+                                    vhd_files.remove(comps[n])
+                                    break
                         #if inside architecture and before begin, the key is found in line with "component"
                         if(line.count("component") and in_arch):
                             t = line.find("component")+len("component")+1
@@ -512,7 +517,7 @@ class Capsule:
     def getExt(cls, file_path):
         dot = file_path.rfind('.')
         if(dot == -1):
-            return None
+            return ''
         else:
             return file_path[dot+1:]
     

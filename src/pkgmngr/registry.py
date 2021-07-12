@@ -82,9 +82,8 @@ class Registry:
             reg = sortion #assign the sorted dictionary to reg
             pass
 
-        print("\nList of available modules:")
-        print("  ",'{:<24}'.format("Module"),'{:<16}'.format("Status"),'{:<10}'.format("Version"))
-        print("-"*80)
+        print('{:<12}'.format("Library"),'{:<22}'.format("Module"),'{:<12}'.format("Status"),'{:<10}'.format("Version"))
+        print("-"*12+" "+"-"*22+" "+"-"*12+" "+"-"*10)
         for lib,prjs in reg.items():
             for name,cp in prjs.items():
                 status = '-'
@@ -106,7 +105,7 @@ class Registry:
                         ver = loc_ver
                     pass
                 ver = '' if (ver == '0.0.0') else ver
-                print("  ",'{:<24}'.format(cp.getTitle()),'{:<16}'.format(status),'{:<10}'.format(ver),info)
+                print('{:<12}'.format(L),'{:<22}'.format(N),'{:<12}'.format(status),'{:<10}'.format(ver),info)
         pass
 
     def parseURL(self, website):

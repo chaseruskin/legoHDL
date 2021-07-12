@@ -1,14 +1,17 @@
 active-workspace: myWorkspace
 author: 'Chase Ruskin: double-bladed lightsaber wielder'
 build:
-  maker: '"make -f ''/Users/Chase/develop/hdl-dev/util/ram/makefile''"'
   master: '"python3 /Users/Chase/.legohdl/scripts/master.py"'
-  zybo_xdc: '"''/Users/Chase/develop/hdl-dev/util/ram/makefile''"'
+  mk: '"make -f /Users/Chase/.legohdl/scripts/mk"'
+  runnr: '"python3 /Users/Chase/.legohdl/scripts/runnr.py"'
 editor: code
 label:
   IP:
   - .xci
   - true
+  SV:
+  - .sv
+  - false
   TEST-GEN:
   - testbench.py
   - false
@@ -16,6 +19,6 @@ workspace:
   myWorkspace:
     local: /Users/Chase/develop/hdl-dev/
     remote: []
-  newWork:
-    local: /Users/Chase/develop/hdl-dev/
+  otherWorkspace:
+    local: /Users/Chase/develop/hdl-new/
     remote: []
