@@ -12,9 +12,10 @@ class legoHDL:
         apt.load() #load settings.yml
         self.capsulePKG = None
         self.capsuleCWD = None
+        print(apt.linkedRemote())
         
         #defines path to dir of remote code base
-        self.db = Registry(apt.SETTINGS['remote'])
+        self.db = Registry(apt.getRemotes())
 
         #set env variable for VHDL_LS
         os.environ['VHDL_LS_CONFIG'] = apt.HIDDEN+"map.toml" 
@@ -311,7 +312,7 @@ class legoHDL:
         if(not apt.linkedRemote()):
             if(self.db.capExists(title, "cache") and not self.db.capExists(title, "local")):
                 instl = self.db.getCaps("cache")[l][n]
-                instl.clone(src=instl.getPath(), dst=apt.SETTINGS['local']+"/"+l)
+                instl.clone(src=instl.getPath(), dst=apt.getLocal()+"/"+l)
                 return self.db.getCaps("local",updt=True)[l][n]
             print('No remote code base configured to download modules')
             exit()
@@ -379,45 +380,53 @@ class legoHDL:
         if(choice == 'null'):
             choice = ''
 
-        if(not options[0] in apt.SETTINGS.keys()):
-            print("ERROR- Invalid setting")
-            return
+        eq = choice.find("=")
+        key = choice[:eq]
+        val = choice[eq+1:] #write whole value
 
         if(options[0] == 'active-workspace' and choice not in apt.SETTINGS['workspace'].keys()):
             exit("ERROR- Workspace not found!")
 
-        if(choice == ''):
-            if(options[0] == 'remote'):
-                print('WARNING- No remote code base is configured')
-                choice = None
-            elif(options[0] == 'local'):
-                print('ERROR- Must include a local code base path')
-                return
-
-        eq = choice.find("=")
-        key = choice[:eq]
-        val = choice[eq+1:] #write whole value
-    
-        if(options[0] == 'local'):
-            os.makedirs(choice, exist_ok=True)
-
+        if(options[0] == 'remote'):
+            if(choice in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']):
+                if(options.count('rm')): #remove
+                    apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote'].remove(choice)
+            elif(options.count('rm') == 0):
+                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote'].append(choice)
+        elif(not options[0] in apt.SETTINGS.keys()):
+            print("ERROR- Invalid setting")
+            return
         # WORKSPACE CONFIGURATION
-        if(options[0] == 'workspace'):
-            #will not delete old workspace directories but can remove from list
-            #will make new directories if needed when setting local path
+        elif(options[0] == 'workspace'):
+            #create entire new workspace settings
             if(not isinstance(apt.SETTINGS[options[0]],dict)):
                 apt.SETTINGS[options[0]] = dict()
+            #insertion
             if(val != ''):
-                if(not isinstance(apt.SETTINGS[options[0]][key],dict)):
+                #create new workspace profile
+                if(key not in apt.SETTINGS[options[0]]):
                     apt.SETTINGS[options[0]][key] = dict()
-                
-                    #apt.SETTINGS[options[0]][key] = "\""+val+"\"" 
+                    apt.SETTINGS[options[0]][key]['remote'] = list()
+                    apt.SETTINGS[options[0]][key]['local'] = None
+                #now insert value
+                apt.SETTINGS[options[0]][key]['local'] = apt.fs(val)
+                #will make new directories if needed when setting local path
+                if(not os.path.isdir(apt.SETTINGS[options[0]][key]['local'])):
+                    print("Making new directory",apt.SETTINGS[options[0]][key]['local'])
+                    os.makedirs(apt.SETTINGS[options[0]][key]['local'], exist_ok=True)
+                for rem in options:
+                    if rem == options[0]:
+                        continue
+                    if rem not in apt.SETTINGS[options[0]][key]['remote']:
+                        apt.SETTINGS[options[0]][key]['remote'].append(rem)
+            #empty value -> deletion of workspace from list
             else:
+                #will not delete old workspace directories but can remove from list
                 if(key in apt.SETTINGS[options[0]].keys()):
                     del apt.SETTINGS[options[0]][key]
             pass
         # BUILD SCRIPT CONFIGURATION
-        if(options[0] == 'build'):
+        elif(options[0] == 'build'):
             #parse into cmd and filepath
             ext = Capsule.getExt(val)
             cmd = val[:val.find(' ')]
@@ -473,7 +482,7 @@ class legoHDL:
         cwd = apt.fs(os.getcwd()).lower()
         #find the src dir and testbench dir through autodetect top-level modules
         #name of package reflects folder, a library name must be specified though
-        if(cwd.count(apt.SETTINGS['local'].lower()) == 0 or (cwd+"/" == apt.SETTINGS['local'].lower())):
+        if(cwd.count(apt.getLocal().lower()) == 0):
             exit("Cannot initialize outside of local workspace")
         cap = None
         files = os.listdir(cwd)
@@ -509,7 +518,7 @@ class legoHDL:
             print('Module '+cap.getName()+' does not exist locally')
             return
         
-        if(apt.SETTINGS['remote'] == None and force):
+        if(not apt.linkedRemote() and force):
             print('\
             WARNING- No remote code base is configured, if this module is deleted and uninstalled\n\
             it may be unrecoverable. PERMANENTLY REMOVE '+cap.getTitle()+'? [y/n]\
@@ -744,7 +753,7 @@ class legoHDL:
             \n\t-i\t\tset installation flag to install package(s) on project creation\
             \n\t-alpha\t\talphabetical order\
             \n\t-o\t\topen the project\
-            \n\t-d\t\tremoves the released package from your local codebase\
+            \n\t-rm\t\tremoves the released package from your local codebase\
             \n\t-f\t\tforce project uninstallation alongside deletion from local codebase\
             \n\t-map\t\tprint port mapping of specified package\
             \n\t-local\t\tset local path setting\
@@ -783,7 +792,7 @@ class legoHDL:
             printFmt("open","<package>","[-template -build]")
             pass
         elif(cmd == "release"):
-            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d -strict]")
+            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -rm -strict]")
             print("\n   -strict -> won't add any uncommitted changes along with release")
             pass
         elif(cmd == "list"):
@@ -825,7 +834,7 @@ class legoHDL:
             printFmt("summ","[-:\"summary\"]")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","""[-local | -remote | -author | -build [-lnk] | -label [-recur] | -editor |\n\
+            printFmt("config","<value>","""[-remote [-rm] | -author | -build [-lnk] | -label [-recur] | -editor |\n\
                     \t\t-workspace [-<remote> ...] | -active-workspace]\
             """)
             print("\n   Setting [-build], [-label], [-workspace] requires <value> to be <key>=\"<value>\"")

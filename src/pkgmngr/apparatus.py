@@ -6,7 +6,7 @@ class Apparatus:
     #defines path to working dir of 'legoHDL' tool
     PKGMNG_PATH = os.path.realpath(__file__)[:os.path.realpath(__file__).rfind('/')+1]
     #path to registry and cache
-    HIDDEN = os.path.expanduser("~/.legohdl/") 
+    HIDDEN = os.path.expanduser("~/.legohdl/")
 
     __active_workspace = None
 
@@ -21,13 +21,7 @@ class Apparatus:
         if(cls.__active_workspace == None or cls.__active_workspace not in cls.SETTINGS['workspace'].keys()):
             exit("ERROR- Active workspace not found!")
         
-        cls.SETTINGS['local'] = cls.SETTINGS['workspace'][cls.__active_workspace]['local']
-        cls.SETTINGS['remote'] = cls.SETTINGS['workspace'][cls.__active_workspace]['remote']
-
-        if(len(cls.SETTINGS['remote']) == 0):
-            cls.SETTINGS['remote'] = None
-        
-        if(cls.SETTINGS['local'] == None):
+        if(cls.SETTINGS['workspace'][cls.__active_workspace]['local'] == None):
             exit("ERROR- Please specify a local path! See \'legohdl help config\' for more details")
         pass
     
@@ -36,18 +30,28 @@ class Apparatus:
         with open(cls.PKGMNG_PATH+"settings.yml", "w") as file:
             yaml.dump(cls.SETTINGS, file)
         pass
+    
+    @classmethod
+    def getLocal(cls):
+        return cls.SETTINGS['workspace'][cls.__active_workspace]['local']
+
+    @classmethod
+    def getRemotes(cls):
+        return cls.SETTINGS['workspace'][cls.__active_workspace]['remote']
 
     @classmethod
     def linkedRemote(cls):
-        return cls.SETTINGS['remote'] != None
-
-    @classmethod
-    def localPath(cls):
-        return cls.SETTINGS['local']
+        rem = cls.SETTINGS['workspace'][cls.__active_workspace]['remote']
+        return (rem != None and len(rem))
 
     #forward-slash fixer
     @classmethod
     def fs(cls, path):
-        return path.replace('\\','/')
-
+        path = os.path.expanduser(path)
+        path = path.replace('\\','/')
+        dot = path.rfind('.')
+        last_slash = path.rfind('/')
+        if(last_slash > dot and path[len(path)-1] != '/'):
+            path = path + '/'
+        return path
     pass

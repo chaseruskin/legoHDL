@@ -60,7 +60,7 @@ class Capsule:
                 self.__lib = name[:dot]
                 self.__name = name[dot+1:]
         
-        self.__local_path = apt.SETTINGS['local']+"/"+self.__lib+"/"+self.__name+'/'
+        self.__local_path = apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/'
 
         #configure remote url
         if(apt.linkedRemote()):

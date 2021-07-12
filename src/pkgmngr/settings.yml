@@ -1,3 +1,4 @@
+active-workspace: myWorkspace
 author: 'Chase Ruskin: double-bladed lightsaber wielder'
 build:
   maker: '"make -f ''/Users/Chase/develop/hdl-dev/util/ram/makefile''"'
@@ -11,13 +12,10 @@ label:
   TEST-GEN:
   - testbench.py
   - false
-active-workspace: myWorkspace
-local:
-remote:
 workspace:
   myWorkspace:
     local: /Users/Chase/develop/hdl-dev/
-    remote: {}
-  otherWorkspace:
-    local:
-    remote: {}
+    remote: []
+  newWork:
+    local: /Users/Chase/develop/hdl-dev/
+    remote: []

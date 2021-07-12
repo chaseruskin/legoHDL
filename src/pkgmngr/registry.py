@@ -20,10 +20,15 @@ class Registry:
 
     GL_PRJ_EXT = "/projects?include_subgroups=True&simple=True"
 
-    def __init__(self, url):
-        self.__url = url
-        self.__base_url = url
-        self.__tail_url = url
+    #TO-DO: fix how to store and use remotes
+    #things to consider: where to host remote central store (can have multiple)
+    #what is a project's remote url when making a new one?
+    def __init__(self, remotes):
+        self.__url = list()
+        for rem in remotes:
+            pass
+        self.__base_url = '' #UN-DONE
+        self.__tail_url = ''
         self.__local_path = apt.HIDDEN+"registry/"
         
         self.__local_reg = dict()
@@ -149,8 +154,8 @@ class Registry:
         if hasattr(self,"_local_prjs") and not updt:
             return self._local_prjs
         self._local_prjs = dict()
-        folders = glob.glob(apt.SETTINGS['local']+"/**/.lego.lock", recursive=True)
-        folders = folders + glob.glob(apt.SETTINGS['local']+"/*/.lego.lock", recursive=False)
+        folders = glob.glob(apt.getLocal()+"/**/.lego.lock", recursive=True)
+        folders = folders + glob.glob(apt.getLocal()+"/*/.lego.lock", recursive=False)
         for file in folders:
             #read .lock to get information
             with open(file, 'r') as f:
