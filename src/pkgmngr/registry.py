@@ -7,7 +7,6 @@ import yaml
 from bs4 import BeautifulSoup
 from collections import OrderedDict
 from capsule import Capsule
-from repo import Repo
 from apparatus import Apparatus as apt
 from remote import Remote
 
@@ -27,12 +26,11 @@ class Registry:
     #what is a project's remote url when making a new one?
     def __init__(self, remotes):
         self.__url = ''
-        self.__remote_bank = list()
+        self.__remote_bank = dict()
         if(apt.linkedRemote()):
-            for rem in remotes:
-                self.__remote_bank.append(rem)
+            for rem,val in remotes.items():
+                self.__remote_bank[rem] = val
                 print(rem)
-                pass
         self.__local_path = apt.HIDDEN+"registry/"
         pass
 
@@ -90,13 +88,13 @@ class Registry:
                 print('{:<12}'.format(L),'{:<22}'.format(N),'{:<12}'.format(status),'{:<8}'.format(ver),info)
         pass
 
-    def parseURL(self, website):
-        i =  self.__url.find(website)
-        i_2 = (self.__url[i:]).find('/')
+    def parseURL(self, url, website):
+        i =  url.find(website)
+        i_2 = (url[i:]).find('/')
 
-        self.__tail_url = self.__url[i+i_2:]
-        self.__base_url = self.__url[:i+i_2]
-        pass
+        tail_url = url[i+i_2:]
+        base_url = url[:i+i_2]
+        return  base_url,tail_url
 
     def getCaps(self, *args, updt=False):
         folders = None
@@ -174,8 +172,8 @@ class Registry:
             return self._remote_prjs
         self._remote_prjs = dict()
         #identify .lock files from each remote set up with this workspace
-        for rem in self.__remote_bank:
-            lego_files = glob.glob(self.__local_path+rem.name+"/**/.lego.lock", recursive=True)
+        for rem in self.__remote_bank.keys():
+            lego_files = glob.glob(self.__local_path+rem+"/**/.lego.lock", recursive=True)
             #from each lego file, create a capsule object
             print(lego_files)
             for x in lego_files:
@@ -207,6 +205,23 @@ class Registry:
             folder = self.getProjectsRemote(updt)
         return (l in folder.keys() and (n in folder[l].keys() or n == '*'))
         pass
+    
+
+    def createProjectRemote(self, git_url):
+        mode = None
+        keyword = 'https://'
+        if(git_url.count('gitlab') > 0):
+            keyword = 'gitlab'
+            mode = self.Mode.GITLAB
+        elif(git_url.count('github') > 0):
+            keyword = 'github'
+            mode = self.Mode.GITHUB
+        else:
+            mode = self.Mode.OTHER
+        base,tail = self.parseURL(git_url, keyword)
+        tail = tail.replace(".git","")
+        print(base,"---"+tail)
+        pass
 
     def prjLocation(self, title):
         pass
@@ -222,7 +237,7 @@ class Registry:
     def encrypt(self, token, file):
         print("Encrypting access token... ",end='')
         random.seed()
-        with open(apt.HIDDEN+"registry/"+file+".bin", 'w') as file:
+        with open(apt.HIDDEN++file+".bin", 'w') as file:
             for letter in token:
                 secret = bin(ord(letter))[2:]
                 secret = ((8-len(secret))*"0")+secret #pad to make fixed 8-bits
@@ -235,7 +250,7 @@ class Registry:
 
     def decrypt(self, file):
         token = ''
-        with open(apt.HIDDEN+"registry/"+file+".bin", 'r') as file:
+        with open(apt.HIDDEN+file+".bin", 'r') as file:
             binary_str = file.read()
             while len(binary_str):
                 tmp = ''
@@ -248,6 +263,28 @@ class Registry:
                 token += chr((int('0b'+tmp, base=2)))
             file.close()
         return token
+
+    @DeprecationWarning
+    def accessGitlabAPI(self, base, tail, api_ext='', multi=False):
+        sect = 'groups/hdldb/projects?name='
+        if(not multi):
+            sect = 'projects?name='
+            print(tail[1:])
+        print("Trying to access remote...",end=' ')
+        link = base+"/api/v4/"+sect+tail[1:]
+        tk = self.decrypt('gl-token')
+        #try to create new project
+        z = requests.get(link, headers={'PRIVATE-TOKEN': tk})
+        if(z.status_code == 200):
+            print("success")
+        else:
+            print("error")
+        return json.loads(z.text)
+
+
+
+
+
 
     @DeprecationWarning
     def localLoad(self):
@@ -263,7 +300,7 @@ class Registry:
                 spk = line.find('*')
                 at = line.find('@')
                 iden = line[:spce]
-                self.__local_reg[int(iden)] = Repo(l_a=line[Rspce+1:spk], lib=line[spce+1:dot], g_url=line[at+1:], name=line[dot+1:eq], l_v=line[eq+1:Rspce], m_b=line[spk+1:at], l_path='')
+                #self.__local_reg[int(iden)] = Repo(l_a=line[Rspce+1:spk], lib=line[spce+1:dot], g_url=line[at+1:], name=line[dot+1:eq], l_v=line[eq+1:Rspce], m_b=line[spk+1:at], l_path='')
             file.close()
 
     @DeprecationWarning
@@ -280,9 +317,11 @@ class Registry:
                     f.close()
                     #print(leaf)#print(tmp['id'])#print(path)
                     if(cached):
-                        self.__cache_reg[int(tmp['id'])] = Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
+                        pass
+                        #self.__cache_reg[int(tmp['id'])] = Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
                     else:
-                        self.__cur_reg[int(tmp['id'])] = Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
+                        pass
+                       # self.__cur_reg[int(tmp['id'])] = Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
         pass
 
     @DeprecationWarning
@@ -384,17 +423,7 @@ class Registry:
         else:
             print("error")
 
-    @DeprecationWarning
-    def accessGitlabAPI(self, api_ext=''):
-        print("Trying to access remote...",end=' ')
-        link = self.__base_url+"/api/v4/groups/"+self.__tail_url+"/"+api_ext
-        tk = self.decrypt('gl-token')
-        z = requests.get(link, headers={'PRIVATE-TOKEN': tk})
-        if(z.status_code == 200):
-            print("success")
-        else:
-            print("error")
-        return json.loads(z.text)
+
 
     @DeprecationWarning
     def fetchProjectShallow(self, library, name):
@@ -441,7 +470,7 @@ class Registry:
             else: #local registry needs all info on this repo
                 last_ver = self.grabTags(x)
 
-            self.__remote_reg[x['id']] = Repo(l_a=x['last_activity_at'], lib=lib, g_url=x['web_url']+'.git', name=x['name'], l_v=last_ver, m_b=x['default_branch'], l_path='')
+            #self.__remote_reg[x['id']] = Repo(l_a=x['last_activity_at'], lib=lib, g_url=x['web_url']+'.git', name=x['name'], l_v=last_ver, m_b=x['default_branch'], l_path='')
         self.localSync()
         pass
     @DeprecationWarning

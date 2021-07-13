@@ -177,6 +177,9 @@ until next command
 		-> achieved with 'workspaces'
 [x]		-print neater lists
 
+@NOTE	Skip automatic git repo making for now, have users create a new blank repo on their project and then copy the ssh or http
+
+@IDEA 	automatic sync? or have command, or have every remote in use by current workspace pull on every call
 
 @IDEA	a useful byproduct of setting scripts is you cant set any file you want to be located there
 

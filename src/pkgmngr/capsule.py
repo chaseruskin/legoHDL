@@ -1,10 +1,11 @@
-import os, yaml, git, shutil
+import os, yaml, shutil
 from datetime import date
 import collections, stat
 import glob
 from remote import Remote
 from apparatus import Apparatus as apt
-
+import git
+from git import Repo
 
 #a capsule is a package/module that is signified by having the .lego.lock
 class Capsule:
@@ -13,12 +14,13 @@ class Capsule:
         self.__metadata = dict()
         self.__lib = ''
         self.__name = ''
-        self.__repo = None
+        self.__remote = None
  
         if(title != None):
             self.__lib,self.__name = self.split(title)
         if(path != None):
             self.__local_path = path
+            #print(path)
             if(self.isValid()):
                 self.loadMeta()
                 if(not excludeGit):
@@ -27,7 +29,7 @@ class Capsule:
             return
 
         if(remote != None):
-            self.remote = remote #pass in remote object
+            self.__remote = remote #pass in remote object
         
         self.__local_path = apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/'
 
@@ -230,7 +232,7 @@ class Capsule:
         self.save() #save current progress into yaml
         self.__repo.index.add(self.__repo.untracked_files)
         self.__repo.index.commit("Initializes project")
-        if(apt.linkedRemote()):
+        if(self.__remote != None):
             print('Generating new remote repository...')
             # !!! set it up to track
             print(str(self.__repo.head.reference))
@@ -336,6 +338,9 @@ class Capsule:
         os.chmod(self.metadataPath(), stat.S_IROTH | stat.S_IRGRP | stat.S_IREAD | stat.S_IRUSR)
         pass
 
+    def isLinked(self):
+        return self.__remote != None
+
     def install(self, cache_dir, ver=None, src=None):
         #CMD: git clone (rep.git_url) (location) --branch (rep.last_version) --single-branch
         if(ver == None):
@@ -347,7 +352,7 @@ class Capsule:
 
         print("version",ver)
         
-        if(src == None and apt.linkedRemote()):
+        if(src == None and self.__remote != None):
             src = self.__remote_url
         elif(src == None):
             src = self.__local_path

@@ -66,9 +66,9 @@ class Apparatus:
 
     @classmethod
     def getRemotes(cls):
-        returnee = list()
+        returnee = dict()
         for name in cls.SETTINGS['workspace'][cls.__active_workspace]['remote']:
-            returnee.append(Remote(name, cls.SETTINGS['remote'][name]))
+            returnee[name] = (Remote(name, cls.SETTINGS['remote'][name]))
         return returnee
 
     @classmethod

@@ -362,7 +362,7 @@ class legoHDL:
         #clone new project's progress into cache
         self.install(cap.getTitle(), cap.getVersion())
 
-        if apt.linkedRemote():
+        if cap.isLinked():
             apt.LOG.info("Updating remote package contents...",end=' ')
             cap.pushRemote()
             print("success")
@@ -605,7 +605,23 @@ class legoHDL:
         else:
             apt.LOG.info("No Labels added!")
         pass
-
+    
+    def listWorkspace(self):
+        if(isinstance(apt.SETTINGS['workspace'],dict)):
+            print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Remotes"))
+            print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
+            for key,val in apt.SETTINGS['workspace'].items():
+                act = '-'
+                rems = ''
+                for r in val['remote']:
+                    rems = rems + r + ','
+                if(key == apt.SETTINGS['active-workspace']):
+                    act = 'yes'
+                print('{:<16}'.format(key),'{:<6}'.format(act),'{:<40}'.format(val['local']),'{:<14}'.format(rems))
+                pass
+        else:
+            apt.LOG.info("No Labels added!")
+        pass
 
     def listScripts(self):
         if(isinstance(apt.SETTINGS['build'],dict)):
@@ -671,18 +687,39 @@ class legoHDL:
         elif(command == "build" and self.capsuleCWD.isValid()):
             self.build(value)
         elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
-            if apt.linkedRemote():
-                if(len(L) > 0 and apt.linkedRemote()): #try to make new subgroup if DNE
-                    self.db.createSubgroup(L, self.db.accessGitlabAPI())
-
-            self.capsulePKG = Capsule(package, new=True)
+            remote_sync = None
+            rem_book = apt.getRemotes()
+            for x in options:
+                if(x in rem_book.keys()):
+                    print("found valid remote to sync to!")
+                    remote_sync = rem_book[x]
+                    options.remove(x)
+                    break
+            print(options)
             
-            if apt.linkedRemote(): #now fetch from db to grab ID
-                self.capsulePKG.saveID(self.db.fetchProjectShallow(L,N)['id'])
-            else: #assign tmp local id if no remote
-                self.capsulePKG.saveID(self.db.assignRandomID())
+            startup = False
+            if(options.count("o")):
+                startup = True
+                options.remove("o")
+            #try to create/link to a remote repo for this project
+            prj_remote = None
+            if(len(options)):
+                prj_remote = options[0]
+                self.db.createProjectRemote(prj_remote)
+                pass
+            print(prj_remote)
+            exit()
+            #if apt.linkedRemote():
+                #if(len(L) > 0 and apt.linkedRemote()): #try to make new subgroup if DNE
+                    #self.db.createSubgroup(L, self.db.accessGitlabAPI())
+            self.capsulePKG = Capsule(package, new=True, remote=remote_sync, git=prj_remote)
             
-            if(options.count("o") > 0):
+            #if apt.linkedRemote(): #now fetch from db to grab ID
+                #self.capsulePKG.saveID(self.db.fetchProjectShallow(L,N)['id'])
+            #else: #assign tmp local id if no remote
+                #self.capsulePKG.saveID(self.db.assignRandomID())
+            
+            if(startup):
                 self.capsulePKG.load()
             pass
         elif(command == "release" and self.capsuleCWD.isValid()):
@@ -715,6 +752,8 @@ class legoHDL:
                 self.listLabels()
             elif(options.count("remote")):
                 self.listRemotes()
+            elif(options.count("workspace")):
+                self.listWorkspace()
             else:
                 self.inventory(options)
             pass
@@ -839,7 +878,7 @@ class legoHDL:
             print("\n   -strict -> won't add any uncommitted changes along with release")
             pass
         elif(cmd == "list"):
-            printFmt("list","\b","[-alpha -local -build -label -remote]")
+            printFmt("list","\b","[-alpha -local -build -label -remote -workspace]")
             pass
         elif(cmd == "install"):
             printFmt("install","<package>","[-v0.0.0]")

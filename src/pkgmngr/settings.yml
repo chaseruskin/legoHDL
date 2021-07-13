@@ -16,17 +16,16 @@ label:
   - testbench.py
   - false
 remote:
-  test_rm: https://github.com/c-rus/autoEDA.git
   test2: https://someurl.git
 workspace:
   myWorkspace:
     local: /Users/Chase/develop/hdl-dev/
     remote:
-    - test_rm
     - test2
   myWorkspace2:
     local: /Users/Chase/develop/hdl-op/side/
-    remote: []
+    remote:
+    - test2
   otherWorkspace:
     local: /Users/Chase/develop/hdl-new/
     remote: []
