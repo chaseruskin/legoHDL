@@ -9,11 +9,7 @@ from apparatus import Apparatus as apt
 #a capsule is a package/module that is signified by having the .lego.lock
 class Capsule:
 
-    def getPath(self):
-        return self.__local_path
-
-
-    def __init__(self, title=None, path=None, remote=None, new=False):
+    def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False):
         self.__metadata = dict()
         self.__lib = ''
         self.__name = ''
@@ -25,26 +21,23 @@ class Capsule:
             self.__local_path = path
             if(self.isValid()):
                 self.loadMeta()
-                self.__repo = git.Repo(self.__local_path)
+                if(not excludeGit):
+                    self.__repo = git.Repo(self.__local_path)
                 self.__name = self.getMeta("name")
             return
 
         if(remote != None):
             self.remote = remote #pass in remote object
         
-        #self.__local_path = apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/'
+        self.__local_path = apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/'
 
         #configure remote url
         #if(apt.linkedRemote()):
             #self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
-
-        if(self.isValid()): #this package is already existing locally
+        if(self.isValid()):
             self.__repo = git.Repo(self.__local_path)
-            if(new):
-                print('This project already locally exists')
             #load in metadata from YML
             self.loadMeta()
-            pass
         elif(new): #create a new project
             if(apt.linkedRemote()):
                 try:
@@ -56,8 +49,11 @@ class Capsule:
             self.create() #create the repo and directory structure
         pass
 
-    def initYML(self):
 
+    def getPath(self):
+        return self.__local_path
+
+    def initYML(self):
         pass
 
     def saveID(self, id):

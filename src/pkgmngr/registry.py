@@ -177,10 +177,22 @@ class Registry:
         #go through each remote
         if hasattr(self,"_remote_prjs") and not updt:
             return self._remote_prjs
+        self._remote_prjs = dict()
         #identify .lock files from each remote set up with this workspace
         for rem in self.__remote_bank:
-            lego_files = glob.glob(self.__local_path+rem.name+"/**/*.lock", recursive=True)
+            lego_files = glob.glob(self.__local_path+rem.name+"/**/.lego.lock", recursive=True)
             #from each lego file, create a capsule object
+            print(lego_files)
+            for x in lego_files:
+                path = apt.fs(x.replace(".lego.lock",""))
+                cap = Capsule(path=path, excludeGit=True)
+                L,N = Capsule.split(cap.getTitle())
+                if(L not in self._remote_prjs.keys()):
+                    self._remote_prjs[L] = dict()
+                if(N not in self._remote_prjs[L].keys()):
+                    self._remote_prjs[L][N] = cap
+        
+        return self._remote_prjs
         pass
 
     #use title="lib.*" to check if library exists
