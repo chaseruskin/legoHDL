@@ -2,39 +2,22 @@ import os, yaml, git, shutil
 from datetime import date
 import collections, stat
 import glob
-from repo import Repo
+from remote import Remote
 from apparatus import Apparatus as apt
 
 
 #a capsule is a package/module that is signified by having the .lego.lock
 class Capsule:
-    #initialze capsule from a repo obj
-    def absorbRepo(self, rp):
-        self.__name = rp.name
-        self.__lib = rp.library
-        self.__localPath = rp.local_path
-        try:
-            self.__repo = git.Repo(self.__local_path)
-        except:
-            #repo DNE
-            pass
-        if(apt.linkedRemote()):
-            self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
-        if(self.isValid()):
-            self.loadMeta()
-        else:
-            #self.__metadata['id'] = key
-            self.__metadata['version'] = rp.last_version
-        pass
 
     def getPath(self):
         return self.__local_path
 
 
-    def __init__(self, name='', new=False, rp=None, path=None, title=None):
+    def __init__(self, title=None, path=None, remote=None, new=False):
         self.__metadata = dict()
         self.__lib = ''
         self.__name = ''
+        self.__repo = None
  
         if(title != None):
             self.__lib,self.__name = self.split(title)
@@ -46,25 +29,14 @@ class Capsule:
                 self.__name = self.getMeta("name")
             return
 
-        self.__repo = None
-        self.__remote_url = None
-
-        if(rp != None):
-            self.absorbRepo(rp)
-            return
-        if(title == None):
-            dot = name.find('.')
-            self.__lib = ''
-            self.__name = name
-            if(dot > -1):
-                self.__lib = name[:dot]
-                self.__name = name[dot+1:]
+        if(remote != None):
+            self.remote = remote #pass in remote object
         
-        self.__local_path = apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/'
+        #self.__local_path = apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/'
 
         #configure remote url
-        if(apt.linkedRemote()):
-            self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
+        #if(apt.linkedRemote()):
+            #self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
 
         if(self.isValid()): #this package is already existing locally
             self.__repo = git.Repo(self.__local_path)

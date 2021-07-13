@@ -15,9 +15,15 @@ label:
   TEST-GEN:
   - testbench.py
   - false
+remote:
+  test_rm: https://github.com/c-rus/autoEDA.git
 workspace:
   myWorkspace:
     local: /Users/Chase/develop/hdl-dev/
+    remote:
+    - test_rm
+  myWorkspace2:
+    local: /Users/Chase/develop/hdl-op/side/
     remote: []
   otherWorkspace:
     local: /Users/Chase/develop/hdl-new/

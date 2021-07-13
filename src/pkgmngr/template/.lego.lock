@@ -5,6 +5,7 @@ version:
 summary:
 toplevel:
 bench:
-url:
+git:
+remote:
 derives: {}
 integrates: {}

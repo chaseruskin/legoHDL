@@ -8,6 +8,7 @@ from collections import OrderedDict
 from capsule import Capsule
 from repo import Repo
 from apparatus import Apparatus as apt
+from remote import Remote
 
 class Registry:
     class Mode(Enum):
@@ -24,34 +25,18 @@ class Registry:
     #things to consider: where to host remote central store (can have multiple)
     #what is a project's remote url when making a new one?
     def __init__(self, remotes):
-        self.__url = list()
-        for rem in remotes:
-            pass
-        self.__base_url = '' #UN-DONE
-        self.__tail_url = ''
+        self.__url = ''
+        self.__remote_bank = list()
+        if(apt.linkedRemote()):
+            for rem in remotes:
+                self.__remote_bank.append(rem)
+                print(rem)
+                pass
         self.__local_path = apt.HIDDEN+"registry/"
-        
-        self.__local_reg = dict()
-        self.__remote_reg = dict()
-        self.__cur_reg = dict()
-        self.__cache_reg = dict()
 
         #print(url)
         #determine what remote website is being used
         self.__mode = None
-        if(not apt.linkedRemote()):
-            self.__mode = self.Mode.NONE
-        elif(self.__url.count('.git') > 0):
-            self.__mode = self.Mode.GIT
-        elif(self.__url.count('gitlab') > 0):
-            self.__mode = self.Mode.GITLAB
-            self.parseURL('gitlab')
-        elif(self.__url.count('github') > 0):
-            self.__mode = self.Mode.GITHUB
-            self.parseURL('github')
-        else:
-            self.__mode = self.Mode.OTHER
-            self.parseURL('https://')
 
     def listCaps(self, options):
         reg = None
@@ -172,7 +157,7 @@ class Registry:
     def getProjectsCache(self, updt=False):
         if hasattr(self,"_cache_prjs") and not updt:
             return self._cache_prjs
-        path = apt.HIDDEN+"cache/"
+        path = apt.WORKSPACE+"cache/"
         self._cache_prjs = dict()
         libs = os.listdir(path)
         for l in libs:
@@ -189,16 +174,13 @@ class Registry:
 
     #TO-DO
     def getProjectsRemote(self, updt=False):
-        if(self.__mode == Registry.Mode.GITLAB):
-            pass
-        elif(self.__mode == Registry.Mode.GITHUB):
-            pass
-        elif(self.__mode == Registry.Mode.GIT):
-            pass
-        elif(self.__mode == Registry.Mode.NONE):
-            pass
-        elif(self.__mode == Registry.Mode.OTHER):
-            pass
+        #go through each remote
+        if hasattr(self,"_remote_prjs") and not updt:
+            return self._remote_prjs
+        #identify .lock files from each remote set up with this workspace
+        for rem in self.__remote_bank:
+            lego_files = glob.glob(self.__local_path+rem.name+"/**/*.lock", recursive=True)
+            #from each lego file, create a capsule object
         pass
 
     #use title="lib.*" to check if library exists
@@ -300,7 +282,7 @@ class Registry:
 
     @DeprecationWarning
     def installedPkgs(self):
-        meta_dir = glob.glob(apt.HIDDEN+"/cache/**/.*.yml", recursive=True)
+        meta_dir = glob.glob(apt.WORKSPACE+"/cache/**/.*.yml", recursive=True)
         id_dict = dict()
         for md in meta_dir:
             with open(md, 'r') as f:

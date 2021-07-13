@@ -18,7 +18,7 @@ class legoHDL:
         self.db = Registry(apt.getRemotes())
 
         #set env variable for VHDL_LS
-        os.environ['VHDL_LS_CONFIG'] = apt.HIDDEN+"map.toml" 
+        os.environ['VHDL_LS_CONFIG'] = apt.WORKSPACE+"map.toml" 
 
         self.parse()
         pass
@@ -33,7 +33,7 @@ class legoHDL:
             exit(apt.LOG.error("The module is not located in the cache"))
             return
 
-        lib_path = apt.HIDDEN+"lib/"+cap.getLib()+"/"
+        lib_path = apt.WORKSPACE+"lib/"+cap.getLib()+"/"
         os.makedirs(lib_path, exist_ok=True)
         tmp_pkg = open(apt.PKGMNG_PATH+"/template_pkg.vhd", 'r')
         vhd_pkg = open(lib_path+cap.getName()+"_pkg.vhd", 'w')
@@ -69,8 +69,8 @@ class legoHDL:
     def install(self, title, ver=None, opt=list()):
         l,n = Capsule.split(title)
         cap = None
-        cache_path = apt.HIDDEN+"cache/"
-        lib_path = apt.HIDDEN+"lib/"+l+"/"
+        cache_path = apt.WORKSPACE+"cache/"
+        lib_path = apt.WORKSPACE+"lib/"+l+"/"
         #does the package already exist in the cache directory?
         if(self.db.capExists(title, "cache")):
             apt.LOG.info("The module is already installed.")
@@ -97,7 +97,7 @@ class legoHDL:
         self.genPKG(cap.getTitle())
         
         #link it all together through writing paths into "map.toml"
-        filename = apt.HIDDEN+"map.toml"
+        filename = apt.WORKSPACE+"map.toml"
         mapfile = open(filename, 'r')
         cur_lines = mapfile.readlines()
         mapfile.close()
@@ -143,21 +143,21 @@ class legoHDL:
             cache_path = cache[l][n].getPath()
             shutil.rmtree(cache_path)
             #if empty dir then do some cleaning
-            if(len(os.listdir(apt.HIDDEN+"cache/"+l)) == 0):
-                os.rmdir(apt.HIDDEN+"cache/"+l)
+            if(len(os.listdir(apt.WORKSPACE+"cache/"+l)) == 0):
+                os.rmdir(apt.WORKSPACE+"cache/"+l)
                 pass
             #remove from lib
             lib_path = cache_path.replace("cache","lib")
             lib_path = lib_path[:len(lib_path)-1]+"_pkg.vhd"
             os.remove(lib_path)
             #if empty dir then do some cleaning
-            if(len(os.listdir(apt.HIDDEN+"lib/"+l)) == 0):
-                os.rmdir(apt.HIDDEN+"lib/"+l)
+            if(len(os.listdir(apt.WORKSPACE+"lib/"+l)) == 0):
+                os.rmdir(apt.WORKSPACE+"lib/"+l)
                 pass
 
         #remove from 'map.toml'
         lines = list()
-        filename = apt.HIDDEN+"map.toml"
+        filename = apt.WORKSPACE+"map.toml"
         with open(filename, 'r') as file:
             lines = file.readlines()
             file.close()
@@ -176,17 +176,17 @@ class legoHDL:
         for d in dep_list:
             l,n = Capsule.split(d)
             n = n.replace("_pkg", "")
-            if(os.path.isfile(apt.HIDDEN+"cache/"+l+"/"+n+"/.lego.lock")):
+            if(os.path.isfile(apt.WORKSPACE+"cache/"+l+"/"+n+"/.lego.lock")):
                 #here is where we check for matching files with custom recursive labels
                 for key,val in apt.SETTINGS['label'].items():
                     ext,recur = val
                     if(recur == True): #recursive
-                        results = glob.glob(apt.HIDDEN+"cache/"+l+"/"+n+"/**/*"+ext, recursive=True)
+                        results = glob.glob(apt.WORKSPACE+"cache/"+l+"/"+n+"/**/*"+ext, recursive=True)
                         for find in results:
                             label_list.append("@"+key+" "+find)
                         pass
                 #open the metadata to retrieve data to be used to build dependency chain
-                with open(apt.HIDDEN+"cache/"+l+"/"+n+"/.lego.lock", "r") as file:
+                with open(apt.WORKSPACE+"cache/"+l+"/"+n+"/.lego.lock", "r") as file:
                     tmp = yaml.load(file, Loader=yaml.FullLoader)
             else:
                 continue
@@ -275,7 +275,7 @@ class legoHDL:
             l,n = Capsule.split(h)
             n = n.replace("_pkg", "")
             #library must exist in lib to be included in recipe.txt (avoids writing external libs like IEEE)
-            if(os.path.isdir(apt.HIDDEN+"lib/"+l)): #check lib exists
+            if(os.path.isdir(apt.WORKSPACE+"lib/"+l)): #check lib exists
                 if not l in library.keys():
                     library[l] = list() 
                 library[l].append(n)
@@ -295,11 +295,11 @@ class legoHDL:
         for lib in library.keys():
             for pkg in library[lib]:
                 key = lib+'.'+pkg
-                root_dir = apt.HIDDEN+"cache/"+lib+"/"+pkg+"/"
+                root_dir = apt.WORKSPACE+"cache/"+lib+"/"+pkg+"/"
                 #TO-DO: find better way to fix glob search to include root prj directory in search
                 src_dir = glob.glob(root_dir+"/**/"+top_mp[key], recursive=True) 
                 output.write("@LIB "+lib+" "+src_dir[0].replace(top_mp[key], "*.vhd")+"\n")
-                output.write("@LIB "+lib+" "+apt.HIDDEN+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
+                output.write("@LIB "+lib+" "+apt.WORKSPACE+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
 
         #write current src dir where all src files are as "work" lib
         output.write("@SRC "+cap.fileSearch(top)[0].replace(top, "*.vhd")+"\n")
@@ -332,7 +332,7 @@ class legoHDL:
             self.db.getPrjs("remote")[l][n].clone()
     
         try: #remove cached project already there
-            shutil.rmtree(apt.HIDDEN+"cache/"+l+"/"+n+"/")
+            shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/")
         except:
             pass
         #install to cache and generate PKG VHD 
@@ -357,8 +357,8 @@ class legoHDL:
         
         cap.autoDetectTop()
         cap.release(ver, options)
-        if(os.path.isdir(apt.HIDDEN+"cache/"+cap.getLib()+"/"+cap.getName())):
-            shutil.rmtree(apt.HIDDEN+"cache/"+cap.getLib()+"/"+cap.getName())
+        if(os.path.isdir(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())):
+            shutil.rmtree(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())
         #clone new project's progress into cache
         self.install(cap.getTitle(), cap.getVersion())
 
@@ -384,16 +384,40 @@ class legoHDL:
         eq = choice.find("=")
         key = choice[:eq]
         val = choice[eq+1:] #write whole value
-
+        if(eq == -1):
+            val = ''
+            key = choice
         if(options[0] == 'active-workspace' and choice not in apt.SETTINGS['workspace'].keys()):
             exit(apt.LOG.error("Workspace not found!"))
 
         if(options[0] == 'remote'):
-            if(choice in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']):
-                if(options.count('rm')): #remove
-                    apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote'].remove(choice)
-            elif(options.count('rm') == 0):
-                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote'].append(choice)
+            #automatically appends new config to current workspace, can be skipped with -skip
+            #entire wipe if wihout args and value is None
+            #remove only from current workspace with -rm
+            #append to current -workspace with -append
+
+            #add/change value to all-remote list
+            if(val != ''):
+                if(key in apt.SETTINGS['remote'].keys()):
+                    if(val != apt.SETTINGS['remote'][key]):
+                        apt.LOG.info("Deleting old repo and cloning new repo.")
+                        apt.cloneRemote(key, val)
+                else:
+                    apt.LOG.info("Cloning new repo.")
+                    apt.cloneRemote(key, val)
+                apt.SETTINGS['remote'][key] = val
+            #automatically add to active-workspace remotes
+            if(key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']):
+                if(key in apt.SETTINGS['remote'].keys()) and (not options.count("skip") or options.count("append")):
+                    apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote'].append(key)
+            elif(val == '' and key in apt.SETTINGS['remote'].keys()): #remove from all-remote list
+                if(options.count("rm") == 0):
+                    del apt.SETTINGS['remote'][key]
+                #remove from all workspace configurations
+                for nm,ws in apt.SETTINGS['workspace'].items():
+                    if(key in apt.SETTINGS['workspace'][nm]['remote']):
+                        apt.SETTINGS['workspace'][nm]['remote'].remove(key)
+                    pass
         elif(not options[0] in apt.SETTINGS.keys()):
             exit(apt.LOG.error("No setting exists under that flag"))
             return
@@ -405,10 +429,14 @@ class legoHDL:
             #insertion
             if(val != ''):
                 #create new workspace profile
+                for item,lp in apt.SETTINGS[options[0]].items():
+                    if(lp['local'].lower() == apt.fs(val).lower()):
+                        exit(apt.LOG.error("Workspace already exists with this path."))
                 if(key not in apt.SETTINGS[options[0]]):
                     apt.SETTINGS[options[0]][key] = dict()
                     apt.SETTINGS[options[0]][key]['remote'] = list()
                     apt.SETTINGS[options[0]][key]['local'] = None
+                    apt.initializeWorkspace(key)
                 #now insert value
                 apt.SETTINGS[options[0]][key]['local'] = apt.fs(val)
                 #will make new directories if needed when setting local path
@@ -564,6 +592,20 @@ class legoHDL:
             apt.LOG.info("No Labels added!")
         pass
 
+    def listRemotes(self):
+        if(isinstance(apt.SETTINGS['remote'],dict)):
+            print('{:<16}'.format("Remote"),'{:<40}'.format("URL"),'{:<12}'.format("Connected"))
+            print("-"*16+" "+"-"*40+" "+"-"*12+" ")
+            for key,val in apt.SETTINGS['remote'].items():
+                rec = 'no'
+                if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']):
+                    rec = 'yes'
+                print('{:<16}'.format(key),'{:<40}'.format(val),'{:<12}'.format(rec))
+                pass
+        else:
+            apt.LOG.info("No Labels added!")
+        pass
+
 
     def listScripts(self):
         if(isinstance(apt.SETTINGS['build'],dict)):
@@ -671,6 +713,8 @@ class legoHDL:
                 self.listScripts()
             elif(options.count("label")):
                 self.listLabels()
+            elif(options.count("remotes")):
+                self.listRemotes()
             else:
                 self.inventory(options)
             pass
@@ -795,7 +839,7 @@ class legoHDL:
             print("\n   -strict -> won't add any uncommitted changes along with release")
             pass
         elif(cmd == "list"):
-            printFmt("list","\b","[-alpha -local -build -label]")
+            printFmt("list","\b","[-alpha -local -build -label -remotes]")
             pass
         elif(cmd == "install"):
             printFmt("install","<package>","[-v0.0.0]")
@@ -833,8 +877,8 @@ class legoHDL:
             printFmt("summ","[-:\"summary\"]")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","""[-remote [-rm] | -author | -build [-lnk] | -label [-recur] | -editor |\n\
-                    \t\t-workspace [-<remote> ...] | -active-workspace]\
+            printFmt("config","<value>","""[-remote [-rm | -append | -skip] | -author | -build [-lnk] | -label [-recur] | -editor |\n\
+                    \t\t-workspace [-<remote-name> ...] | -active-workspace]\
             """)
             print("\n   Setting [-build], [-label], [-workspace] requires <value> to be <key>=\"<value>\"")
             print("   legohdl config myWorkspace=\"~/users/chase/develop/hdl-pm/\" -workspace") 
