@@ -1,6 +1,7 @@
 #registry.py is in charge of seeing what packages are hosted remotely and syncing
 #packages between user and remote
 from enum import Enum
+import copy
 import os, random, requests, json, glob
 import yaml
 from bs4 import BeautifulSoup
@@ -33,10 +34,7 @@ class Registry:
                 print(rem)
                 pass
         self.__local_path = apt.HIDDEN+"registry/"
-
-        #print(url)
-        #determine what remote website is being used
-        self.__mode = None
+        pass
 
     def listCaps(self, options):
         reg = None
@@ -44,7 +42,6 @@ class Registry:
             reg = self.getCaps("local","cache")
         else:
             reg = self.getCaps("local","cache","remote")
-
         #alpha sort
         if(options.count('alpha')):
             lib_list = list()
@@ -68,7 +65,7 @@ class Registry:
             pass
 
         print('{:<12}'.format("Library"),'{:<22}'.format("Module"),'{:<12}'.format("Status"),'{:<10}'.format("Version"))
-        print("-"*12+" "+"-"*22+" "+"-"*12+" "+"-"*10)
+        print("-"*12+" "+"-"*22+" "+"-"*12+" "+"-"*8)
         for lib,prjs in reg.items():
             for name,cp in prjs.items():
                 status = '-'
@@ -84,13 +81,13 @@ class Registry:
 
                 if(self.capExists(cp.getTitle(), "remote")):
                     #does this version have a later update available? check its .lego.lock files
-                    loc_ver = cp.getVersion()
-                    if((ver != '' and loc_ver == '') or (ver != '' and ver > loc_ver)):
-                        info = '(update)-> '+ver
-                        ver = loc_ver
+                    rem_ver = (self.getCaps("remote")[L][N]).getVersion()
+                    
+                    if(Capsule.biggerVer(ver,rem_ver) == rem_ver and rem_ver != ver):
+                        info = '(update)-> '+rem_ver
                     pass
                 ver = '' if (ver == '0.0.0') else ver
-                print('{:<12}'.format(L),'{:<22}'.format(N),'{:<12}'.format(status),'{:<10}'.format(ver),info)
+                print('{:<12}'.format(L),'{:<22}'.format(N),'{:<12}'.format(status),'{:<8}'.format(ver),info)
         pass
 
     def parseURL(self, website):
@@ -104,10 +101,7 @@ class Registry:
     def getCaps(self, *args, updt=False):
         folders = None
         if(args.count("remote")):
-            if(folders == None):
-                folders = self.getProjectsRemote(updt)
-            else:
-                folders = folders + self.getProjectsRemote(updt)
+            folders = self.getProjectsRemote(updt)
         if(args.count("cache")):
             if(folders == None):
                 folders = self.getProjectsCache(updt)
@@ -122,17 +116,18 @@ class Registry:
 
     #merge: place1 <- place2 (place2 has precedence)
     def merge(self, place1, place2):
+        tmp = copy.deepcopy(place1)
         for lib,prjs in place1.items(): #go through each current lib
             if lib in place2.keys(): #is this lib already in merging lib?
                 for prj in place2[lib]:
-                    place1[lib][prj] = place2[lib][prj]
+                    tmp[lib][prj] = place2[lib][prj]
         
         for lib,prjs in place2.items(): #go through all libs not in current lib
             if not lib in place1.keys():
-                place1[lib] = dict()
+                tmp[lib] = dict()
                 for prj in place2[lib]:
-                    place1[lib][prj] = place2[lib][prj]
-        return place1
+                    tmp[lib][prj] = place2[lib][prj]
+        return tmp
 
     def getProjectsLocal(self, updt=False):
         if hasattr(self,"_local_prjs") and not updt:
@@ -191,8 +186,13 @@ class Registry:
                     self._remote_prjs[L] = dict()
                 if(N not in self._remote_prjs[L].keys()):
                     self._remote_prjs[L][N] = cap
-        
+                    print(self._remote_prjs[L][N].getVersion())
+        print(self._remote_prjs)
         return self._remote_prjs
+        pass
+
+    #check if any changes were made to remotes for current workspace
+    def pullRemotes(self):
         pass
 
     #use title="lib.*" to check if library exists
@@ -204,7 +204,7 @@ class Registry:
         elif(place == "cache"):
             folder = self.getProjectsCache(updt)
         elif(place == "remote"): #TO-DO-> get projects from remote
-            return False
+            folder = self.getProjectsRemote(updt)
         return (l in folder.keys() and (n in folder[l].keys() or n == '*'))
         pass
 
@@ -303,7 +303,7 @@ class Registry:
                 f.close()
         return id_dict
     
-        #TO-DO: rename all reg dictionaries to better reflect which they are for future thanking
+    #TO-DO: rename all reg dictionaries to better reflect which they are for future thanking
     def getCurPrjs(self):
         return self.__cur_reg
 

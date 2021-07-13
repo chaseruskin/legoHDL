@@ -713,7 +713,7 @@ class legoHDL:
                 self.listScripts()
             elif(options.count("label")):
                 self.listLabels()
-            elif(options.count("remotes")):
+            elif(options.count("remote")):
                 self.listRemotes()
             else:
                 self.inventory(options)
@@ -839,7 +839,7 @@ class legoHDL:
             print("\n   -strict -> won't add any uncommitted changes along with release")
             pass
         elif(cmd == "list"):
-            printFmt("list","\b","[-alpha -local -build -label -remotes]")
+            printFmt("list","\b","[-alpha -local -build -label -remote]")
             pass
         elif(cmd == "install"):
             printFmt("install","<package>","[-v0.0.0]")
