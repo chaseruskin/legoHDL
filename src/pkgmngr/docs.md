@@ -6,7 +6,31 @@ _lego_**HDL** is a simple, powerful, and flexible package manager for VHDL desig
 
 <br />
 
-LegoHDL is available to work completely local or along with remote locations to collaborate and share modules with others.
+LegoHDL is available to work completely local or along with remote locations to collaborate and share modules with others. It is designed to empower the developer.
+
+<br />
+
+## Introduction
+
+Let's go over some important terminology regarding legoHDL.
+
+__project__ : A group of VHDL files grouped together to create a design. A project can become a package if it has a ".lego.lock" file at the root of the project directory.
+
+__workspace__ : This is your working environment. Only one can be active on your local machine at a time. It consists of a local path and optionally, any linked remotes. The local path is where all projects can freely live when downloaded.
+
+__remote__ : This is a repository that hosts a "collection" of released packages. This can be either a local repository or remote repository.
+
+__package__ : This is a self-contained project that contains a .lego.lock file. A package's title must consist of a library and a name. An example package title is "util.fifo".
+
+__script__ : A user created file. These can be stored within legoHDL or linked to if say the script belongs to some repository where users are actively developing it. Scripts can be used to build/run a package, but also to more generally store common files across all packages, like a constraint file.
+
+__recipe__ : A list of all required files for a given package to be built from, in the  correct order needed. It is a file with identifying labels regarding the project and its dependencies. This is intended to be the "golden link" between the package management process and building a design.
+
+__label__ : A identifier that can be used to gather dependencies to be written to the recipe. Default labels are @LIB for VHDL libraries, @SRC for package-level VHDL code, and @TB for package-level testbench file. Developers can can create labels.
+
+__.lego.lock__ : The metadata file that signifies if a project is a package. This file is automatically maintained and is hidden from the developer. It is strongly recommended to NOT try to modify this file, as it will not be needed.
+
+
 
 <br />
 
