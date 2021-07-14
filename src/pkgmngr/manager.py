@@ -714,7 +714,7 @@ class legoHDL:
                 if(apt.isValidURL(opt)):
                     git_url = opt
             print(git_url,cluster_sync)
-            exit()
+            
             self.capsulePKG = Capsule(title=package, new=True, cluster=cluster_sync, remote=git_url)
 
             if(startup):

@@ -41,12 +41,17 @@ class Capsule:
             #load in metadata from YML
             self.loadMeta()
         elif(new): #create a new project
-            if(self.isLinked()):
+            if(self.isLinked() and False):
                 try:
-                    git.Git(self.route).clone(self.__remote_url)
+                    lp = self.__local_path.replace(self.__name, "")
+                    os.makedirs(lp, exist_ok=True)
+                    git.Git(lp).clone(self.__remote)
+                    url_name = self.__remote[self.__remote.rfind('/')+1:self.__remote.rfind('.git')]
+                    os.rename(lp+url_name, lp+self.__name)
                     print('Project already exists on remote code base; downloading now...')
                     return
                 except:
+                    print("could not clone")
                     pass
             self.create() #create the repo and directory structure
         pass
@@ -175,6 +180,16 @@ class Capsule:
 
         if(self.getMeta('integrates') == None):
             self.__metadata['integrates'] = dict()
+        if('remote' in self.__metadata.keys()):
+            if(self.__remote != None):
+                self.__metadata['remote'] = self.__remote
+            else:
+                self.__remote = self.__metadata['remote']
+        if('market' in self.__metadata.keys()):
+            if(self.__cluster != None):
+                self.__metadata['market'] = self.__cluster.getName()
+            else:
+                self.__cluster = Cluster(self.__metadata['market'], apt.SETTINGS['remote'][self.__metadata['market']])
         pass
 
     def getID(self):
@@ -194,7 +209,7 @@ class Capsule:
             self.__repo = git.Repo(self.__local_path)
     
         if(self.isLinked()):
-            self.__repo.create_remote('origin', self.__remote_url) #attach to remote code base
+            self.__repo.create_remote('origin', self.__remote) #attach to remote code base
 
         #run the commands to generate new project from template
         #file to find/replace word 'template'
@@ -240,7 +255,7 @@ class Capsule:
     def genRemote(self):
         if(self.isLinked()):
             try: #attach to remote code base
-                self.__repo.create_remote('origin', self.__remote_url) 
+                self.__repo.create_remote('origin', self.__remote) 
             except: #relink origin to new remote url
                 print(self.__repo.remotes.origin.url)
                 with self.__repo.remotes.origin.config_writer as cw:

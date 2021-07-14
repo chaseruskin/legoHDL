@@ -5,7 +5,7 @@ version:
 summary:
 toplevel:
 bench:
-git:
 remote:
+market:
 derives: {}
 integrates: {}
