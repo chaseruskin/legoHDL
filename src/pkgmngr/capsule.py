@@ -2,19 +2,19 @@ import os, yaml, shutil
 from datetime import date
 import collections, stat
 import glob
-from remote import Remote
+from cluster import Cluster
 from apparatus import Apparatus as apt
 import git
-from git import Repo
 
 #a capsule is a package/module that is signified by having the .lego.lock
 class Capsule:
 
-    def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False):
+    def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False, cluster=None):
         self.__metadata = dict()
         self.__lib = ''
         self.__name = ''
-        self.__remote = None
+        self.__remote = remote #remote cannot be reconfigured through legohdl after setting
+        self.__cluster = cluster
  
         if(title != None):
             self.__lib,self.__name = self.split(title)
@@ -41,7 +41,7 @@ class Capsule:
             #load in metadata from YML
             self.loadMeta()
         elif(new): #create a new project
-            if(apt.linkedRemote()):
+            if(self.isLinked()):
                 try:
                     git.Git(self.route).clone(self.__remote_url)
                     print('Project already exists on remote code base; downloading now...')
@@ -55,9 +55,6 @@ class Capsule:
     def getPath(self):
         return self.__local_path
 
-    def initYML(self):
-        pass
-
     def saveID(self, id):
         self.__metadata['id'] = id
         self.pushYML("Adds ID to YML file")
@@ -69,9 +66,6 @@ class Capsule:
 
     def getTitle(self):
         return self.getLib()+'.'+self.getName()
-
-    def __del__(self):
-        pass
 
     def clone(self, src=None, dst=None):
         if(src == None):
@@ -199,7 +193,7 @@ class Capsule:
         else:
             self.__repo = git.Repo(self.__local_path)
     
-        if(apt.linkedRemote()):
+        if(self.isLinked()):
             self.__repo.create_remote('origin', self.__remote_url) #attach to remote code base
 
         #run the commands to generate new project from template
@@ -244,7 +238,7 @@ class Capsule:
 
     #generate new link to remote if previously unestablished
     def genRemote(self):
-        if(apt.linkedRemote()):
+        if(self.isLinked()):
             try: #attach to remote code base
                 self.__repo.create_remote('origin', self.__remote_url) 
             except: #relink origin to new remote url
@@ -288,7 +282,7 @@ class Capsule:
         
         self.__repo.index.commit(msg)
         
-        if(apt.linkedRemote()):
+        if(self.isLinked()):
             self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
             #self.__repo.remotes.origin.push()
 

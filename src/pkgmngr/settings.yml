@@ -16,16 +16,18 @@ label:
   - testbench.py
   - false
 remote:
-  test2: https://someurl.git
+  cluster1: https://gitlab.com/chase800/stack.git
+  clusterMain: local
+  test_rm: local
 workspace:
   myWorkspace:
     local: /Users/Chase/develop/hdl-dev/
     remote:
-    - test2
+    - clusterMain
+    - cluster1
   myWorkspace2:
     local: /Users/Chase/develop/hdl-op/side/
-    remote:
-    - test2
+    remote: []
   otherWorkspace:
     local: /Users/Chase/develop/hdl-new/
     remote: []

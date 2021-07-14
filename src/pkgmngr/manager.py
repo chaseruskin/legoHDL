@@ -5,6 +5,8 @@ from capsule import Capsule
 from registry import Registry
 from graph import Graph
 from apparatus import Apparatus as apt
+from cluster import Cluster
+import logging as log
 
 class legoHDL:
 
@@ -30,7 +32,7 @@ class legoHDL:
             l,n = Capsule.split(title)
             cap = cache[l][n]
         else:
-            exit(apt.LOG.error("The module is not located in the cache"))
+            exit(log.error("The module is not located in the cache"))
             return
 
         lib_path = apt.WORKSPACE+"lib/"+cap.getLib()+"/"
@@ -73,14 +75,14 @@ class legoHDL:
         lib_path = apt.WORKSPACE+"lib/"+l+"/"
         #does the package already exist in the cache directory?
         if(self.db.capExists(title, "cache")):
-            apt.LOG.info("The module is already installed.")
+            log.info("The module is already installed.")
             return
         elif(not self.db.capExists(title, "remote") and False):
             pass
         elif(self.db.capExists(title, "local")):
             cap = self.db.getCaps("local")[l][n]
         else:
-            apt.LOG.error("The module cannot be found anywhere.")
+            log.error("The module cannot be found anywhere.")
             return
         # clone the repo -> cache      
         #possibly make directory for cached project
@@ -203,12 +205,12 @@ class legoHDL:
     def build(self, script):
         arg_start = 3
         if(not isinstance(apt.SETTINGS['build'],dict)): #no scripts exist
-            exit(apt.LOG.error("No scripts are configured!"))
+            exit(log.error("No scripts are configured!"))
         elif(len(script) and script[0] == "@"):
             if(script[1:] in apt.SETTINGS['build'].keys()): #is it a name?
                 cmd = apt.SETTINGS['build'][script[1:]]
             else:
-                exit(apt.LOG.error("Script name not found!"))
+                exit(log.error("Script name not found!"))
         elif("master" in apt.SETTINGS['build'].keys()): #try to resort to default
             cmd = apt.SETTINGS['build']['master']
             arg_start = 2
@@ -216,7 +218,7 @@ class legoHDL:
             cmd = apt.SETTINGS['build'][list(apt.SETTINGS['build'].keys())[0]]
             arg_start = 2
         else:
-            exit(apt.LOG.error("No scripts are configured!"))
+            exit(log.error("No scripts are configured!"))
 
         cmd = "\""+cmd+"\" "
         for i,arg in enumerate(sys.argv):
@@ -231,12 +233,12 @@ class legoHDL:
         print(cap.getPath())
         build_dir = cap.getPath()+"build/"
         #create a clean build folder
-        apt.LOG.info("Cleaning build folder...")
+        log.info("Cleaning build folder...")
         if(os.path.isdir(build_dir)):
             shutil.rmtree(build_dir)
         os.mkdir(build_dir)
 
-        apt.LOG.info("Finding toplevel design...")
+        log.info("Finding toplevel design...")
         #add export option to override auto detection
         if(top == None):
             cap.autoDetectTop()
@@ -258,7 +260,7 @@ class legoHDL:
         output = open(build_dir+"recipe", 'w')
         label_list = list()
         #mission: recursively search through every src VHD file for what else needs to be included
-        apt.LOG.info("Grabbing dependencies...")
+        log.info("Grabbing dependencies...")
         src_dir,derivatives = cap.scanDependencies(file_target=top)
         for d in derivatives:
             print('DERIV:',derivatives)
@@ -286,7 +288,7 @@ class legoHDL:
             results = glob.glob(apt.fs(os.getcwd())+"/**/*"+ext, recursive=True)
             for r in results:
                 label_list.append("@"+label+" "+r)
-        apt.LOG.info("Writing recipe...")
+        log.info("Writing recipe...")
         #write all custom labels
         for finding in label_list:
             output.write(finding+"\n")
@@ -318,17 +320,17 @@ class legoHDL:
                 instl = self.db.getCaps("cache")[l][n]
                 instl.clone(src=instl.getPath(), dst=apt.getLocal()+"/"+l)
                 return self.db.getCaps("local",updt=True)[l][n]
-            exit(apt.LOG.error("No remote code base configured to download modules"))
+            exit(log.error("No remote code base configured to download modules"))
 
         if(not self.db.capExists(title, "remote")):
-            exit(apt.LOG.error('Module \''+title+'\' does not exist in remote'))
+            exit(log.error('Module \''+title+'\' does not exist in remote'))
 
         #TO-DO: retesting
         if(self.db.capExists(title, "local")):
-            apt.LOG.info("Module already exists in local workspace- pulling from remote...",end=' ')
+            log.info("Module already exists in local workspace- pulling from remote...",end=' ')
             self.db.getPrjs("local")[l][n].pull()
         else:
-            apt.LOG.info("Cloning from remote...",end=' ')
+            log.info("Cloning from remote...",end=' ')
             self.db.getPrjs("remote")[l][n].clone()
     
         try: #remove cached project already there
@@ -346,14 +348,14 @@ class legoHDL:
         err_msg = "Flag the next version for release with one of the following args:\n"\
                     "\t[-v0.0.0 | -maj | -min | -fix]"
         if(len(options) == 0):
-                exit(apt.LOG.error(err_msg))
+                exit(log.error(err_msg))
             
         ver = ''
         if(options[0][0] == 'v'):
             ver = options[0]
         
         if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == ''):
-            exit(apt.LOG.error(err_msg))
+            exit(log.error(err_msg))
         
         cap.autoDetectTop()
         cap.release(ver, options)
@@ -363,15 +365,15 @@ class legoHDL:
         self.install(cap.getTitle(), cap.getVersion())
 
         if cap.isLinked():
-            apt.LOG.info("Updating remote package contents...",end=' ')
+            log.info("Updating remote package contents...",end=' ')
             cap.pushRemote()
             print("success")
-            apt.LOG.info(cap.getLib()+"."+cap.getName()+" is now available as version "+cap.getVersion()+".")
+            log.info(cap.getLib()+"."+cap.getName()+" is now available as version "+cap.getVersion()+".")
         pass
 
     def setSetting(self, options, choice):
         if(len(options) == 0):
-            apt.LOG.error("No setting was flagged to as an option")
+            log.error("No setting was flagged to as an option")
             return
 
         if(options[0] == 'gl-token' or options[0] == 'gh-token'):
@@ -388,38 +390,41 @@ class legoHDL:
             val = ''
             key = choice
         if(options[0] == 'active-workspace' and choice not in apt.SETTINGS['workspace'].keys()):
-            exit(apt.LOG.error("Workspace not found!"))
+            exit(log.error("Workspace not found!"))
 
-        if(options[0] == 'remote'):
-            #automatically appends new config to current workspace, can be skipped with -skip
+        if(options[0] == 'remote-append' and key in apt.SETTINGS['remote'].keys()):
+            if(key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']):
+                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote'].append(key)
+            pass
+        elif(options[0] == 'remote-rm'):
+            if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']):
+                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote'].remove(key)
+            pass
+        elif(options[0] == 'remote'):
+            #@IDEA automatically appends new config to current workspace, can be skipped with -skip
             #entire wipe if wihout args and value is None
             #remove only from current workspace with -rm
             #append to current -workspace with -append
-
             #add/change value to all-remote list
-            if(val != ''):
+           
+            if(val != ''): #only create remote in the list
+                clst = Cluster(key,val) #create cluster object!      
                 if(key in apt.SETTINGS['remote'].keys()):
-                    if(val != apt.SETTINGS['remote'][key]):
-                        apt.LOG.info("Deleting old repo and cloning new repo.")
-                        apt.cloneRemote(key, val)
-                else:
-                    apt.LOG.info("Cloning new repo.")
-                    apt.cloneRemote(key, val)
+                    clst.setRemote(val) #cluster name already exists
                 apt.SETTINGS['remote'][key] = val
-            #automatically add to active-workspace remotes
-            if(key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']):
-                if(key in apt.SETTINGS['remote'].keys()) and (not options.count("skip") or options.count("append")):
+                
+                if(options.count("append") and key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']): # add to active workspaces
                     apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote'].append(key)
-            elif(val == '' and key in apt.SETTINGS['remote'].keys()): #remove from all-remote list
-                if(options.count("rm") == 0):
-                    del apt.SETTINGS['remote'][key]
+            elif(key in apt.SETTINGS['remote'].keys()):
+                del apt.SETTINGS['remote'][key]
+                clst.delete()
                 #remove from all workspace configurations
                 for nm,ws in apt.SETTINGS['workspace'].items():
                     if(key in apt.SETTINGS['workspace'][nm]['remote']):
                         apt.SETTINGS['workspace'][nm]['remote'].remove(key)
                     pass
         elif(not options[0] in apt.SETTINGS.keys()):
-            exit(apt.LOG.error("No setting exists under that flag"))
+            exit(log.error("No setting exists under that flag"))
             return
         # WORKSPACE CONFIGURATION
         elif(options[0] == 'workspace'):
@@ -431,7 +436,7 @@ class legoHDL:
                 #create new workspace profile
                 for item,lp in apt.SETTINGS[options[0]].items():
                     if(lp['local'].lower() == apt.fs(val).lower()):
-                        exit(apt.LOG.error("Workspace already exists with this path."))
+                        exit(log.error("Workspace already exists with this path."))
                 if(key not in apt.SETTINGS[options[0]]):
                     apt.SETTINGS[options[0]][key] = dict()
                     apt.SETTINGS[options[0]][key]['remote'] = list()
@@ -441,7 +446,7 @@ class legoHDL:
                 apt.SETTINGS[options[0]][key]['local'] = apt.fs(val)
                 #will make new directories if needed when setting local path
                 if(not os.path.isdir(apt.SETTINGS[options[0]][key]['local'])):
-                    apt.LOG.info("Making new directory "+apt.SETTINGS[options[0]][key]['local'])
+                    log.info("Making new directory "+apt.SETTINGS[options[0]][key]['local'])
                     os.makedirs(apt.SETTINGS[options[0]][key]['local'], exist_ok=True)
                 for rem in options:
                     if rem == options[0]:
@@ -504,7 +509,7 @@ class legoHDL:
             apt.SETTINGS[options[0]] = choice
         
         apt.save()
-        apt.LOG.info("Setting saved successfully.")
+        log.info("Setting saved successfully.")
         pass
     
     #TO-DO: implement
@@ -516,7 +521,7 @@ class legoHDL:
         #find the src dir and testbench dir through autodetect top-level modules
         #name of package reflects folder, a library name must be specified though
         if(cwd.count(apt.getLocal().lower()) == 0):
-            exit(apt.LOG.error("Cannot initialize outside of workspace"))
+            exit(log.error("Cannot initialize outside of workspace"))
         cap = None
         files = os.listdir(cwd)
         #rename current folder to 
@@ -529,12 +534,12 @@ class legoHDL:
             git_exists = False
             pass
         if ".lego.lock" in files:
-            apt.LOG.info("Already a packaged module")
+            log.info("Already a packaged module")
             return
         else:
             #create .lego.lock file
             cap = Capsule(title=title, path=cwdb1)
-            apt.LOG.info("Creating .lego.lock file...")
+            log.info("Creating .lego.lock file...")
             cap.create(fresh=False, git_exists=git_exists)
             pass
         pass
@@ -546,11 +551,11 @@ class legoHDL:
 
     def cleanup(self, cap, force=False):
         if(not cap.isValid()):
-            apt.LOG.info('Module '+cap.getName()+' does not exist locally.')
+            log.info('Module '+cap.getName()+' does not exist locally.')
             return
         
-        if(not apt.linkedRemote() and force):
-            apt.LOG.warning('No remote code base is configured, if this module is deleted and uninstalled\n\
+        if(not cap.isLinked() and force):
+            log.warning('No cluster is configured for this package, if this module is deleted and uninstalled\n\
             it may be unrecoverable. PERMANENTLY REMOVE '+cap.getTitle()+'? [y/n]\
             ')
             response = ''
@@ -559,7 +564,7 @@ class legoHDL:
                 if(response.lower() == 'y' or response.lower() == 'n'):
                     break
             if(response.lower() == 'n'):
-                apt.LOG.info("Module "+cap.getTitle()+' not uninstalled.')
+                log.info("Module "+cap.getTitle()+' not uninstalled.')
                 force = False
         #if there is a remote then the project still lives on, can be "redownloaded"
         print(cap.getPath())
@@ -570,11 +575,11 @@ class legoHDL:
         root = cap.getPath()[:slash+1]
         if(len(os.listdir(root)) == 0):
             os.rmdir(root)
-        apt.LOG.info('Deleted '+cap.getTitle()+' from local workspace.')
+        log.info('Deleted '+cap.getTitle()+' from local workspace.')
         
         if(force):
             self.uninstall(cap.getTitle())
-            apt.LOG.info("Uninstalled "+cap.getTitle()+" from cache.")
+            log.info("Uninstalled "+cap.getTitle()+" from cache.")
         #delete the module remotely?
         pass
 
@@ -589,7 +594,7 @@ class legoHDL:
                 print('{:<20}'.format(key),'{:<24}'.format(val[0]),'{:<14}'.format(rec))
                 pass
         else:
-            apt.LOG.info("No Labels added!")
+            log.info("No Labels added!")
         pass
 
     def listRemotes(self):
@@ -603,7 +608,7 @@ class legoHDL:
                 print('{:<16}'.format(key),'{:<40}'.format(val),'{:<12}'.format(rec))
                 pass
         else:
-            apt.LOG.info("No Labels added!")
+            log.info("No clusters added!")
         pass
     
     def listWorkspace(self):
@@ -620,7 +625,7 @@ class legoHDL:
                 print('{:<16}'.format(key),'{:<6}'.format(act),'{:<40}'.format(val['local']),'{:<14}'.format(rems))
                 pass
         else:
-            apt.LOG.info("No Labels added!")
+            log.info("No labels added!")
         pass
 
     def listScripts(self):
@@ -637,7 +642,7 @@ class legoHDL:
                 print('{:<12}'.format(key),'{:<14}'.format(cmd),'{:<54}'.format(path))
                 pass
         else:
-            apt.LOG.info("No scripts added!")
+            log.info("No scripts added!")
         pass
 
     def parse(self):
@@ -687,38 +692,31 @@ class legoHDL:
         elif(command == "build" and self.capsuleCWD.isValid()):
             self.build(value)
         elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
-            remote_sync = None
-            rem_book = apt.getRemotes()
-            for x in options:
-                if(x in rem_book.keys()):
-                    print("found valid remote to sync to!")
-                    remote_sync = rem_book[x]
-                    options.remove(x)
-                    break
-            print(options)
-            
+            cluster_sync = None
+            git_url = None
             startup = False
             if(options.count("o")):
                 startup = True
                 options.remove("o")
-            #try to create/link to a remote repo for this project
-            prj_remote = None
-            if(len(options)):
-                prj_remote = options[0]
-                self.db.createProjectRemote(prj_remote)
-                pass
-            print(prj_remote)
+
+            clusters = self.db.getGalaxy()
+            for clst in clusters:
+                for opt in options:
+                    if(clst.getName() == opt):
+                        print("Identified cluster to synchronize with!")
+                        cluster_sync = clst
+                        options.remove(opt)
+                        break
+                if(cluster_sync != None):
+                    break
+
+            for opt in options:
+                if(apt.isValidURL(opt)):
+                    git_url = opt
+            print(git_url,cluster_sync)
             exit()
-            #if apt.linkedRemote():
-                #if(len(L) > 0 and apt.linkedRemote()): #try to make new subgroup if DNE
-                    #self.db.createSubgroup(L, self.db.accessGitlabAPI())
-            self.capsulePKG = Capsule(package, new=True, remote=remote_sync, git=prj_remote)
-            
-            #if apt.linkedRemote(): #now fetch from db to grab ID
-                #self.capsulePKG.saveID(self.db.fetchProjectShallow(L,N)['id'])
-            #else: #assign tmp local id if no remote
-                #self.capsulePKG.saveID(self.db.assignRandomID())
-            
+            self.capsulePKG = Capsule(title=package, new=True, cluster=cluster_sync, remote=git_url)
+
             if(startup):
                 self.capsulePKG.load()
             pass
@@ -774,16 +772,16 @@ class legoHDL:
                 if(apt.SETTINGS['editor'] != None):
                     os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
                 else:
-                    apt.LOG.info("No text-editor configured!")
+                    log.info("No text-editor configured!")
             elif(options.count("build") or package.lower() == "build"):
                 if(apt.SETTINGS['editor'] != None):
                     os.system(apt.SETTINGS['editor']+" "+apt.HIDDEN+"/scripts")
                 else:
-                    apt.LOG.info("No text-editor configured!")
+                    log.info("No text-editor configured!")
             elif(self.db.capExists(package, "local")):
                 self.db.getCaps("local")[L][N].load()
             else:
-                exit(apt.LOG.error("No module "+package+" exists in your workspace."))
+                exit(log.error("No module "+package+" exists in your workspace."))
         elif(command == "show" and (self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
             self.db.getCaps("local","cache")[L][N].show()
             pass

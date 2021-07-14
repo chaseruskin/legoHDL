@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from collections import OrderedDict
 from capsule import Capsule
 from apparatus import Apparatus as apt
-from remote import Remote
+from cluster import Cluster
 
 class Registry:
     class Mode(Enum):
@@ -26,12 +26,11 @@ class Registry:
     #what is a project's remote url when making a new one?
     def __init__(self, remotes):
         self.__url = ''
-        self.__remote_bank = dict()
+        self.__galaxy = list() #list of all clusters for current workspace
         if(apt.linkedRemote()):
             for rem,val in remotes.items():
-                self.__remote_bank[rem] = val
-                print(rem)
-        self.__local_path = apt.HIDDEN+"registry/"
+                self.__galaxy.append(Cluster(rem,val))
+        self.__registry_path = apt.HIDDEN+"registry/"
         pass
 
     def listCaps(self, options):
@@ -172,10 +171,10 @@ class Registry:
             return self._remote_prjs
         self._remote_prjs = dict()
         #identify .lock files from each remote set up with this workspace
-        for rem in self.__remote_bank.keys():
-            lego_files = glob.glob(self.__local_path+rem+"/**/.lego.lock", recursive=True)
+        for clst in self.__galaxy:
+            lego_files = glob.glob(self.__registry_path+clst.getName()+"/**/.lego.lock", recursive=True)
             #from each lego file, create a capsule object
-            print(lego_files)
+            #print(lego_files)
             for x in lego_files:
                 path = apt.fs(x.replace(".lego.lock",""))
                 cap = Capsule(path=path, excludeGit=True)
@@ -184,10 +183,12 @@ class Registry:
                     self._remote_prjs[L] = dict()
                 if(N not in self._remote_prjs[L].keys()):
                     self._remote_prjs[L][N] = cap
-                    print(self._remote_prjs[L][N].getVersion())
-        print(self._remote_prjs)
+        #print(self._remote_prjs)
         return self._remote_prjs
         pass
+
+    def getGalaxy(self):
+        return self.__galaxy
 
     #check if any changes were made to remotes for current workspace
     def pullRemotes(self):
@@ -288,7 +289,7 @@ class Registry:
 
     @DeprecationWarning
     def localLoad(self):
-        with open(self.__local_path+"db.txt", 'r') as file:
+        with open(self.__registry_path+"db.txt", 'r') as file:
             for line in file.readlines():
                 if(len(line) <= 1):
                     continue
@@ -379,7 +380,7 @@ class Registry:
                 self.__local_reg[key] = repo
                 self.__local_reg[key].local_path = lp
 
-        with open(self.__local_path+"db.txt", 'w') as file:
+        with open(self.__registry_path+"db.txt", 'w') as file:
             for key,repo in self.__local_reg.items():
                 line = str(key)+" "+repo.library+"."+repo.name+"="+repo.last_version+" "+repo.last_activity+"*"+repo.m_branch+"@"+repo.git_url
                 file.write(line+"\n")

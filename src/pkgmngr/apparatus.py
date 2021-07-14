@@ -1,6 +1,6 @@
 #load in settings
-import yaml,os,logging as log,shutil,git
-from remote import Remote
+import yaml,os,logging as log
+from subprocess import check_output
 
 class Apparatus:
     SETTINGS = dict()
@@ -12,8 +12,6 @@ class Apparatus:
     WORKSPACE = HIDDEN
 
     __active_workspace = None
-
-    LOG = log.getLogger("main")
 
     @classmethod
     def load(cls):
@@ -32,18 +30,6 @@ class Apparatus:
             exit("ERROR- Please specify a local path! See \'legohdl help config\' for more details")
 
         cls.WORKSPACE = cls.HIDDEN+"workspaces/"+cls.SETTINGS['active-workspace']+"/"
-        pass
-
-    @classmethod
-    def cloneRemote(cls, name, url):
-        #clone new remote
-        url = cls.fs(url)
-        remote_dir = cls.HIDDEN+"registry/"+name
-        if(os.path.exists(remote_dir)):
-            shutil.rmtree(remote_dir)
-        url_name = url[url.rfind('/')+1:url.rfind('.git')]
-        git.Git(cls.HIDDEN+"registry/").clone(url)
-        os.rename(cls.HIDDEN+"registry/"+url_name, remote_dir)
         pass
 
     @classmethod
@@ -67,9 +53,21 @@ class Apparatus:
     @classmethod
     def getRemotes(cls):
         returnee = dict()
+        #key: name, val: url
         for name in cls.SETTINGS['workspace'][cls.__active_workspace]['remote']:
-            returnee[name] = (Remote(name, cls.SETTINGS['remote'][name]))
+            returnee[name] = cls.SETTINGS['remote'][name]
         return returnee
+
+    @classmethod
+    def isValidURL(cls, url):
+        if(url.count(".git") == 0): #quick test to pass before actually verifying url
+            return False
+        log.info("Checking ability to link to url...")
+        try:
+            check_output(["git","ls-remote",url])
+        except:
+            return False
+        return True
 
     @classmethod
     def linkedRemote(cls):
