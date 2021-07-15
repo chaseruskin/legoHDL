@@ -77,7 +77,8 @@ class legoHDL:
         if(self.db.capExists(title, "cache")):
             log.info("The module is already installed.")
             return
-        elif(not self.db.capExists(title, "remote") and False):
+        elif(self.db.capExists(title, "remote")):
+            cap = self.db.getCaps("remote")[l][n]
             pass
         elif(self.db.capExists(title, "local")):
             cap = self.db.getCaps("local")[l][n]
@@ -327,18 +328,18 @@ class legoHDL:
 
         #TO-DO: retesting
         if(self.db.capExists(title, "local")):
-            log.info("Module already exists in local workspace- pulling from remote...",end=' ')
-            self.db.getPrjs("local")[l][n].pull()
+            log.info("Module already exists in local workspace- pulling from remote...")
+            self.db.getCaps("local")[l][n].pull()
         else:
-            log.info("Cloning from remote...",end=' ')
-            self.db.getPrjs("remote")[l][n].clone()
+            log.info("Cloning from remote...")
+            self.db.getCaps("remote")[l][n].clone()
     
         try: #remove cached project already there
             shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/")
         except:
             pass
         #install to cache and generate PKG VHD 
-        cap = self.db.getPrjs("local")[l][n]  
+        cap = self.db.getCaps("local", updt=True)[l][n]  
         self.install(cap.getTitle(), cap.getVersion())
 
         print("success")
@@ -363,12 +364,7 @@ class legoHDL:
             shutil.rmtree(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())
         #clone new project's progress into cache
         self.install(cap.getTitle(), cap.getVersion())
-
-        if cap.isLinked():
-            log.info("Updating remote package contents...",end=' ')
-            cap.pushRemote()
-            print("success")
-            log.info(cap.getLib()+"."+cap.getName()+" is now available as version "+cap.getVersion()+".")
+        log.info(cap.getLib()+"."+cap.getName()+" is now available as version "+cap.getVersion()+".")
         pass
 
     def setSetting(self, options, choice):
@@ -684,7 +680,7 @@ class legoHDL:
             ver = None
             if(len(options)):
                 ver = options[0]
-            self.install(self.capsulePKG.getTitle(), ver) #TO-DO
+            self.install(self.capsulePKG.getTitle(), ver)
             pass
         elif(command == "uninstall"):
             self.uninstall(package, options) #TO-DO
@@ -724,7 +720,7 @@ class legoHDL:
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
             self.upload(self.capsuleCWD, options=options)
-            if(len(options) == 2 and options.count('rm')):
+            if(len(options) == 2 and options.count('d')):
                 self.cleanup(self.capsuleCWD, False)
             pass
         elif(command == "download"):
@@ -740,7 +736,7 @@ class legoHDL:
         elif(command == 'del' and self.db.capExists(package, "local")):
             force = False
             if(len(options) > 0):
-                if(options[0].lower() == 'f'):
+                if(options[0].lower() == 'u'):
                     force = True
             self.cleanup(self.db.getCaps("local")[L][N], force)
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
@@ -872,7 +868,7 @@ class legoHDL:
             printFmt("open","<package>","[-template -build]")
             pass
         elif(cmd == "release"):
-            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -rm -strict]")
+            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d -strict -request]")
             print("\n   -strict -> won't add any uncommitted changes along with release")
             pass
         elif(cmd == "list"):
@@ -899,7 +895,7 @@ class legoHDL:
             print("   If no script name is specified, it will default to looking for script \"master\"")
             pass
         elif(cmd == "del"):
-            printFmt("del","<package>","[-f]")
+            printFmt("del","<package>","[-u]")
             pass
         elif(cmd == "search"):
             printFmt("search","<package>")

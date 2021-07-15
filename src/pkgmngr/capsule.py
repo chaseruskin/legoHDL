@@ -65,20 +65,22 @@ class Capsule:
         self.pushYML("Adds ID to YML file")
         pass
 
-    def cache(self, cache_dir):
-        git.Git(cache_dir).clone(self.__remote_url)
+    def cache(self):
+        os.makedirs(apt.WORKSPACE+"cache/"+self.getMeta("library")+"/", exist_ok=True)
+        cache_dir = apt.WORKSPACE+"cache/"+self.getMeta("library")+"/"
+        git.Git(cache_dir).clone(self.__remote)
         pass
 
     def getTitle(self):
         return self.getLib()+'.'+self.getName()
 
-    def clone(self, src=None, dst=None):
-        if(src == None):
-            src = self.__remote_url
-        if(dst == None): #grab library level path (default location)
-            n = self.__local_path.rfind(self.getName())
-            dst = self.__local_path[:n] 
-        
+    def clone(self):
+        local = apt.getLocal()+"/"+self.getLib()+"/"
+        src = self.__remote
+        #grab library level path (default location)
+        n = local.rfind(self.getName())
+        dst = local[:n] 
+        print(dst)
         os.makedirs(dst, exist_ok=True)
         self.__repo = git.Git(dst).clone(src)
         self.loadMeta()
@@ -127,7 +129,12 @@ class Capsule:
                 self.__repo.index.add(self.__repo.untracked_files)
             self.__repo.index.commit("Release version -> "+self.getVersion())
             self.__repo.create_tag(ver)
-            #TO-DO: push to remote codebase!!
+            #push to remote codebase!!
+            if(self.__remote):
+                self.pushRemote()
+            #publish on cluster/market/bazaar!
+            if(self.__cluster):
+                self.__cluster.publish(self.__metadata, options)
         pass
 
     @classmethod
@@ -362,7 +369,7 @@ class Capsule:
         print("version",ver)
         
         if(src == None and self.__remote != None):
-            src = self.__remote_url
+            src = self.__remote
         elif(src == None):
             src = self.__local_path
 

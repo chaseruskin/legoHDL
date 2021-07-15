@@ -1,6 +1,7 @@
 import os,shutil,git
 import logging as log
 from apparatus import Apparatus as apt
+import yaml
 
 class Cluster:
 
@@ -55,6 +56,23 @@ class Cluster:
                 log.error("Invalid link- setting could not be changed")
                 if(self.isRemote()):
                     self.url = self._repo.remotes.origin.url
+
+    def publish(self, meta, options):
+        #create new directory
+        fp = self._local_path+"/"+meta['library']+"/"+meta['name']+"/"+meta['version']+"/"
+        #save yaml file
+        os.makedirs(fp)
+        with open(fp+".lego.lock", 'w') as file:
+            yaml.dump(meta, file)
+        #save changes to repository
+        self._repo.index.add(self._repo.untracked_files)
+        self._repo.index.commit("Adds "+meta['library']+'.'+meta['name']+" v"+meta['version'])
+        if(self.url != 'local'):
+            if(options.count("request")):
+                self._repo.git.checkout("-b",meta['library']+"."+meta['name']+"-"+meta['version'])
+            self._repo.git.push("-u","origin",str(self._repo.head.reference))
+        pass
+
 
     def isRemote(self):
         return len(self._repo.remotes)
