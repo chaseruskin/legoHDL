@@ -23,7 +23,6 @@ workspace:
   myWorkspace:
     local: /Users/Chase/develop/hdl-dev/
     remote:
-    - clusterMain
     - cluster1
   myWorkspace2:
     local: /Users/Chase/develop/hdl-op/side/

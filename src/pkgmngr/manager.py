@@ -753,6 +753,8 @@ class legoHDL:
             pass
         elif(command == "init"):
             self.convert(package)
+        elif(command == "refresh"):
+            self.db.sync()
         elif(command == "export" and self.capsuleCWD.isValid()): #a visual aide to help a developer see what package's are at the ready to use
             #'' and list() are default to pkg and options
             mod = package
@@ -817,6 +819,7 @@ class legoHDL:
             formatHelp("build","run a custom configured script")
             formatHelp("del","deletes the package from the local workspace")
             formatHelp("search","search remote or local workspace for specified package")
+            formatHelp("refresh","sync local markets with their remotes")
             formatHelp("port","print ports list of specified package")
             formatHelp("show","read further detail about a specified package")
             formatHelp("summ","add description to current project")

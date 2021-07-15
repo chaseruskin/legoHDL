@@ -68,9 +68,11 @@ class Cluster:
         self._repo.index.add(self._repo.untracked_files)
         self._repo.index.commit("Adds "+meta['library']+'.'+meta['name']+" v"+meta['version'])
         if(self.url != 'local'):
+            active_branch = self._repo.active_branch
             if(options.count("request")):
                 self._repo.git.checkout("-b",meta['library']+"."+meta['name']+"-"+meta['version'])
             self._repo.git.push("-u","origin",str(self._repo.head.reference))
+            self._repo.git.checkout(active_branch)
         pass
 
 
@@ -78,7 +80,7 @@ class Cluster:
         return len(self._repo.remotes)
 
     def getPath(self):
-        return self._remote_dir
+        return self._local_path
 
     def __str__(self):
         return f"{self._name}, {self.url}"

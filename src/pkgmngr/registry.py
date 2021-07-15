@@ -1,7 +1,7 @@
 #registry.py is in charge of seeing what packages are hosted remotely and syncing
 #packages between user and remote
 from enum import Enum
-import copy
+import copy, git
 import os, random, requests, json, glob
 import yaml
 from bs4 import BeautifulSoup
@@ -66,7 +66,7 @@ class Registry:
         for lib,prjs in reg.items():
             for name,cp in prjs.items():
                 status = '-'
-                ver = cp.getVersion()
+                ver = ''
                 info = ''
                 L,N = Capsule.split(cp.getTitle())
                 if(self.capExists(cp.getTitle(), "local")):
@@ -75,10 +75,12 @@ class Registry:
                 elif(self.capExists(cp.getTitle(), "cache")):
                     status = 'instl' 
                     ver = self.getProjectsCache()[L][N].getMeta("version")
+                else:
+                    ver = self.getMarketLatestVer(self.getCaps("remote")[L][N])
 
                 if(self.capExists(cp.getTitle(), "remote")):
                     #does this version have a later update available? check its .lego.lock files
-                    rem_ver = (self.getCaps("remote")[L][N]).getVersion()
+                    rem_ver = self.getMarketLatestVer(self.getCaps("remote")[L][N])
                     
                     if(Capsule.biggerVer(ver,rem_ver) == rem_ver and rem_ver != ver):
                         info = '(update)-> '+rem_ver
@@ -86,6 +88,31 @@ class Registry:
                 ver = '' if (ver == '0.0.0') else ver
                 print('{:<12}'.format(L),'{:<22}'.format(N),'{:<12}'.format(status),'{:<8}'.format(ver),info)
         pass
+
+    def getMarketLatestVer(self, cap):
+        pathway = apt.fs(cap.getPath()).split('/')
+        #remove any additional path that is a specific version
+        if(cap.getVersion() in pathway):
+            pathway.remove(cap.getVersion())
+        ver_dir = ''
+        for p in pathway:
+            ver_dir = ver_dir + p + "/"
+        #list all version folders
+
+        versions = os.listdir(ver_dir)
+
+        for v in versions:
+            if(v[0] == '.'):
+                versions.remove(v)
+        if(len(versions) == 0):
+            return '0.0.0'
+        latest = versions[0]
+        #determine biggest version
+        for v in versions:
+            if(v[0] != '.' and Capsule.biggerVer(latest,v) == v):
+                latest = v
+
+        return latest
 
     def parseURL(self, url, website):
         i =  url.find(website)
@@ -187,12 +214,17 @@ class Registry:
         return self._remote_prjs
         pass
 
+    #check if any changes were made to cluster remotes for current workspace
+    def sync(self):
+        for mrk in self.getGalaxy():
+            rep = git.Repo(mrk.getPath())
+            if(mrk.isRemote()):
+                rep.remotes.origin.pull(rep.head.reference)
+        pass
+
     def getGalaxy(self):
         return self.__galaxy
 
-    #check if any changes were made to remotes for current workspace
-    def pullRemotes(self):
-        pass
 
     #use title="lib.*" to check if library exists
     def capExists(self, title, place, updt=False):
@@ -387,7 +419,7 @@ class Registry:
             file.close()
         pass
     @DeprecationWarning
-    def sync(self):
+    def syncOld(self):
         self.localSync()
         if(apt.linkedRemote()):
             self.remoteSync()
