@@ -3,7 +3,7 @@ import logging as log
 from apparatus import Apparatus as apt
 import yaml
 
-class Cluster:
+class Market:
 
     def __init__(self, name, url):
         self._name = name
@@ -74,7 +74,6 @@ class Cluster:
             self._repo.git.push("-u","origin",str(self._repo.head.reference))
             self._repo.git.checkout(active_branch)
         pass
-
 
     def isRemote(self):
         return len(self._repo.remotes)

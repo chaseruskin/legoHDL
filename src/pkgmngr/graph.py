@@ -1,5 +1,6 @@
 #graph module used to generate flat dependency tree, topologically sort it
 
+#not being used atm
 class Vertex:
     def __init__(self, title, requires=list(), required_by=list()):
         self.__title = title

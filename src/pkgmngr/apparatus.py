@@ -54,8 +54,8 @@ class Apparatus:
     def getRemotes(cls):
         returnee = dict()
         #key: name, val: url
-        for name in cls.SETTINGS['workspace'][cls.__active_workspace]['remote']:
-            returnee[name] = cls.SETTINGS['remote'][name]
+        for name in cls.SETTINGS['workspace'][cls.__active_workspace]['market']:
+            returnee[name] = cls.SETTINGS['market'][name]
         return returnee
 
     @classmethod
@@ -71,7 +71,7 @@ class Apparatus:
 
     @classmethod
     def linkedRemote(cls):
-        rem = cls.SETTINGS['workspace'][cls.__active_workspace]['remote']
+        rem = cls.SETTINGS['workspace'][cls.__active_workspace]['market']
         return (rem != None and len(rem))
 
     #forward-slash fixer

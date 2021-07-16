@@ -30,7 +30,7 @@ hidden_dir=os.path.expanduser("~/."+program_name+"/")
 print('Initializing working directory... '+working_dir)
 os.makedirs(working_dir, exist_ok=True)
 
-print('Initializing configuration directory... '+hidden_dir)
+print('Initializing hidden directory... '+hidden_dir)
 os.makedirs(hidden_dir, exist_ok=True)
 
 open(hidden_dir+"map.toml", 'w').write("[libraries]").close()

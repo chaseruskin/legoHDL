@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from collections import OrderedDict
 from capsule import Capsule
 from apparatus import Apparatus as apt
-from cluster import Cluster
+from market import Market
 
 class Registry:
     class Mode(Enum):
@@ -29,7 +29,7 @@ class Registry:
         self.__galaxy = list() #list of all clusters for current workspace
         if(apt.linkedRemote()):
             for rem,val in remotes.items():
-                self.__galaxy.append(Cluster(rem,val))
+                self.__galaxy.append(Market(rem,val))
         self.__registry_path = apt.HIDDEN+"registry/"
         pass
 
@@ -38,7 +38,7 @@ class Registry:
         if(options.count("local") or not apt.linkedRemote()):
             reg = self.getCaps("local","cache")
         else:
-            reg = self.getCaps("local","cache","remote")
+            reg = self.getCaps("local","cache","market")
         #alpha sort
         if(options.count('alpha')):
             lib_list = list()
@@ -76,11 +76,11 @@ class Registry:
                     status = 'instl' 
                     ver = self.getProjectsCache()[L][N].getMeta("version")
                 else:
-                    ver = self.getMarketLatestVer(self.getCaps("remote")[L][N])
+                    ver = self.getMarketLatestVer(self.getCaps("market")[L][N])
 
-                if(self.capExists(cp.getTitle(), "remote")):
+                if(self.capExists(cp.getTitle(), "market")):
                     #does this version have a later update available? check its .lego.lock files
-                    rem_ver = self.getMarketLatestVer(self.getCaps("remote")[L][N])
+                    rem_ver = self.getMarketLatestVer(self.getCaps("market")[L][N])
                     
                     if(Capsule.biggerVer(ver,rem_ver) == rem_ver and rem_ver != ver):
                         info = '(update)-> '+rem_ver
@@ -98,7 +98,6 @@ class Registry:
         for p in pathway:
             ver_dir = ver_dir + p + "/"
         #list all version folders
-
         versions = os.listdir(ver_dir)
 
         for v in versions:
@@ -124,7 +123,7 @@ class Registry:
 
     def getCaps(self, *args, updt=False):
         folders = None
-        if(args.count("remote")):
+        if(args.count("market")):
             folders = self.getProjectsRemote(updt)
         if(args.count("cache")):
             if(folders == None):
@@ -214,7 +213,7 @@ class Registry:
         return self._remote_prjs
         pass
 
-    #check if any changes were made to cluster remotes for current workspace
+    #check if any changes were made to market remotes for current workspace
     def sync(self):
         for mrk in self.getGalaxy():
             rep = git.Repo(mrk.getPath())
@@ -225,7 +224,6 @@ class Registry:
     def getGalaxy(self):
         return self.__galaxy
 
-
     #use title="lib.*" to check if library exists
     def capExists(self, title, place, updt=False):
         folder = None
@@ -234,7 +232,7 @@ class Registry:
             folder = self.getProjectsLocal(updt)
         elif(place == "cache"):
             folder = self.getProjectsCache(updt)
-        elif(place == "remote"): #TO-DO-> get projects from remote
+        elif(place == "market"): #TO-DO-> get projects from remote
             folder = self.getProjectsRemote(updt)
         return (l in folder.keys() and (n in folder[l].keys() or n == '*'))
         pass
@@ -254,9 +252,6 @@ class Registry:
         base,tail = self.parseURL(git_url, keyword)
         tail = tail.replace(".git","")
         print(base,"---"+tail)
-        pass
-
-    def prjLocation(self, title):
         pass
 
     def assignRandomID(self):
@@ -314,137 +309,6 @@ class Registry:
             print("error")
         return json.loads(z.text)
 
-
-
-
-
-
-    @DeprecationWarning
-    def localLoad(self):
-        with open(self.__registry_path+"db.txt", 'r') as file:
-            for line in file.readlines():
-                if(len(line) <= 1):
-                    continue
-                #parse unique delimiters
-                dot = line.find('.')
-                eq = line.find('=')
-                spce = line.find(' ')
-                Rspce = line.rfind(' ')
-                spk = line.find('*')
-                at = line.find('@')
-                iden = line[:spce]
-                #self.__local_reg[int(iden)] = Repo(l_a=line[Rspce+1:spk], lib=line[spce+1:dot], g_url=line[at+1:], name=line[dot+1:eq], l_v=line[eq+1:Rspce], m_b=line[spk+1:at], l_path='')
-            file.close()
-
-    @DeprecationWarning
-    def findProjectsLocal(self, path, cached=False):
-        branches = list(os.listdir(path))
-        for leaf in branches:
-            if(os.path.isdir(path+leaf) and leaf[0] != '.'):
-                    self.findProjectsLocal(path+leaf+'/')
-            if(leaf.count(".yml") > 0):
-                #print("valid project!") #print(path[l+1:])
-                l = path.rfind('/')
-                with open (path+leaf, 'r') as f:
-                    tmp = yaml.load(f, Loader=yaml.FullLoader)
-                    f.close()
-                    #print(leaf)#print(tmp['id'])#print(path)
-                    if(cached):
-                        pass
-                        #self.__cache_reg[int(tmp['id'])] = Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
-                    else:
-                        pass
-                       # self.__cur_reg[int(tmp['id'])] = Repo(l_a='', lib=tmp['library'], name=tmp['name'], l_v=tmp['version'], g_url='', m_b='', l_path=path)
-        pass
-
-    @DeprecationWarning
-    def findPrj(self, lib, name):
-        for key,r in self.getLocalPrjs().items(): #LOCAL = ALL, #REMOTE = REMOTE, #CUR = ONLY LOCAL
-            if(r.library == lib and r.name == name):
-                return key,r
-        return -1,None
-
-    @DeprecationWarning
-    def installedPkgs(self):
-        meta_dir = glob.glob(apt.WORKSPACE+"/cache/**/.*.yml", recursive=True)
-        id_dict = dict()
-        for md in meta_dir:
-            with open(md, 'r') as f:
-                tmp = yaml.load(f, Loader=yaml.FullLoader)
-                id_dict[tmp['id']] = tmp['version']
-                f.close()
-        return id_dict
-    
-    #TO-DO: rename all reg dictionaries to better reflect which they are for future thanking
-    def getCurPrjs(self):
-        return self.__cur_reg
-
-    def getRemotePrjs(self):
-        return self.__remote_reg
-
-    def getLocalPrjs(self):
-        return self.__local_reg
-
-    def getCachePrjs(self):
-        return self.__cache_reg
-
-    @DeprecationWarning
-    def localSync(self):
-        oldKeys = self.__local_reg.copy().keys()
-        curKeys = self.__cur_reg.copy().keys()
-        #remove any projects not found remotely and not found locally
-        for k in oldKeys:
-            if(apt.linkedRemote()):
-                if not k in curKeys and not k in self.__remote_reg.keys():
-                    del self.__local_reg[k]
-            elif not k in curKeys:
-                del self.__local_reg[k]
-        
-        #add any found projects that are not currently in local reg
-        for k in curKeys:
-            self.__local_reg[k] = self.__cur_reg[k] 
-
-        for key,repo in self.__remote_reg.items():
-                #update information and add to local if not registered
-                lp = repo.local_path
-                if(key in self.__local_reg.keys()):
-                    lp = self.__local_reg[key].local_path #must preserve local_path identified by localLoad
-                self.__local_reg[key] = repo
-                self.__local_reg[key].local_path = lp
-
-        with open(self.__registry_path+"db.txt", 'w') as file:
-            for key,repo in self.__local_reg.items():
-                line = str(key)+" "+repo.library+"."+repo.name+"="+repo.last_version+" "+repo.last_activity+"*"+repo.m_branch+"@"+repo.git_url
-                file.write(line+"\n")
-            file.close()
-        pass
-    @DeprecationWarning
-    def syncOld(self):
-        self.localSync()
-        if(apt.linkedRemote()):
-            self.remoteSync()
-    @DeprecationWarning
-    def remoteSync(self):
-        subs = list()
-        prjs = list()
-        for key,r  in self.__remote_reg.items():
-            subs.append(r.library)
-            prjs.append(r.name)
-        for key,r  in self.__local_reg.items():
-            #create any unestablished libraries
-            if(not r.library in subs):
-                self.createSubgroup(r.library, self.accessGitlabAPI())
-                subs.append(r.library)
-
-            if(not r.name in prjs):
-                c = Capsule(rp=r)
-                c.genRemote()
-                c.saveID(self.fetchProjectShallow(r.library,r.name)['id'])
-                prjs.append(r.name)
-        pass
-    ###
-    #The following functions are used in conjunction with remote Gitlab API
-    ###
     @DeprecationWarning
     def createSubgroup(self, name, parent):
         print("Trying to create remote library "+name+"...",end=' ')
@@ -455,75 +319,4 @@ class Registry:
             print("success")
         else:
             print("error")
-
-
-
-    @DeprecationWarning
-    def fetchProjectShallow(self, library, name):
-        plist = self.accessGitlabAPI(self.GL_PRJ_EXT)
-        if('error' in plist and plist['error'] == 'invalid_token'):
-            print("ERROR- Please configure an access token for authorization")
-            return None
-        for prj in plist:
-            lib = prj['name_with_namespace']
-            last_i = lib.rfind('/')
-            first_i = (lib[:last_i-1]).rfind('/')
-            lib = lib[first_i+2:last_i-1]
-            if(first_i == -1):
-                lib = ''
-            if(library == lib and name == prj['name']):
-                return prj
-
-    @DeprecationWarning
-    def fetch(self):
-        projectList = self.accessGitlabAPI(self.GL_PRJ_EXT)
-        if('error' in projectList and projectList['error'] == 'invalid_token'):
-            print("ERROR- Please configure an access token for authorization")
-            return None
-        for x in projectList:
-            #print(x['name']) #print(x['name_with_namespace'])
-            lib = x['name_with_namespace']
-            last_i = lib.rfind('/')
-            first_i = (lib[:last_i-1]).rfind('/')
-            lib = lib[first_i+2:last_i-1]
-            if(first_i == -1):
-                lib = ''
-            last_ver = '0.0.0'
-            #local registry already has a tab on this remote repo
-            if((x['id'] in self.__local_reg)):
-                last_ver = self.__local_reg[x['id']].last_version
-                if(x['last_activity_at'] > self.__local_reg[x['id']].last_activity):
-                    #fetch version number to see if there is an update available
-                    last_ver = self.grabTags(x)
-                
-                if(x['id'] in self.__cur_reg):
-                    tmp_ver = self.__cur_reg[x['id']].last_version
-                    last_ver = Capsule.biggerVer(tmp_ver,last_ver)
-                pass
-            else: #local registry needs all info on this repo
-                last_ver = self.grabTags(x)
-
-            #self.__remote_reg[x['id']] = Repo(l_a=x['last_activity_at'], lib=lib, g_url=x['web_url']+'.git', name=x['name'], l_v=last_ver, m_b=x['default_branch'], l_path='')
-        self.localSync()
-        pass
-    @DeprecationWarning
-    def grabTags(self, prj):
-        print("Accessing remote project "+prj['name']+"... ",end='')
-        tk = self.decrypt('gl-token')
-        link = self.__base_url+"/api/v4/projects/"+str(prj['id'])+"/repository/tags"
-        z = requests.get(link, headers={'PRIVATE-TOKEN': tk})
-        if(z.status_code == 200):
-            print("success")
-        else:
-            print("error")
-            return '0.0.0'
-        tags = json.loads(z.text)
-        if(len(tags) == 0):
-            return '0.0.0'
-        else:
-            for t in tags:
-                if(t['name'][0] == 'v' and t['name'].count('.') > 1):
-                    return t['name'][1:]
-        return '0.0.0'
-
     pass

@@ -5,7 +5,7 @@ from capsule import Capsule
 from registry import Registry
 from graph import Graph
 from apparatus import Apparatus as apt
-from cluster import Cluster
+from market import Market
 import logging as log
 
 class legoHDL:
@@ -77,8 +77,8 @@ class legoHDL:
         if(self.db.capExists(title, "cache")):
             log.info("The module is already installed.")
             return
-        elif(self.db.capExists(title, "remote")):
-            cap = self.db.getCaps("remote")[l][n]
+        elif(self.db.capExists(title, "market")):
+            cap = self.db.getCaps("market")[l][n]
             pass
         elif(self.db.capExists(title, "local")):
             cap = self.db.getCaps("local")[l][n]
@@ -323,16 +323,16 @@ class legoHDL:
                 return self.db.getCaps("local",updt=True)[l][n]
             exit(log.error("No remote code base configured to download modules"))
 
-        if(not self.db.capExists(title, "remote")):
-            exit(log.error('Module \''+title+'\' does not exist in remote'))
+        if(not self.db.capExists(title, "market")):
+            exit(log.error('Module \''+title+'\' does not exist in market'))
 
         #TO-DO: retesting
         if(self.db.capExists(title, "local")):
             log.info("Module already exists in local workspace- pulling from remote...")
             self.db.getCaps("local")[l][n].pull()
         else:
-            log.info("Cloning from remote...")
-            self.db.getCaps("remote")[l][n].clone()
+            log.info("Cloning from market...")
+            self.db.getCaps("market")[l][n].clone()
     
         try: #remove cached project already there
             shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/")
@@ -388,36 +388,35 @@ class legoHDL:
         if(options[0] == 'active-workspace' and choice not in apt.SETTINGS['workspace'].keys()):
             exit(log.error("Workspace not found!"))
 
-        if(options[0] == 'remote-append' and key in apt.SETTINGS['remote'].keys()):
-            if(key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']):
-                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote'].append(key)
+        if(options[0] == 'market-append' and key in apt.SETTINGS['market'].keys()):
+            if(key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
+                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market'].append(key)
             pass
-        elif(options[0] == 'remote-rm'):
-            if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']):
-                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote'].remove(key)
+        elif(options[0] == 'market-rm'):
+            if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
+                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market'].remove(key)
             pass
-        elif(options[0] == 'remote'):
+        elif(options[0] == 'market'):
             #@IDEA automatically appends new config to current workspace, can be skipped with -skip
             #entire wipe if wihout args and value is None
             #remove only from current workspace with -rm
             #append to current -workspace with -append
             #add/change value to all-remote list
-           
+            mkt = Market(key,val) #create market object!    
             if(val != ''): #only create remote in the list
-                clst = Cluster(key,val) #create cluster object!      
-                if(key in apt.SETTINGS['remote'].keys()):
-                    clst.setRemote(val) #cluster name already exists
-                apt.SETTINGS['remote'][key] = val
+                if(key in apt.SETTINGS['market'].keys()):
+                    mkt.setRemote(val) #market name already exists
+                apt.SETTINGS['market'][key] = val
                 
-                if(options.count("append") and key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']): # add to active workspaces
-                    apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote'].append(key)
-            elif(key in apt.SETTINGS['remote'].keys()):
-                del apt.SETTINGS['remote'][key]
-                clst.delete()
+                if(options.count("append") and key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']): # add to active workspaces
+                    apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market'].append(key)
+            elif(key in apt.SETTINGS['market'].keys()):
+                del apt.SETTINGS['market'][key]
+                mkt.delete()
                 #remove from all workspace configurations
                 for nm,ws in apt.SETTINGS['workspace'].items():
-                    if(key in apt.SETTINGS['workspace'][nm]['remote']):
-                        apt.SETTINGS['workspace'][nm]['remote'].remove(key)
+                    if(key in apt.SETTINGS['workspace'][nm]['market']):
+                        apt.SETTINGS['workspace'][nm]['market'].remove(key)
                     pass
         elif(not options[0] in apt.SETTINGS.keys()):
             exit(log.error("No setting exists under that flag"))
@@ -435,7 +434,7 @@ class legoHDL:
                         exit(log.error("Workspace already exists with this path."))
                 if(key not in apt.SETTINGS[options[0]]):
                     apt.SETTINGS[options[0]][key] = dict()
-                    apt.SETTINGS[options[0]][key]['remote'] = list()
+                    apt.SETTINGS[options[0]][key]['market'] = list()
                     apt.SETTINGS[options[0]][key]['local'] = None
                     apt.initializeWorkspace(key)
                 #now insert value
@@ -447,8 +446,8 @@ class legoHDL:
                 for rem in options:
                     if rem == options[0]:
                         continue
-                    if rem not in apt.SETTINGS[options[0]][key]['remote']:
-                        apt.SETTINGS[options[0]][key]['remote'].append(rem)
+                    if rem not in apt.SETTINGS[options[0]][key]['market']:
+                        apt.SETTINGS[options[0]][key]['market'].append(rem)
             #empty value -> deletion of workspace from list
             else:
                 #will not delete old workspace directories but can remove from list
@@ -551,7 +550,7 @@ class legoHDL:
             return
         
         if(not cap.isLinked() and force):
-            log.warning('No cluster is configured for this package, if this module is deleted and uninstalled\n\
+            log.warning('No market is configured for this package, if this module is deleted and uninstalled\n\
             it may be unrecoverable. PERMANENTLY REMOVE '+cap.getTitle()+'? [y/n]\
             ')
             response = ''
@@ -594,27 +593,27 @@ class legoHDL:
         pass
 
     def listRemotes(self):
-        if(isinstance(apt.SETTINGS['remote'],dict)):
-            print('{:<16}'.format("Remote"),'{:<40}'.format("URL"),'{:<12}'.format("Connected"))
+        if(isinstance(apt.SETTINGS['market'],dict)):
+            print('{:<16}'.format("Market"),'{:<40}'.format("URL"),'{:<12}'.format("Connected"))
             print("-"*16+" "+"-"*40+" "+"-"*12+" ")
-            for key,val in apt.SETTINGS['remote'].items():
+            for key,val in apt.SETTINGS['market'].items():
                 rec = 'no'
-                if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['remote']):
+                if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
                     rec = 'yes'
                 print('{:<16}'.format(key),'{:<40}'.format(val),'{:<12}'.format(rec))
                 pass
         else:
-            log.info("No clusters added!")
+            log.info("No markets added!")
         pass
     
     def listWorkspace(self):
         if(isinstance(apt.SETTINGS['workspace'],dict)):
-            print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Remotes"))
+            print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Markets"))
             print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
             for key,val in apt.SETTINGS['workspace'].items():
                 act = '-'
                 rems = ''
-                for r in val['remote']:
+                for r in val['market']:
                     rems = rems + r + ','
                 if(key == apt.SETTINGS['active-workspace']):
                     act = 'yes'
@@ -688,30 +687,30 @@ class legoHDL:
         elif(command == "build" and self.capsuleCWD.isValid()):
             self.build(value)
         elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
-            cluster_sync = None
+            mkt_sync = None
             git_url = None
             startup = False
             if(options.count("o")):
                 startup = True
                 options.remove("o")
 
-            clusters = self.db.getGalaxy()
-            for clst in clusters:
+            mkts = self.db.getGalaxy()
+            for mkt in mkts:
                 for opt in options:
-                    if(clst.getName() == opt):
-                        print("Identified cluster to synchronize with!")
-                        cluster_sync = clst
+                    if(mkt.getName() == opt):
+                        print("Identified market to synchronize with!")
+                        mkt_sync = mkt
                         options.remove(opt)
                         break
-                if(cluster_sync != None):
+                if(mkt_sync != None):
                     break
 
             for opt in options:
                 if(apt.isValidURL(opt)):
                     git_url = opt
-            print(git_url,cluster_sync)
+            print(git_url,mkt_sync)
             
-            self.capsulePKG = Capsule(title=package, new=True, cluster=cluster_sync, remote=git_url)
+            self.capsulePKG = Capsule(title=package, new=True, market=mkt_sync, remote=git_url)
 
             if(startup):
                 self.capsulePKG.load()
@@ -744,7 +743,7 @@ class legoHDL:
                 self.listScripts()
             elif(options.count("label")):
                 self.listLabels()
-            elif(options.count("remote")):
+            elif(options.count("market")):
                 self.listRemotes()
             elif(options.count("workspace")):
                 self.listWorkspace()
@@ -865,7 +864,7 @@ class legoHDL:
             printFmt("init", "<package>")
             pass
         elif(cmd == "new"):
-            printFmt("new","<package>","[-o]")
+            printFmt("new","<package>","[-o -<remote-url> -<market-name>")
             pass
         elif(cmd == "open"):
             printFmt("open","<package>","[-template -build]")
@@ -873,9 +872,10 @@ class legoHDL:
         elif(cmd == "release"):
             printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d -strict -request]")
             print("\n   -strict -> won't add any uncommitted changes along with release")
+            print("\n   -request -> will push a side branch to the linked market")
             pass
         elif(cmd == "list"):
-            printFmt("list","\b","[-alpha -local -build -label -remote -workspace]")
+            printFmt("list","\b","[-alpha -local -build -label -market -workspace]")
             pass
         elif(cmd == "install"):
             printFmt("install","<package>","[-v0.0.0]")
@@ -913,11 +913,12 @@ class legoHDL:
             printFmt("summ","[-:\"summary\"]")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","""[-remote [-rm | -append | -skip] | -author | -build [-lnk] | -label [-recur] | -editor |\n\
-                    \t\t-workspace [-<remote-name> ...] | -active-workspace]\
+            printFmt("config","<value>","""[-market [-rm | -append] | -author | -build [-lnk] | -label [-recur] | -editor |\n\
+                    \t\t-workspace [-<market-name> ...] | -active-workspace | -market-append | -market-rm]\
             """)
-            print("\n   Setting [-build], [-label], [-workspace] requires <value> to be <key>=\"<value>\"")
-            print("   legohdl config myWorkspace=\"~/users/chase/develop/hdl-pm/\" -workspace") 
+            print("\n   Setting [-build], [-label], [-workspace], [-market] requires <value> to be <key>=\"<value>\"")
+            print("   An empty value will signal to delete the key") 
+            print("   legohdl config myWorkspace=\"~/develop/hdl/\" -workspace") 
             pass
         exit()
         pass

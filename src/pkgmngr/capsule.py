@@ -2,19 +2,19 @@ import os, yaml, shutil
 from datetime import date
 import collections, stat
 import glob
-from cluster import Cluster
+from market import Market
 from apparatus import Apparatus as apt
 import git
 
 #a capsule is a package/module that is signified by having the .lego.lock
 class Capsule:
 
-    def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False, cluster=None):
+    def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False, market=None):
         self.__metadata = dict()
         self.__lib = ''
         self.__name = ''
         self.__remote = remote #remote cannot be reconfigured through legohdl after setting
-        self.__cluster = cluster
+        self.__market = market
  
         if(title != None):
             self.__lib,self.__name = self.split(title)
@@ -56,14 +56,8 @@ class Capsule:
             self.create() #create the repo and directory structure
         pass
 
-
     def getPath(self):
         return self.__local_path
-
-    def saveID(self, id):
-        self.__metadata['id'] = id
-        self.pushYML("Adds ID to YML file")
-        pass
 
     def cache(self):
         os.makedirs(apt.WORKSPACE+"cache/"+self.getMeta("library")+"/", exist_ok=True)
@@ -132,9 +126,9 @@ class Capsule:
             #push to remote codebase!!
             if(self.__remote):
                 self.pushRemote()
-            #publish on cluster/market/bazaar!
-            if(self.__cluster):
-                self.__cluster.publish(self.__metadata, options)
+            #publish on market/bazaar!
+            if(self.__market):
+                self.__market.publish(self.__metadata, options)
         pass
 
     @classmethod
@@ -191,17 +185,13 @@ class Capsule:
             if(self.__remote != None):
                 self.__metadata['remote'] = self.__remote
             else:
-                self.__remote = self.__metadata['remote']
+                self.__remote = self.__metadata['market']
         if('market' in self.__metadata.keys()):
-            if(self.__cluster != None):
-                self.__metadata['market'] = self.__cluster.getName()
+            if(self.__market != None):
+                self.__metadata['market'] = self.__market.getName()
             else:
-                self.__cluster = Cluster(self.__metadata['market'], apt.SETTINGS['remote'][self.__metadata['market']])
+                self.__market = Market(self.__metadata['market'], apt.SETTINGS['market'][self.__metadata['market']])
         pass
-
-    def getID(self):
-        return self.getMeta("id")
-
 
     def create(self, fresh=True, git_exists=False):
         print('Initializing new project')
@@ -267,10 +257,8 @@ class Capsule:
                 print(self.__repo.remotes.origin.url)
                 with self.__repo.remotes.origin.config_writer as cw:
                     cw.set("url", self.__remote_url)
-                #now set it up to track
-                # !!!
+            #now set it up to track
             self.__repo.git.push("-u","origin",str(self.__repo.head.reference))
-            #self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
         pass
 
     def pushRemote(self):
@@ -306,7 +294,6 @@ class Capsule:
         
         if(self.isLinked()):
             self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
-            #self.__repo.remotes.origin.push()
 
     #return true if the requested project folder is a valid capsule package
     def isValid(self):

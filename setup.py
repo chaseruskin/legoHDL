@@ -1,4 +1,5 @@
 import setuptools
+from setuptools.command.install import install
 #code inspired by:
 # https://packaging.python.org/tutorials/packaging-projects/
 
@@ -7,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="legohdl",
-    version="0.0.1",
+    version="0.1.0",
     author="Chase Ruskin",
     author_email="c.ruskin@ufl.edu",
     description="A complete HDL package manager",

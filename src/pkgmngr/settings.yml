@@ -15,18 +15,19 @@ label:
   TEST-GEN:
   - testbench.py
   - false
-remote:
+market:
   cluster1: https://gitlab.com/chase800/stack.git
   clusterMain: local
-  test_rm: local
+  open-market: https://gitlab.com/chase800/open-market.git
 workspace:
   myWorkspace:
     local: /Users/Chase/develop/hdl-dev/
-    remote:
+    market:
     - cluster1
+    - open-market
   myWorkspace2:
     local: /Users/Chase/develop/hdl-op/side/
-    remote: []
+    market: []
   otherWorkspace:
     local: /Users/Chase/develop/hdl-new/
-    remote: []
+    market: []
