@@ -34,7 +34,7 @@ __.lego.lock__ : The metadata file that signifies if a project is a package. Thi
 
 ## Getting Started
 
-1. Configure a workspace and other settings
+1. __Configure a workspace and other settings__
 
 A workspace specifies what local location to store downloaded packages in for development.
 
@@ -53,7 +53,7 @@ Now we will configure other important settings.
 
 Configuring an editor allows me to automatically open projects with the `-o` flag.
 
-2. Make a new project
+2. __Make a new project__
 
 A project can be made directly from legohdl CLI. This provides the benefit of adding key information and automatically setting up a developer's preferred project structure through the use of a template.
 
@@ -69,7 +69,7 @@ Now that the template is fit for our preferences, let's use it. It is time to ma
 
 Okay and it's open in our text-editor ready to work!
 
-3. Develop a project
+3. __Develop a project__
 
 At this point, a lot has happened. There is an off-limits file called ".lego.lock" inside our project, the project is already initialized with git, and our template auto-populated the project with files ready to go.
 
@@ -79,7 +79,7 @@ The development process is now no different than before. We will create our desi
 
 This will print out our entity as a component, available to be easily copied and pasted into another source file in this project, like the testbench. The -map option will give us the format for the component's instantiation as well as the necessary signals for the architecture declaration section. Pretty handy.
 
-4. Building a project
+4. __Building a project__
 
 legohdl is a package manager. It has no means to build a project, as HDL tools are complex and are not a one-size-fits-all. Despite this, legohdl provides capability through the use of its labels, recipes, and scripts enable the developer to run with their own build tools exactly how they want. Got an awesome makefile calling ghdl? Use it. Got TCL scripts for the entire vivado design suite? Bring them on! 
 
@@ -177,7 +177,7 @@ We can edit our copied scripts with
 
 ```legohdl open -script```
 
-5. Releasing a project as package
+5. __Releasing a project as package__
 
 Up until this point, everything has been local and the project has not yet been officially "released". It has been on version #0.0.0. Now we are ready to release the current code's state as a version. 
 
@@ -190,12 +190,14 @@ _major_: any entity port changes or inconsistent changes to the module's intende
 _minor_: performance enhancements  
 _patch/fix_: bug fixing and small code tweaks 
 
+6. __Incorporating a project as a dependency__
+
 Okay, the project is now ready to be incorporated into any other design! Upon releasing, it will install the release to the cache folder alongside generating a VHDL package file for the toplevel entity into the library folder. The lines
 ``` VHDL
 library demo;
 use demo.mux_pkg.all;
 ```
-are all that are needed for legohdl to say yup, I'll throw the required files in the recipe for you! And don't forget, since its a package, you can go straight to instantiating the component in your design. Don't remember the ports list? Run
+are all that are needed for legohdl to say yup, I'll throw the required files in the recipe for you! And don't forget, since it is a package, you can go straight to instantiating the component in your design. Don't remember the ports list? Run
 
 ```legohdl port demo.mux -map```
 
