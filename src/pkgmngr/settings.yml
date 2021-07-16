@@ -1,9 +1,5 @@
 active-workspace: myWorkspace
 author: 'Chase Ruskin: double-bladed lightsaber wielder'
-build:
-  master: '"python3 /Users/Chase/.legohdl/scripts/master.py"'
-  mk: '"make -f /Users/Chase/.legohdl/scripts/mk"'
-  runnr: '"python3 /Users/Chase/.legohdl/scripts/runnr.py"'
 editor: code
 label:
   IP:
@@ -19,6 +15,11 @@ market:
   cluster1: https://gitlab.com/chase800/stack.git
   clusterMain: local
   open-market: https://gitlab.com/chase800/open-market.git
+script:
+  master: '"python3 /Users/Chase/.legohdl/scripts/master.py"'
+  mk: '"make -f /Users/Chase/.legohdl/scripts/mk"'
+  quick-build: '"python3 /Users/Chase/.legohdl/scripts/quick-build.py"'
+  runnr: '"python3 /Users/Chase/.legohdl/scripts/runnr.py"'
 workspace:
   myWorkspace:
     local: /Users/Chase/develop/hdl-dev/

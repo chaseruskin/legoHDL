@@ -205,18 +205,18 @@ class legoHDL:
 
     def build(self, script):
         arg_start = 3
-        if(not isinstance(apt.SETTINGS['build'],dict)): #no scripts exist
+        if(not isinstance(apt.SETTINGS['script'],dict)): #no scripts exist
             exit(log.error("No scripts are configured!"))
         elif(len(script) and script[0] == "@"):
-            if(script[1:] in apt.SETTINGS['build'].keys()): #is it a name?
-                cmd = apt.SETTINGS['build'][script[1:]]
+            if(script[1:] in apt.SETTINGS['script'].keys()): #is it a name?
+                cmd = apt.SETTINGS['script'][script[1:]]
             else:
                 exit(log.error("Script name not found!"))
-        elif("master" in apt.SETTINGS['build'].keys()): #try to resort to default
-            cmd = apt.SETTINGS['build']['master']
+        elif("master" in apt.SETTINGS['script'].keys()): #try to resort to default
+            cmd = apt.SETTINGS['script']['master']
             arg_start = 2
-        elif(len(apt.SETTINGS['build'].keys()) == 1): #if only 1 then try to run the one
-            cmd = apt.SETTINGS['build'][list(apt.SETTINGS['build'].keys())[0]]
+        elif(len(apt.SETTINGS['script'].keys()) == 1): #if only 1 then try to run the one
+            cmd = apt.SETTINGS['script'][list(apt.SETTINGS['script'].keys())[0]]
             arg_start = 2
         else:
             exit(log.error("No scripts are configured!"))
@@ -455,7 +455,7 @@ class legoHDL:
                     del apt.SETTINGS[options[0]][key]
             pass
         # BUILD SCRIPT CONFIGURATION
-        elif(options[0] == 'build'):
+        elif(options[0] == 'script'):
             #parse into cmd and filepath
             ext = Capsule.getExt(val)
             if(ext != ''):
@@ -624,10 +624,10 @@ class legoHDL:
         pass
 
     def listScripts(self):
-        if(isinstance(apt.SETTINGS['build'],dict)):
+        if(isinstance(apt.SETTINGS['script'],dict)):
             print('{:<12}'.format("Name"),'{:<14}'.format("Command"),'{:<54}'.format("Path"))
             print("-"*12+" "+"-"*14+" "+"-"*54)
-            for key,val in apt.SETTINGS['build'].items():
+            for key,val in apt.SETTINGS['script'].items():
                 spce = val.find(' ')
                 cmd = val[1:spce]
                 path = val[spce:len(val)-1].strip()
@@ -739,7 +739,7 @@ class legoHDL:
                     force = True
             self.cleanup(self.db.getCaps("local")[L][N], force)
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
-            if(options.count("build")):
+            if(options.count("script")):
                 self.listScripts()
             elif(options.count("label")):
                 self.listLabels()
@@ -770,7 +770,7 @@ class legoHDL:
                     os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
                 else:
                     log.info("No text-editor configured!")
-            elif(options.count("build") or package.lower() == "build"):
+            elif(options.count("script") or package.lower() == "script"):
                 if(apt.SETTINGS['editor'] != None):
                     os.system(apt.SETTINGS['editor']+" "+apt.HIDDEN+"/scripts")
                 else:
@@ -844,7 +844,7 @@ class legoHDL:
             \n\t-maj\t\trelease as next major update (^.0.0)\
             \n\t-min\t\trelease as next minor update (-.^.0)\
             \n\t-fix\t\trelease as next patch update (-.-.^)\
-            \n\t-build\t\tset a build script setting\
+            \n\t-script\t\tset a script setting\
             \n\t-label\t\tset a export label setting\
             \n\t-template\t\ttrigger the project template to open\
             \n\t-lnk\t\tuse the build script from its specified location- default is to copy\
@@ -875,7 +875,7 @@ class legoHDL:
             print("\n   -request -> will push a side branch to the linked market")
             pass
         elif(cmd == "list"):
-            printFmt("list","\b","[-alpha -local -build -label -market -workspace]")
+            printFmt("list","\b","[-alpha -local -script -label -market -workspace]")
             pass
         elif(cmd == "install"):
             printFmt("install","<package>","[-v0.0.0]")
@@ -913,10 +913,10 @@ class legoHDL:
             printFmt("summ","[-:\"summary\"]")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","""[-market [-rm | -append] | -author | -build [-lnk] | -label [-recur] | -editor |\n\
+            printFmt("config","<value>","""[-market [-rm | -append] | -author | -script [-lnk] | -label [-recur] | -editor |\n\
                     \t\t-workspace [-<market-name> ...] | -active-workspace | -market-append | -market-rm]\
             """)
-            print("\n   Setting [-build], [-label], [-workspace], [-market] requires <value> to be <key>=\"<value>\"")
+            print("\n   Setting [-script], [-label], [-workspace], [-market] requires <value> to be <key>=\"<value>\"")
             print("   An empty value will signal to delete the key") 
             print("   legohdl config myWorkspace=\"~/develop/hdl/\" -workspace") 
             pass

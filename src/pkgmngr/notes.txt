@@ -133,6 +133,7 @@ until next command
 
 [ ]		-add cool logging
 
+[ ]		-auto-update if scripts are gone from scripts folder
 
 [ ]		-add verilog/systemverilog file support
 [x]		-set up remote using registry design and git repo (ex: winget)

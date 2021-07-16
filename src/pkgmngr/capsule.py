@@ -185,11 +185,11 @@ class Capsule:
             if(self.__remote != None):
                 self.__metadata['remote'] = self.__remote
             else:
-                self.__remote = self.__metadata['market']
+                self.__remote = self.__metadata['remote']
         if('market' in self.__metadata.keys()):
             if(self.__market != None):
                 self.__metadata['market'] = self.__market.getName()
-            else:
+            elif(self.getMeta("market") != None):
                 self.__market = Market(self.__metadata['market'], apt.SETTINGS['market'][self.__metadata['market']])
         pass
 
