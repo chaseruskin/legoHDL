@@ -647,7 +647,10 @@ class legoHDL:
         pkgCWD = pkgPath[lastSlash+1:]
 
         self.capsuleCWD = Capsule(path=pkgPath+"/")
-
+        files = glob.glob("./design/*.vhd")
+        for f in files:
+            self.capsuleCWD.grabImportsVHD(f, self.db.availableLibs())
+        exit()
         command = package = description = ""
         options = []
         #store args accordingly from command-line

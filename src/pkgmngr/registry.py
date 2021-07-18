@@ -224,6 +224,9 @@ class Registry:
     def getGalaxy(self):
         return self.__galaxy
 
+    def availableLibs(self):
+        return list(self.getCaps("local","cache","market").keys())
+
     #use title="lib.*" to check if library exists
     def capExists(self, title, place, updt=False):
         folder = None

@@ -509,6 +509,59 @@ class Capsule:
             dot2 = len(dep)
         name = dep[dot+1:dot+1+dot2]
         return lib,name
+
+    # given a VHDL file, return all of its "use"/imported packages
+    def grabImportsVHD(self, filepath, availLibs):
+        import_dict = dict() #associate entities/packages with particular entities
+        lib_headers = list()
+        with open(filepath, 'r') as file:
+            in_entity = in_arch = in_pkg = False
+            entity_name = arch_name = pkg_name =  None
+            #read through the VHDL file
+            for line in file.readlines():
+                #parse line into a list of its words
+                words = line.split()
+                if(len(words) == 0): #skip if its a blank line
+                    continue
+                #find when entering an entity, architecture, or package
+                if(words[0].lower() == "entity"):
+                    in_entity = True
+                    entity_name = words[1].lower()
+                    import_dict[entity_name] = lib_headers #stash all "uses" from above
+                    lib_headers = list()
+                if(words[0].lower() == "package"):
+                    in_pkg = True
+                    pkg_name = words[1].lower()
+                    import_dict[pkg_name] = lib_headers #stash all "uses" from above
+                    lib_headers = list()
+                if(words[0].lower() == "architecture"):
+                    in_arch = True
+                    arch_name = words[1]
+                #find "use" declarations
+                if(words[0].lower() == "use" and not in_entity and not in_arch and not in_pkg):
+                    impt = words[1].split('.')
+                    #do not add if the library is not work or library is not in list of available custom libs
+                    if(impt[0].lower() == 'work' or impt[0].lower() in availLibs):
+                        lib_headers.append(words[1][:len(words[1])-1])
+                #find component declarations
+                if(words[0].lower() == "component" and in_arch):
+                    import_dict[entity_name].append(words[1])
+                if(words[0].lower() == "component" and in_pkg):
+                    import_dict[pkg_name].append(words[1])
+                #detect when outside of entity, architecture, or package
+                if(words[0].lower() == "end"):
+                    if(in_entity and (entity_name+";" in words or words[1].lower().count("entity"))):
+                        in_entity = False
+                    if(in_arch and (arch_name+";" in words or words[1].lower().count("architecture"))):
+                        in_arch = False
+                    if(in_pkg and (pkg_name+";" in words or words[1].lower().count("package"))):
+                        in_pkg = False
+                pass
+            file.close()
+            pass
+        print(import_dict)
+        return(import_dict)
+        pass
     
     #auto detect testbench file
     def autoDetectBench(self, comp=None):
