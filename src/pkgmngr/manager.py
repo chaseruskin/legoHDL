@@ -647,10 +647,9 @@ class legoHDL:
         pkgCWD = pkgPath[lastSlash+1:]
 
         self.capsuleCWD = Capsule(path=pkgPath+"/")
-        files = glob.glob("./design/*.vhd")
-        for f in files:
-            self.capsuleCWD.grabImportsVHD(f, self.db.availableLibs())
-        exit()
+        
+        self.capsuleCWD.identifyTop(self.db.availableLibs())
+
         command = package = description = ""
         options = []
         #store args accordingly from command-line
@@ -809,22 +808,22 @@ class legoHDL:
                 print('  ','{:<12}'.format(cmd),des)
                 pass
             formatHelp("init","initialize the current folder into a valid package format")
-            formatHelp("new","create a templated empty package")
-            formatHelp("open","opens the package with the configured text-editor")
-            formatHelp("release","release the next new version of the current package")
+            formatHelp("new","create a templated empty package into workspace")
+            formatHelp("open","opens the downloaded package with the configured text-editor")
+            formatHelp("release","release a new version of the current package")
             formatHelp("list","print list of all packages available")
-            formatHelp("install","grab package from remote for dependency use")
+            formatHelp("install","grab package from its market for dependency use")
             formatHelp("uninstall","remove package from cache")
-            formatHelp("download","grab package from remote for further development")
+            formatHelp("download","grab package from its market for development")
             formatHelp("update","update installed package to be to the latest version")
             formatHelp("export","generate a file of necessary paths to build the project")
             formatHelp("build","run a custom configured script")
             formatHelp("del","deletes the package from the local workspace")
-            formatHelp("search","search remote or local workspace for specified package")
+            formatHelp("search","search markets or local workspace for specified package")
             formatHelp("refresh","sync local markets with their remotes")
             formatHelp("port","print ports list of specified package")
             formatHelp("show","read further detail about a specified package")
-            formatHelp("summ","add description to current project")
+            formatHelp("summ","add description to current package")
             formatHelp("config","set package manager settings")
             print("\nType \'legohdl help <command>\' to read more on entered command.")
             exit()

@@ -512,6 +512,7 @@ class Capsule:
 
     # given a VHDL file, return all of its "use"/imported packages
     def grabImportsVHD(self, filepath, availLibs):
+        design_book = self.grabDesignBook()
         import_dict = dict() #associate entities/packages with particular entities
         lib_headers = list()
         with open(filepath, 'r') as file:
@@ -532,7 +533,7 @@ class Capsule:
                 if(words[0].lower() == "package"):
                     in_pkg = True
                     pkg_name = words[1].lower()
-                    import_dict[pkg_name] = lib_headers #stash all "uses" from above
+                    #import_dict[pkg_name] = lib_headers #stash all "uses" from above
                     lib_headers = list()
                 if(words[0].lower() == "architecture"):
                     in_arch = True
@@ -542,12 +543,34 @@ class Capsule:
                     impt = words[1].split('.')
                     #do not add if the library is not work or library is not in list of available custom libs
                     if(impt[0].lower() == 'work' or impt[0].lower() in availLibs):
-                        lib_headers.append(words[1][:len(words[1])-1])
+                        #lib_headers.append(words[1][:len(words[1])-1])
+                        comps = self.grabComponents(design_book[impt[1].replace(";",'').lower()])
+                        
+                        if(len(impt) == 3):
+                            suffix = impt[2].lower().replace(";",'')
+                            if(suffix == 'all'): # add all found entities from pkg as dependencies of design
+                                lib_headers = lib_headers + comps
+                            else: #it is a specific component
+                                lib_headers.append(suffix)
+                        else: # a third piece was not given, check instantiations with this pkg.entity format in architecture
+                            pass
+
                 #find component declarations
                 if(words[0].lower() == "component" and in_arch):
                     import_dict[entity_name].append(words[1])
                 if(words[0].lower() == "component" and in_pkg):
-                    import_dict[pkg_name].append(words[1])
+                    #import_dict[pkg_name].append(words[1])
+                    pass
+                #find instantiations by package.entity
+                if(len(words) > 2 and words[1] == ':' and in_arch):
+                    pkg_sect = words[2].split('.')
+                    e_name = pkg_sect[len(pkg_sect)-1].lower()
+                    p_name = pkg_sect[len(pkg_sect)-2].lower()
+
+                    if(p_name in design_book.keys()):
+                        import_dict[entity_name].append(e_name)
+                        print("file needed:",design_book[p_name])
+
                 #detect when outside of entity, architecture, or package
                 if(words[0].lower() == "end"):
                     if(in_entity and (entity_name+";" in words or words[1].lower().count("entity"))):
@@ -615,6 +638,131 @@ class Capsule:
         if(benchName+".vhd" != self.getMeta("bench")):
             self.__metadata['bench'] = benchName+".vhd"
         pass
+
+    #return dictionary of entities with their respective files as values
+    def grabDesignBook(self):
+        if(hasattr(self, "_design_book")):
+            return self._design_book
+        self._design_book = dict()
+        files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
+        files = files + (glob.glob(apt.WORKSPACE+"lib/**/*.vhd", recursive=True))
+        for f in files:
+            with open(f, 'r') as file:
+                for line in file.readlines():
+                    words = line.split()
+                    if(len(words) == 0): #skip if its a blank line
+                        continue
+                    if(words[0].lower() == "entity"):
+                        self._design_book[words[1].lower()] = f
+                    if(words[0].lower() == "package"):
+                        self._design_book[words[1].lower()] = f
+                file.close()
+        print(self._design_book)
+        return self._design_book
+
+    #determine what testbench is used for the top-level design entity
+    def identifyBench(self, entity_name, availLibs):
+        import_dict = dict()
+        tb_list = self.grabTestbenches()
+        files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
+        for f in files:
+           import_dict.update(self.grabImportsVHD(f, availLibs))
+        bench = None
+        for tb in tb_list:
+            for dep in import_dict[tb]:
+                if(dep.lower() == entity_name.lower()):
+                    bench = tb
+                    break
+
+        if(bench != None):
+            print("DETECTED TOP-LEVEL BENCH:",bench)
+            return bench #return the entity key
+        else:
+            print("ERROR- No testbench configured for this top-level entity.")
+            return None
+        pass
+    
+    #auto detect top-level designe entity
+    def identifyTop(self, availLibs):
+        ent_list = self.grabEntities() #start with all entities available
+        tb_list = self.grabTestbenches()
+        import_dict = dict()
+        files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
+        for f in files:
+           import_dict.update(self.grabImportsVHD(f, availLibs))
+
+        for key,val in import_dict.items():
+            #if the entity is value under this key, it is lower-level
+            for e in val:
+                if(e in ent_list):
+                    print(e)
+                    ent_list.remove(e)
+
+            if(key in tb_list):
+                ent_list.remove(key)
+        print("IMPORTS:",import_dict)
+        if(len(ent_list) == 1):
+            print("DETECTED TOP-LEVEL ENTITY:",ent_list[0])
+            self.identifyBench(ent_list[0], availLibs)
+            return ent_list[0] #return the entity key
+        elif(len(ent_list) == 0):
+            print("ERROR- No top level detected.")
+        else:
+            print("ERROR- Multiple top levels detected. Please be explicit when exporting.")
+
+    def grabTestbenches(self):
+        tb_list = list()
+        files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
+        for f in files:
+            with open(f, 'r') as file:
+                in_entity = False
+                entity_name = None
+                is_tb = True
+                for line in file.readlines():
+                    words = line.lower().split()
+                    if(len(words) == 0): #skip if its a blank line
+                        continue
+                    if(words[0].lower() == "entity"):
+                        in_entity = True
+                        entity_name = words[1].lower()
+                    if(in_entity and ("port" in words or "port(" in words)):
+                        is_tb = False
+                    if(words[0].lower() == "end"):
+                        if(in_entity and (entity_name+";" in words or words[1].lower().count("entity"))):
+                            in_entity = False
+                if(is_tb and entity_name != None):
+                    tb_list.append(entity_name)
+                file.close()
+        print("Project-Level Testbenches:",tb_list)
+        return tb_list
+
+    def grabEntities(self):
+        ent_list = list()
+        files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
+        for f in files:
+            with open(f, 'r') as file:
+                for line in file.readlines():
+                    words = line.split()
+                    if(len(words) == 0): #skip if its a blank line
+                        continue
+                    if(words[0].lower() == "entity"):
+                        ent_list.append(words[1].lower())
+                file.close()
+        print("Project-Level Entities:",ent_list)
+        return ent_list
+
+    def grabComponents(self, filepath):
+        comp_list = list()
+        with open(filepath, 'r') as file:
+            for line in file.readlines():
+                words = line.split()
+                if(len(words) == 0): #skip if its a blank line
+                    continue
+                if(words[0].lower() == "component"):
+                    comp_list.append(words[1].lower())
+            file.close()
+        print("Components:",comp_list)
+        return comp_list
 
     def fileSearch(self, file="*.vhd"):
         return glob.glob(self.__local_path+"/**/"+file, recursive=True)
