@@ -6,7 +6,7 @@ from market import Market
 from apparatus import Apparatus as apt
 import git
 from source import Vhdl
-from source import Verilog
+import logging as log
 
 #a capsule is a package/module that is signified by having the .lego.lock
 class Capsule:
@@ -50,10 +50,10 @@ class Capsule:
                     git.Git(lp).clone(self.__remote)
                     url_name = self.__remote[self.__remote.rfind('/')+1:self.__remote.rfind('.git')]
                     os.rename(lp+url_name, lp+self.__name)
-                    print('Project already exists on remote code base; downloading now...')
+                    log.info('Project already exists on remote code base; downloading now...')
                     return
                 except:
-                    print("could not clone")
+                    log.warning("could not clone")
                     pass
             self.create() #create the repo and directory structure
         pass
@@ -90,7 +90,7 @@ class Capsule:
 
     def release(self, ver='', options=None):
         if(ver != '' and self.biggerVer(ver,self.getVersion()) == self.getVersion()):
-            exit("ERROR- Invalid version selection!")
+            exit(log.error("Invalid version selection!"))
         major,minor,patch = self.sepVer(self.getVersion())
         print(self.getVersion())
         print("Uploading ",end='')
@@ -117,7 +117,7 @@ class Capsule:
         if(ver != '' and ver[0] == 'v'):
             self.__metadata['version'] = ver[1:]
             self.save()
-            print("saving")
+            log.info("Saving...")
             if(options != None and options.count('strict')):
                 self.__repo.index.add(".lego.lock")
             else:   
@@ -196,7 +196,7 @@ class Capsule:
         pass
 
     def create(self, fresh=True, git_exists=False):
-        print('Initializing new project')
+        log.info('Initializing new project')
         if(fresh):
             shutil.copytree(apt.PKGMNG_PATH+"template/", self.__local_path)
         else:
@@ -241,13 +241,13 @@ class Capsule:
         self.__repo.index.add(self.__repo.untracked_files)
         self.__repo.index.commit("Initializes project")
         if(self.__remote != None):
-            print('Generating new remote repository...')
+            log.info('Generating new remote repository...')
             # !!! set it up to track
             print(str(self.__repo.head.reference))
             self.__repo.git.push("-u","origin",str(self.__repo.head.reference))
             #self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
         else:
-            print('No remote code base attached to local repository')
+            log.warning('No remote code base attached to local repository')
         pass
 
     #generate new link to remote if previously unestablished
@@ -270,6 +270,8 @@ class Capsule:
     def getName(self):
         return self.__name
 
+    def getDesignBook(self):
+        pass
 
     def getLib(self):
         try:
@@ -352,10 +354,9 @@ class Capsule:
             ver = self.getVersion()
         
         if(ver == 'v0.0.0'):
-            print('error- no available version')
-            exit()
+            exit(log.error('No available version'))
 
-        print("version",ver)
+        log.debug("version",ver)
         
         if(src == None and self.__remote != None):
             src = self.__remote
@@ -416,7 +417,7 @@ class Capsule:
         return src_dir, derivatives
         pass
 
-    def gatherSources(self, ext=[".vhd", ".v", ".sv"]):
+    def gatherSources(self, ext=[".vhd"]):
         srcs = []
         for e in ext:
             srcs = srcs + glob.glob(self.__local_path+"/**/*"+e, recursive=True)
@@ -522,7 +523,7 @@ class Capsule:
 
     # given a VHDL file, return all of its "use"/imported packages
     def grabImportsVHD(self, filepath, availLibs):
-        design_book = self.grabDesignBook()
+        design_book = self.grabDesigns("cache","current")
         import_dict = dict() #associate entities/packages with particular entities
         lib_headers = list()
         with open(filepath, 'r') as file:
@@ -554,7 +555,7 @@ class Capsule:
                     #do not add if the library is not work or library is not in list of available custom libs
                     if(impt[0].lower() == 'work' or impt[0].lower() in availLibs):
                         #lib_headers.append(words[1][:len(words[1])-1])
-                        comps = self.grabComponents(design_book[impt[1].replace(";",'').lower()])
+                        comps = self.grabComponents(self.grabDesigns("cache","current")[impt[1].replace(";",'').lower()])
                         
                         if(len(impt) == 3):
                             suffix = impt[2].lower().replace(";",'')
@@ -637,9 +638,9 @@ class Capsule:
                     pass
         
         if(bench == None):
-            print("ERROR- Could not resolve top-level testbench")
+            log.error("Could not resolve top-level testbench")
             return
-        print("TESTBENCH:",bench)
+        log.debug("TESTBENCH: "+bench)
         s = bench.rfind('/')
         d = bench.rfind('.')
         benchName = bench[s+1:d]
@@ -650,86 +651,92 @@ class Capsule:
         pass
 
     #return dictionary of entities with their respective files as values
-    def grabDesignBook(self):
-        if(hasattr(self, "_design_book")):
-            return self._design_book
-        self._design_book = dict()
-        files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
-        files = files + (glob.glob(apt.WORKSPACE+"lib/**/*.vhd", recursive=True))
+    #all possible entities or packages to be used in current project
+    def grabCacheDesigns(self):
+        if(hasattr(self, "_cache_designs")):
+            return self._cache_designs
+        self._cache_designs = dict()
+        files = (glob.glob(apt.WORKSPACE+"lib/**/*.vhd", recursive=True))
         for f in files:
             with open(f, 'r') as file:
                 for line in file.readlines():
                     words = line.split()
                     if(len(words) == 0): #skip if its a blank line
                         continue
-                    if(words[0].lower() == "entity"):
-                        self._design_book[words[1].lower()] = f
-                    if(words[0].lower() == "package"):
-                        self._design_book[words[1].lower()] = f
+                    if(words[0].lower() == "entity" or (words[0].lower() == "package" and words[1].lower() != 'body')):
+                        self._cache_designs[words[1].lower()] = f
                 file.close()
-        print(self._design_book)
-        return self._design_book
-
-    def newWave(self, availLibs):
-        src_list = list()
-        files = self.gatherSources()
-        for f in files:
-            if(f.endswith(".vhd")):
-                Vhdl(f).decipher(availLibs, self.grabDesignBook())
-            else:
-                Verilog(f).decipher(availLibs, self.grabDesignBook())
-        pass  
-
+        log.debug("Cache-Level designs:",self._cache_designs)
+        return self._cache_designs
 
     #determine what testbench is used for the top-level design entity
-    def identifyBench(self, entity_name, availLibs):
-        import_dict = dict()
-        tb_list = self.grabTestbenches()
-        files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
-        for f in files:
-           import_dict.update(self.grabImportsVHD(f, availLibs))
+    def identifyBench(self, entity_name, availLibs, save=False):
+        ents = self.grabEntities(availLibs)
         bench = None
-        for tb in tb_list:
-            for dep in import_dict[tb]:
+        for e in ents:
+            for dep in e.getDerivs():
                 if(dep.lower() == entity_name.lower()):
-                    bench = tb
+                    bench = e
                     break
 
         if(bench != None):
-            print("DETECTED TOP-LEVEL BENCH:",bench)
-            return bench #return the entity key
+            log.info("DETECTED TOP-LEVEL BENCH: "+bench.getName())
+            if(save and self.getMeta("bench") != bench.getName()):
+                self.__metadata['bench'] = bench.getName()
+                self.pushYML("Auto updates testbench module to "+self.getMeta("bench"))
+            return bench #return the entity
         else:
-            print("ERROR- No testbench configured for this top-level entity.")
+            log.error("No testbench configured for this top-level entity.")
             return None
         pass
+
+    def grabEntities(self, availLibs):
+        if(hasattr(self, "_entity_bank")):
+            return self._entity_bank
+        srcs = self.gatherSources()
+        for f in srcs:
+            Vhdl(f).decipher(availLibs,self.grabDesigns("cache","current"))
+        self._entity_bank = Vhdl.entity_bank
+        for e in self._entity_bank:
+            print(e)
+        return self._entity_bank
     
     #auto detect top-level designe entity
     def identifyTop(self, availLibs):
-        ent_list = self.grabEntities() #start with all entities available
-        tb_list = self.grabTestbenches()
-        import_dict = dict()
-        files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
-        for f in files:
-           import_dict.update(self.grabImportsVHD(f, availLibs))
-
-        for key,val in import_dict.items():
+        ents = self.grabEntities(availLibs)
+        top_contenders = []
+        top = None
+        for e in ents:
+            top_contenders.append(e.getName())
+        for e in ents:
             #if the entity is value under this key, it is lower-level
-            for e in val:
-                if(e in ent_list):
-                    print(e)
-                    ent_list.remove(e)
+            if(e.isTb()):
+                top_contenders.remove(e.getName())
+                continue
+                
+            for dep in e._derivs:
+                if(dep in top_contenders):
+                    top_contenders.remove(dep)
 
-            if(key in tb_list):
-                ent_list.remove(key)
-        print("IMPORTS:",import_dict)
-        if(len(ent_list) == 1):
-            print("DETECTED TOP-LEVEL ENTITY:",ent_list[0])
-            self.identifyBench(ent_list[0], availLibs)
-            return ent_list[0] #return the entity key
-        elif(len(ent_list) == 0):
-            print("ERROR- No top level detected.")
+        if(len(top_contenders) == 1):
+            for e in ents:
+                if(e.getName() == top_contenders[0]):
+                    top = e
+                    break
+            log.info("DETECTED TOP-LEVEL ENTITY: "+top.getName())
+            bench = self.identifyBench(top.getName(), availLibs, save=True)
+            #break up into src_dir and file name
+            #add to metadata, ensure to push meta data if results differ from previously loaded
+            if(top.getName() != self.getMeta("toplevel")):
+                log.debug("TOPLEVEL: "+top.getName())
+                self.__metadata['toplevel'] = top.getName()
+                self.pushYML("Auto updates top level design module to "+self.getMeta("toplevel"))
+            pass
+        elif(len(top_contenders) == 0):
+            log.error("No top level detected.")
         else:
-            print("ERROR- Multiple top levels detected. Please be explicit when exporting.")
+            log.error("Multiple top levels detected. Please be explicit when exporting.")
+        return top
 
     def grabTestbenches(self):
         tb_list = list()
@@ -757,20 +764,32 @@ class Capsule:
         print("Project-Level Testbenches:",tb_list)
         return tb_list
 
-    def grabEntities(self):
-        ent_list = list()
-        files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
+    def grabDesigns(self, *args):
+        design_book = dict()
+        if("current" in args):
+            design_book = self.grabCurrentDesigns()
+            pass
+        if("cache" in args):
+            design_book.update(self.grabCacheDesigns())
+            pass
+        return design_book
+
+    def grabCurrentDesigns(self):
+        if(hasattr(self, "_cur_designs")):
+            return self._cur_designs
+        self._cur_designs = dict()
+        files = self.gatherSources()
         for f in files:
             with open(f, 'r') as file:
                 for line in file.readlines():
                     words = line.split()
                     if(len(words) == 0): #skip if its a blank line
                         continue
-                    if(words[0].lower() == "entity"):
-                        ent_list.append(words[1].lower())
+                    if(words[0].lower() == "entity" or (words[0].lower() == "package" and words[1].lower() != 'body')):
+                        self._cur_designs[words[1].lower()] = f
                 file.close()
-        print("Project-Level Entities:",ent_list)
-        return ent_list
+        print("Project-Level Designs:",self._cur_designs)
+        return self._cur_designs
 
     def grabComponents(self, filepath):
         comp_list = list()
@@ -789,93 +808,16 @@ class Capsule:
         return glob.glob(self.__local_path+"/**/"+file, recursive=True)
         pass
 
-    def ports(self, mapp):
-        vhd_file = self.fileSearch(self.getMeta("toplevel"))[0]
-        toplvl = self.getMeta("toplevel").replace(".vhd", "").lower()
-
-        port_txt = ''
-        rolling_entity = False
-        with open(vhd_file, 'r') as f:
-            for line in f:
-                line = line.lower()
-                #discover when the entity block begins
-                if(line.count('entity') and line.count(toplvl) and line.count("is")):
-                    rolling_entity = True
-                #capture all text in entity block
-                if(rolling_entity):
-                    port_txt = port_txt + line
-                #handle the 3 variations of how to end a entity block
-                if(line.count("end") and line.count(";") and (line.count("entity") or line.count(toplvl))):
-                    rolling_entity = False
-                    break
-            f.close()
-            
-        port_txt = port_txt.replace("entity", "component")
-
-        #manipulate port list into port map if mapp=True
-        if(mapp):
-            print()
-            print(port_txt,end='')
-
-            signals = dict() #store all like signals together to output later
-
-            nl = port_txt.find('\n')
-            txt_list = list()
-            while nl > -1:
-                txt_list.append(port_txt[:nl])
-                port_txt = port_txt[nl+1:]
-                nl = port_txt.find('\n')
-            #format header
-            port_txt = txt_list[0].replace("component", "uX :")
-            port_txt = port_txt.replace("is", "")+"\n"
-            
-            #format ports
-            isGens = False
-            for num in range(1, len(txt_list)-2):
-                line = txt_list[num]
-                if(line.count("port")):
-                    port_txt = port_txt + line.replace("port", "port map").strip()+"\n"
-                    continue
-                if(line.count("generic")):
-                    port_txt = port_txt + line.replace("generic", "generic map").strip()+"\n"
-                    isGens = True
-                    continue
-                col = line.find(':')
-                if(isGens and line.count(')')):
-                    isGens = False
-                    port_txt = port_txt+")\n"
-                    continue
-
-                sig_dec = line[col+1:].strip()
-                spce = sig_dec.find(' ')
-                sig_type = sig_dec[spce:].strip()
-                if(sig_type.count(';') == 0):
-                    sig_type = sig_type + ';'
-                sig = line[:col].strip()
-                if(not isGens):
-                    if(not sig_type in signals):
-                        signals[sig_type] = list()
-                    signals[sig_type].append(sig)
-                
-                line = "    "+line[:col].strip()+"=>"+sig
-                if((not isGens and num < len(txt_list)-3) or (isGens and txt_list[num+1].count(')') == 0)):
-                    line = line + ',' #only append ',' to all ports but last
-                port_txt = port_txt+line+"\n"
-            
-            #format footer
-            port_txt = port_txt + txt_list[len(txt_list)-2].strip()+"\n"
-
-            #print signal declarations
-            print()
-            for sig,pts in signals.items():
-                line = "signal "
-                for p in pts:
-                    line = line + p +', '
-                line = line[:len(line)-2] + ' : ' + sig
-                print(line)
-        print()
-        return port_txt
-        pass
+    def ports(self, mapp, availLibs):
+        ents = self.grabEntities(availLibs)
+        printer = ''
+        for e in ents:
+            if(e.getName() == self.getMeta("toplevel")):
+                printer = e.getPorts()
+                if(mapp):
+                    printer = printer + "\n" + e.getMapping()
+                break
+        return printer
     pass
 
 

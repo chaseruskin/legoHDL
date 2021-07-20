@@ -7,20 +7,127 @@ class Entity:
     def __init__(self, file, name, deps=list(), isTB=True):
         self._req_files = [file]
         self._name = name
-        self._dependencies = deps
+        self._derivs = deps
+        self._integrals = list()
         self._is_tb = isTB
+
+    def setPorts(self, port_txt):
+        self._ports = ''
+        lineCount = len(port_txt.split('\n'))
+        counter = 1
+        for line in port_txt.split('\n'):
+            if(line.lower().count("entity")):
+                line = line.lower().replace("entity","component")
+            self._ports = self._ports + line
+            if(counter < lineCount):
+                self._ports = self._ports + "\n"
+            counter = counter + 1
+
+        self.getMapping() 
+
+    def getPorts(self):
+        if(hasattr(self, '_ports')):
+            return self._ports
+        else:
+            return ''
+
+    def getMapping(self):
+        if(hasattr(self, "_mapping")):
+            return self._mapping
+        self._mapping = ''
+        port_txt = self.getPorts()
+
+        signals = dict() #store all like signals together to output later
+
+        nl = port_txt.find('\n')
+        txt_list = list()
+        while nl > -1:
+            txt_list.append(port_txt[:nl])
+            port_txt = port_txt[nl+1:]
+            nl = port_txt.find('\n')
+        #format header
+        port_txt = txt_list[0].replace("component", "uX :")
+        port_txt = port_txt.replace("is", "")+"\n"
+        
+        #format ports
+        isGens = False
+        for num in range(1, len(txt_list)-2):
+            line = txt_list[num]
+            if(line.count("port")):
+                port_txt = port_txt + line.replace("port", "port map").strip()+"\n"
+                continue
+            if(line.count("generic")):
+                port_txt = port_txt + line.replace("generic", "generic map").strip()+"\n"
+                isGens = True
+                continue
+            col = line.find(':')
+            if(isGens and line.count(')')):
+                isGens = False
+                port_txt = port_txt+")\n"
+                continue
+
+            sig_dec = line[col+1:].strip()
+            spce = sig_dec.find(' ')
+            sig_type = sig_dec[spce:].strip()
+            if(sig_type.count(';') == 0):
+                sig_type = sig_type + ';'
+            sig = line[:col].strip()
+            if(not isGens):
+                if(not sig_type in signals):
+                    signals[sig_type] = list()
+                signals[sig_type].append(sig)
+            
+            line = "    "+line[:col].strip()+"=>"+sig
+            if((not isGens and num < len(txt_list)-3) or (isGens and txt_list[num+1].count(')') == 0)):
+                line = line + ',' #only append ',' to all ports but last
+            port_txt = port_txt+line+"\n"
+        
+        #format footer
+        port_txt = port_txt + txt_list[len(txt_list)-2].strip()+"\n"
+
+        #print signal declarations
+        for sig,pts in signals.items():
+            line = "signal "
+            for p in pts:
+                line = line + p +', '
+            line = line[:len(line)-2] + ' : ' + sig
+            self._mapping = self._mapping + line + '\n'
+
+        self._mapping = self._mapping + '\n' + port_txt
+        if(len(signals) == 0):
+            self._mapping = ''
+        return self._mapping
+
+    def isTb(self):
+        return self._is_tb
+
+    def getName(self):
+        return self._name
+
+    def getDerivs(self):
+        return self._derivs
 
     def setTb(self, b):
         self._is_tb = b
 
-    def appendDeps(self, deps):
-        self._dependencies.append(deps)
+    def addDependency(self, deps):
+        if(deps.lower() not in self._derivs):
+            self._derivs.append(deps)
 
-    def appendFiles(self, file):
+    def addFile(self, file):
         self._req_files.append(file)
 
     def __repr__(self):
-        return(f'{self._name}, {self._req_files}, {self._dependencies} tb:{self._is_tb}\n')
+        return(f'''
+entity: {self._name}
+files: {self._req_files}
+dependencies: {self._derivs}
+tb: {self._is_tb}
+ports: 
+{self._ports}
+map:
+{self._mapping}
+        ''')
 
 
 class Source(ABC):
@@ -38,7 +145,6 @@ class Source(ABC):
     pass
 
 
-
 class Vhdl(Source):
 
     def decipher(self, aL, dbook):
@@ -48,7 +154,7 @@ class Vhdl(Source):
 
     def grabComponents(self, filepath):
             comp_list = list()
-            with open(self._file_path, 'r') as file:
+            with open(filepath, 'r') as file:
                 for line in file.readlines():
                     words = line.split()
                     if(len(words) == 0): #skip if its a blank line
@@ -66,6 +172,7 @@ class Vhdl(Source):
         with open(filepath, 'r') as file:
             in_entity = in_arch = in_pkg = False
             entity_name = arch_name = pkg_name =  None
+            port_txt = ''
             ent = None
             #read through the VHDL file
             for line in file.readlines():
@@ -104,13 +211,16 @@ class Vhdl(Source):
                                 lib_headers.append(suffix)
                         else: # a third piece was not given, check instantiations with this pkg.entity format in architecture
                             pass
-                #determine if it can be a testbench entity
-                if(in_entity and ("port" in words or "port(" in words)):
+                #determine if it can be a disqualified testbench entity
+                if(in_entity):
+                    keywords = line.lower().split()
+                    if("in" in keywords or "out" in keywords or "inout" in keywords):
                         ent.setTb(False)
+                    port_txt = port_txt + line
 
                 #find component declarations
                 if(words[0].lower() == "component" and in_arch):
-                    ent.appendDeps(words[1])
+                    ent.addDependency(words[1])
                 if(words[0].lower() == "component" and in_pkg):
                     pass
                 #find instantiations by package.entity
@@ -120,7 +230,7 @@ class Vhdl(Source):
                     p_name = pkg_sect[len(pkg_sect)-2].lower()
 
                     if(p_name in design_book.keys()):
-                        ent.appendDeps(e_name)
+                        ent.addDependency(e_name)
                         #ent.appendFiles(design_book[p_name])
                         print("file needed:",design_book[p_name])
 
@@ -128,6 +238,8 @@ class Vhdl(Source):
                 if(words[0].lower() == "end"):
                     if(in_entity and (entity_name+";" in words or words[1].lower().count("entity"))):
                         in_entity = False
+                        ent.setPorts(port_txt)
+                        port_txt = ''
                     if(in_arch and (arch_name+";" in words or words[1].lower().count("architecture"))):
                         self.entity_bank.append(ent)
                         in_arch = False
@@ -137,8 +249,7 @@ class Vhdl(Source):
             file.close()
             pass
             
-        for e in self.entity_bank:
-            print(e)
+
         pass
 
     def grabEntities(self):
@@ -154,93 +265,4 @@ class Vhdl(Source):
         print("Project-Level Entities:",ent_list)
         return ent_list
 
-    pass
-
-
-class Verilog(Source):
-
-    def decipher(self, al, db):
-        log.info("Decoding Verilog file...")
-        self.grabImportsVerilog(db)
-        pass
-
-    def grabTestbenches(self):
-        tb_list = list()
-        files = None#glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
-        for f in files:
-            with open(f, 'r') as file:
-                in_entity = False
-                entity_name = None
-                is_tb = True
-                for line in file.readlines():
-                    words = line.lower().split()
-                    if(len(words) == 0): #skip if its a blank line
-                        continue
-                    if(words[0].lower() == "entity"):
-                        in_entity = True
-                        entity_name = words[1].lower()
-                    if(in_entity and ("port" in words or "port(" in words)):
-                        is_tb = False
-                    if(words[0].lower() == "end"):
-                        if(in_entity and (entity_name+";" in words or words[1].lower().count("entity"))):
-                            in_entity = False
-                if(is_tb and entity_name != None):
-                    tb_list.append(entity_name)
-                file.close()
-        print("Project-Level Testbenches:",tb_list)
-        return tb_list
-
-    def grabImportsVerilog(self, dbook):
-        mod_name = None
-        in_mod = False
-        in_arch = False
-        in_params = False
-        ent = None
-        with open(self._file_path, 'r') as file:
-            for line in file.readlines():
-                words = line.split()
-                
-                if(len(words) == 0):
-                    continue
-                if(words[0] == 'module'):
-                    in_mod = True
-                    in_params = False
-                    is_tb = True
-                    print(words)
-                    mod_name = words[1].split('(')[0].replace(";","")
-                    leftover = ''
-                    if(words[1].count("(")):
-                        leftover = words[1].split('(')[1]
-                    if(words[1].count(")")):
-                        in_mod = False
-                    if(len(leftover) and (leftover.startswith("input") or 
-                    leftover.startswith("output") or leftover.startswith("inout"))):
-                        is_tb = False
-                    ent = Entity(self._file_path, mod_name, isTB=is_tb)
-                #check when not in module port declaration section
-                if(in_mod):
-                    print(words)
-                    for w in words:
-                        if(w == 'input' or w == 'output' or w == 'inout'):
-                            ent.setTb(False)
-                        if(w == 'parameter'):
-                            in_params = True
-                        if(w.count(")")):
-                            if(in_params):
-                                in_params = False
-                            else:
-                                in_mod = False
-                                in_arch = True
-                            break
-                #check for using any designs/entities
-                if(in_arch):
-                    if(words[0] in dbook.keys()):
-                        ent.appendDeps(words[0])
-                    pass
-                if(words[0].startswith('endmodule')):
-                    self.entity_bank.append(ent)
-                    in_arch = False
-        pass    
-        for e in self.entity_bank:
-            print(e)
     pass

@@ -15,7 +15,7 @@ class Apparatus:
 
     @classmethod
     def load(cls):
-        log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.INFO)
+        log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.DEBUG)
 
         with open(cls.PKGMNG_PATH+"settings.yml", "r") as file:
             cls.SETTINGS = yaml.load(file, Loader=yaml.FullLoader)

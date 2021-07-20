@@ -7,9 +7,6 @@ from graph import Graph
 from apparatus import Apparatus as apt
 from market import Market
 import logging as log
-from source import Vhdl
-from source import Verilog
-from source import Source
 
 class legoHDL:
 
@@ -652,9 +649,8 @@ class legoHDL:
         self.capsuleCWD = Capsule(path=pkgPath+"/")
         
         self.capsuleCWD.identifyTop(self.db.availableLibs())
-        self.capsuleCWD.newWave(self.db.availableLibs())
 
-        exit()
+        #exit()
         command = package = description = ""
         options = []
         #store args accordingly from command-line
@@ -794,7 +790,7 @@ class legoHDL:
             if(len(options) and 'map' in options):
                 mapp = True
             if((self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
-                print(self.db.getCaps("local","cache")[L][N].ports(mapp))
+                print(self.db.getCaps("local","cache")[L][N].ports(mapp,self.db.availableLibs()))
         elif(command == "template" and apt.SETTINGS['editor'] != None):
             os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
             pass
