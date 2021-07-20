@@ -7,6 +7,9 @@ from graph import Graph
 from apparatus import Apparatus as apt
 from market import Market
 import logging as log
+from source import Vhdl
+from source import Verilog
+from source import Source
 
 class legoHDL:
 
@@ -649,7 +652,9 @@ class legoHDL:
         self.capsuleCWD = Capsule(path=pkgPath+"/")
         
         self.capsuleCWD.identifyTop(self.db.availableLibs())
+        self.capsuleCWD.newWave(self.db.availableLibs())
 
+        exit()
         command = package = description = ""
         options = []
         #store args accordingly from command-line

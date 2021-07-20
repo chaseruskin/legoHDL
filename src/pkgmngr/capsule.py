@@ -5,6 +5,8 @@ import glob
 from market import Market
 from apparatus import Apparatus as apt
 import git
+from source import Vhdl
+from source import Verilog
 
 #a capsule is a package/module that is signified by having the .lego.lock
 class Capsule:
@@ -413,6 +415,14 @@ class Capsule:
             self.pushYML("Updates module derivatives")
         return src_dir, derivatives
         pass
+
+    def gatherSources(self, ext=[".vhd", ".v", ".sv"]):
+        srcs = []
+        for e in ext:
+            srcs = srcs + glob.glob(self.__local_path+"/**/*"+e, recursive=True)
+        print(srcs)
+        return srcs
+        pass
     
     #auto detect the toplevel file
     def autoDetectTop(self):
@@ -659,6 +669,17 @@ class Capsule:
                 file.close()
         print(self._design_book)
         return self._design_book
+
+    def newWave(self, availLibs):
+        src_list = list()
+        files = self.gatherSources()
+        for f in files:
+            if(f.endswith(".vhd")):
+                Vhdl(f).decipher(availLibs, self.grabDesignBook())
+            else:
+                Verilog(f).decipher(availLibs, self.grabDesignBook())
+        pass  
+
 
     #determine what testbench is used for the top-level design entity
     def identifyBench(self, entity_name, availLibs):
