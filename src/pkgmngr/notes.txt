@@ -130,6 +130,7 @@ until next command
 [ ]		-be able to access lower-level ports of a package ONLY when within the package folder
 [ ]		-revisit capsule dependency functions to be more versatile
 [!]		-be sure to scan every inner-project component for its dependencies
+[ ]		-any package file made will be visible by outer-pkg alongside auto-generated pkg
 
 [ ]		-add cool logging
 

@@ -11,6 +11,12 @@ import logging as log
 #a capsule is a package/module that is signified by having the .lego.lock
 class Capsule:
 
+    allLibs = []
+
+    @classmethod
+    def fetchLibs(cls, reg_libs):
+        cls.allLibs = reg_libs
+
     def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False, market=None):
         self.__metadata = dict()
         self.__lib = ''
@@ -19,7 +25,7 @@ class Capsule:
         self.__market = market
  
         if(title != None):
-            self.__lib,self.__name = self.split(title)
+            self.__lib,self.__name = Capsule.split('.')
         if(path != None):
             self.__local_path = path
             #print(path)
@@ -70,13 +76,17 @@ class Capsule:
     def getTitle(self):
         return self.getLib()+'.'+self.getName()
 
-    def clone(self):
+    def clone(self, src=None, dst=None):
         local = apt.getLocal()+"/"+self.getLib()+"/"
-        src = self.__remote
         #grab library level path (default location)
         n = local.rfind(self.getName())
-        dst = local[:n] 
-        print(dst)
+        
+        if(src == None):
+            src = self.__remote
+        if(dst == None):
+            dst = local[:n]
+    
+        log.debug(dst)
         os.makedirs(dst, exist_ok=True)
         self.__repo = git.Git(dst).clone(src)
         self.loadMeta()
@@ -92,9 +102,7 @@ class Capsule:
         if(ver != '' and self.biggerVer(ver,self.getVersion()) == self.getVersion()):
             exit(log.error("Invalid version selection!"))
         major,minor,patch = self.sepVer(self.getVersion())
-        print(self.getVersion())
-        print("Uploading ",end='')
-        print("v"+str(major),minor,patch,sep='.',end='')
+        log.info("Uploading v"+str(major)+"."+str(minor)+"."+str(patch))
         if(ver == ''):
             if(options.count("maj")):
                 major += 1
@@ -236,7 +244,7 @@ class Capsule:
         self.__metadata['name'] = self.__name
         self.__metadata['library'] = self.__lib
         self.__metadata['version'] = '0.0.0'
-        self.autoDetectTop()
+        self.identifyTop()
         self.save() #save current progress into yaml
         self.__repo.index.add(self.__repo.untracked_files)
         self.__repo.index.commit("Initializes project")
@@ -371,8 +379,10 @@ class Capsule:
         self.loadMeta()
         return
 
-    def scanDependencies(self, file_target, update=True):
-        found_files = self.fileSearch(file_target)
+    def scanDependencies(self, entity, update=True):
+        ent = self.grabEntities()[entity]
+            
+        found_files = glob.glob(ent.getFile(), recursive=True)
         s = found_files[0].rfind('/')
         src_dir = found_files[0][:s+1] #print(src_dir)
         #open every src file and inspect lines for using libraries
@@ -398,12 +408,12 @@ class Capsule:
         #if the pkg does not exist in the lib folder, remove it!
         tmp = derivatives.copy()
         for d in tmp:
-            l,n = self.split(d)
-            print(l,n)
-            if(not os.path.isfile(apt.HIDDEN+"lib/"+l+"/"+n+".vhd")):
+            l,n = Capsule.split(d)
+            log.debug(l+" "+n)
+            if(not os.path.isfile(apt.WORKSPACE+"lib/"+l+"/"+n+".vhd")):
                 derivatives.remove(d)
 
-        print(derivatives)
+        log.debug(derivatives)
         update = False
         if(len(self.__metadata['derives']) != len(derivatives)):
             update = True
@@ -417,87 +427,16 @@ class Capsule:
         return src_dir, derivatives
         pass
 
-    def gatherSources(self, ext=[".vhd"]):
+    def gatherSources(self, ext=[".vhd"], excludeTB=False):
         srcs = []
         for e in ext:
             srcs = srcs + glob.glob(self.__local_path+"/**/*"+e, recursive=True)
         print(srcs)
+        if(excludeTB):
+            for k,e in self.grabEntities().items():
+                if(e.isTb() and e.getFile() in srcs):
+                    srcs.remove(e.getFile())
         return srcs
-        pass
-    
-    #auto detect the toplevel file
-    def autoDetectTop(self):
-        #find all possible files
-        vhd_files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
-        #remove all files containing "tb_" or "_tb"
-        comps = dict() #store a dict of all components to look for that are instantiated
-        toplvl = None
-        tmplist = vhd_files.copy()
-        for vhd in tmplist:
-            if (vhd.count("tb_") + vhd.count("_tb") > 0):
-                vhd_files.remove(vhd)
-            else:
-                s = vhd.rfind('/')
-                d = vhd.rfind('.')
-                comps[vhd[s+1:d]] = vhd
-
-        if(len(vhd_files) == 1):
-            toplvl = vhd_files[0]
-        
-        #go through every file, if a file contains one of the keys in comps, the file named with that key is removed
-        #print("DETECTING TOPLEVEL DESIGN MODULE")
-        if(toplvl == None):
-            for comp,vhd in comps.items():
-                with open(vhd, 'r') as file:
-                    in_entity = in_arch = False #reset detectors
-
-                    for line in file.readlines():
-                        if(line.count("entity") > 0):
-                            in_entity = not in_entity
-
-                        if(line.count("architecture") > 0):
-                            in_arch = not in_arch
-                        #remove file attached to key if...
-                        #if before entity, the key is found in line starting with "use"
-                        #checking for any user package files that contain this module's name
-                        if(line.count("use") and not in_entity and line.count("work")):
-                            l,n = self.split(line)
-                            for val in comps.keys():
-                                if(n.count(val)): #the package file contains this name
-                                    vhd_files.remove(comps[n])
-                                    break
-                        #if inside architecture and before begin, the key is found in line with "component"
-                        if(line.count("component") and in_arch):
-                            t = line.find("component")+len("component")+1
-                            while line[t] == ' ':
-                                t = t+1
-                            spc = (line[t:]).find(' ')
-                            n = line[t:t+spc]
-                            if(n in comps.keys()):
-                                #print("REMOVE:",comps[n])
-                                vhd_files.remove(comps[n])
-                                break
-                    file.close()
-                    pass
-        #grab contender's name
-        if(len(vhd_files) == 1):
-            toplvl = vhd_files[0]
-        else:
-            print("ERROR- Could not resolve toplevel design module.")
-            return
-        
-        s = toplvl.rfind('/')
-        d = toplvl.rfind('.')
-        toplvlName = toplvl[s+1:d]
-        toplvlPath = toplvl[:s+1]
-    
-        #break up into src_dir and file name
-        #add to metadata, ensure to push meta data if results differ from previously loaded
-        if(toplvlName+".vhd" != self.getMeta("toplevel")):
-            print("TOPLEVEL:",toplvlName)
-            self.__metadata['toplevel'] = toplvlName+".vhd"
-            self.autoDetectBench()
-            self.pushYML("Auto updates top level design module to "+self.getMeta("toplevel"))
         pass
     
     @classmethod
@@ -521,134 +460,80 @@ class Capsule:
         name = dep[dot+1:dot+1+dot2]
         return lib,name
 
-    # given a VHDL file, return all of its "use"/imported packages
-    def grabImportsVHD(self, filepath, availLibs):
-        design_book = self.grabDesigns("cache","current")
-        import_dict = dict() #associate entities/packages with particular entities
-        lib_headers = list()
-        with open(filepath, 'r') as file:
-            in_entity = in_arch = in_pkg = False
-            entity_name = arch_name = pkg_name =  None
-            #read through the VHDL file
-            for line in file.readlines():
-                #parse line into a list of its words
-                words = line.split()
-                if(len(words) == 0): #skip if its a blank line
-                    continue
-                #find when entering an entity, architecture, or package
-                if(words[0].lower() == "entity"):
-                    in_entity = True
-                    entity_name = words[1].lower()
-                    import_dict[entity_name] = lib_headers #stash all "uses" from above
-                    lib_headers = list()
-                if(words[0].lower() == "package"):
-                    in_pkg = True
-                    pkg_name = words[1].lower()
-                    #import_dict[pkg_name] = lib_headers #stash all "uses" from above
-                    lib_headers = list()
-                if(words[0].lower() == "architecture"):
-                    in_arch = True
-                    arch_name = words[1]
-                #find "use" declarations
-                if(words[0].lower() == "use" and not in_entity and not in_arch and not in_pkg):
-                    impt = words[1].split('.')
-                    #do not add if the library is not work or library is not in list of available custom libs
-                    if(impt[0].lower() == 'work' or impt[0].lower() in availLibs):
-                        #lib_headers.append(words[1][:len(words[1])-1])
-                        comps = self.grabComponents(self.grabDesigns("cache","current")[impt[1].replace(";",'').lower()])
-                        
-                        if(len(impt) == 3):
-                            suffix = impt[2].lower().replace(";",'')
-                            if(suffix == 'all'): # add all found entities from pkg as dependencies of design
-                                lib_headers = lib_headers + comps
-                            else: #it is a specific component
-                                lib_headers.append(suffix)
-                        else: # a third piece was not given, check instantiations with this pkg.entity format in architecture
-                            pass
+    #auto detect top-level designe entity
+    def identifyTop(self):
+        ents = self.grabEntities()
+        top_contenders = list(ents.keys())
+        top = None
+        for k,e in ents.items():
+            #if the entity is value under this key, it is lower-level
+            if(e.isTb()):
+                top_contenders.remove(e.getName())
+                continue
+                
+            for dep in e._derivs:
+                if(dep in top_contenders):
+                    top_contenders.remove(dep)
 
-                #find component declarations
-                if(words[0].lower() == "component" and in_arch):
-                    import_dict[entity_name].append(words[1])
-                if(words[0].lower() == "component" and in_pkg):
-                    #import_dict[pkg_name].append(words[1])
-                    pass
-                #find instantiations by package.entity
-                if(len(words) > 2 and words[1] == ':' and in_arch):
-                    pkg_sect = words[2].split('.')
-                    e_name = pkg_sect[len(pkg_sect)-1].lower()
-                    p_name = pkg_sect[len(pkg_sect)-2].lower()
+        if(len(top_contenders) == 1):
+            top = ents[top_contenders[0]]
 
-                    if(p_name in design_book.keys()):
-                        import_dict[entity_name].append(e_name)
-                        print("file needed:",design_book[p_name])
-
-                #detect when outside of entity, architecture, or package
-                if(words[0].lower() == "end"):
-                    if(in_entity and (entity_name+";" in words or words[1].lower().count("entity"))):
-                        in_entity = False
-                    if(in_arch and (arch_name+";" in words or words[1].lower().count("architecture"))):
-                        in_arch = False
-                    if(in_pkg and (pkg_name+";" in words or words[1].lower().count("package"))):
-                        in_pkg = False
-                pass
-            file.close()
+            log.info("DETECTED TOP-LEVEL ENTITY: "+top.getName())
+            bench = self.identifyBench(top.getName(), save=True)
+            #break up into src_dir and file name
+            #add to metadata, ensure to push meta data if results differ from previously loaded
+            if(top.getName() != self.getMeta("toplevel")):
+                log.debug("TOPLEVEL: "+top.getName())
+                self.__metadata['toplevel'] = top.getName()
+                self.pushYML("Auto updates top level design module to "+self.getMeta("toplevel"))
             pass
-        print(import_dict)
-        return(import_dict)
-        pass
-    
-    #auto detect testbench file
-    def autoDetectBench(self, comp=None):
-        #print("DETECTING TOP-LEVEL TESTBENCH")
-        #based on toplevel, find which file instantiates a component of toplevel
-        #find all possible files
-        vhd_files = self.fileSearch()
-        #keep only files containing "tb_" or "_tb"
-        if(comp == None):
-            comp = self.getMeta("toplevel") #looking for a testbench that uses this component
-        ext_i = comp.find(".vhd")
-        if(ext_i > -1):
-            comp = comp[:ext_i]
-        #print("LOOKING:",comp)
-        bench = None
-        tmplist = vhd_files.copy()
-        for vhd in tmplist:
-            if (vhd.count("tb_") + vhd.count("_tb") == 0):
-                vhd_files.remove(vhd)
-            elif(vhd.count(comp)):
-                bench = vhd
-                break
+        elif(len(top_contenders) == 0):
+            log.error("No top level detected.")
+        else:
+            log.error("Multiple top levels detected. Please be explicit when exporting.")
+        return top
 
-        if(len(vhd_files) == 1):
-            bench = vhd_files[0]
-        
-        if(bench == None):
-            for vhd in vhd_files:
-                with open(vhd, 'r') as file:
-                    for line in file.readlines():
-                        if(line.count("use") and line.count(comp) and line.count("work")):
-                            bench = vhd
-                            break
-                        if(line.count("component") and line.count(comp)):
-                            bench = vhd
-                            break
-                    file.close()
-                    if(bench != None):
-                        break
-                    pass
-        
-        if(bench == None):
-            log.error("Could not resolve top-level testbench")
-            return
-        log.debug("TESTBENCH: "+bench)
-        s = bench.rfind('/')
-        d = bench.rfind('.')
-        benchName = bench[s+1:d]
-        benchPath = bench[:s+1]
-        
-        if(benchName+".vhd" != self.getMeta("bench")):
-            self.__metadata['bench'] = benchName+".vhd"
+    #determine what testbench is used for the top-level design entity
+    def identifyBench(self, entity_name, save=False):
+        ents = self.grabEntities()
+        bench = None
+        for k,e in ents.items():
+            for dep in e.getDerivs():
+                if(dep.lower() == entity_name.lower() and e.isTb()):
+                    bench = e
+                    break
+
+        if(bench != None):
+            log.info("DETECTED TOP-LEVEL BENCH: "+bench.getName())
+            if(save and self.getMeta("bench") != bench.getName()):
+                self.__metadata['bench'] = bench.getName()
+                self.pushYML("Auto updates testbench module to "+self.getMeta("bench"))
+            return bench #return the entity
+        else:
+            log.error("No testbench configured for this top-level entity.")
+            return None
         pass
+
+    def grabEntities(self):
+        if(hasattr(self, "_entity_bank")):
+            return self._entity_bank
+        srcs = self.gatherSources()
+        for f in srcs:
+            Vhdl(f).decipher(self.allLibs, self.grabDesigns("cache","current"))
+        self._entity_bank = Vhdl.entity_bank
+        for k,e in self._entity_bank.items():
+            print(e)
+        return self._entity_bank
+
+    def grabDesigns(self, *args):
+        design_book = dict()
+        if("current" in args):
+            design_book = self.grabCurrentDesigns()
+            pass
+        if("cache" in args):
+            design_book.update(self.grabCacheDesigns())
+            pass
+        return design_book
 
     #return dictionary of entities with their respective files as values
     #all possible entities or packages to be used in current project
@@ -669,111 +554,6 @@ class Capsule:
         log.debug("Cache-Level designs:",self._cache_designs)
         return self._cache_designs
 
-    #determine what testbench is used for the top-level design entity
-    def identifyBench(self, entity_name, availLibs, save=False):
-        ents = self.grabEntities(availLibs)
-        bench = None
-        for e in ents:
-            for dep in e.getDerivs():
-                if(dep.lower() == entity_name.lower()):
-                    bench = e
-                    break
-
-        if(bench != None):
-            log.info("DETECTED TOP-LEVEL BENCH: "+bench.getName())
-            if(save and self.getMeta("bench") != bench.getName()):
-                self.__metadata['bench'] = bench.getName()
-                self.pushYML("Auto updates testbench module to "+self.getMeta("bench"))
-            return bench #return the entity
-        else:
-            log.error("No testbench configured for this top-level entity.")
-            return None
-        pass
-
-    def grabEntities(self, availLibs):
-        if(hasattr(self, "_entity_bank")):
-            return self._entity_bank
-        srcs = self.gatherSources()
-        for f in srcs:
-            Vhdl(f).decipher(availLibs,self.grabDesigns("cache","current"))
-        self._entity_bank = Vhdl.entity_bank
-        for e in self._entity_bank:
-            print(e)
-        return self._entity_bank
-    
-    #auto detect top-level designe entity
-    def identifyTop(self, availLibs):
-        ents = self.grabEntities(availLibs)
-        top_contenders = []
-        top = None
-        for e in ents:
-            top_contenders.append(e.getName())
-        for e in ents:
-            #if the entity is value under this key, it is lower-level
-            if(e.isTb()):
-                top_contenders.remove(e.getName())
-                continue
-                
-            for dep in e._derivs:
-                if(dep in top_contenders):
-                    top_contenders.remove(dep)
-
-        if(len(top_contenders) == 1):
-            for e in ents:
-                if(e.getName() == top_contenders[0]):
-                    top = e
-                    break
-            log.info("DETECTED TOP-LEVEL ENTITY: "+top.getName())
-            bench = self.identifyBench(top.getName(), availLibs, save=True)
-            #break up into src_dir and file name
-            #add to metadata, ensure to push meta data if results differ from previously loaded
-            if(top.getName() != self.getMeta("toplevel")):
-                log.debug("TOPLEVEL: "+top.getName())
-                self.__metadata['toplevel'] = top.getName()
-                self.pushYML("Auto updates top level design module to "+self.getMeta("toplevel"))
-            pass
-        elif(len(top_contenders) == 0):
-            log.error("No top level detected.")
-        else:
-            log.error("Multiple top levels detected. Please be explicit when exporting.")
-        return top
-
-    def grabTestbenches(self):
-        tb_list = list()
-        files = glob.glob(self.__local_path+"/**/*.vhd", recursive=True)
-        for f in files:
-            with open(f, 'r') as file:
-                in_entity = False
-                entity_name = None
-                is_tb = True
-                for line in file.readlines():
-                    words = line.lower().split()
-                    if(len(words) == 0): #skip if its a blank line
-                        continue
-                    if(words[0].lower() == "entity"):
-                        in_entity = True
-                        entity_name = words[1].lower()
-                    if(in_entity and ("port" in words or "port(" in words)):
-                        is_tb = False
-                    if(words[0].lower() == "end"):
-                        if(in_entity and (entity_name+";" in words or words[1].lower().count("entity"))):
-                            in_entity = False
-                if(is_tb and entity_name != None):
-                    tb_list.append(entity_name)
-                file.close()
-        print("Project-Level Testbenches:",tb_list)
-        return tb_list
-
-    def grabDesigns(self, *args):
-        design_book = dict()
-        if("current" in args):
-            design_book = self.grabCurrentDesigns()
-            pass
-        if("cache" in args):
-            design_book.update(self.grabCacheDesigns())
-            pass
-        return design_book
-
     def grabCurrentDesigns(self):
         if(hasattr(self, "_cur_designs")):
             return self._cur_designs
@@ -791,28 +571,11 @@ class Capsule:
         print("Project-Level Designs:",self._cur_designs)
         return self._cur_designs
 
-    def grabComponents(self, filepath):
-        comp_list = list()
-        with open(filepath, 'r') as file:
-            for line in file.readlines():
-                words = line.split()
-                if(len(words) == 0): #skip if its a blank line
-                    continue
-                if(words[0].lower() == "component"):
-                    comp_list.append(words[1].lower())
-            file.close()
-        print("Components:",comp_list)
-        return comp_list
-
-    def fileSearch(self, file="*.vhd"):
-        return glob.glob(self.__local_path+"/**/"+file, recursive=True)
-        pass
-
-    def ports(self, mapp, availLibs):
-        ents = self.grabEntities(availLibs)
+    def ports(self, mapp):
+        ents = self.grabEntities()
         printer = ''
-        for e in ents:
-            if(e.getName() == self.getMeta("toplevel")):
+        for k,e in ents.items():
+            if(k == self.getMeta("toplevel")):
                 printer = e.getPorts()
                 if(mapp):
                     printer = printer + "\n" + e.getMapping()

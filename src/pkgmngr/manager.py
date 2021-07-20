@@ -18,6 +18,7 @@ class legoHDL:
         
         #defines path to dir of remote code base
         self.db = Registry(apt.getRemotes())
+        Capsule.fetchLibs(self.db.availableLibs())
 
         #set env variable for VHDL_LS
         os.environ['VHDL_LS_CONFIG'] = apt.WORKSPACE+"map.toml" 
@@ -74,7 +75,7 @@ class legoHDL:
         cache_path = apt.WORKSPACE+"cache/"
         lib_path = apt.WORKSPACE+"lib/"+l+"/"
         #does the package already exist in the cache directory?
-        if(self.db.capExists(title, "cache")):
+        if(self.db.capExists(title, "cache", updt=True)):
             log.info("The module is already installed.")
             return
         elif(self.db.capExists(title, "market")):
@@ -108,7 +109,8 @@ class legoHDL:
         mapfile = open(filename, 'w')
         inc_paths = list()
         inc_paths.append("\'"+lib_path+cap.getName()+"_pkg.vhd"+"\',\n")
-        inc_paths.append("\'"+cap.fileSearch(cap.getMeta("toplevel"))[0].replace(cap.getMeta("toplevel"),"*.vhd")+"\',\n")
+        for f in cap.gatherSources():
+            inc_paths.append("\'"+f+"\',\n")
         inc = False
         found_lib = False
         if(len(cur_lines) <= 1):
@@ -242,12 +244,11 @@ class legoHDL:
         log.info("Finding toplevel design...")
         #add export option to override auto detection
         if(top == None):
-            cap.autoDetectTop()
-            cap.autoDetectBench()
+            cap.identifyTop()
             top = cap.getMeta("toplevel")
             tb = cap.getMeta("bench")
         elif(top != None and tb == None):
-            cap.autoDetectBench(top)
+            cap.identifyBench(top)
             tb = cap.getMeta("bench")
         
         if(top.count(".vhd") == 0):
@@ -262,7 +263,7 @@ class legoHDL:
         label_list = list()
         #mission: recursively search through every src VHD file for what else needs to be included
         log.info("Grabbing dependencies...")
-        src_dir,derivatives = cap.scanDependencies(file_target=top)
+        _,derivatives = cap.scanDependencies(top.replace(".vhd",""))
         for d in derivatives:
             print('DERIV:',derivatives)
             g.addEdge(top, d)
@@ -299,15 +300,19 @@ class legoHDL:
             for pkg in library[lib]:
                 key = lib+'.'+pkg
                 root_dir = apt.WORKSPACE+"cache/"+lib+"/"+pkg+"/"
+                log.debug(top_mp[key])
+                tmp = Capsule(path=root_dir)
                 #TO-DO: find better way to fix glob search to include root prj directory in search
                 src_dir = glob.glob(root_dir+"/**/"+top_mp[key], recursive=True) 
-                output.write("@LIB "+lib+" "+src_dir[0].replace(top_mp[key], "*.vhd")+"\n")
+                for f in tmp.gatherSources(excludeTB=True):
+                    output.write("@LIB "+f+"\n")
                 output.write("@LIB "+lib+" "+apt.WORKSPACE+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
 
         #write current src dir where all src files are as "work" lib
-        output.write("@SRC "+cap.fileSearch(top)[0].replace(top, "*.vhd")+"\n")
+        for f in cap.gatherSources(excludeTB=True): #remove all testbench files
+            output.write("@SRC "+f+"\n")
         #write current test dir where all testbench files are
-        output.write("@TB "+cap.fileSearch(tb)[0]+"\n")
+        output.write("@TB "+cap.grabEntities()[cap.getMeta("bench")].getFile()+"\n")
         output.close()
         print("success")
         pass
@@ -316,10 +321,10 @@ class legoHDL:
     def download(self, title):
         l,n = Capsule.split(title)
 
-        if(not apt.linkedRemote()):
+        if(True):
             if(self.db.capExists(title, "cache") and not self.db.capExists(title, "local")):
                 instl = self.db.getCaps("cache")[l][n]
-                instl.clone(src=instl.getPath(), dst=apt.getLocal()+"/"+l)
+                instl.clone(src=instl.getPath())
                 return self.db.getCaps("local",updt=True)[l][n]
             exit(log.error("No remote code base configured to download modules"))
 
@@ -358,7 +363,7 @@ class legoHDL:
         if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == ''):
             exit(log.error(err_msg))
         
-        cap.autoDetectTop()
+        cap.identifyTop()
         cap.release(ver, options)
         if(os.path.isdir(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())):
             shutil.rmtree(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())
@@ -648,7 +653,7 @@ class legoHDL:
 
         self.capsuleCWD = Capsule(path=pkgPath+"/")
         
-        self.capsuleCWD.identifyTop(self.db.availableLibs())
+        self.capsuleCWD.identifyTop()
 
         #exit()
         command = package = description = ""
