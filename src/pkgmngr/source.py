@@ -5,9 +5,6 @@ from entity import Entity
 
 
 class Source(ABC):
-
-    entity_bank = dict() #class var of a entity map key=name,val=entity(obj)
-
     def __init__(self, fpath):
         self._file_path = apt.fs(fpath)
         pass
@@ -15,7 +12,6 @@ class Source(ABC):
     @abstractmethod
     def decipher(self):
         pass
-
     pass
 
 
@@ -24,9 +20,11 @@ class Vhdl(Source):
     def decipher(self, availLibs, design_book):
         log.info("Deciphering VHDL file...")
         lib_headers = list()
+        entity_bank = dict()
         with open(self._file_path, 'r') as file:
             in_entity = in_arch = in_pkg = False
             entity_name = arch_name = pkg_name =  None
+            extern_libs = list()
             port_txt = ''
             ent = None
             #read through the VHDL file
@@ -41,6 +39,8 @@ class Vhdl(Source):
                     entity_name = words[1].lower()
                     #stash all "uses" from above
                     ent = Entity(self._file_path, entity_name, lib_headers)
+                    ent.setExterns(extern_libs)
+                    extern_libs = list()
                     lib_headers = list()
                 if(words[0].lower() == "package"):
                     in_pkg = True
@@ -55,8 +55,12 @@ class Vhdl(Source):
                     impt = words[1].split('.')
                     #do not add if the library is not work or library is not in list of available custom libs
                     if(impt[0].lower() == 'work' or impt[0].lower() in availLibs):
+                        package_name = impt[1].replace(";",'').lower()
+                        
+                        if(impt[0].lower() in availLibs):
+                            extern_libs.append((package_name,design_book[package_name]))
                         #lib_headers.append(words[1][:len(words[1])-1])
-                        comps = self.grabComponents(design_book[impt[1].replace(";",'').lower()])
+                        comps = self.grabComponents(design_book[package_name])
                         
                         if(len(impt) == 3):
                             suffix = impt[2].lower().replace(";",'')
@@ -96,13 +100,14 @@ class Vhdl(Source):
                         ent.setPorts(port_txt)
                         port_txt = ''
                     if(in_arch and (arch_name+";" in words or words[1].lower().count("architecture"))):
-                        self.entity_bank[ent.getName()] = ent
+                        entity_bank[ent.getName()] = ent
                         in_arch = False
                     if(in_pkg and (pkg_name+";" in words or words[1].lower().count("package"))):
                         in_pkg = False
                 pass
             file.close()
             pass
+        return entity_bank
         pass
 
     def grabComponents(self, filepath):

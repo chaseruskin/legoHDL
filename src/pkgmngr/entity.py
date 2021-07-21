@@ -19,7 +19,6 @@ class Entity:
             if(counter < lineCount):
                 self._ports = self._ports + "\n"
             counter = counter + 1
-
         self.getMapping() 
 
     def getPorts(self):
@@ -98,6 +97,14 @@ class Entity:
     def isTb(self):
         return self._is_tb
 
+    def setExterns(self, extern):
+        self._extern_libs = extern
+
+    def getExternal(self):
+        if(hasattr(self, "_extern_libs")):
+            return self._extern_libs
+        return []
+
     def getName(self):
         return self._name
 
@@ -127,4 +134,6 @@ ports:
 {self._ports}
 map:
 {self._mapping}
+external libraries:
+{self.getExternal()}
         ''')

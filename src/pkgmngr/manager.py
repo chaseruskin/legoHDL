@@ -251,12 +251,8 @@ class legoHDL:
             cap.identifyBench(top)
             tb = cap.getMeta("bench")
         
-        if(top.count(".vhd") == 0):
-            top = top+".vhd"
-        if(tb.count(".vhd")== 0):
-            tb = tb+".vhd"
 
-        g= Graph()
+        g = Graph()
         top_mp = dict()
         top_mp[cap.getTitle()] = top
         output = open(build_dir+"recipe", 'w')
@@ -311,11 +307,65 @@ class legoHDL:
         #write current src dir where all src files are as "work" lib
         for f in cap.gatherSources(excludeTB=True): #remove all testbench files
             output.write("@SRC "+f+"\n")
+        
         #write current test dir where all testbench files are
-        output.write("@TB "+cap.grabEntities()[cap.getMeta("bench")].getFile()+"\n")
+        if(tb != None):
+            output.write("@TB "+cap.grabEntities()[cap.getMeta("bench")].getFile()+"\n")
+            output.write("@TB-UNIT "+tb+"\n")
+
+        if(top != None):
+            output.write("@TOP-UNIT "+top+"\n")
+
         output.close()
         print("success")
         pass
+
+    def recursiveGraph(self, cap, grph):
+        ents = cap.grabEntities(excludeTB=True)
+        for k,e in ents.items():
+            for dep in e.getDerivs():
+                grph.addEdge(k, dep)
+            for extern_lib in e.getExternal():
+                L,N = self.grabExternalProject(extern_lib)
+                ext_cap = self.db.getCaps("cache")[L][N]
+                grph = self.recursiveGraph(ext_cap, grph)
+                pass
+        return grph
+
+    def grabExternalProject(self, tuplee):
+        # search for the projects attached to the external package
+        # use its file to find out what project uses it
+        path_parse = apt.fs(tuplee[1]).split('/')
+        # if in lib {library}/{project}_pkg.vhd
+        if("lib" in path_parse):
+            i = path_parse.index("lib")
+            pass
+        # if in cache {library}/{project}/../.vhd
+        elif("cache" in path_parse):
+            i = path_parse.index("cache")
+            pass
+        L = path_parse[i+1]
+        N = path_parse[i+2].replace("_pkg.vhd", "")
+        return L,N
+
+    def formGraph(self, cap):
+        log.info("Generating dependency tree...")
+        heirarchy = Graph()
+
+        ents = cap.grabEntities()
+        for k,e in ents.items():
+            for dep in e.getDerivs():
+                heirarchy.addEdge(k, dep)
+            # see what external packages are called
+            for extern_lib in e.getExternal():
+                L,N = self.grabExternalProject(extern_lib)
+                ext_cap = self.db.getCaps("cache")[L][N]
+                #recursively feed into dependency tree
+                heirarchy = self.recursiveGraph(ext_cap, heirarchy)
+
+        print("Topological:",heirarchy.topologicalSort())
+        heirarchy.output()
+        return heirarchy
 
     #will also install project into cache and have respective pkg in lib
     def download(self, title):
@@ -652,8 +702,8 @@ class legoHDL:
         pkgCWD = pkgPath[lastSlash+1:]
 
         self.capsuleCWD = Capsule(path=pkgPath+"/")
-        
-        self.capsuleCWD.identifyTop()
+        #if(self.capsuleCWD.isValid()):
+            #self.capsuleCWD.identifyTop()
 
         #exit()
         command = package = description = ""
@@ -669,10 +719,8 @@ class legoHDL:
             elif(package == ''):
                 package = arg
 
-        for x in options:
-            if(x[0] == ':'):
-                description = x[1:]
-                break
+        
+        description = package
         
         value = package
         package = package.replace("-", "_")
@@ -717,7 +765,7 @@ class legoHDL:
                 if(apt.isValidURL(opt)):
                     git_url = opt
             print(git_url,mkt_sync)
-            
+            log.debug("package name: "+package)
             self.capsulePKG = Capsule(title=package, new=True, market=mkt_sync, remote=git_url)
 
             if(startup):
@@ -730,6 +778,9 @@ class legoHDL:
             if(len(options) == 2 and options.count('d')):
                 self.cleanup(self.capsuleCWD, False)
             pass
+        elif(command == 'graph' and self.capsuleCWD.isValid()):
+            #generate dependency tree
+            self.formGraph(self.capsuleCWD)
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
             cap = self.download(package)
@@ -795,7 +846,7 @@ class legoHDL:
             if(len(options) and 'map' in options):
                 mapp = True
             if((self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
-                print(self.db.getCaps("local","cache")[L][N].ports(mapp,self.db.availableLibs()))
+                print(self.db.getCaps("local","cache")[L][N].ports(mapp))
         elif(command == "template" and apt.SETTINGS['editor'] != None):
             os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
             pass

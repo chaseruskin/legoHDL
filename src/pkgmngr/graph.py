@@ -23,9 +23,14 @@ class Graph:
         if(fromm not in self.__adj_list.keys()):
             self.__adj_list[fromm] = list()
         
-        self.__adj_list[to].append(fromm)
+        if(fromm not in self.__adj_list[to]):
+            self.__adj_list[to].append(fromm)
         #to.__requires.append(fromm)
         #fromm.__required_by.append(to)
+        pass
+
+    def hasVertex(self, v):
+        return True
         pass
 
     def removeEdge(self, to, fromm):
@@ -58,7 +63,7 @@ class Graph:
 
     def output(self):
         for v in self.__adj_list.keys():
-            print("vertex",v,end=' <-- ')
+            print("vertex: [",v,"]",end=' <-- ')
             for e in self.__adj_list[v]:
                 print(e,end=' ')
             print()

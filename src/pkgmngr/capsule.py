@@ -25,7 +25,7 @@ class Capsule:
         self.__market = market
  
         if(title != None):
-            self.__lib,self.__name = Capsule.split('.')
+            self.__lib,self.__name = Capsule.split(title)
         if(path != None):
             self.__local_path = path
             #print(path)
@@ -40,11 +40,11 @@ class Capsule:
             self.__remote = remote #pass in remote object
         
         self.__local_path = apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/'
-
         #configure remote url
         #if(apt.linkedRemote()):
             #self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
         if(self.isValid()):
+            log.debug("Placing here: "+self.__local_path)
             self.__repo = git.Repo(self.__local_path)
             #load in metadata from YML
             self.loadMeta()
@@ -245,6 +245,7 @@ class Capsule:
         self.__metadata['library'] = self.__lib
         self.__metadata['version'] = '0.0.0'
         self.identifyTop()
+        log.debug(self.getName())
         self.save() #save current progress into yaml
         self.__repo.index.add(self.__repo.untracked_files)
         self.__repo.index.commit("Initializes project")
@@ -464,6 +465,7 @@ class Capsule:
     def identifyTop(self):
         ents = self.grabEntities()
         top_contenders = list(ents.keys())
+        log.debug(top_contenders)
         top = None
         for k,e in ents.items():
             #if the entity is value under this key, it is lower-level
@@ -514,15 +516,17 @@ class Capsule:
             return None
         pass
 
-    def grabEntities(self):
+    def grabEntities(self, excludeTB=False):
         if(hasattr(self, "_entity_bank")):
             return self._entity_bank
-        srcs = self.gatherSources()
+        srcs = self.gatherSources(excludeTB=excludeTB)
+        self._entity_bank = dict()
         for f in srcs:
-            Vhdl(f).decipher(self.allLibs, self.grabDesigns("cache","current"))
-        self._entity_bank = Vhdl.entity_bank
+            log.info(f)
+            self._entity_bank.update(Vhdl(f).decipher(self.allLibs, self.grabDesigns("cache","current")))
         for k,e in self._entity_bank.items():
-            print(e)
+            #print(e)
+            pass
         return self._entity_bank
 
     def grabDesigns(self, *args):
@@ -572,6 +576,7 @@ class Capsule:
         return self._cur_designs
 
     def ports(self, mapp):
+        self.identifyTop()
         ents = self.grabEntities()
         printer = ''
         for k,e in ents.items():

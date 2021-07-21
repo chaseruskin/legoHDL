@@ -123,6 +123,8 @@ until next command
 -uploading and instantly dismissing a project causes the new version to not appear in catalog on next commands
 -better determine when it is necessary to request from remote to improve speed of some commands
 
+@IDEA	init function with -file flag to create a new file from given template
+		legohdl init -file ./design/c.vhd
 
 ##################
 ======ROADMAP=====

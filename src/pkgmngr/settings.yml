@@ -5,6 +5,9 @@ label:
   IP:
   - .xci
   - true
+  PINS:
+  - pinout.txt
+  - false
   SV:
   - .sv
   - false
