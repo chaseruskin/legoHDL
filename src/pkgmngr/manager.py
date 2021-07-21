@@ -196,7 +196,6 @@ class legoHDL:
                     tmp = yaml.load(file, Loader=yaml.FullLoader)
             else:
                 continue
-            top_mp[l+'.'+n] = tmp['toplevel']
             label_list = self.recurseScan(tmp['derives'], label_list)
         return label_list
 
