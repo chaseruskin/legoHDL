@@ -20,6 +20,7 @@ class Vhdl(Source):
     def decipher(self, availLibs, design_book):
         log.info("Deciphering VHDL file...")
         lib_headers = list()
+        additional_files = []
         entity_bank = dict()
         with open(self._file_path, 'r') as file:
             in_entity = in_arch = in_pkg = False
@@ -59,6 +60,8 @@ class Vhdl(Source):
                         
                         if(impt[0].lower() in availLibs):
                             extern_libs.append((package_name,design_book[package_name]))
+                        else:
+                            print("file needed for entity as use:",design_book[package_name])
                         #lib_headers.append(words[1][:len(words[1])-1])
                         comps = self.grabComponents(design_book[package_name])
                         
@@ -87,11 +90,15 @@ class Vhdl(Source):
                     pkg_sect = words[2].split('.')
                     e_name = pkg_sect[len(pkg_sect)-1].lower()
                     p_name = pkg_sect[len(pkg_sect)-2].lower()
+                    #add to external references if it is not from work
+                    if(len(pkg_sect) > 2):
+                        if(pkg_sect[0].lower() != 'work'):
+                            ent.addExtern((p_name,design_book[p_name]))
 
                     if(p_name in design_book.keys()):
                         ent.addDependency(e_name)
                         #ent.appendFiles(design_book[p_name])
-                        print("file needed:",design_book[p_name])
+                        print("file needed for entity:",ent.getName(),design_book[p_name])
 
                 #detect when outside of entity, architecture, or package
                 if(words[0].lower() == "end"):
@@ -120,7 +127,7 @@ class Vhdl(Source):
                     if(words[0].lower() == "component"):
                         comp_list.append(words[1].lower())
                 file.close()
-            print("Components:",comp_list)
+            #print("Components:",comp_list)
             return comp_list
 
     pass

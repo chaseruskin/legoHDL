@@ -321,26 +321,30 @@ class legoHDL:
         pass
 
     def recursiveGraph(self, cap, grph):
+        #grab only source-design entities (its an external referenced project)
         ents = cap.grabEntities(excludeTB=True)
         for k,e in ents.items():
+            #make the connections between an entity and its dependency entity
             for dep in e.getDerivs():
                 grph.addEdge(k, dep)
+            #see what external packages are referenced
             for extern_lib in e.getExternal():
                 L,N = self.grabExternalProject(extern_lib)
+                #create project object based on this external package
                 ext_cap = self.db.getCaps("cache")[L][N]
+                #recursively feed into dependency tree
                 grph = self.recursiveGraph(ext_cap, grph)
-                pass
         return grph
 
+    #search for the projects attached to the external package
     def grabExternalProject(self, tuplee):
-        # search for the projects attached to the external package
-        # use its file to find out what project uses it
+        #use its file to find out what project uses it
         path_parse = apt.fs(tuplee[1]).split('/')
         # if in lib {library}/{project}_pkg.vhd
         if("lib" in path_parse):
             i = path_parse.index("lib")
             pass
-        # if in cache {library}/{project}/../.vhd
+        #if in cache {library}/{project}/../.vhd
         elif("cache" in path_parse):
             i = path_parse.index("cache")
             pass
@@ -350,22 +354,24 @@ class legoHDL:
 
     def formGraph(self, cap):
         log.info("Generating dependency tree...")
-        heirarchy = Graph()
-
+        hierarchy = Graph()
+        #grab current project's entity list
         ents = cap.grabEntities()
         for k,e in ents.items():
+            #make the connections between an entity and its dependency entity
             for dep in e.getDerivs():
-                heirarchy.addEdge(k, dep)
-            # see what external packages are called
+                hierarchy.addEdge(k, dep)
+            #see what external packages are referenced
             for extern_lib in e.getExternal():
                 L,N = self.grabExternalProject(extern_lib)
+                #create project object based on this external package
                 ext_cap = self.db.getCaps("cache")[L][N]
                 #recursively feed into dependency tree
-                heirarchy = self.recursiveGraph(ext_cap, heirarchy)
+                hierarchy = self.recursiveGraph(ext_cap, hierarchy)
 
-        print("Topological:",heirarchy.topologicalSort())
-        heirarchy.output()
-        return heirarchy
+        print("Topological:",hierarchy.topologicalSort())
+        hierarchy.output()
+        return hierarchy
 
     #will also install project into cache and have respective pkg in lib
     def download(self, title):

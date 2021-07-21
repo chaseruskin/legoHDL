@@ -1,4 +1,5 @@
 #graph module used to generate flat dependency tree, topologically sort it
+from entity import Entity
 
 #not being used atm
 class Vertex:
@@ -15,27 +16,25 @@ class Graph:
         #store with adj list (list of vertices)
         self.__adj_list = dict()
         pass
-
+    
+    #takes in two entities and connects them
     def addEdge(self, to, fromm): #to->upper-level module... from->lower-level module
         #add to list if vertex does not exist
-        if(to not in self.__adj_list.keys()):
-            self.__adj_list[to] = list()
-        if(fromm not in self.__adj_list.keys()):
-            self.__adj_list[fromm] = list()
+        if(to.getName() not in self.__adj_list.keys()):
+            self.__adj_list[to.getName()] = list()
+        if(fromm.getName() not in self.__adj_list.keys()):
+            self.__adj_list[fromm.getName()] = list()
         
-        if(fromm not in self.__adj_list[to]):
-            self.__adj_list[to].append(fromm)
-        #to.__requires.append(fromm)
-        #fromm.__required_by.append(to)
-        pass
+        if(fromm in self.__adj_list[to.getName()]):
+            pass
+        else:
+            self.__adj_list[to.getName()].append(fromm)
 
-    def hasVertex(self, v):
-        return True
         pass
 
     def removeEdge(self, to, fromm):
-        if(fromm in self.__adj_list[to]):
-            self.__adj_list[to].remove(fromm)
+        if(fromm in self.__adj_list[to.getName()]):
+            self.__adj_list[to.getName()].remove(fromm)
         pass
 
     def topologicalSort(self):
