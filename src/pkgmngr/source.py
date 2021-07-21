@@ -20,7 +20,7 @@ class Vhdl(Source):
     def decipher(self, availLibs, design_book):
         log.info("Deciphering VHDL file...")
         lib_headers = list()
-        additional_files = []
+        pre_files = []
         entity_bank = dict()
         with open(self._file_path, 'r') as file:
             in_entity = in_arch = in_pkg = False
@@ -39,9 +39,10 @@ class Vhdl(Source):
                     in_entity = True
                     entity_name = words[1].lower()
                     #stash all "uses" from above
-                    ent = Entity(self._file_path, entity_name, lib_headers)
+                    ent = Entity(self._file_path, entity_name, lib_headers, pre_files)
                     ent.setExterns(extern_libs)
                     extern_libs = list()
+                    pre_files = []
                     lib_headers = list()
                 if(words[0].lower() == "package"):
                     in_pkg = True
@@ -60,8 +61,10 @@ class Vhdl(Source):
                         
                         if(impt[0].lower() in availLibs):
                             extern_libs.append((package_name,design_book[package_name]))
+                            pre_files.append(design_book[package_name])
                         else:
                             print("file needed for entity as use:",design_book[package_name])
+                            pre_files.append(design_book[package_name])
                         #lib_headers.append(words[1][:len(words[1])-1])
                         comps = self.grabComponents(design_book[package_name])
                         
@@ -94,11 +97,15 @@ class Vhdl(Source):
                     if(len(pkg_sect) > 2):
                         if(pkg_sect[0].lower() != 'work'):
                             ent.addExtern((p_name,design_book[p_name]))
+                            ent.addPreFile(design_book[p_name])
+                        else:
+                            print("file needed for entity as use:",design_book[p_name])
+                            ent.addPreFile(design_book[p_name])
 
                     if(p_name in design_book.keys()):
                         ent.addDependency(e_name)
                         #ent.appendFiles(design_book[p_name])
-                        print("file needed for entity:",ent.getName(),design_book[p_name])
+                        #print("file needed for entity:",ent.getName(),design_book[p_name])
 
                 #detect when outside of entity, architecture, or package
                 if(words[0].lower() == "end"):

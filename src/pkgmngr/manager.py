@@ -7,6 +7,7 @@ from graph import Graph
 from apparatus import Apparatus as apt
 from market import Market
 import logging as log
+from ordered_set import OrderedSet
 
 class legoHDL:
 
@@ -324,6 +325,7 @@ class legoHDL:
         #grab only source-design entities (its an external referenced project)
         ents = cap.grabEntities(excludeTB=True)
         for k,e in ents.items():
+            grph.addLeaf(e)
             #make the connections between an entity and its dependency entity
             for dep in e.getDerivs():
                 grph.addEdge(k, dep)
@@ -348,6 +350,8 @@ class legoHDL:
         elif("cache" in path_parse):
             i = path_parse.index("cache")
             pass
+        else:
+            return '',''
         L = path_parse[i+1]
         N = path_parse[i+2].replace("_pkg.vhd", "")
         return L,N
@@ -358,6 +362,7 @@ class legoHDL:
         #grab current project's entity list
         ents = cap.grabEntities()
         for k,e in ents.items():
+            hierarchy.addLeaf(e)
             #make the connections between an entity and its dependency entity
             for dep in e.getDerivs():
                 hierarchy.addEdge(k, dep)
@@ -369,9 +374,36 @@ class legoHDL:
                 #recursively feed into dependency tree
                 hierarchy = self.recursiveGraph(ext_cap, hierarchy)
 
-        print("Topological:",hierarchy.topologicalSort())
+        self.compileList(hierarchy)
         hierarchy.output()
         return hierarchy
+
+    #given a dependency graph, write out the actual list of files needed
+    def compileList(self, hierarchy):
+        c_set = OrderedSet()
+        c_list = []
+        print("Topological:",hierarchy.topologicalSort())
+        order = hierarchy.topologicalSort()
+        for ent in order:
+            for f in ent.getAllFiles():
+                c_set.add(f)
+        recipe = open("./build/recipe", 'w')
+
+        for f in c_set:
+            lib,_ = self.grabExternalProject((None,f))
+            if(len(lib)):
+                lib = "@LIB "+lib+" "
+            else:
+                if(f in self.capsuleCWD.gatherSources(excludeTB=True)):
+                    lib = "@SRC "
+                else:
+                    lib = "@TB "
+            c_list.append(lib+f)
+            print(lib+f)
+            recipe.write(lib+f+"\n")
+            
+    
+        return c_list
 
     #will also install project into cache and have respective pkg in lib
     def download(self, title):

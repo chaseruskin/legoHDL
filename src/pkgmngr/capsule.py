@@ -432,7 +432,7 @@ class Capsule:
         srcs = []
         for e in ext:
             srcs = srcs + glob.glob(self.__local_path+"/**/*"+e, recursive=True)
-        print(srcs)
+        #print(srcs)
         if(excludeTB):
             for k,e in self.grabEntities().items():
                 if(e.isTb() and e.getFile() in srcs):
@@ -572,7 +572,7 @@ class Capsule:
                     if(words[0].lower() == "entity" or (words[0].lower() == "package" and words[1].lower() != 'body')):
                         self._cur_designs[words[1].lower()] = f
                 file.close()
-        print("Project-Level Designs:",self._cur_designs)
+        log.debug("Project-Level Designs:",self._cur_designs)
         return self._cur_designs
 
     def ports(self, mapp):

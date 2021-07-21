@@ -15,22 +15,24 @@ class Graph:
     def __init__(self):
         #store with adj list (list of vertices)
         self.__adj_list = dict()
+        self._entity_bank = dict()
         pass
     
-    #takes in two entities and connects them
+    #takes in two entities and connects them [entity, dep-name]
     def addEdge(self, to, fromm): #to->upper-level module... from->lower-level module
         #add to list if vertex does not exist
-        if(to.getName() not in self.__adj_list.keys()):
-            self.__adj_list[to.getName()] = list()
-        if(fromm.getName() not in self.__adj_list.keys()):
-            self.__adj_list[fromm.getName()] = list()
+        if(to not in self.__adj_list.keys()):
+            self.__adj_list[to] = list()
+        if(fromm not in self.__adj_list.keys()):
+            self.__adj_list[fromm] = list()
         
-        if(fromm in self.__adj_list[to.getName()]):
+        if(fromm not in self.__adj_list[to]):
+            self.__adj_list[to].append(fromm)
             pass
-        else:
-            self.__adj_list[to.getName()].append(fromm)
-
         pass
+
+    def addLeaf(self, to):
+        self._entity_bank[to.getName()] = to
 
     def removeEdge(self, to, fromm):
         if(fromm in self.__adj_list[to.getName()]):
@@ -40,6 +42,7 @@ class Graph:
     def topologicalSort(self):
         order = list()
         nghbr_count = dict()
+
         #determine number of dependencies a vertex has
         for v in self.__adj_list.keys():
             nghbr_count[v] = len(self.__adj_list[v])
@@ -48,7 +51,7 @@ class Graph:
             #if a vertex has zero dependencies, add it to the list
             for v in nghbr_count.keys():
                 if nghbr_count[v] == 0:
-                    order.append(v)
+                    order.append(self._entity_bank[v]) #add actual entity obj
                     nghbr_count[v] = -1 #will not be recounted
                     #who all depends on this module?
                     for k in self.__adj_list.keys():

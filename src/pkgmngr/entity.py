@@ -1,12 +1,22 @@
 class Entity:
 
-    def __init__(self, file, name, deps=list(), isTB=True):
-        self._req_files = [file]
+    def __init__(self, file, name, deps=list(), preFiles=list(), isTB=True):
+        self._req_files = file
         self._name = name
+        self._pre_files = preFiles
         self._derivs = deps
         self._integrals = list() #not implmented
         self._is_tb = isTB
         self._project = ''
+
+    def setLib(self, l):
+        self._lib = l
+
+    def getLib(self):
+        if(hasattr(self, "_lib")):
+            return self._lib
+        else:
+            return ''
 
     def setPorts(self, port_txt):
         self._ports = ''
@@ -124,8 +134,14 @@ class Entity:
     def setTb(self, b):
         self._is_tb = b
 
+    def addPreFile(self, f):
+        self._pre_files.append(f)
+
+    def getAllFiles(self):
+        return self._pre_files + [self.getFile()]
+
     def getFile(self):
-        return self._req_files[0]
+        return self._req_files
 
     def addDependency(self, deps):
         if(deps.lower() not in self._derivs):
