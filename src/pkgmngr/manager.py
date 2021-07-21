@@ -175,9 +175,9 @@ class legoHDL:
             file.close()
         pass
 
-    def recurseScan(self, grp, dep_list, top_mp, label_list):
+    def recurseScan(self, dep_list, label_list):
         if(len(dep_list) == 0):
-            return grp,top_mp,label_list
+            return label_list
         #go to YML of dependencies and add edges to build dependency tree
         for d in dep_list:
             l,n = Capsule.split(d)
@@ -197,10 +197,8 @@ class legoHDL:
             else:
                 continue
             top_mp[l+'.'+n] = tmp['toplevel']
-            grp,top_mp,label_list = self.recurseScan(grp, tmp['derives'], top_mp, label_list)
-            for z in tmp['derives']:
-                grp.addEdge(d, z)
-        return grp,top_mp,label_list
+            label_list = self.recurseScan(tmp['derives'], label_list)
+        return label_list
 
     #TO-DO: make std version option checker
     def validVersion(self, ver):
@@ -253,33 +251,34 @@ class legoHDL:
             tb = cap.getMeta("bench")
         
 
-        g = Graph()
-        top_mp = dict()
-        top_mp[cap.getTitle()] = top
+        # g = Graph()
+        # top_mp = dict()
+        # top_mp[cap.getTitle()] = top
+        #TO-DO fix recursive label scanning
         output = open(build_dir+"recipe", 'w')
         label_list = list()
         #mission: recursively search through every src VHD file for what else needs to be included
-        log.info("Grabbing dependencies...")
+        #log.info("Grabbing dependencies...")
         _,derivatives = cap.scanDependencies(top.replace(".vhd",""))
         for d in derivatives:
             print('DERIV:',derivatives)
-            g.addEdge(top, d)
-        g,top_mp,label_list = self.recurseScan(g, derivatives, top_mp, label_list)
+        #     g.addEdge(top, d)
+        label_list = self.recurseScan(derivatives, label_list)
      
-        g.output()
-        #before writing recipe, the nodes must be topologically sorted as dependency tree
-        hierarchy = g.topologicalSort() #flatten dependency tree into a list
-        print(hierarchy)
+        # g.output()
+        # #before writing recipe, the nodes must be topologically sorted as dependency tree
+        # hierarchy = g.topologicalSort() #flatten dependency tree into a list
+        # print(hierarchy)
 
-        library = dict() #stores lists at dictionary keys
-        for h in hierarchy:
-            l,n = Capsule.split(h)
-            n = n.replace("_pkg", "")
-            #library must exist in lib to be included in recipe.txt (avoids writing external libs like IEEE)
-            if(os.path.isdir(apt.WORKSPACE+"lib/"+l)): #check lib exists
-                if not l in library.keys():
-                    library[l] = list() 
-                library[l].append(n)
+        # library = dict() #stores lists at dictionary keys
+        # for h in hierarchy:
+        #     l,n = Capsule.split(h)
+        #     n = n.replace("_pkg", "")
+        #     #library must exist in lib to be included in recipe.txt (avoids writing external libs like IEEE)
+        #     if(os.path.isdir(apt.WORKSPACE+"lib/"+l)): #check lib exists
+        #         if not l in library.keys():
+        #             library[l] = list() 
+        #         library[l].append(n)
 
         #any user-defined labels to add? adds project-level labels (both recursive and non-recursive)
         for label,val in apt.SETTINGS['label'].items():
@@ -291,27 +290,32 @@ class legoHDL:
         #write all custom labels
         for finding in label_list:
             output.write(finding+"\n")
-                
-        #write these libraries and their required file paths to a file for exporting
-        for lib in library.keys():
-            for pkg in library[lib]:
-                key = lib+'.'+pkg
-                root_dir = apt.WORKSPACE+"cache/"+lib+"/"+pkg+"/"
-                log.debug(top_mp[key])
-                tmp = Capsule(path=root_dir)
-                #TO-DO: find better way to fix glob search to include root prj directory in search
-                src_dir = glob.glob(root_dir+"/**/"+top_mp[key], recursive=True) 
-                for f in tmp.gatherSources(excludeTB=True):
-                    output.write("@LIB "+f+"\n")
-                output.write("@LIB "+lib+" "+apt.WORKSPACE+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
 
-        #write current src dir where all src files are as "work" lib
-        for f in cap.gatherSources(excludeTB=True): #remove all testbench files
-            output.write("@SRC "+f+"\n")
+        hierarchy = self.formGraph(cap)
+        order = self.compileList(hierarchy)  
+
+        for f in order:
+            output.write(f+"\n")
+        # #write these libraries and their required file paths to a file for exporting
+        # for lib in library.keys():
+        #     for pkg in library[lib]:
+        #         key = lib+'.'+pkg
+        #         root_dir = apt.WORKSPACE+"cache/"+lib+"/"+pkg+"/"
+        #         log.debug(top_mp[key])
+        #         tmp = Capsule(path=root_dir)
+        #         #TO-DO: find better way to fix glob search to include root prj directory in search
+        #         src_dir = glob.glob(root_dir+"/**/"+top_mp[key], recursive=True) 
+        #         for f in tmp.gatherSources(excludeTB=True):
+        #             output.write("@LIB "+f+"\n")
+        #         output.write("@LIB "+lib+" "+apt.WORKSPACE+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
+
+        # #write current src dir where all src files are as "work" lib
+        # for f in cap.gatherSources(excludeTB=True): #remove all testbench files
+        #     output.write("@SRC "+f+"\n")
         
         #write current test dir where all testbench files are
         if(tb != None):
-            output.write("@TB "+cap.grabEntities()[cap.getMeta("bench")].getFile()+"\n")
+            #output.write("@TB "+cap.grabEntities()[cap.getMeta("bench")].getFile()+"\n")
             output.write("@TB-UNIT "+tb+"\n")
 
         if(top != None):
@@ -374,7 +378,6 @@ class legoHDL:
                 #recursively feed into dependency tree
                 hierarchy = self.recursiveGraph(ext_cap, hierarchy)
 
-        self.compileList(hierarchy)
         hierarchy.output()
         return hierarchy
 
@@ -387,7 +390,6 @@ class legoHDL:
         for ent in order:
             for f in ent.getAllFiles():
                 c_set.add(f)
-        recipe = open("./build/recipe", 'w')
 
         for f in c_set:
             lib,_ = self.grabExternalProject((None,f))
@@ -399,9 +401,7 @@ class legoHDL:
                 else:
                     lib = "@TB "
             c_list.append(lib+f)
-            print(lib+f)
-            recipe.write(lib+f+"\n")
-            
+            #print(lib+f)
     
         return c_list
 

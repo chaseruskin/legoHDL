@@ -107,10 +107,6 @@ class Entity:
     def isTb(self):
         return self._is_tb
 
-    def __eq__(self, rhs):
-        return (self.getName() == rhs.getName() and self.getFile() == rhs.getFile())
-        pass
-
     def addExtern(self, e):
         if(len(self.getExternal()) == 0):
             self._extern_libs = [e]
