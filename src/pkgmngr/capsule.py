@@ -5,17 +5,13 @@ import glob
 from market import Market
 from apparatus import Apparatus as apt
 import git
-from source import Vhdl
+from vhdl import Vhdl
 import logging as log
 
 #a capsule is a package/module that is signified by having the .lego.lock
 class Capsule:
 
     allLibs = []
-
-    @classmethod
-    def fetchLibs(cls, reg_libs):
-        cls.allLibs = reg_libs
 
     def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False, market=None):
         self.__metadata = dict()
@@ -279,8 +275,9 @@ class Capsule:
     def getName(self):
         return self.__name
 
-    def getDesignBook(self):
-        pass
+    @classmethod
+    def fetchLibs(cls, reg_libs):
+        cls.allLibs = reg_libs
 
     def getLib(self):
         try:
@@ -380,53 +377,46 @@ class Capsule:
         self.loadMeta()
         return
 
-    def scanDependencies(self, entity, update=True):
+    def scanLibHeaders(self, entity):
         ent = self.grabEntities()[self.getLib()+'.'+entity]
-            
-        found_files = glob.glob(ent.getFile(), recursive=True)
-        s = found_files[0].rfind('/')
-        src_dir = found_files[0][:s+1] #print(src_dir)
-        #open every src file and inspect lines for using libraries
-        derivatives = set()
-        for match in found_files:
-            if os.path.isfile(match):
-                with open(match) as file:
-                    if(self.getExt(match) == 'vhd'): #source file
-                        for line in file:
-                            line = line.lower()
-                            z = line.find("use") #look for library use calls
-                            c = line.find('--') #is is a comment?
-                            if(z >= 0 and (c == -1 or z < c)):
-                                derivatives.add(line[z+3:].strip())
-                            if(line.count("entity") > 0):
-                                break
-                    file.close()
-            #print(vhd)
-        #option to keep all library usages (for gen package files)
-        if(update == False):
-            return src_dir,derivatives
-        
-        #if the pkg does not exist in the lib folder, remove it!
-        tmp = derivatives.copy()
-        for d in tmp:
-            l,n = Capsule.split(d)
-            log.debug(l+" "+n)
-            if(not os.path.isfile(apt.WORKSPACE+"lib/"+l+"/"+n+".vhd")):
-                derivatives.remove(d)
+        filepath = ent.getFile()
 
-        log.debug(derivatives)
+        #open top-level file and inspect lines for using libraries
+        lib_headers = list()
+        with open(filepath) as file:
+            for line in file:
+                line = line.lower()
+                words = line.split()
+                if(len(words) == 0):
+                    continue
+                if(words[0] == 'library' or words[0] == 'use'):
+                    lib_headers.append(line)
+                if(words[0] == "entity"):
+                    break
+            file.close()
+        return lib_headers
+
+    def updateDerivatives(self):
+        ents = self.grabEntities()
+        d_set = set()
+        for k,e in ents.items():
+            dpndencies = e.getDependencies()
+            for dep in dpndencies:
+                if(dep not in ents.keys()):
+                    d_set.add(dep)
+        print(d_set)
         update = False
-        if(len(self.__metadata['derives']) != len(derivatives)):
+        if(len(self.__metadata['derives']) != len(d_set)):
             update = True
-        for d in derivatives:
+        for d in d_set:
             if(d not in self.__metadata['derives']):
                 update = True
                 break
         if(update):
-            self.__metadata['derives'] = list(derivatives)
-            self.pushYML("Updates module derivatives")
-        return src_dir, derivatives
-        pass
+            self.__metadata['derives'] = list(d_set)
+            self.pushYML("Updates project derivatives")
+
+        
 
     def gatherSources(self, ext=[".vhd"], excludeTB=False):
         srcs = []
@@ -597,12 +587,14 @@ class Capsule:
         N = path_parse[i+2].replace("_pkg.vhd", "")
         return L,N
 
-    def ports(self, mapp):
+    def ports(self, mapp, entity=None):
         self.identifyTop()
         ents = self.grabEntities()
         printer = ''
+        if(entity == None):
+            entity = self.getMeta("toplevel")
         for k,e in ents.items():
-            if(k == self.getMeta("toplevel")):
+            if(e.getName() == entity):
                 printer = e.getPorts()
                 if(mapp):
                     printer = printer + "\n" + e.getMapping()

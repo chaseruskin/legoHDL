@@ -1,34 +1,25 @@
-from abc import ABC, abstractmethod
 from apparatus import Apparatus as apt
 import logging as log
 from entity import Entity
 
+class Vhdl:
 
-class Source(ABC):
     def __init__(self, fpath):
         self._file_path = apt.fs(fpath)
         pass
-    
-    @abstractmethod
-    def decipher(self):
-        pass
-    pass
-
-
-class Vhdl(Source):
 
     def decipher(self, availLibs, design_book, cur_lib):
         log.info("Deciphering VHDL file...")
-        lib_headers = list()
+        lib_headers = []
         pre_files = []
         entity_bank = dict()
+        in_entity = in_arch = in_true_arch = in_pkg = False
+        entity_name = arch_name = pkg_name = ent =  None
+        extern_libs = list()
+        port_txt = ''
+
         with open(self._file_path, 'r') as file:
-            in_entity = in_arch = in_true_arch = in_pkg = False
-            entity_name = arch_name = pkg_name =  None
-            extern_libs = list()
-            port_txt = ''
-            ent = None
-            #read through the VHDL file
+            #read through the VHDL file code
             for line in file.readlines():
                 #parse line into a list of its words
                 words = line.split()
@@ -44,11 +35,13 @@ class Vhdl(Source):
                     extern_libs = list()
                     pre_files = []
                     lib_headers = list()
+                #enter package
                 if(words[0].lower() == "package"):
                     in_pkg = True
                     pkg_name = words[1].lower()
                     #stash all "uses" from above
                     lib_headers = list()
+                #enter architecture
                 if(words[0].lower() == "architecture"):
                     in_arch = True
                     arch_name = words[1]
@@ -116,7 +109,7 @@ class Vhdl(Source):
                     
                     if(len(inst_parts) > 2 or direct_entity):
                         #add to external references if it is not from work
-                        if(inst_parts[0].lower() != 'work'):
+                        if(l_name != 'work'):
                             ent.addExterns([(uniqueID,design_book[uniqueID])])
                             ent.addPreFile(design_book[uniqueID])
                         else:
@@ -147,17 +140,17 @@ class Vhdl(Source):
         return entity_bank
         pass
 
-    def grabComponents(self, filepath, pre_header):
-            comp_list = list()
-            with open(filepath, 'r') as file:
-                for line in file.readlines():
-                    words = line.split()
-                    if(len(words) == 0): #skip if its a blank line
-                        continue
-                    if(words[0].lower() == "component"):
-                        comp_list.append(pre_header+'.'+words[1].lower())
-                file.close()
-            #print("Components:",comp_list)
-            return comp_list
+    def grabComponents(self, filepath, lib):
+        comp_list = list()
+        with open(filepath, 'r') as file:
+            for line in file.readlines():
+                words = line.split()
+                if(len(words) == 0): #skip if its a blank line
+                    continue
+                if(words[0].lower() == "component"):
+                    comp_list.append(lib+'.'+words[1].lower())
+            file.close()
+        #print("Components:",comp_list)
+        return comp_list
 
     pass

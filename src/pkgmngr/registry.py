@@ -1,9 +1,8 @@
 #registry.py is in charge of seeing what packages are hosted remotely and syncing
 #packages between user and remote
 from enum import Enum
-import copy, git
-import os, random, requests, json, glob
-import yaml
+import copy,git,yaml
+import os,random,requests,json,glob
 from bs4 import BeautifulSoup
 from collections import OrderedDict
 from capsule import Capsule

@@ -44,17 +44,11 @@ class legoHDL:
 
         #need to look at toplevel VHD file to transfer correct library uses
         #search through all library uses and see what are chained dependencies
-        src_dir,derivatives = cap.scanDependencies(cap.getMeta("toplevel"), update=False)
+        derivatives = cap.scanLibHeaders(cap.getMeta("toplevel"))
         #write in all library and uses
         print(derivatives)
-        libs = set()
         for dep in derivatives:
-            dot = dep.find('.')
-            libline = "library "+dep[:dot]+";\n"
-            if(not libline in libs):
-                vhd_pkg.write(libline)
-                libs.add(libline)
-            vhd_pkg.write("use "+dep+"\n")
+            vhd_pkg.write(dep)
 
         # generate a PKG VHD file -> lib
         addedCompDec = False
@@ -63,7 +57,11 @@ class legoHDL:
             if not addedCompDec and line.count("package") > 0:
                 addedCompDec = True
                 comp = cap.ports(False)
-                line = line + "\n" + comp
+                comp_break = comp.split('\n')
+
+                line = line + "\n"
+                for c in comp_break:
+                    line = line + "\t" + c + "\n"
                 pass
             vhd_pkg.write(line)
         vhd_pkg.close()
@@ -246,15 +244,12 @@ class legoHDL:
             top = cap.getMeta("toplevel")
             tb = cap.getMeta("bench")
         elif(top != None and tb == None):
-            cap.identifyBench(top)
             tb = cap.getMeta("bench")
+            bench_ent = cap.identifyBench(top)
+            if(bench_ent != None):
+                tb = bench_ent.getName()
         
-
-        output = open(build_dir+"recipe", 'w')
-        
-        _,derivatives = cap.scanDependencies(top.replace(".vhd",""))
-        for d in derivatives:
-            print('DERIV:',derivatives)
+        output = open(build_dir+"recipe", 'w')    
 
         #mission: recursively search through every src VHD file for what else needs to be included
         hierarchy,labels = self.formGraph(cap)
@@ -274,6 +269,8 @@ class legoHDL:
             output.write("@TOP-UNIT "+top+"\n")
 
         output.close()
+
+        cap.updateDerivatives()
         print("success")
         pass
 
@@ -315,7 +312,6 @@ class legoHDL:
         #grab current project's entity list
         ents = cap.grabEntities()
         for k,e in ents.items():
-            print(e)
             hierarchy.addLeaf(e)
             #make the connections between an entity and its dependency entity
             for dep in e.getDependencies():
@@ -841,10 +837,15 @@ class legoHDL:
             pass
         elif(command == "port"):
             mapp = False
+            ent_name = None
             if(len(options) and 'map' in options):
                 mapp = True
+            if(package.count('.') == 2): #if provided an extra identifier, it is the entity in this given project
+                ent_name = package[package.rfind('.')+1:]
+                package = package[:package.rfind('.')]
+            
             if((self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
-                print(self.db.getCaps("local","cache")[L][N].ports(mapp))
+                print(self.db.getCaps("local","cache")[L][N].ports(mapp,ent_name))
         elif(command == "template" and apt.SETTINGS['editor'] != None):
             os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
             pass
