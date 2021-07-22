@@ -381,7 +381,7 @@ class Capsule:
         return
 
     def scanDependencies(self, entity, update=True):
-        ent = self.grabEntities()[entity]
+        ent = self.grabEntities()[self.getLib()+'.'+entity]
             
         found_files = glob.glob(ent.getFile(), recursive=True)
         s = found_files[0].rfind('/')

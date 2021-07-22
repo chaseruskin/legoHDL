@@ -44,7 +44,7 @@ class legoHDL:
 
         #need to look at toplevel VHD file to transfer correct library uses
         #search through all library uses and see what are chained dependencies
-        src_dir,derivatives = cap.scanDependencies(cap.getLib()+"."+cap.getMeta("toplevel"), update=False)
+        src_dir,derivatives = cap.scanDependencies(cap.getMeta("toplevel"), update=False)
         #write in all library and uses
         print(derivatives)
         libs = set()
