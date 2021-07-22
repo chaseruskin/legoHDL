@@ -1,8 +1,8 @@
 class Entity:
 
-    def __init__(self, file, name, deps=list(), preFiles=list(), isTB=True):
+    def __init__(self, file, title, deps=list(), preFiles=list(), isTB=True):
         self._req_files = file
-        self._name = name
+        self._lib,self._name = title.split('.')
         self._pre_files = preFiles
         self._derivs = deps
         self._integrals = list() #not implmented
@@ -11,6 +11,9 @@ class Entity:
 
     def setLib(self, l):
         self._lib = l
+
+    def getFull(self):
+        return self.getLib()+'.'+self.getName()
 
     def getLib(self):
         if(hasattr(self, "_lib")):
@@ -123,6 +126,12 @@ class Entity:
 
     def getName(self):
         return self._name
+    
+    def getLib(self):
+        return self._lib
+
+    def getTitle(self):
+        return self.getLib()+'.'+self.getName()
 
     def getDerivs(self):
         return self._derivs
@@ -152,10 +161,6 @@ entity: {self._name}
 files: {self._req_files}
 dependencies: {self._derivs}
 is tb? {self._is_tb}
-ports: 
-{self._ports}
-map:
-{self._mapping}
 external libraries:
 {self.getExternal()}
         ''')

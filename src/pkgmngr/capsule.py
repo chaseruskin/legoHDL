@@ -470,7 +470,7 @@ class Capsule:
         for k,e in ents.items():
             #if the entity is value under this key, it is lower-level
             if(e.isTb()):
-                top_contenders.remove(e.getName())
+                top_contenders.remove(e.getFull())
                 continue
                 
             for dep in e._derivs:
@@ -522,8 +522,8 @@ class Capsule:
         srcs = self.gatherSources(excludeTB=excludeTB)
         self._entity_bank = dict()
         for f in srcs:
+            self._entity_bank.update(Vhdl(f).decipher(self.allLibs, self.grabDesigns("cache","current"), self.getLib()))
             log.info(f)
-            self._entity_bank.update(Vhdl(f).decipher(self.allLibs, self.grabDesigns("cache","current")))
         for k,e in self._entity_bank.items():
             #print(e)
             pass
@@ -546,16 +546,19 @@ class Capsule:
             return self._cache_designs
         self._cache_designs = dict()
         files = (glob.glob(apt.WORKSPACE+"lib/**/*.vhd", recursive=True))
+        files = files + glob.glob(apt.WORKSPACE+"cache/**/*.vhd", recursive=True)
+
         for f in files:
+            L,N = self.grabExternalProject(f)
             with open(f, 'r') as file:
                 for line in file.readlines():
                     words = line.split()
-                    if(len(words) == 0): #skip if its a blank line
+                    if(len(words) == 0 or (L == self.getLib() and N == self.getName())): #skip if its a blank line
                         continue
                     if(words[0].lower() == "entity" or (words[0].lower() == "package" and words[1].lower() != 'body')):
-                        self._cache_designs[words[1].lower()] = f
+                        self._cache_designs[L+'.'+words[1].lower()] = f
                 file.close()
-        log.debug("Cache-Level designs:",self._cache_designs)
+        #log.debug("Cache-Level designs: "+str(self._cache_designs))
         return self._cache_designs
 
     def grabCurrentDesigns(self):
@@ -570,10 +573,28 @@ class Capsule:
                     if(len(words) == 0): #skip if its a blank line
                         continue
                     if(words[0].lower() == "entity" or (words[0].lower() == "package" and words[1].lower() != 'body')):
-                        self._cur_designs[words[1].lower()] = f
+                        self._cur_designs[self.getLib()+'.'+words[1].lower()] = f
                 file.close()
-        log.debug("Project-Level Designs:",self._cur_designs)
+        #log.debug("Project-Level Designs: "+str(self._cur_designs))
         return self._cur_designs
+    
+    #search for the projects attached to the external package
+    def grabExternalProject(self, path):
+        #use its file to find out what project uses it
+        path_parse = apt.fs(path).split('/')
+        # if in lib {library}/{project}_pkg.vhd
+        if("lib" in path_parse):
+            i = path_parse.index("lib")
+            pass
+        #if in cache {library}/{project}/../.vhd
+        elif("cache" in path_parse):
+            i = path_parse.index("cache")
+            pass
+        else:
+            return '',''
+        L = path_parse[i+1]
+        N = path_parse[i+2].replace("_pkg.vhd", "")
+        return L,N
 
     def ports(self, mapp):
         self.identifyTop()

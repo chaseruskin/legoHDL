@@ -32,11 +32,11 @@ class Graph:
         pass
 
     def addLeaf(self, to):
-        self._entity_bank[to.getName()] = to
+        self._entity_bank[to.getFull()] = to
 
     def removeEdge(self, to, fromm):
-        if(fromm in self.__adj_list[to.getName()]):
-            self.__adj_list[to.getName()].remove(fromm)
+        if(fromm in self.__adj_list[to.getFull()]):
+            self.__adj_list[to.getFull()].remove(fromm)
         pass
 
     def topologicalSort(self):
@@ -64,6 +64,7 @@ class Graph:
         pass
 
     def output(self):
+        print('---DEPENDENCY TREE---')
         for v in self.__adj_list.keys():
             print("vertex: [",v,"]",end=' <-- ')
             for e in self.__adj_list[v]:

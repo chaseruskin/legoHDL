@@ -44,7 +44,7 @@ class legoHDL:
 
         #need to look at toplevel VHD file to transfer correct library uses
         #search through all library uses and see what are chained dependencies
-        src_dir,derivatives = cap.scanDependencies(cap.getMeta("toplevel"), update=False)
+        src_dir,derivatives = cap.scanDependencies(cap.getLib()+"."+cap.getMeta("toplevel"), update=False)
         #write in all library and uses
         print(derivatives)
         libs = set()
@@ -334,7 +334,7 @@ class legoHDL:
                 grph.addEdge(k, dep)
             #see what external packages are referenced
             for extern_lib in e.getExternal():
-                L,N = self.grabExternalProject(extern_lib)
+                L,N = self.grabExternalProject(extern_lib[1])
                 #create project object based on this external package
                 ext_cap = self.db.getCaps("cache")[L][N]
                 #recursively feed into dependency tree
@@ -342,9 +342,9 @@ class legoHDL:
         return grph
 
     #search for the projects attached to the external package
-    def grabExternalProject(self, tuplee):
+    def grabExternalProject(self, path):
         #use its file to find out what project uses it
-        path_parse = apt.fs(tuplee[1]).split('/')
+        path_parse = apt.fs(path).split('/')
         # if in lib {library}/{project}_pkg.vhd
         if("lib" in path_parse):
             i = path_parse.index("lib")
@@ -371,13 +371,17 @@ class legoHDL:
                 hierarchy.addEdge(k, dep)
             #see what external packages are referenced
             for extern_lib in e.getExternal():
-                L,N = self.grabExternalProject(extern_lib)
+                L,N = self.grabExternalProject(extern_lib[1])
                 #create project object based on this external package
                 ext_cap = self.db.getCaps("cache")[L][N]
                 #recursively feed into dependency tree
                 hierarchy = self.recursiveGraph(ext_cap, hierarchy)
 
         hierarchy.output()
+        es = hierarchy.topologicalSort()
+        print('---BUILD ORDER---')
+        for e in es:
+            print(e.getFull(),end=' -> ')
         return hierarchy
 
     #given a dependency graph, write out the actual list of files needed
@@ -391,7 +395,7 @@ class legoHDL:
                 c_set.add(f)
 
         for f in c_set:
-            lib,_ = self.grabExternalProject((None,f))
+            lib,_ = self.grabExternalProject(f)
             if(len(lib)):
                 lib = "@LIB "+lib+" "
             else:
