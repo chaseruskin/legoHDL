@@ -473,7 +473,7 @@ class Capsule:
                 top_contenders.remove(e.getFull())
                 continue
                 
-            for dep in e._derivs:
+            for dep in e.getDependencies():
                 if(dep in top_contenders):
                     top_contenders.remove(dep)
 
@@ -500,8 +500,8 @@ class Capsule:
         ents = self.grabEntities()
         bench = None
         for k,e in ents.items():
-            for dep in e.getDerivs():
-                if(dep.lower() == entity_name.lower() and e.isTb()):
+            for dep in e.getDependencies():
+                if(dep.lower() == self.getLib()+'.'+entity_name.lower() and e.isTb()):
                     bench = e
                     break
 
@@ -579,7 +579,8 @@ class Capsule:
         return self._cur_designs
     
     #search for the projects attached to the external package
-    def grabExternalProject(self, path):
+    @classmethod
+    def grabExternalProject(cls, path):
         #use its file to find out what project uses it
         path_parse = apt.fs(path).split('/')
         # if in lib {library}/{project}_pkg.vhd

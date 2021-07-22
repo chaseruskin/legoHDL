@@ -40,7 +40,7 @@ class Vhdl(Source):
                     entity_name = words[1].lower()
                     #stash all "uses" from above
                     ent = Entity(self._file_path, cur_lib+'.'+entity_name, lib_headers, pre_files)
-                    ent.setExterns(extern_libs)
+                    ent.addExterns(extern_libs)
                     extern_libs = list()
                     pre_files = []
                     lib_headers = list()
@@ -99,25 +99,33 @@ class Vhdl(Source):
                         in_true_arch = True
                 #find instantiations by library.package.entity
                 if(len(words) > 2 and words[1] == ':' and in_arch and in_true_arch):
+                    direct_entity = False
+                    
                     inst = words[2]
                     inst_parts = inst.split('.')
                     
                     e_name = inst_parts[len(inst_parts)-1].lower()
                     p_name = inst_parts[len(inst_parts)-2].lower()
                     l_name = inst_parts[0].lower()
-                    pre_header = l_name+'.'+p_name
+                    uniqueID = l_name+'.'+p_name
+                    #direct instantiation without component declaration
+                    if(words[2].lower() == 'entity'):
+                        direct_entity = True
+                        uniqueID = words[3].lower()
+                        l_name,e_name = uniqueID.split('.')
                     
-                    if(len(inst_parts) > 2):
+                    if(len(inst_parts) > 2 or direct_entity):
                         #add to external references if it is not from work
                         if(inst_parts[0].lower() != 'work'):
-                            ent.addExtern((l_name+'.'+p_name,design_book[l_name+'.'+p_name]))
-                            ent.addPreFile(design_book[l_name+'.'+p_name])
+                            ent.addExterns([(uniqueID,design_book[uniqueID])])
+                            ent.addPreFile(design_book[uniqueID])
                         else:
-                            l_name = cur_lib.split('.')[0]
-                            ent.addPreFile(design_book[l_name+'.'+p_name])
+                            uniqueID = cur_lib+uniqueID[uniqueID.find('.'):]
+                            l_name = cur_lib
+                            ent.addPreFile(design_book[uniqueID])
                             #print("file needed for entity as use:",design_book[l_name+'.'+p_name])
 
-                    if(l_name+'.'+p_name in design_book.keys()):
+                    if(uniqueID in design_book.keys()):
                         ent.addDependency(l_name+'.'+e_name)
                         #ent.appendFiles(design_book[p_name])
                         #print("file needed for entity:",ent.getName(),design_book[p_name])

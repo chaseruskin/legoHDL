@@ -230,8 +230,8 @@ class legoHDL:
         os.system(cmd)
 
     def export(self, cap, top=None, tb=None):
-        print("Exporting...",end=' ')
-        print(cap.getPath())
+        log.info("Exporting...")
+        log.info(cap.getPath())
         build_dir = cap.getPath()+"build/"
         #create a clean build folder
         log.info("Cleaning build folder...")
@@ -250,68 +250,21 @@ class legoHDL:
             tb = cap.getMeta("bench")
         
 
-        # g = Graph()
-        # top_mp = dict()
-        # top_mp[cap.getTitle()] = top
-        #TO-DO fix recursive label scanning
         output = open(build_dir+"recipe", 'w')
-        label_list = list()
-        #mission: recursively search through every src VHD file for what else needs to be included
-        #log.info("Grabbing dependencies...")
+        
         _,derivatives = cap.scanDependencies(top.replace(".vhd",""))
         for d in derivatives:
             print('DERIV:',derivatives)
-        #     g.addEdge(top, d)
-        label_list = self.recurseScan(derivatives, label_list)
-     
-        # g.output()
-        # #before writing recipe, the nodes must be topologically sorted as dependency tree
-        # hierarchy = g.topologicalSort() #flatten dependency tree into a list
-        # print(hierarchy)
 
-        # library = dict() #stores lists at dictionary keys
-        # for h in hierarchy:
-        #     l,n = Capsule.split(h)
-        #     n = n.replace("_pkg", "")
-        #     #library must exist in lib to be included in recipe.txt (avoids writing external libs like IEEE)
-        #     if(os.path.isdir(apt.WORKSPACE+"lib/"+l)): #check lib exists
-        #         if not l in library.keys():
-        #             library[l] = list() 
-        #         library[l].append(n)
-
-        #any user-defined labels to add? adds project-level labels (both recursive and non-recursive)
-        for label,val in apt.SETTINGS['label'].items():
-            ext,recur = val
-            results = glob.glob(apt.fs(os.getcwd())+"/**/*"+ext, recursive=True)
-            for r in results:
-                label_list.append("@"+label+" "+r)
-        log.info("Writing recipe...")
-        #write all custom labels
-        for finding in label_list:
-            output.write(finding+"\n")
-
-        hierarchy = self.formGraph(cap)
+        #mission: recursively search through every src VHD file for what else needs to be included
+        hierarchy,labels = self.formGraph(cap)
         order = self.compileList(hierarchy)  
 
+        for l in labels:
+            output.write(l+"\n")
         for f in order:
             output.write(f+"\n")
-        # #write these libraries and their required file paths to a file for exporting
-        # for lib in library.keys():
-        #     for pkg in library[lib]:
-        #         key = lib+'.'+pkg
-        #         root_dir = apt.WORKSPACE+"cache/"+lib+"/"+pkg+"/"
-        #         log.debug(top_mp[key])
-        #         tmp = Capsule(path=root_dir)
-        #         #TO-DO: find better way to fix glob search to include root prj directory in search
-        #         src_dir = glob.glob(root_dir+"/**/"+top_mp[key], recursive=True) 
-        #         for f in tmp.gatherSources(excludeTB=True):
-        #             output.write("@LIB "+f+"\n")
-        #         output.write("@LIB "+lib+" "+apt.WORKSPACE+"lib/"+lib+"/"+pkg+"_pkg.vhd\n")
 
-        # #write current src dir where all src files are as "work" lib
-        # for f in cap.gatherSources(excludeTB=True): #remove all testbench files
-        #     output.write("@SRC "+f+"\n")
-        
         #write current test dir where all testbench files are
         if(tb != None):
             #output.write("@TB "+cap.grabEntities()[cap.getMeta("bench")].getFile()+"\n")
@@ -324,78 +277,83 @@ class legoHDL:
         print("success")
         pass
 
-    def recursiveGraph(self, cap, grph):
+    def recursiveGraph(self, cap, grph, lbls):
+        #find any project-level labels (must be enabled as recursive)
+        for label,val in apt.SETTINGS['label'].items():
+            ext,recur = val
+            if(recur):
+                files = cap.gatherSources(ext=[ext])
+                for f in files:
+                    lbls.append("@"+label+" "+f)
+
         #grab only source-design entities (its an external referenced project)
         ents = cap.grabEntities(excludeTB=True)
         for k,e in ents.items():
             grph.addLeaf(e)
             #make the connections between an entity and its dependency entity
-            for dep in e.getDerivs():
+            for dep in e.getDependencies():
                 grph.addEdge(k, dep)
             #see what external packages are referenced
             for extern_lib in e.getExternal():
-                L,N = self.grabExternalProject(extern_lib[1])
+                L,N = Capsule.grabExternalProject(extern_lib[1])
                 #create project object based on this external package
                 ext_cap = self.db.getCaps("cache")[L][N]
                 #recursively feed into dependency tree
-                grph = self.recursiveGraph(ext_cap, grph)
-        return grph
-
-    #search for the projects attached to the external package
-    def grabExternalProject(self, path):
-        #use its file to find out what project uses it
-        path_parse = apt.fs(path).split('/')
-        # if in lib {library}/{project}_pkg.vhd
-        if("lib" in path_parse):
-            i = path_parse.index("lib")
-            pass
-        #if in cache {library}/{project}/../.vhd
-        elif("cache" in path_parse):
-            i = path_parse.index("cache")
-            pass
-        else:
-            return '',''
-        L = path_parse[i+1]
-        N = path_parse[i+2].replace("_pkg.vhd", "")
-        return L,N
+                grph, lbls = self.recursiveGraph(ext_cap, grph, lbls)
+        return grph, lbls
 
     def formGraph(self, cap):
         log.info("Generating dependency tree...")
         hierarchy = Graph()
+        labels = []
+        #find any project-level labels
+        for label,val in apt.SETTINGS['label'].items():
+            ext,recur = val
+            files = cap.gatherSources(ext=[ext])
+            for f in files:
+                labels.append("@"+label+" "+f)
         #grab current project's entity list
         ents = cap.grabEntities()
         for k,e in ents.items():
+            print(e)
             hierarchy.addLeaf(e)
             #make the connections between an entity and its dependency entity
-            for dep in e.getDerivs():
+            for dep in e.getDependencies():
                 hierarchy.addEdge(k, dep)
             #see what external packages are referenced
             for extern_lib in e.getExternal():
-                L,N = self.grabExternalProject(extern_lib[1])
+                L,N = Capsule.grabExternalProject(extern_lib[1])
                 #create project object based on this external package
                 ext_cap = self.db.getCaps("cache")[L][N]
                 #recursively feed into dependency tree
-                hierarchy = self.recursiveGraph(ext_cap, hierarchy)
-
+                hierarchy,labels = self.recursiveGraph(ext_cap, hierarchy, labels)
+        
         hierarchy.output()
         es = hierarchy.topologicalSort()
         print('---BUILD ORDER---')
         for e in es:
             print(e.getFull(),end=' -> ')
-        return hierarchy
+        print()
+
+        l_set = OrderedSet()
+        for lab in labels:
+            l_set.add(lab)
+        labels = l_set
+
+        return hierarchy,labels
 
     #given a dependency graph, write out the actual list of files needed
     def compileList(self, hierarchy):
         c_set = OrderedSet()
         c_list = []
-        print("Topological:",hierarchy.topologicalSort())
+
         order = hierarchy.topologicalSort()
         for ent in order:
             for f in ent.getAllFiles():
                 c_set.add(f)
 
         for f in c_set:
-            lib,_ = self.grabExternalProject(f)
+            lib,_ = Capsule.grabExternalProject(f)
             if(len(lib)):
                 lib = "@LIB "+lib+" "
             else:
@@ -404,7 +362,6 @@ class legoHDL:
                 else:
                     lib = "@TB "
             c_list.append(lib+f)
-            #print(lib+f)
     
         return c_list
 

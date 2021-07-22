@@ -1,23 +1,62 @@
 class Entity:
 
     def __init__(self, file, title, deps=list(), preFiles=list(), isTB=True):
-        self._req_files = file
+        self._reg_file = file
         self._lib,self._name = title.split('.')
         self._pre_files = preFiles
-        self._derivs = deps
-        self._integrals = list() #not implmented
+        self._dpndencies = deps
         self._is_tb = isTB
-        self._project = ''
-
-    def setLib(self, l):
-        self._lib = l
 
     def getFull(self):
         return self.getLib()+'.'+self.getName()
 
     def getLib(self):
-        if(hasattr(self, "_lib")):
-            return self._lib
+        return self._lib
+
+    def getName(self):
+        return self._name
+
+    def isTb(self):
+        return self._is_tb
+
+    def addExterns(self, e):
+        if(not isinstance(e, list)):
+            raise ValueError("Extern e argument must be a list of tuples.")
+        if(len(self.getExternal()) == 0):
+            self._extern_libs = e
+        else:
+            self._extern_libs = self.getExternal() + e
+
+    def getExternal(self):
+        if(hasattr(self, "_extern_libs")):
+            return self._extern_libs
+        return []
+
+    def getDependencies(self):
+        return self._dpndencies
+
+    def setTb(self, b):
+        self._is_tb = b
+
+    def getAllFiles(self):
+        return self._pre_files + [self.getFile()]
+
+    def getFile(self):
+        return self._reg_file
+
+    def addDependency(self, deps):
+        if(deps.lower() not in self._dpndencies):
+            self._dpndencies.append(deps)
+
+    def addPreFile(self, f):
+        self._pre_files.append(f)
+
+    def addFile(self, file):
+        self._reg_file.append(file)
+
+    def getPorts(self):
+        if(hasattr(self, '_ports')):
+            return self._ports
         else:
             return ''
 
@@ -33,12 +72,6 @@ class Entity:
                 self._ports = self._ports + "\n"
             counter = counter + 1
         self.getMapping() 
-
-    def getPorts(self):
-        if(hasattr(self, '_ports')):
-            return self._ports
-        else:
-            return ''
 
     def getMapping(self):
         if(hasattr(self, "_mapping")):
@@ -107,60 +140,11 @@ class Entity:
             self._mapping = ''
         return self._mapping
 
-    def isTb(self):
-        return self._is_tb
-
-    def addExtern(self, e):
-        if(len(self.getExternal()) == 0):
-            self._extern_libs = [e]
-        else:
-            self._extern_libs = self.getExternal() + [e]
-
-    def setExterns(self, extern):
-        self._extern_libs = extern
-
-    def getExternal(self):
-        if(hasattr(self, "_extern_libs")):
-            return self._extern_libs
-        return []
-
-    def getName(self):
-        return self._name
-    
-    def getLib(self):
-        return self._lib
-
-    def getTitle(self):
-        return self.getLib()+'.'+self.getName()
-
-    def getDerivs(self):
-        return self._derivs
-
-    def setTb(self, b):
-        self._is_tb = b
-
-    def addPreFile(self, f):
-        self._pre_files.append(f)
-
-    def getAllFiles(self):
-        return self._pre_files + [self.getFile()]
-
-    def getFile(self):
-        return self._req_files
-
-    def addDependency(self, deps):
-        if(deps.lower() not in self._derivs):
-            self._derivs.append(deps)
-
-    def addFile(self, file):
-        self._req_files.append(file)
-
     def __repr__(self):
         return(f'''
-entity: {self._name}
-files: {self._req_files}
-dependencies: {self._derivs}
+entity: {self.getFull()}
+files: {self._reg_file}
+dependencies: {self._dpndencies}
 is tb? {self._is_tb}
-external libraries:
-{self.getExternal()}
+external entities: {self.getExternal()}
         ''')
