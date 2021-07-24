@@ -51,7 +51,7 @@ class Apparatus:
         return cls.SETTINGS['workspace'][cls.__active_workspace]['local']
 
     @classmethod
-    def getRemotes(cls):
+    def getMarkets(cls):
         returnee = dict()
         #key: name, val: url
         for name in cls.SETTINGS['workspace'][cls.__active_workspace]['market']:
@@ -70,7 +70,7 @@ class Apparatus:
         return True
 
     @classmethod
-    def linkedRemote(cls):
+    def linkedMarket(cls):
         rem = cls.SETTINGS['workspace'][cls.__active_workspace]['market']
         return (rem != None and len(rem))
 

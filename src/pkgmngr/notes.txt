@@ -129,7 +129,7 @@ until next command
 ##################
 ======ROADMAP=====
 ##################
-[ ]		-be able to access lower-level ports of a package ONLY when within the package folder
+
 [ ]		-revisit capsule dependency functions to be more versatile
 [!]		-be sure to scan every inner-project component for its dependencies
 [ ]		-any package file made will be visible by outer-pkg alongside auto-generated pkg
@@ -203,6 +203,8 @@ until next command
 ##############
 ===ARCHIVES===
 ##############
+
+[ ]		-be able to access lower-level ports of a package when within the package folder -> NO
 
 @TEST [x]	config run="file-path" -build -lnk
 

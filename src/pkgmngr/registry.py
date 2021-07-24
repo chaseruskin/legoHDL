@@ -3,11 +3,11 @@
 from enum import Enum
 import copy,git,yaml
 import os,random,requests,json,glob
-from bs4 import BeautifulSoup
 from collections import OrderedDict
 from capsule import Capsule
 from apparatus import Apparatus as apt
 from market import Market
+import logging as log
 
 class Registry:
     class Mode(Enum):
@@ -18,23 +18,21 @@ class Registry:
         OTHER = 5
         pass
 
-    GL_PRJ_EXT = "/projects?include_subgroups=True&simple=True"
-
     #TO-DO: fix how to store and use remotes
     #things to consider: where to host remote central store (can have multiple)
     #what is a project's remote url when making a new one?
-    def __init__(self, remotes):
+    def __init__(self, mrkts):
         self.__url = ''
         self.__galaxy = list() #list of all clusters for current workspace
-        if(apt.linkedRemote()):
-            for rem,val in remotes.items():
+        if(apt.linkedMarket()):
+            for rem,val in mrkts.items():
                 self.__galaxy.append(Market(rem,val))
         self.__registry_path = apt.HIDDEN+"registry/"
         pass
 
     def listCaps(self, options):
         reg = None
-        if(options.count("local") or not apt.linkedRemote()):
+        if(options.count("local") or not apt.linkedMarket()):
             reg = self.getCaps("local","cache")
         else:
             reg = self.getCaps("local","cache","market")
@@ -123,7 +121,7 @@ class Registry:
     def getCaps(self, *args, updt=False):
         folders = None
         if(args.count("market")):
-            folders = self.getProjectsRemote(updt)
+            folders = self.getProjectsMarket(updt)
         if(args.count("cache")):
             if(folders == None):
                 folders = self.getProjectsCache(updt)
@@ -190,7 +188,7 @@ class Registry:
         pass
 
     #TO-DO
-    def getProjectsRemote(self, updt=False):
+    def getProjectsMarket(self, updt=False):
         #go through each remote
         if hasattr(self,"_remote_prjs") and not updt:
             return self._remote_prjs
@@ -235,11 +233,11 @@ class Registry:
         elif(place == "cache"):
             folder = self.getProjectsCache(updt)
         elif(place == "market"): #TO-DO-> get projects from remote
-            folder = self.getProjectsRemote(updt)
+            folder = self.getProjectsMarket(updt)
         return (l in folder.keys() and (n in folder[l].keys() or n == '*'))
         pass
     
-
+    #TO-DO > work with APIs to be able to allow a user to automatically create a new remote repo if DNE
     def createProjectRemote(self, git_url):
         mode = None
         keyword = 'https://'
@@ -256,18 +254,10 @@ class Registry:
         print(base,"---"+tail)
         pass
 
-    def assignRandomID(self):
-        MIN_ID = 10000000
-        MAX_ID = 99999999
-        id = random.randint(MIN_ID, MAX_ID)
-        while id in self.__local_reg.keys():
-            id = random.randint(MIN_ID, MAX_ID)
-        return id
-
     def encrypt(self, token, file):
-        print("Encrypting access token... ",end='')
+        log.info("Encrypting access token... ",end='')
         random.seed()
-        with open(apt.HIDDEN++file+".bin", 'w') as file:
+        with open(apt.HIDDEN+file+".bin", 'w') as file:
             for letter in token:
                 secret = bin(ord(letter))[2:]
                 secret = ((8-len(secret))*"0")+secret #pad to make fixed 8-bits
@@ -293,6 +283,15 @@ class Registry:
                 token += chr((int('0b'+tmp, base=2)))
             file.close()
         return token
+
+    @DeprecationWarning
+    def assignRandomID(self):
+        MIN_ID = 10000000
+        MAX_ID = 99999999
+        id = random.randint(MIN_ID, MAX_ID)
+        while id in self.__local_reg.keys():
+            id = random.randint(MIN_ID, MAX_ID)
+        return id
 
     @DeprecationWarning
     def accessGitlabAPI(self, base, tail, api_ext='', multi=False):

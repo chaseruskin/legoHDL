@@ -1,12 +1,12 @@
 import os, yaml, shutil
 from datetime import date
 import collections, stat
-import glob
+import glob, git
+import logging as log
 from market import Market
 from apparatus import Apparatus as apt
-import git
 from vhdl import Vhdl
-import logging as log
+
 
 #a capsule is a package/module that is signified by having the .lego.lock
 class Capsule:

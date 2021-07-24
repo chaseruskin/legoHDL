@@ -18,7 +18,7 @@ class legoHDL:
         self.capsuleCWD = None
         
         #defines path to dir of remote code base
-        self.db = Registry(apt.getRemotes())
+        self.db = Registry(apt.getMarkets())
         Capsule.fetchLibs(self.db.availableLibs())
 
         #set env variable for VHDL_LS
@@ -558,34 +558,48 @@ class legoHDL:
     
     #TO-DO: implement
     def convert(self, title):
-        #add .GITIGNORE file if not present?
         #must look through tags of already established repo
         l,n = Capsule.split(title)
-        cwd = apt.fs(os.getcwd()).lower()
+        if(l == '' or n == ''):
+            exit(log.error("Must provide a library.project"))
+        cwd = apt.fs(os.getcwd())
         #find the src dir and testbench dir through autodetect top-level modules
         #name of package reflects folder, a library name must be specified though
-        if(cwd.count(apt.getLocal().lower()) == 0):
+        if(cwd.lower().count(apt.getLocal().lower()) == 0):
             exit(log.error("Cannot initialize outside of workspace"))
         cap = None
+
         files = os.listdir(cwd)
-        #rename current folder to 
-        cwdb1 = cwd[:cwd.rfind('/')]+"/"+n+"/"
+        if ".lego.lock" in files:
+            log.info("Already a packaged module")
+            return
+
+        log.info("Transforming project into lego...")
+        #add .gitignore file if not present and it is present in template project
+        if(os.path.isfile(apt.PKGMNG_PATH+"/template/.gitignore")):
+            print("found .gitignore")
+            if(not os.path.isfile(cwd+"/.gitignore")):
+                print("copying .gitignore")
+                shutil.copy(apt.PKGMNG_PATH+"/template/.gitignore",cwd+"/.gitignore")
+            pass
+        #rename current folder to the name of library.project
+        last_slash = cwd.rfind('/')
+        if(last_slash == len(cwd)-1):
+            last_slash = cwd[:cwd.rfind('/')].rfind('/')
+
+        cwdb1 = cwd[:last_slash]+"/"+n+"/"
         os.rename(cwd, cwdb1)
         git_exists = True
         if ".git" not in files:
             #see if there is a .git folder and create if needed
-            print("Initializing git repository...")
+            log.info("Initializing git repository...")
             git_exists = False
             pass
-        if ".lego.lock" in files:
-            log.info("Already a packaged module")
-            return
-        else:
-            #create .lego.lock file
-            cap = Capsule(title=title, path=cwdb1)
-            log.info("Creating .lego.lock file...")
-            cap.create(fresh=False, git_exists=git_exists)
-            pass
+        
+        #create .lego.lock file
+        cap = Capsule(title=title, path=cwdb1)
+        log.info("Creating .lego.lock file...")
+        cap.create(fresh=False, git_exists=git_exists)
         pass
 
     def inventory(self, options):
@@ -641,7 +655,7 @@ class legoHDL:
             log.info("No Labels added!")
         pass
 
-    def listRemotes(self):
+    def listMarkets(self):
         if(isinstance(apt.SETTINGS['market'],dict)):
             print('{:<16}'.format("Market"),'{:<40}'.format("URL"),'{:<12}'.format("Connected"))
             print("-"*16+" "+"-"*40+" "+"-"*12+" ")
@@ -806,7 +820,7 @@ class legoHDL:
             elif(options.count("label")):
                 self.listLabels()
             elif(options.count("market")):
-                self.listRemotes()
+                self.listMarkets()
             elif(options.count("workspace")):
                 self.listWorkspace()
             else:
@@ -881,7 +895,7 @@ class legoHDL:
             formatHelp("uninstall","remove package from cache")
             formatHelp("download","grab package from its market for development")
             formatHelp("update","update installed package to be to the latest version")
-            formatHelp("export","generate a file of necessary paths to build the project")
+            formatHelp("export","generate a recipe file to build the project")
             formatHelp("build","run a custom configured script")
             formatHelp("del","deletes the package from the local workspace")
             formatHelp("search","search markets or local workspace for specified package")
@@ -917,7 +931,7 @@ class legoHDL:
             \n\t-lnk\t\tuse the build script from its specified location- default is to copy\
             ")
         else:
-            print("Invalid command; type \"help\" to see a list of available commands")
+            print("Invalid command; type \"legohdl help\" to see a list of available commands")
         pass
 
     def commandHelp(self, cmd):

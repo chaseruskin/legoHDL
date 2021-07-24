@@ -1,4 +1,4 @@
-# _lego_**HDL**
+# _lego_**HDL** ![legohdlLogo (2)](https://user-images.githubusercontent.com/51766769/126854231-38b803ad-c16e-4564-b5ed-4cd77178d314.png)
 
 ### The simple, easy, lightweight package manager for HDL design modules.
 <br></br>
