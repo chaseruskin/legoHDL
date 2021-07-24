@@ -199,6 +199,54 @@ class Capsule:
                 self.__market = Market(self.__metadata['market'], apt.SETTINGS['market'][self.__metadata['market']])
         pass
 
+
+    def fillTemplateFile(self, newfile, templateFile):
+        #ensure this file doesn't already exist
+        newfile = apt.fs(newfile)
+        if(os.path.isfile(newfile)):
+            log.info("File already exists")
+            return
+        log.info("Creating new file...")
+        #find the template file to use
+        extension = '.'+self.getExt(newfile)
+        fileName = ''
+        last_slash = newfile.rfind('/')
+        if(extension == '.'):
+            fileName = newfile[last_slash+1:]
+        else:
+            i = newfile.rfind(extension)
+            fileName = newfile[last_slash+1:i]
+
+        template_ext = self.getExt(templateFile)
+        if(template_ext == ''):
+            templateFile = templateFile + extension
+        replacements = glob.glob(apt.PKGMNG_PATH+"template/**/"+templateFile, recursive=True)
+        #copy the template file into the proper location
+        if(len(replacements) < 1):
+            exit(log.error("Could not find "+templateFile+" file in template project"))
+        else:
+            templateFile = replacements[0]
+
+        shutil.copy(templateFile, self.__local_path+newfile)
+        newfile = self.__local_path+newfile
+        today = date.today().strftime("%B %d, %Y")
+        file_in = open(newfile, "r")
+        lines = []
+        #find and replace all proper items
+        for line in file_in.readlines():
+            line = line.replace("template", fileName)
+            line = line.replace("%DATE%", today)
+            line = line.replace("%AUTHOR%", apt.SETTINGS["author"])
+            line = line.replace("%PROJECT%", self.getTitle())
+            lines.append(line)
+            file_in.close()
+        file_out = open(newfile, "w")
+        #rewrite file to have new lines
+        for line in lines:
+            file_out.write(line)
+        file_out.close()
+        pass
+
     def create(self, fresh=True, git_exists=False):
         log.info('Initializing new project')
         if(fresh):
@@ -230,7 +278,7 @@ class Capsule:
                     line = line.replace("template", self.__name)
                     line = line.replace("%DATE%", today)
                     line = line.replace("%AUTHOR%", apt.SETTINGS["author"])
-                    line = line.replace("%PROJECT%", self.__name)
+                    line = line.replace("%PROJECT%", self.getTitle())
                     file_out.write(line) #insert date into template
                 file_in.close()
                 file_out.close()
@@ -262,10 +310,14 @@ class Capsule:
                 self.__repo.create_remote('origin', self.__remote) 
             except: #relink origin to new remote url
                 print(self.__repo.remotes.origin.url)
+                remote_url = self.getMeta("remote")
+                if(remote_url == None):
+                    return
                 with self.__repo.remotes.origin.config_writer as cw:
-                    cw.set("url", self.__remote_url)
+                    cw.set("url", remote_url)
             #now set it up to track
             self.__repo.git.push("-u","origin",str(self.__repo.head.reference))
+            self.__repo.remotes.origin.push("--tags")
         pass
 
     def pushRemote(self):
@@ -304,6 +356,7 @@ class Capsule:
         
         if(self.isLinked()):
             self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
+            self.__repo.remotes.origin.push("--tags")
 
     #return true if the requested project folder is a valid capsule package
     def isValid(self):
@@ -315,9 +368,6 @@ class Capsule:
 
     def metadataPath(self):
         return self.__local_path+".lego.lock"
-
-    def push_remote(self):
-        pass
 
     def show(self):
         with open(self.metadataPath(), 'r') as file:
@@ -333,16 +383,13 @@ class Capsule:
         #unlock metadata to write to it
         os.chmod(self.metadataPath(), stat.S_IWOTH | stat.S_IWGRP | stat.S_IWUSR | stat.S_IWRITE)
         #write back YAML info
-        tmp = collections.OrderedDict(self.__metadata)
-        tmp.move_to_end('derives')
-        tmp.move_to_end('name', last=False)
+        order = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives', 'integrates']
         #a little magic to save YAML in custom order for easier readability
         with open(self.metadataPath(), "w") as file:
-            while len(tmp):
+            for key in order:
                 #pop off front key/val pair of yaml data
-                it = tmp.popitem(last=False)
                 single_dict = {}
-                single_dict[it[0]] = it[1]
+                single_dict[key] = self.getMeta(key)
                 yaml.dump(single_dict, file)
                 pass
             pass
@@ -415,8 +462,7 @@ class Capsule:
         if(update):
             self.__metadata['derives'] = list(d_set)
             self.pushYML("Updates project derivatives")
-
-        
+        pass
 
     def gatherSources(self, ext=[".vhd"], excludeTB=False):
         srcs = []
@@ -514,15 +560,12 @@ class Capsule:
         for f in srcs:
             self._entity_bank.update(Vhdl(f).decipher(self.allLibs, self.grabDesigns("cache","current"), self.getLib()))
             log.info(f)
-        for k,e in self._entity_bank.items():
-            #print(e)
-            pass
         return self._entity_bank
 
     def grabDesigns(self, *args):
         design_book = dict()
         if("current" in args):
-            design_book = self.grabCurrentDesigns()
+            design_book = self.grabCurrentDesigns().copy()
             pass
         if("cache" in args):
             design_book.update(self.grabCacheDesigns())

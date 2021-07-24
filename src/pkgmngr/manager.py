@@ -94,11 +94,7 @@ class legoHDL:
         #print(rep.git_url)#print(rep.last_version)
         cap.install(cache_path, ver)
         print("success")
-        print("library files path:")
-
-        #generate PKG VHD    
-        self.genPKG(cap.getTitle())
-        
+    
         #link it all together through writing paths into "map.toml"
         filename = apt.WORKSPACE+"map.toml"
         mapfile = open(filename, 'r')
@@ -107,7 +103,11 @@ class legoHDL:
 
         mapfile = open(filename, 'w')
         inc_paths = list()
-        inc_paths.append("\'"+lib_path+cap.getName()+"_pkg.vhd"+"\',\n")
+        #generate PKG VHD
+        if(cap.getMeta("toplevel") != None):
+            self.genPKG(cap.getTitle())
+            inc_paths.append("\'"+lib_path+cap.getName()+"_pkg.vhd"+"\',\n")
+
         for f in cap.gatherSources():
             inc_paths.append("\'"+f+"\',\n")
         inc = False
@@ -737,6 +737,15 @@ class legoHDL:
         elif(command == "build" and self.capsuleCWD.isValid()):
             self.build(value)
         elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
+            if(options.count("file")):
+                options.remove("file")
+                if(self.capsuleCWD.isValid()):
+                    if(len(options) == 0):
+                        exit(log.error("Please specify a file from your template to copy from"))
+                    self.capsuleCWD.fillTemplateFile(package, options[0])
+                else:
+                    exit(log.error("Cannot create a project file when not inside a project"))
+                return
             mkt_sync = None
             git_url = None
             startup = False

@@ -62,8 +62,16 @@ class Market:
         fp = self._local_path+"/"+meta['library']+"/"+meta['name']+"/"+meta['version']+"/"
         #save yaml file
         os.makedirs(fp)
+        order = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives', 'integrates']
         with open(fp+".lego.lock", 'w') as file:
-            yaml.dump(meta, file)
+            for key in order:
+                #pop off front key/val pair of yaml data
+                single_dict = {}
+                single_dict[key] = meta[key]
+                yaml.dump(single_dict, file)
+                pass
+            pass
+            file.close()
         #save changes to repository
         self._repo.index.add(self._repo.untracked_files)
         self._repo.index.commit("Adds "+meta['library']+'.'+meta['name']+" v"+meta['version'])
