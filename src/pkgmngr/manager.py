@@ -570,16 +570,14 @@ class legoHDL:
         cap = None
 
         files = os.listdir(cwd)
-        if ".lego.lock" in files:
+        if ".lego.lock" in files or self.db.capExists(title, "local") or self.db.capExists(title, "cache") or self.db.capExists(title, "market"):
             log.info("Already a packaged module")
             return
 
         log.info("Transforming project into lego...")
         #add .gitignore file if not present and it is present in template project
         if(os.path.isfile(apt.PKGMNG_PATH+"/template/.gitignore")):
-            print("found .gitignore")
             if(not os.path.isfile(cwd+"/.gitignore")):
-                print("copying .gitignore")
                 shutil.copy(apt.PKGMNG_PATH+"/template/.gitignore",cwd+"/.gitignore")
             pass
         #rename current folder to the name of library.project
