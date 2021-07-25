@@ -126,9 +126,21 @@ until next command
 @IDEA	init function with -file flag to create a new file from given template
 		legohdl init -file ./design/c.vhd
 
+
+@IDEA 	have "template_pkg" include all entity component declarations found from that given project?
+
 ##################
 ======ROADMAP=====
 ##################
+
+[!]		-regroup settings labels into labels/recursive, labels/shallow
+[!]		-start transition to running/developing legohdl as its PYPI package (use pip install -e .)
+			-this means on install, template folder is created, settings.yml exists,
+			-folders are set up on fresh install
+
+[!]		-remove "template_pkg" and convert lines of vhdl embedded directly into legohdl code to write to file
+
+[ ]		-see if improvements can be made to "set settings" code (config command)
 
 [x]		-map.toml files are used and placed as ~/.vhdl_ls.toml
 [ ]		-test using in-line external package calls within another package in a project (within package body)
@@ -205,7 +217,11 @@ until next command
 @NOTE 	as of NOW, "build" is the same as "scripts", and for future should be renamed all to "scripts"
 		for potential for user to store/link more than build stuff into scripts location
 
-@IDEA	legohdl export -b <script_name?> [...] -> leaning toward no because of options already in place for export
+@IDEA 	legohdl export -b <script_name?> [...] -> leaning toward no because of options already in place for export
+
+@IDEA 	legohdl build -e @master [args...]
+
+@NOTE	how to combine export and build commands to run together???
 
 ##############
 ===ARCHIVES===
