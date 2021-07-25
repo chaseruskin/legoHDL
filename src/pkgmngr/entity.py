@@ -10,6 +10,15 @@ class Entity:
     def getFull(self):
         return self.getLib()+'.'+self.getName()
 
+    def setLibDeclarations(self, lib_decs):
+        self._lib_decs = lib_decs
+    
+    def getLibDeclarations(self):
+        if(hasattr(self, "_lib_decs")):
+            return self._lib_decs
+        else:
+            return []
+
     def getLib(self):
         return self._lib
 

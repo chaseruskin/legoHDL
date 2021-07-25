@@ -129,7 +129,11 @@ until next command
 ##################
 ======ROADMAP=====
 ##################
+
+
+[ ]		-test using in-line external package calls within another package in a project (within package body)
 [ ]		-update dependencies upon release
+
 [ ]		-revisit capsule dependency functions to be more versatile
 [!]		-be sure to scan every inner-project component for its dependencies
 [ ]		-any package file made will be visible by outer-pkg alongside auto-generated pkg
@@ -142,6 +146,7 @@ until next command
 [x]		-set up remote using registry design and git repo (ex: winget)
 [ ]		-implement additional "help" command documentation
 
+[x]		-scans for in-line package use (only within entities/architectures)
 [x]		-add extra folder layer to house cache,lib,map.toml,registry for a given workspace
 [x]		-implement -strict option to "release" command
 [x]		-revisit using makefile as script

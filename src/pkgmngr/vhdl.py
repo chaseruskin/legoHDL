@@ -11,13 +11,13 @@ class Vhdl:
     def decipher(self, availLibs, design_book, cur_lib):
         log.info("Deciphering VHDL file...")
         lib_headers = []
+        libs_using = []
         pre_files = []
         entity_bank = dict()
         in_entity = in_arch = in_true_arch = in_pkg = False
         entity_name = arch_name = pkg_name = ent =  None
         extern_libs = list()
         port_txt = ''
-
         with open(self._file_path, 'r') as file:
             #read through the VHDL file code
             for line in file.readlines():
@@ -32,8 +32,9 @@ class Vhdl:
                     #stash all "uses" from above
                     ent = Entity(self._file_path, cur_lib+'.'+entity_name, lib_headers, pre_files)
                     ent.addExterns(extern_libs)
+                    ent.setLibDeclarations(libs_using)
                     extern_libs = list()
-                    pre_files = []
+                    pre_files = list()
                     lib_headers = list()
                 #enter package
                 if(words[0].lower() == "package"):
@@ -45,6 +46,10 @@ class Vhdl:
                 if(words[0].lower() == "architecture"):
                     in_arch = True
                     arch_name = words[1]
+                #find library declarations used across entire file
+                if(words[0].lower() == "library" and words[1].lower().replace(";","") in availLibs):
+                    libs_using.append(words[1].lower().replace(";",""))
+                    pass
                 #find "use" declarations
                 if(words[0].lower() == "use" and not in_entity and not in_arch and not in_pkg):
                     impt = words[1].split('.')
@@ -86,6 +91,24 @@ class Vhdl:
                     ent.addDependency(cur_lib+'.'+words[1].lower())
                 if(words[0].lower() == "component" and in_pkg):
                     pass
+                #find in-line package usage cases from a library declaration
+                if(in_entity or in_arch or in_pkg and ent != None):
+                    for l in ent.getLibDeclarations():
+                        for word in words:
+                            #exit if we encounter a comment in this line
+                            if(word.startswith("--")):
+                                break
+                            #try to locate where the library is used
+                            foundUsage = word.find(l+".")
+                            if(foundUsage > -1):
+                                #find the package associated with this library call
+                                nextDot = foundUsage+(len(l+"."))+word[foundUsage+(len(l+".")):].find(".")
+                                package_name = word[foundUsage:nextDot]
+                                if(len(package_name) > len(l)):
+                                    log.debug("FOUND NEW WAY "+package_name)
+                                    ent.addExterns([(package_name,design_book[package_name])])
+                                    ent.addPreFile(design_book[package_name])
+                                pass
 
                 if(in_arch):
                     if(words[0].lower() == 'begin'):
