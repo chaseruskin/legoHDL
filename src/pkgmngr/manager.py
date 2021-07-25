@@ -46,7 +46,7 @@ class legoHDL:
         #search through all library uses and see what are chained dependencies
         derivatives = cap.scanLibHeaders(cap.getMeta("toplevel"))
         #write in all library and uses
-        print(derivatives)
+        #print(derivatives)
         for dep in derivatives:
             vhd_pkg.write(dep)
 
@@ -262,11 +262,10 @@ class legoHDL:
 
         #write current test dir where all testbench files are
         if(tb != None):
-            #output.write("@TB "+cap.grabEntities()[cap.getMeta("bench")].getFile()+"\n")
-            output.write("@TB-UNIT "+tb+"\n")
+            output.write("@SIM-TOP "+tb+"\n")
 
         if(top != None):
-            output.write("@TOP-UNIT "+top+"\n")
+            output.write("@SRC-TOP "+top+"\n")
 
         output.close()
 
@@ -316,10 +315,10 @@ class legoHDL:
             #make the connections between an entity and its dependency entity
             for dep in e.getDependencies():
                 hierarchy.addEdge(k, dep)
-            #see what external packages are referenced
+            #see what external projects are referenced
             for extern_lib in e.getExternal():
                 L,N = Capsule.grabExternalProject(extern_lib[1])
-                #create project object based on this external package
+                #create project object based on this external project
                 ext_cap = self.db.getCaps("cache")[L][N]
                 #recursively feed into dependency tree
                 hierarchy,labels = self.recursiveGraph(ext_cap, hierarchy, labels)
@@ -356,7 +355,7 @@ class legoHDL:
                 if(f in self.capsuleCWD.gatherSources(excludeTB=True)):
                     lib = "@SRC "
                 else:
-                    lib = "@TB "
+                    lib = "@SIM "
             c_list.append(lib+f)
     
         return c_list
@@ -408,6 +407,7 @@ class legoHDL:
             exit(log.error(err_msg))
         
         cap.identifyTop()
+        cap.updateDerivatives()
         cap.release(ver, options)
         if(os.path.isdir(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())):
             shutil.rmtree(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())
@@ -436,6 +436,7 @@ class legoHDL:
             key = choice
         if(options[0] == 'active-workspace' and choice not in apt.SETTINGS['workspace'].keys()):
             exit(log.error("Workspace not found!"))
+            #copy the map.toml for this workspace into the root of .legohdl
 
         if(options[0] == 'market-append' and key in apt.SETTINGS['market'].keys()):
             if(key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
@@ -708,10 +709,7 @@ class legoHDL:
         pkgCWD = pkgPath[lastSlash+1:]
 
         self.capsuleCWD = Capsule(path=pkgPath+"/")
-        #if(self.capsuleCWD.isValid()):
-            #self.capsuleCWD.identifyTop()
 
-        #exit()
         command = package = description = ""
         options = []
         #store args accordingly from command-line

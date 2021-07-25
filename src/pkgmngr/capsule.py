@@ -409,7 +409,7 @@ class Capsule:
         if(ver == 'v0.0.0'):
             exit(log.error('No available version'))
 
-        log.debug("version",ver)
+        log.debug("version "+ver)
         
         if(src == None and self.__remote != None):
             src = self.__remote
@@ -513,6 +513,15 @@ class Capsule:
                 if(dep in top_contenders):
                     top_contenders.remove(dep)
 
+        if(len(top_contenders) == 0):
+            log.error("No top level detected.")
+        elif(len(top_contenders) > 1):
+            log.warning("Multiple top levels detected.")
+            validTop = input("Enter a valid toplevel entity: ").lower()
+            while validTop not in top_contenders:
+                validTop = input("Enter a valid toplevel entity: ").lower()
+            
+            top_contenders = [validTop]
         if(len(top_contenders) == 1):
             top = ents[top_contenders[0]]
 
@@ -525,10 +534,6 @@ class Capsule:
                 self.__metadata['toplevel'] = top.getName()
                 self.pushYML("Auto updates top level design module to "+self.getMeta("toplevel"))
             pass
-        elif(len(top_contenders) == 0):
-            log.error("No top level detected.")
-        else:
-            log.error("Multiple top levels detected. Please be explicit when exporting.")
         return top
 
     #determine what testbench is used for the top-level design entity
@@ -631,7 +636,6 @@ class Capsule:
         return L,N
 
     def ports(self, mapp, entity=None):
-        self.identifyTop()
         ents = self.grabEntities()
         printer = ''
         if(entity == None):

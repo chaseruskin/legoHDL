@@ -132,20 +132,21 @@ until next command
 
 
 [ ]		-test using in-line external package calls within another package in a project (within package body)
-[ ]		-update dependencies upon release
 
-[ ]		-revisit capsule dependency functions to be more versatile
+[ ]		-auto install projects that are needed
+[-]		-revisit capsule dependency functions to be more versatile
 [!]		-be sure to scan every inner-project component for its dependencies
-[ ]		-any package file made will be visible by outer-pkg alongside auto-generated pkg
+[x]		-any package file made will be visible by outer-pkg alongside auto-generated pkg
 
 [ ]		-add cool logging
 
-[ ]		-auto-update if scripts are gone from scripts folder
+[o]		-auto-update if scripts are gone from scripts folder -> No
 
 [ ]		-add verilog/systemverilog file support
 [x]		-set up remote using registry design and git repo (ex: winget)
 [ ]		-implement additional "help" command documentation
 
+[x]		-update dependencies upon release
 [x]		-scans for in-line package use (only within entities/architectures)
 [x]		-add extra folder layer to house cache,lib,map.toml,registry for a given workspace
 [x]		-implement -strict option to "release" command
@@ -161,7 +162,7 @@ until next command
 [x]		-implement cache folder
 
 	RECIPES/BUILDING
-[ ] 	-organize recur labels to print with associated project
+[o] 	-organize recur labels to print with associated project -> No, not necessary
 
 [x]		-add way to add a recursive label (useful for labelling IP files that are needed inside dependencies)
 [x]		-users specify external ext. and what the tag is to search for adding to recipe	("tags" option)	

@@ -105,7 +105,6 @@ class Vhdl:
                                 nextDot = foundUsage+(len(l+"."))+word[foundUsage+(len(l+".")):].find(".")
                                 package_name = word[foundUsage:nextDot]
                                 if(len(package_name) > len(l)):
-                                    log.debug("FOUND NEW WAY "+package_name)
                                     ent.addExterns([(package_name,design_book[package_name])])
                                     ent.addPreFile(design_book[package_name])
                                 pass
