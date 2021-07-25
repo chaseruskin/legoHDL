@@ -21,9 +21,6 @@ class legoHDL:
         self.db = Registry(apt.getMarkets())
         Capsule.fetchLibs(self.db.availableLibs())
 
-        #set env variable for VHDL_LS
-        os.environ['VHDL_LS_CONFIG'] = apt.WORKSPACE+"map.toml" 
-
         self.parse()
         pass
 
@@ -137,6 +134,8 @@ class legoHDL:
             mapfile.write("]\n")
 
         mapfile.close()
+        #update current map.toml as well
+        shutil.copy(filename, os.path.expanduser("~/.vhdl_ls.toml"))
         pass
 
     def uninstall(self, pkg, opt=None):
@@ -171,6 +170,8 @@ class legoHDL:
                     continue
                 file.write(lin)
             file.close()
+        #update current map.toml as well
+        shutil.copy(filename, os.path.expanduser("~/.vhdl_ls.toml"))
         pass
 
     def recurseScan(self, dep_list, label_list):
@@ -255,6 +256,8 @@ class legoHDL:
         hierarchy,labels = self.formGraph(cap)
         order = self.compileList(hierarchy)  
 
+        #add labels in order from lowest-projects to top-level project
+        labels = reversed(labels)
         for l in labels:
             output.write(l+"\n")
         for f in order:
@@ -434,9 +437,13 @@ class legoHDL:
         if(eq == -1):
             val = ''
             key = choice
-        if(options[0] == 'active-workspace' and choice not in apt.SETTINGS['workspace'].keys()):
-            exit(log.error("Workspace not found!"))
-            #copy the map.toml for this workspace into the root of .legohdl
+        if(options[0] == 'active-workspace'):
+            if(choice not in apt.SETTINGS['workspace'].keys()):
+                exit(log.error("Workspace not found!"))
+            else:
+                #copy the map.toml for this workspace into user root for VHDL_LS
+                shutil.copy(apt.HIDDEN+choice+"/map.toml", os.path.expanduser("~/.vhdl_ls.toml"))
+                pass
 
         if(options[0] == 'market-append' and key in apt.SETTINGS['market'].keys()):
             if(key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):

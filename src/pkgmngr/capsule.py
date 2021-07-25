@@ -516,7 +516,7 @@ class Capsule:
         if(len(top_contenders) == 0):
             log.error("No top level detected.")
         elif(len(top_contenders) > 1):
-            log.warning("Multiple top levels detected.")
+            log.warning("Multiple top levels detected. "+str(top_contenders))
             validTop = input("Enter a valid toplevel entity: ").lower()
             while validTop not in top_contenders:
                 validTop = input("Enter a valid toplevel entity: ").lower()

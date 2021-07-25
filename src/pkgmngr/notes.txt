@@ -130,7 +130,7 @@ until next command
 ======ROADMAP=====
 ##################
 
-
+[x]		-map.toml files are used and placed as ~/.vhdl_ls.toml
 [ ]		-test using in-line external package calls within another package in a project (within package body)
 
 [ ]		-auto install projects that are needed
@@ -142,6 +142,7 @@ until next command
 
 [o]		-auto-update if scripts are gone from scripts folder -> No
 
+[ ]		-prompt user if multiple top-level testbenches are found
 [ ]		-add verilog/systemverilog file support
 [x]		-set up remote using registry design and git repo (ex: winget)
 [ ]		-implement additional "help" command documentation
