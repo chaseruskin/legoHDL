@@ -173,7 +173,8 @@ class legoHDL:
         #update current map.toml as well
         shutil.copy(filename, os.path.expanduser("~/.vhdl_ls.toml"))
         pass
-
+    
+    @DeprecationWarning
     def recurseScan(self, dep_list, label_list):
         if(len(dep_list) == 0):
             return label_list
@@ -278,12 +279,10 @@ class legoHDL:
 
     def recursiveGraph(self, cap, grph, lbls):
         #find any project-level labels (must be enabled as recursive)
-        for label,val in apt.SETTINGS['label'].items():
-            ext,recur = val
-            if(recur):
-                files = cap.gatherSources(ext=[ext])
-                for f in files:
-                    lbls.append("@"+label+" "+f)
+        for label,ext in apt.SETTINGS['label']['recursive'].items():
+            files = cap.gatherSources(ext=[ext])
+            for f in files:
+                lbls.append("@"+label+" "+f)
 
         #grab only source-design entities (its an external referenced project)
         ents = cap.grabEntities(excludeTB=True)
@@ -306,11 +305,11 @@ class legoHDL:
         hierarchy = Graph()
         labels = []
         #find any project-level labels
-        for label,val in apt.SETTINGS['label'].items():
-            ext,recur = val
-            files = cap.gatherSources(ext=[ext])
-            for f in files:
-                labels.append("@"+label+" "+f)
+        for depth,val in apt.SETTINGS['label'].items():
+            for label,ext in val.items():
+                files = cap.gatherSources(ext=[ext])
+                for f in files:
+                    labels.append("@"+label+" "+f)
         #grab current project's entity list
         ents = cap.grabEntities()
         for k,e in ents.items():
@@ -545,16 +544,23 @@ class legoHDL:
         # LABEL CONFIGURATION
         elif(options[0] == 'label'):
             recur = False
+            depth = "shallow"
             if(options.count("recur")):
-                recur = True
+                depth = "recursive"
             if(val == ''): #signal for deletion
                 if(isinstance(apt.SETTINGS[options[0]],dict)):
-                    if(key in apt.SETTINGS[options[0]].keys()):
-                        del apt.SETTINGS[options[0]][key]
+                    if(key in apt.SETTINGS[options[0]][depth].keys()):
+                        del apt.SETTINGS[options[0]][depth][key]
             if(not isinstance(apt.SETTINGS[options[0]],dict)):
                 apt.SETTINGS[options[0]] = dict()
+                apt.SETTINGS[options[0]]["shallow"] = dict()
+                apt.SETTINGS[options[0]]["recursive"] = dict()
             if(val != ''):
-                apt.SETTINGS[options[0]][key] = [val, recur]
+                if(depth == "shallow" and key in apt.SETTINGS[options[0]]["recursive"].keys()):
+                    del apt.SETTINGS[options[0]]["recursive"][key]
+                if(depth == "recursive" and key in apt.SETTINGS[options[0]]["shallow"].keys()):
+                    del apt.SETTINGS[options[0]]["shallow"][key]
+                apt.SETTINGS[options[0]][depth][key] = val
             pass
         # ALL OTHER CONFIGURATION
         else:
@@ -651,11 +657,12 @@ class legoHDL:
         if(isinstance(apt.SETTINGS['label'],dict)):
             print('{:<20}'.format("Label"),'{:<24}'.format("Extension"),'{:<14}'.format("Recursive"))
             print("-"*20+" "+"-"*24+" "+"-"*14+" ")
-            for key,val in apt.SETTINGS['label'].items():
-                rec = 'no'
-                if(val[1]):
-                    rec = 'yes'
-                print('{:<20}'.format(key),'{:<24}'.format(val[0]),'{:<14}'.format(rec))
+            for depth,pair in apt.SETTINGS['label'].items():
+                rec = "-"
+                if(depth == "recursive"):
+                    rec = "yes"
+                for key,val in pair.items():
+                    print('{:<20}'.format(key),'{:<24}'.format(val),'{:<14}'.format(rec))
                 pass
         else:
             log.info("No Labels added!")

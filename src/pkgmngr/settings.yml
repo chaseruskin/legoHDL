@@ -2,18 +2,13 @@ active-workspace: myWorkspace
 author: 'Chase Ruskin: double-bladed lightsaber wielder'
 editor: code
 label:
-  IP:
-  - .xci
-  - true
-  PINS:
-  - pinout.txt
-  - false
-  SV:
-  - .sv
-  - false
-  TEST-GEN:
-  - testbench.py
-  - false
+  recursive:
+    IP: .xci
+    SV: .sv
+  shallow:
+    CONSTR: .xdc
+    PINS: pinout.txt
+    TEST-GEN: testbench.py
 market:
   cluster1: https://gitlab.com/chase800/stack.git
   clusterMain: local
