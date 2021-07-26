@@ -137,6 +137,21 @@ class Capsule:
                 self.__market.publish(self.__metadata, options)
         pass
 
+    def legoLockFile(self):
+        body = """
+name:
+library:
+version:
+summary:
+toplevel:
+bench:
+remote:
+market:
+derives: {}
+integrates: {}
+        """
+        return body
+
     @classmethod
     def biggerVer(cls, lver, rver):
         l1,l2,l3 = cls.sepVer(lver)
@@ -251,8 +266,8 @@ class Capsule:
         log.info('Initializing new project')
         if(fresh):
             shutil.copytree(apt.PKGMNG_PATH+"template/", self.__local_path)
-        else:
-            shutil.copy(apt.PKGMNG_PATH+"template/.lego.lock", self.__local_path+".lego.lock")
+       
+        open(self.__local_path+".lego.lock", 'w').write(self.legoLockFile())
         
         if(not git_exists):
             self.__repo = git.Repo.init(self.__local_path)

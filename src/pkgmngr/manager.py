@@ -56,7 +56,7 @@ class legoHDL:
             vhd_pkg.write(dep)
 
         vhd_pkg.write("\n")
-        
+
         # generate a PKG VHD file -> lib
         addedCompDec = False
         for line in pkg_lines:
@@ -731,7 +731,7 @@ class legoHDL:
         pkgCWD = pkgPath[lastSlash+1:]
 
         self.capsuleCWD = Capsule(path=pkgPath+"/")
-
+   
         command = package = description = ""
         options = []
         #store args accordingly from command-line
