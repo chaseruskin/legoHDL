@@ -859,16 +859,14 @@ class legoHDL:
             self.export(self.capsuleCWD, mod, tb)
             pass
         elif(command == "open"):
+            if(apt.SETTINGS['editor'] == None):
+                exit(log.error("No text-editor configured!"))
             if(options.count("template") or package.lower() == "template"):
-                if(apt.SETTINGS['editor'] != None):
-                    os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
-                else:
-                    log.info("No text-editor configured!")
+                os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
             elif(options.count("script") or package.lower() == "script"):
-                if(apt.SETTINGS['editor'] != None):
                     os.system(apt.SETTINGS['editor']+" "+apt.HIDDEN+"/scripts")
-                else:
-                    log.info("No text-editor configured!")
+            elif(options.count("settings") or package.lower() == "settings"):
+                os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/settings.yml")
             elif(self.db.capExists(package, "local")):
                 self.db.getCaps("local")[L][N].load()
             else:
@@ -966,7 +964,7 @@ class legoHDL:
             printFmt("new","<package>","[-o -<remote-url> -<market-name>")
             pass
         elif(cmd == "open"):
-            printFmt("open","<package>","[-template -build]")
+            printFmt("open","<package>","[-template -script -settings]")
             pass
         elif(cmd == "release"):
             printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d -strict -request]")

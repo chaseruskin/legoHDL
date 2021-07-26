@@ -137,6 +137,8 @@ until next command
 [!]		-start transition to running/developing legohdl as its PYPI package (use pip install -e .)
 			-this means on install, template folder is created, settings.yml exists,
 			-folders are set up on fresh install
+			
+[ ]		-allow for opening settings to directly write into them
 
 [x]		-regroup settings labels into labels/recursive, labels/shallow
 [x]		-remove "template_pkg" and convert lines of vhdl embedded directly into legohdl code to write to file
