@@ -3,6 +3,13 @@ from setuptools.command.install import install
 #code inspired by:
 # https://packaging.python.org/tutorials/packaging-projects/
 
+
+class DirectorySetup(install):
+    def run(self):
+        print("Creating file directories...")
+        install.run(self)
+
+
 with open("README.md", "r", encoding="utf-8") as fh:
     entire_description = fh.read()
 
@@ -29,7 +36,10 @@ setuptools.setup(
         "": ["settings.yml"],
         "": ["template"]
     },
-    python_requires=">=3.5"
+    python_requires=">=3.5",
+    cmdclass={
+        'install': DirectorySetup,
+    },
 )
 
 #
