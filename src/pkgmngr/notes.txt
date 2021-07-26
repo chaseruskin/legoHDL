@@ -133,12 +133,13 @@ until next command
 ======ROADMAP=====
 ##################
 
-[!]		-regroup settings labels into labels/recursive, labels/shallow
+
 [!]		-start transition to running/developing legohdl as its PYPI package (use pip install -e .)
 			-this means on install, template folder is created, settings.yml exists,
 			-folders are set up on fresh install
 
-[!]		-remove "template_pkg" and convert lines of vhdl embedded directly into legohdl code to write to file
+[x]		-regroup settings labels into labels/recursive, labels/shallow
+[x]		-remove "template_pkg" and convert lines of vhdl embedded directly into legohdl code to write to file
 
 [ ]		-see if improvements can be made to "set settings" code (config command)
 

@@ -36,8 +36,16 @@ class legoHDL:
 
         lib_path = apt.WORKSPACE+"lib/"+cap.getLib()+"/"
         os.makedirs(lib_path, exist_ok=True)
-        tmp_pkg = open(apt.PKGMNG_PATH+"/template_pkg.vhd", 'r')
+        
         vhd_pkg = open(lib_path+cap.getName()+"_pkg.vhd", 'w')
+
+        pkg_entry = "package "+cap.getName()+"_pkg is"
+        pkg_close = "end package;"
+
+        pkg_body_entry = "\n\npackage body "+cap.getName()+"_pkg is"
+        pkg_body_close = "\nend package body;"
+
+        pkg_lines = [pkg_entry, pkg_close, pkg_body_entry, pkg_body_close]
 
         #need to look at toplevel VHD file to transfer correct library uses
         #search through all library uses and see what are chained dependencies
@@ -47,11 +55,12 @@ class legoHDL:
         for dep in derivatives:
             vhd_pkg.write(dep)
 
+        vhd_pkg.write("\n")
+        
         # generate a PKG VHD file -> lib
         addedCompDec = False
-        for line in tmp_pkg:
-            line = line.replace("template", cap.getName())
-            if not addedCompDec and line.count("package") > 0:
+        for line in pkg_lines:
+            if not addedCompDec and line.startswith("package"):
                 addedCompDec = True
                 comp = cap.ports(False)
                 comp_break = comp.split('\n')
@@ -62,7 +71,6 @@ class legoHDL:
                 pass
             vhd_pkg.write(line)
         vhd_pkg.close()
-        tmp_pkg.close()
         pass
 
     def install(self, title, ver=None, opt=list()):
