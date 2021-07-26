@@ -265,8 +265,11 @@ integrates: {}
     def create(self, fresh=True, git_exists=False):
         log.info('Initializing new project')
         if(fresh):
-            shutil.copytree(apt.PKGMNG_PATH+"template/", self.__local_path)
-       
+            if(os.path.isdir(apt.PKGMNG_PATH+"template/")):
+                shutil.copytree(apt.PKGMNG_PATH+"template/", self.__local_path)
+            else:
+                os.makedirs(self.__local_path, exist_ok=True)
+        
         open(self.__local_path+".lego.lock", 'w').write(self.legoLockFile())
         
         if(not git_exists):

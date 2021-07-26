@@ -31,3 +31,10 @@ setuptools.setup(
     },
     python_requires=">=3.5"
 )
+
+#
+#---Installation---
+#   1. create ~/.legohdl directory
+#   2. create /settings.yml file
+#   3. create /scripts, /registry, /template, /workspaces folders
+#
