@@ -1,27 +1,41 @@
 #!/usr/bin/env python3
 import os, sys, shutil
-import yaml, git, glob
-from capsule import Capsule
-from registry import Registry
-from graph import Graph
-from apparatus import Apparatus as apt
-from market import Market
+import yaml, glob
+from .capsule import Capsule
+from .registry import Registry
+from .graph import Graph
+from .apparatus import Apparatus as apt
+from .market import Market
 import logging as log
 from ordered_set import OrderedSet
 
 class legoHDL:
 
     def __init__(self):
+
+        command = package = ""
+        options = []
+        #store args accordingly from command-line
+        for i, arg in enumerate(sys.argv):
+            if(i == 0):
+                continue
+            elif(i == 1):
+                command = arg
+            elif(arg[0] == '-'):
+                options.append(arg[1:])
+            elif(package == ''):
+                package = arg
         
         apt.load() #load settings.yml
         self.capsulePKG = None
         self.capsuleCWD = None
-        
         #defines path to dir of remote code base
         self.db = Registry(apt.getMarkets())
-        Capsule.fetchLibs(self.db.availableLibs())
-
-        self.parse()
+        if(apt.inWorkspace()):
+            Capsule.fetchLibs(self.db.availableLibs())
+        if(not apt.inWorkspace() and (command != 'config' and command != 'help')):
+            exit()
+        self.parse(command, package, options)
         pass
 
     def genPKG(self, title):
@@ -506,7 +520,7 @@ class legoHDL:
                 #will make new directories if needed when setting local path
                 if(not os.path.isdir(apt.SETTINGS[options[0]][key]['local'])):
                     log.info("Making new directory "+apt.SETTINGS[options[0]][key]['local'])
-                    os.makedirs(apt.SETTINGS[options[0]][key]['local'], exist_ok=True)
+                    os.makedirs(apt.fs(val), exist_ok=True)
                 for rem in options:
                     if rem == options[0]:
                         continue
@@ -551,7 +565,6 @@ class legoHDL:
             pass
         # LABEL CONFIGURATION
         elif(options[0] == 'label'):
-            recur = False
             depth = "shallow"
             if(options.count("recur")):
                 depth = "recursive"
@@ -598,9 +611,9 @@ class legoHDL:
 
         log.info("Transforming project into lego...")
         #add .gitignore file if not present and it is present in template project
-        if(os.path.isfile(apt.PKGMNG_PATH+"/template/.gitignore")):
+        if(os.path.isfile(apt.HIDDEN+"/template/.gitignore")):
             if(not os.path.isfile(cwd+"/.gitignore")):
-                shutil.copy(apt.PKGMNG_PATH+"/template/.gitignore",cwd+"/.gitignore")
+                shutil.copy(apt.HIDDEN+"/template/.gitignore",cwd+"/.gitignore")
             pass
         #rename current folder to the name of library.project
         last_slash = cwd.rfind('/')
@@ -724,34 +737,19 @@ class legoHDL:
             log.info("No scripts added!")
         pass
 
-    def parse(self):
+    def parse(self, cmd, pkg, opt):
         #check if we are in a project directory (necessary to run a majority of commands)
-        pkgPath = os.getcwd()
-        lastSlash = pkgPath.rfind('/') #determine project's name to know the YAML to open
-        pkgCWD = pkgPath[lastSlash+1:]
-
-        self.capsuleCWD = Capsule(path=pkgPath+"/")
+        self.capsuleCWD = Capsule(path=os.getcwd()+"/")
    
-        command = package = description = ""
-        options = []
-        #store args accordingly from command-line
-        for i, arg in enumerate(sys.argv):
-            if(i == 0):
-                continue
-            elif(i == 1):
-                command = arg
-            elif(arg[0] == '-'):
-                options.append(arg[1:])
-            elif(package == ''):
-                package = arg
-
+        command = cmd
+        package = pkg
+        options = opt
         
         description = package
-        
         value = package
         package = package.replace("-", "_")
-        
-        self.capsulePKG = Capsule(title=package)
+        if(apt.inWorkspace()):
+            self.capsulePKG = Capsule(title=package)
 
         L,N = Capsule.split(package)
         
@@ -862,11 +860,11 @@ class legoHDL:
             if(apt.SETTINGS['editor'] == None):
                 exit(log.error("No text-editor configured!"))
             if(options.count("template") or package.lower() == "template"):
-                os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
+                os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/template\"")
             elif(options.count("script") or package.lower() == "script"):
-                    os.system(apt.SETTINGS['editor']+" "+apt.HIDDEN+"/scripts")
+                    os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/scripts\"")
             elif(options.count("settings") or package.lower() == "settings"):
-                os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/settings.yml")
+                os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/settings.yml\"")
             elif(self.db.capExists(package, "local")):
                 self.db.getCaps("local")[L][N].load()
             else:
@@ -886,7 +884,7 @@ class legoHDL:
             if((self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
                 print(self.db.getCaps("local","cache")[L][N].ports(mapp,ent_name))
         elif(command == "template" and apt.SETTINGS['editor'] != None):
-            os.system(apt.SETTINGS['editor']+" "+apt.PKGMNG_PATH+"/template")
+            os.system(apt.SETTINGS['editor']+" "+apt.HIDDEN+"/template")
             pass
         elif(command == "config"):
             self.setSetting(options, value)

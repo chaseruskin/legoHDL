@@ -1,32 +1,12 @@
-active-workspace: myWorkspace
-author: 'Chase Ruskin: double-bladed lightsaber wielder'
-editor: code
+active-workspace: home2
+author: null
+editor: null
 label:
-  recursive:
-    IP: .xci
-    SV: .sv
-  shallow:
-    CONSTR: .xdc
-    PINS: pinout.txt
-    TEST-GEN: testbench.py
-market:
-  cluster1: https://gitlab.com/chase800/stack.git
-  clusterMain: local
-  open-market: https://gitlab.com/chase800/open-market.git
-script:
-  master: '"python3 /Users/Chase/.legohdl/scripts/master.py"'
-  mk: '"make -f /Users/Chase/.legohdl/scripts/mk"'
-  quick-build: '"python3 /Users/Chase/.legohdl/scripts/quick-build.py"'
-  runnr: '"python3 /Users/Chase/.legohdl/scripts/runnr.py"'
+  recursive: {}
+  shallow: {}
+market: {}
+script: {}
 workspace:
-  myWorkspace:
-    local: /Users/Chase/develop/hdl-dev/
-    market:
-    - cluster1
-    - open-market
-  myWorkspace2:
-    local: /Users/Chase/develop/hdl-op/side/
-    market: []
-  otherWorkspace:
-    local: /Users/Chase/develop/hdl-new/
+  home2:
+    local: C:/Users/Chase Ruskin/develop/hdl/projects/
     market: []

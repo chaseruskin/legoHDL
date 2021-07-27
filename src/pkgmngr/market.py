@@ -1,6 +1,6 @@
 import os,shutil,git
 import logging as log
-from apparatus import Apparatus as apt
+from .apparatus import Apparatus as apt
 import yaml
 
 class Market:

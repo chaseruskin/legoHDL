@@ -1,5 +1,5 @@
 #graph module used to generate flat dependency tree, topologically sort it
-from entity import Entity
+from .entity import Entity
 
 
 class Graph:

@@ -4,9 +4,9 @@ from enum import Enum
 import copy,git,yaml
 import os,random,requests,json,glob
 from collections import OrderedDict
-from capsule import Capsule
-from apparatus import Apparatus as apt
-from market import Market
+from .capsule import Capsule
+from .apparatus import Apparatus as apt
+from .market import Market
 import logging as log
 
 class Registry:
@@ -24,7 +24,7 @@ class Registry:
     def __init__(self, mrkts):
         self.__url = ''
         self.__galaxy = list() #list of all clusters for current workspace
-        if(apt.linkedMarket()):
+        if(apt.inWorkspace() and apt.linkedMarket()):
             for rem,val in mrkts.items():
                 self.__galaxy.append(Market(rem,val))
         self.__registry_path = apt.HIDDEN+"registry/"
@@ -155,8 +155,10 @@ class Registry:
         self._local_prjs = dict()
         folders = glob.glob(apt.getLocal()+"/**/.lego.lock", recursive=True)
         folders = folders + glob.glob(apt.getLocal()+"/*/.lego.lock", recursive=False)
+
         for file in folders:
             #read .lock to get information
+            file = apt.fs(file)
             with open(file, 'r') as f:
                 tmp = yaml.load(f, Loader=yaml.FullLoader)
                 #print(tmp)

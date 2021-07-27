@@ -1,11 +1,11 @@
 import os, yaml, shutil
 from datetime import date
-import collections, stat
+import stat
 import glob, git
 import logging as log
-from market import Market
-from apparatus import Apparatus as apt
-from vhdl import Vhdl
+from .market import Market
+from .apparatus import Apparatus as apt
+from .vhdl import Vhdl
 
 
 #a capsule is a package/module that is signified by having the .lego.lock
@@ -23,7 +23,7 @@ class Capsule:
         if(title != None):
             self.__lib,self.__name = Capsule.split(title)
         if(path != None):
-            self.__local_path = path
+            self.__local_path = apt.fs(path)
             #print(path)
             if(self.isValid()):
                 self.loadMeta()
@@ -35,7 +35,7 @@ class Capsule:
         if(remote != None):
             self.__remote = remote #pass in remote object
         
-        self.__local_path = apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/'
+        self.__local_path = apt.fs(apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/')
         #configure remote url
         #if(apt.linkedRemote()):
             #self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
@@ -235,7 +235,7 @@ integrates: {}
         template_ext = self.getExt(templateFile)
         if(template_ext == ''):
             templateFile = templateFile + extension
-        replacements = glob.glob(apt.PKGMNG_PATH+"template/**/"+templateFile, recursive=True)
+        replacements = glob.glob(apt.HIDDEN+"template/**/"+templateFile, recursive=True)
         #copy the template file into the proper location
         if(len(replacements) < 1):
             exit(log.error("Could not find "+templateFile+" file in template project"))
@@ -265,8 +265,8 @@ integrates: {}
     def create(self, fresh=True, git_exists=False):
         log.info('Initializing new project')
         if(fresh):
-            if(os.path.isdir(apt.PKGMNG_PATH+"template/")):
-                shutil.copytree(apt.PKGMNG_PATH+"template/", self.__local_path)
+            if(os.path.isdir(apt.HIDDEN+"template/")):
+                shutil.copytree(apt.HIDDEN+"template/", self.__local_path)
             else:
                 os.makedirs(self.__local_path, exist_ok=True)
         
@@ -581,6 +581,7 @@ integrates: {}
         srcs = self.gatherSources(excludeTB=excludeTB)
         self._entity_bank = dict()
         for f in srcs:
+            f = apt.fs(f)
             self._entity_bank.update(Vhdl(f).decipher(self.allLibs, self.grabDesigns("cache","current"), self.getLib()))
             log.info(f)
         return self._entity_bank

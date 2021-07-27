@@ -3,19 +3,12 @@ from setuptools.command.install import install
 #code inspired by:
 # https://packaging.python.org/tutorials/packaging-projects/
 
-
-class DirectorySetup(install):
-    def run(self):
-        print("Creating file directories...")
-        install.run(self)
-
-
 with open("README.md", "r", encoding="utf-8") as fh:
     entire_description = fh.read()
 
 setuptools.setup(
     name="legohdl",
-    version="0.1.0",
+    version="0.5.0",
     author="Chase Ruskin",
     author_email="c.ruskin@ufl.edu",
     description="A complete HDL package manager",
@@ -25,6 +18,11 @@ setuptools.setup(
     classifiers=[
         "",
     ],
+    install_requires=[
+        "PyYAML",
+        "git-Python",
+        "ordered_set"
+    ],
     entry_points='''
             [console_scripts]
             legohdl=pkgmngr.manager:main
@@ -32,14 +30,7 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
     include_package_data=True,
-    package_data={
-        "": ["settings.yml"],
-        "": ["template"]
-    },
     python_requires=">=3.5",
-    cmdclass={
-        'install': DirectorySetup,
-    },
 )
 
 #

@@ -1,6 +1,6 @@
-from apparatus import Apparatus as apt
+from .apparatus import Apparatus as apt
 import logging as log
-from entity import Entity
+from .entity import Entity
 
 class Vhdl:
 
