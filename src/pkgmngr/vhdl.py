@@ -62,6 +62,8 @@ class Vhdl:
                             package_name = impt[0].lower()+'.'+package_name
 
                         if(impt[0].lower() in availLibs):
+                            if(package_name not in design_book.keys()):
+                                exit(log.error("Cannot find "+package_name+" in workspace cache or lib"))
                             extern_libs.append((package_name,design_book[package_name]))
                             pre_files.append(design_book[package_name])
                         else:

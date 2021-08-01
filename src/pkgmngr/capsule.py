@@ -210,7 +210,7 @@ integrates: {}
         if('market' in self.__metadata.keys()):
             if(self.__market != None):
                 self.__metadata['market'] = self.__market.getName()
-            elif(self.getMeta("market") != None):
+            elif(self.getMeta("market") != None and self.getMeta("market") in apt.SETTINGS['market'].keys()):
                 self.__market = Market(self.__metadata['market'], apt.SETTINGS['market'][self.__metadata['market']])
         pass
 

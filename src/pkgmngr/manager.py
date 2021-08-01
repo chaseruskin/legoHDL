@@ -33,7 +33,7 @@ class legoHDL:
         self.db = Registry(apt.getMarkets())
         if(apt.inWorkspace()):
             Capsule.fetchLibs(self.db.availableLibs())
-        if(not apt.inWorkspace() and (command != 'config' and command != 'help')):
+        if(not apt.inWorkspace() and (command != 'config' and command != 'help' and (command != 'open' or "settings" not in options))):
             exit()
         self.parse(command, package, options)
         pass

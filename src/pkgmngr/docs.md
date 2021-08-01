@@ -14,7 +14,7 @@ LegoHDL is available to work completely local or along with remote locations to 
 
 Let's go over some important terminology regarding legoHDL.
 
-__project__ : A group of VHDL files grouped together to create a design. A project is a package if it has a ".lego.lock" file at the root of the its directory.
+__project__ : A group of VHDL files grouped together to create a design. A project is a package if it has a "Lego.lock" file at the root of the its directory.
 
 __workspace__ : This is your working environment. Only one can be active on your local machine at a time. It consists of a local path and optionally, any linked remotes. The local path is where all projects can freely live when downloaded.
 
@@ -109,16 +109,18 @@ So, how will my build script know what files to anaylze? Here's where recipes co
 Here's a sample recipe file:
 
 ``` 
-@TEST-GEN /Users/Chase/Develop/hdl/util/alu/bench/testbench.py  
-@LIB util /Users/Chase/.legohdl/cache/util/flipflop/design/*.vhd  
-@LIB util /Users/Chase/.legohdl/lib/util/flipflop_pkg.vhd  
-@SRC /Users/Chase/Develop/hdl/util/alu/design/*.vhd  
-@TB /Users/Chase/Develop/hdl-dev/util/alu/bench/alu_tb.vhd
+@BENCH /Users/chase/Develop/hdl-dev/mem/flipflop/bench/testbench.py
+@SRC /Users/chase/Develop/hdl-dev/mem/flipflop/design/sidecar.vhd
+@SRC /Users/chase/Develop/hdl-dev/mem/flipflop/design/flipflop.vhd
+@LIB verif /Users/chase/.legohdl/workspaces/lab/cache/verif/fileio/design/fileio.vhd
+@SIM /Users/chase/Develop/hdl-dev/mem/flipflop/bench/flipflop_tb.vhd
+@SIM-TOP flipflop_tb
+@SRC-TOP flipflop
 ```
 
-Notice the _@TEST-GEN_ label is a custom label set like so:
+Notice the _@BENCH_ label is a custom label set like so:
 
-```legohdl config TEST-GEN="testbench.py" -label```
+```legohdl config BENCH="testbench.py" -label```
 
 If IP were needed to be included for my script building, I could add a label
 
@@ -128,54 +130,69 @@ where the recur flag will indicate to recursively grab all .xci files found with
 
 We can view our labels with
 
-``legohdl list -label``s
+``legohdl list -label``
 
 Here's a simple build file:
 ``` python
 import os
 #example build script demonstrating the easy handling of recipe file
+#change directory to project's build folder
+os.chdir("build")
 #open recipe file
-recipe = open("./build/recipe", 'r')
+recipe = open("recipe", 'r')
 #parse recipe file and analyze units
-tb_path = ''
-for x in recipe.readlines():
+tb_unit = ''
+top_unit = ''
+for rule in recipe.readlines():
     #break up line into list of strings
-    parsed_list = x.split(' ')
-    tag = parsed_list[0] #tag is always first item
+    parse = rule.split()
+    tag = parse[0] #tag is always first item
     if(tag == '@LIB'): 
         #determine how to handle libraries
-        os.system("ghdl -a --std=08 --work="+parsed_list[1]+" "+parsed_list[2])
-    elif(tag == '@SRC'): 
-        #determine how to handle source code
-        os.system("ghdl -a --std=08 "+parsed_list[1])
-    elif(tag == '@TB'): 
-        #determine how to handle testbench file
-        tb_path = parsed_list[1]
-        #parse unit name from file path
-        unit_name = tb_path[tb_path.rfind('/')+1:tb_path.rfind('.')]
-    elif(tag == "@TEST-GEN"): 
-        #will run test-generation script to create files for tb
-        os.system("python3 "+parsed_list[1].strip())
-#now analyxe and run simulation from testbench file
-os.system("ghdl -a -g --std=08 -fsynopsys "+tb_path) 
-os.system("ghdl -r --std=08 -fsynopsys "+unit_name+" --vcd=./wf.vcd")
+        os.system("ghdl -a --std=08 --work="+parse[1]+" "+parse[2])
+    elif(tag == '@SRC' or tag == '@SIM'): 
+        #determine how to handle project-level code
+        os.system("ghdl -a --std=08 --ieee=synopsys "+parse[1])
+    elif(tag == '@SIM-TOP'): 
+        #capture testbench unit name
+        tb_unit = parse[1]
+    elif(tag == '@SRC-TOP'): 
+        #capture top-level design unit name
+        top_unit = parse[1]
+    elif(tag == "@BENCH"): 
+        #will run test-generation script to create input/output sim files
+        os.system("python "+parse[1].strip())
+#now analyze and run simulation from testbench file
+os.system("ghdl -r --std=08 --ieee=synopsys "+tb_unit+" --vcd=./wf.vcd")
 ```
 
-Now, I could add this to my legohdl scripts, and further extend this script to do much more like take in arguments. The sky is the limit when developer's are in the driver seat for how their scripts are to build HDL code. Let's add this file to my legohdl scripts.
+Now, I could add this to my legohdl scripts, and further extend this script to do much more like take in any arguments. The sky is the limit when developer's are in the driver seat for how their scripts are to build HDL code. Let's add this file to my legohdl scripts.
 
-```legohdl config quick-build="python3 users/chase/develop/hdl/demo/mux/builder.py" -script```
+Open the scripts folder.
+
+```legohdl open -script```
+
+Make a new build script file. However you roll, write a file in Make, python, TCL, or even a shell script, and have it run whatever tools you have, whether it be Vivado, GHDL, or Quartus. When your done, configure it for legohdl to see:
+
+```legohdl config master="python /Users/chase/.legohdl/scripts/builder.py" -script -lnk```
+
+Note: The -lnk flag will prevent legohdl from trying to copy the file into the scripts folder. Since it is already in the scripts folder, it is wise to just link it. It would also be wise to use -lnk when you would like your script to live elsewhere, allowing you to continue to improve it from its original location.
+
 
 To run this newly configured script:
 
-```legohdl build @quick-build```
+```legohdl build @master```
+
+If there is a script's alias being "master", it can be omitted from the build args and will run as default.
+
+```legohdl build```
+
+has the same effect as the previous command because they both call the script named master.
 
 We can view our scripts with
 
 ```legohdl list -script```
 
-We can edit our copied scripts with
-
-```legohdl open -script```
 
 5. __Releasing a project as package__
 
