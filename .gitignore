@@ -3,3 +3,4 @@ build/lib/pkgmngr
 dist/
 src/legoHDL.egg-info/
 src/pkgmngr/__pycache__/
+pip-wheel-metadata/

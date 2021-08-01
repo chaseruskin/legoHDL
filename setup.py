@@ -21,7 +21,8 @@ setuptools.setup(
     install_requires=[
         "PyYAML",
         "git-Python",
-        "ordered_set"
+        "ordered_set",
+        "requests",
     ],
     entry_points='''
             [console_scripts]
