@@ -63,7 +63,7 @@ class Market:
         #save yaml file
         os.makedirs(fp)
         order = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives', 'integrates']
-        with open(fp+".lego.lock", 'w') as file:
+        with open(fp+apt.MARKER, 'w') as file:
             for key in order:
                 #pop off front key/val pair of yaml data
                 single_dict = {}

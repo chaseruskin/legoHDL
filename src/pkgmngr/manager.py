@@ -2,6 +2,7 @@
 import os, sys, shutil
 import yaml, glob
 from .capsule import Capsule
+from .__version__ import __version__
 from .registry import Registry
 from .graph import Graph
 from .apparatus import Apparatus as apt
@@ -25,6 +26,11 @@ class legoHDL:
                 options.append(arg[1:])
             elif(package == ''):
                 package = arg
+
+        if(command == '--version'):
+            print(__version__)
+            exit()
+            pass
         
         apt.load() #load settings.yml
         self.capsulePKG = None
@@ -204,7 +210,7 @@ class legoHDL:
         for d in dep_list:
             l,n = Capsule.split(d)
             n = n.replace("_pkg", "")
-            if(os.path.isfile(apt.WORKSPACE+"cache/"+l+"/"+n+"/.lego.lock")):
+            if(os.path.isfile(apt.WORKSPACE+"cache/"+l+"/"+n+"/"+apt.MARKER)):
                 #here is where we check for matching files with custom recursive labels
                 for key,val in apt.SETTINGS['label'].items():
                     ext,recur = val
@@ -214,7 +220,7 @@ class legoHDL:
                             label_list.append("@"+key+" "+find)
                         pass
                 #open the metadata to retrieve data to be used to build dependency chain
-                with open(apt.WORKSPACE+"cache/"+l+"/"+n+"/.lego.lock", "r") as file:
+                with open(apt.WORKSPACE+"cache/"+l+"/"+n+"/"+apt.MARKER, "r") as file:
                     tmp = yaml.load(file, Loader=yaml.FullLoader)
             else:
                 continue
@@ -605,7 +611,7 @@ class legoHDL:
         cap = None
 
         files = os.listdir(cwd)
-        if ".lego.lock" in files or self.db.capExists(title, "local") or self.db.capExists(title, "cache") or self.db.capExists(title, "market"):
+        if apt.MARKER in files or self.db.capExists(title, "local") or self.db.capExists(title, "cache") or self.db.capExists(title, "market"):
             log.info("Already a packaged module")
             return
 
@@ -629,9 +635,9 @@ class legoHDL:
             git_exists = False
             pass
         
-        #create .lego.lock file
+        #create marker file
         cap = Capsule(title=title, path=cwdb1)
-        log.info("Creating .lego.lock file...")
+        log.info("Creating "+apt.MARKER+" file...")
         cap.create(fresh=False, git_exists=git_exists)
         pass
 

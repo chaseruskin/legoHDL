@@ -9,6 +9,8 @@ class Apparatus:
     #path to registry and cachess
     HIDDEN = os.path.expanduser("~/.legohdl/")
 
+    MARKER = ".lego.lock"
+
     WORKSPACE = HIDDEN
 
     __active_workspace = None

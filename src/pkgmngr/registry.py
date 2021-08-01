@@ -72,11 +72,13 @@ class Registry:
                 elif(self.capExists(cp.getTitle(), "cache")):
                     status = 'instl' 
                     ver = self.getProjectsCache()[L][N].getMeta("version")
-                else:
+                elif(self.capExists(cp.getTitle(), "market")):
                     ver = self.getMarketLatestVer(self.getCaps("market")[L][N])
+                else:
+                    continue
 
                 if(self.capExists(cp.getTitle(), "market")):
-                    #does this version have a later update available? check its .lego.lock files
+                    #does this version have a later update available? check its marker files
                     rem_ver = self.getMarketLatestVer(self.getCaps("market")[L][N])
                     
                     if(Capsule.biggerVer(ver,rem_ver) == rem_ver and rem_ver != ver):
@@ -153,8 +155,8 @@ class Registry:
         if hasattr(self,"_local_prjs") and not updt:
             return self._local_prjs
         self._local_prjs = dict()
-        folders = glob.glob(apt.getLocal()+"/**/.lego.lock", recursive=True)
-        folders = folders + glob.glob(apt.getLocal()+"/*/.lego.lock", recursive=False)
+        folders = glob.glob(apt.getLocal()+"/**/"+apt.MARKER, recursive=True)
+        folders = folders + glob.glob(apt.getLocal()+"/*/"+apt.MARKER, recursive=False)
 
         for file in folders:
             #read .lock to get information
@@ -189,7 +191,6 @@ class Registry:
         return self._cache_prjs
         pass
 
-    #TO-DO
     def getProjectsMarket(self, updt=False):
         #go through each remote
         if hasattr(self,"_remote_prjs") and not updt:
@@ -197,11 +198,11 @@ class Registry:
         self._remote_prjs = dict()
         #identify .lock files from each remote set up with this workspace
         for clst in self.__galaxy:
-            lego_files = glob.glob(self.__registry_path+clst.getName()+"/**/.lego.lock", recursive=True)
+            lego_files = glob.glob(self.__registry_path+clst.getName()+"/**/"+apt.MARKER, recursive=True)
             #from each lego file, create a capsule object
             #print(lego_files)
             for x in lego_files:
-                path = apt.fs(x.replace(".lego.lock",""))
+                path = apt.fs(x.replace(apt.MARKER,""))
                 cap = Capsule(path=path, excludeGit=True)
                 L,N = Capsule.split(cap.getTitle())
                 if(L not in self._remote_prjs.keys()):

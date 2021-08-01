@@ -6,9 +6,10 @@ from setuptools.command.install import install
 with open("README.md", "r", encoding="utf-8") as fh:
     entire_description = fh.read()
 
+exec(open('src/pkgmngr/__version__.py').read())
 setuptools.setup(
     name="legohdl",
-    version="0.5.0",
+    version=__version__,
     author="Chase Ruskin",
     author_email="c.ruskin@ufl.edu",
     description="A complete HDL package manager",

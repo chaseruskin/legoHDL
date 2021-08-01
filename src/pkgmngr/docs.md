@@ -14,29 +14,49 @@ LegoHDL is available to work completely local or along with remote locations to 
 
 Let's go over some important terminology regarding legoHDL.
 
-__project__ : A group of VHDL files grouped together to create a design. A project is a package if it has a "Lego.lock" file at the root of the its directory.
+__project__ : A group of VHDL files grouped together to create a design. A project is a block if it has a "Lego.lock" file at the root of the its directory.
 
-__workspace__ : This is your working environment. Only one can be active on your local machine at a time. It consists of a local path and optionally, any linked remotes. The local path is where all projects can freely live when downloaded.
+__workspace__ : This is your working environment. Only one can be active on your local machine at a time. It consists of a local path and optionally any markets. The local path is where all blocks can freely live when downloaded.
 
-__market__ : This is a repository that hosts a "collection" of released packages. This can be a local repository or remote repository. In order for a package to be added to the collection it must have its own remote repository.
+__market__ : This is a repository that hosts a "collection" of released blocks. This can be a local repository or remote repository. In order for a package to be added to the collection it must have its own remote repository.
 
-__package__ : This is a self-contained project that contains a .lego.lock file. A package's title must consist of a library and a name. An example package title is "util.fifo".
+__block__ : This is a self-contained project that contains a Lego.lock file. A block's title must consist of a library and a name. An example block title is "util.fifo".
 
-__script__ : A user created file. These can be stored within legoHDL or linked to if say the script belongs to some repository where users are actively developing it. Scripts can be used to build/run a package, but also to more generally store common files across all packages, like a constraint file.
+__script__ : A user created file. These can be stored within legoHDL or linked to if say the script belongs to some repository where users are actively developing it. Scripts can be used to build/run a block, but also to more generally store common files across all blocks, like a constraint file.
 
-__recipe__ : A list of all required files for a given package to be built from, in the  correct order needed. It is a file with identifying labels regarding the project and its dependencies. This is intended to be the "golden link" between the package management process and building a design.
+__recipe__ : A list of all required files for a given block to be built from, in the  correct order needed. It is a file with identifying labels regarding the block and its dependencies. This is intended to be the "golden link" between the package management process and building a design.
 
-__label__ : A identifier that can be used to gather dependencies to be written to the recipe. Default labels are @LIB for VHDL libraries, @SRC for package-level VHDL code, and @TB for package-level testbench file. Developers can can create labels and provide their own extensions, like creating an @IP for .xci files.
+__label__ : A identifier that can be used to gather dependencies to be written to the recipe. Default labels are
 
-__.lego.lock__ : The metadata file that signifies if a project is a package. This file is automatically maintained and is hidden from the developer. It is strongly recommended to NOT try to modify this file, as it will not be needed.
+-   @LIB for library VHDL code
+-   @SRC for project-level VHDL design code,
+-   @SIM for project-level  VHDL simulation code
+-   @SRC-TOP for top-level design entity
+-   @SIM-TOP for top-level simulation entity
+
+Developers can can create labels and provide their own extensions, like creating an @IP for .xci files.
+
+__Lego.lock__ : The metadata file that signifies if a project is a block. This file is automatically maintained by the tool. It is strongly recommended to not modify this file.
 
 <br />
 
+## Download and Installation
+
+Ensure you have a version of python >=3.0 and run:
+
+```pip install legohdl```
+
+To ensure it is installed properly run:
+
+```legohdl --version```
+
+A version number should appear in the output. We are ready to go!
+
 ## Getting Started
 
-1. __Configure a workspace and other settings__
+1. __Configure a workspace and settings__
 
-A workspace specifies what local location to store downloaded packages in for development.
+A workspace's main job is to specify the local path where blocks are to be stored when downloaded. Any block outside of this path will not be seen by this workspace.
 
 ```legohdl config home="~/develop/hdl/" -workspace```
 
@@ -44,14 +64,28 @@ Easy! Every workspace has its own library and cache, but can share markets. Let'
 
 ```legohdl list -workspace```
 
-As you can see, we have no markets linked to this workspace. If we did, all released packages in that market would be available to us to install or download.
+As you can see, we have no markets linked to this workspace. If we did, all released blocks in that market would be available to us to install or download.
 
 Now we will configure other important settings.
 
 ```legohdl config "chase" -author```<br/>
 ```legohdl config "code" -editor```
 
-Configuring an editor allows me to automatically open projects with the `-o` flag.
+Configuring an editor allows you to automatically open projects with the `-o` flag.
+
+Flags for settings include:
+
+-   editor (string)
+-   author (string)
+-   script (key/value pair)
+-   label (key/value pair)
+-   workspace (key/value pair)
+-   active-workspace (string)
+-   market (key/value pair)
+
+_string_ is accepted with `" "` or `' '`.
+
+_key/value pair_ is accepted with `key="value"` or `key='value'`.
 
 2. __Make a new project__
 

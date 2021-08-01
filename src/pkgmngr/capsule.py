@@ -8,7 +8,7 @@ from .apparatus import Apparatus as apt
 from .vhdl import Vhdl
 
 
-#a capsule is a package/module that is signified by having the .lego.lock
+#a capsule is a package/module that is signified by having the marker file
 class Capsule:
 
     allLibs = []
@@ -123,7 +123,7 @@ class Capsule:
             self.save()
             log.info("Saving...")
             if(options != None and options.count('strict')):
-                self.__repo.index.add(".lego.lock")
+                self.__repo.index.add(apt.MARKER)
             else:   
                 self.__repo.git.add(update=True)
                 self.__repo.index.add(self.__repo.untracked_files)
@@ -270,7 +270,7 @@ integrates: {}
             else:
                 os.makedirs(self.__local_path, exist_ok=True)
         
-        open(self.__local_path+".lego.lock", 'w').write(self.legoLockFile())
+        open(self.__local_path+apt.MARKER, 'w').write(self.legoLockFile())
         
         if(not git_exists):
             self.__repo = git.Repo.init(self.__local_path)
@@ -368,7 +368,7 @@ integrates: {}
 
     def pushYML(self, msg):
         self.save()
-        self.__repo.index.add(".lego.lock")
+        self.__repo.index.add(apt.MARKER)
         
         self.__repo.index.commit(msg)
         
@@ -385,7 +385,7 @@ integrates: {}
         pass
 
     def metadataPath(self):
-        return self.__local_path+".lego.lock"
+        return self.__local_path+apt.MARKER
 
     def show(self):
         with open(self.metadataPath(), 'r') as file:
