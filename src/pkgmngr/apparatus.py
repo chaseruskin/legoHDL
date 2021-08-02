@@ -1,4 +1,5 @@
 #load in settings
+from genericpath import isdir
 import yaml,os,logging as log
 from subprocess import check_output
 
@@ -10,6 +11,8 @@ class Apparatus:
     HIDDEN = os.path.expanduser("~/.legohdl/")
 
     MARKER = ".lego.lock"
+
+    TEMPLATE = HIDDEN+"/template/"
 
     WORKSPACE = HIDDEN
 
@@ -27,6 +30,7 @@ class Apparatus:
             settings_file = open(cls.HIDDEN+"settings.yml", 'w')
             structure = """active-workspace:
 author:
+template:
 editor:
 label:
   recursive: {}
@@ -52,6 +56,10 @@ workspace: {}
         if(not cls.inWorkspace()):
             log.warning("Active workspace not found!")
             return
+
+        if(cls.SETTINGS['template'] is not None and os.path.isdir(cls.SETTINGS['template'])):
+            cls.TEMPLATE = cls.SETTINGS['template']
+            pass
         
         if(cls.SETTINGS['workspace'][cls.__active_workspace]['local'] == None):
             log.error("Please specify a local path! See \'legohdl help config\' for more details")

@@ -8,8 +8,6 @@
 - [ ] be sure to scan every inner-project component for its dependencies
 
 - [ ] add additional safety measures to all Lego.lock files and settings.yml to ensure all legal pieces are available
-- [ ] add template reference option
-- [ ] verify both double/single quotes are okay for config command strings/values
 
 - [ ] rewrite how config command deletes
 - [ ] see if improvements can be made to "set settings" code (config command)
@@ -18,8 +16,12 @@
 - [ ] implement additional "help" command documentation
 
 
+
 __Completed__
+- [x] verify both double/single quotes are okay for config command strings/values
+- [x] add template reference option
 - [x] search all design VHD files to determine which is top-level design then find which testbench instantiates that design
+- [x] rename capsule.py to block.py
 - [x] allow user to open template folder
 - [x] allow user to open settings file
 - [x] allow remote to be null

@@ -4,7 +4,7 @@ from enum import Enum
 import copy,git,yaml
 import os,random,requests,json,glob
 from collections import OrderedDict
-from .capsule import Capsule
+from .block import Block
 from .apparatus import Apparatus as apt
 from .market import Market
 import logging as log
@@ -65,7 +65,7 @@ class Registry:
                 status = '-'
                 ver = ''
                 info = ''
-                L,N = Capsule.split(cp.getTitle())
+                L,N = Block.split(cp.getTitle())
                 if(self.capExists(cp.getTitle(), "local")):
                     status = 'dnld'
                     ver = self.getProjectsLocal()[L][N].getMeta("version")
@@ -81,7 +81,7 @@ class Registry:
                     #does this version have a later update available? check its marker files
                     rem_ver = self.getMarketLatestVer(self.getCaps("market")[L][N])
                     
-                    if(Capsule.biggerVer(ver,rem_ver) == rem_ver and rem_ver != ver):
+                    if(Block.biggerVer(ver,rem_ver) == rem_ver and rem_ver != ver):
                         info = '(update)-> '+rem_ver
                     pass
                 ver = '' if (ver == '0.0.0') else ver
@@ -107,7 +107,7 @@ class Registry:
         latest = versions[0]
         #determine biggest version
         for v in versions:
-            if(v[0] != '.' and Capsule.biggerVer(latest,v) == v):
+            if(v[0] != '.' and Block.biggerVer(latest,v) == v):
                 latest = v
 
         return latest
@@ -165,7 +165,7 @@ class Registry:
                 tmp = yaml.load(f, Loader=yaml.FullLoader)
                 #print(tmp)
             s = file.rfind('/')
-            c = Capsule(path=file[:s+1])
+            c = Block(path=file[:s+1])
             if(c.getLib() not in self._local_prjs.keys()):
                 self._local_prjs[c.getLib()] = dict()
             self._local_prjs[c.getLib()][c.getName()] = c
@@ -187,7 +187,7 @@ class Registry:
             for p in pkgs:
                 if(p[0] == '.'):
                     continue
-                self._cache_prjs[l][p] = Capsule(path=path+l+"/"+p+"/")
+                self._cache_prjs[l][p] = Block(path=path+l+"/"+p+"/")
         return self._cache_prjs
         pass
 
@@ -199,12 +199,12 @@ class Registry:
         #identify .lock files from each remote set up with this workspace
         for clst in self.__galaxy:
             lego_files = glob.glob(self.__registry_path+clst.getName()+"/**/"+apt.MARKER, recursive=True)
-            #from each lego file, create a capsule object
+            #from each lego file, create a Block object
             #print(lego_files)
             for x in lego_files:
                 path = apt.fs(x.replace(apt.MARKER,""))
-                cap = Capsule(path=path, excludeGit=True)
-                L,N = Capsule.split(cap.getTitle())
+                cap = Block(path=path, excludeGit=True)
+                L,N = Block.split(cap.getTitle())
                 if(L not in self._remote_prjs.keys()):
                     self._remote_prjs[L] = dict()
                 if(N not in self._remote_prjs[L].keys()):
@@ -230,7 +230,7 @@ class Registry:
     #use title="lib.*" to check if library exists
     def capExists(self, title, place, updt=False):
         folder = None
-        l,n = Capsule.split(title)
+        l,n = Block.split(title)
         if(place == "local"):
             folder = self.getProjectsLocal(updt)
         elif(place == "cache"):

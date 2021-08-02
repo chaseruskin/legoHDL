@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
+from genericpath import isdir
 import os, sys, shutil
 import yaml, glob
-from .capsule import Capsule
+from .block import Block
 from .__version__ import __version__
 from .registry import Registry
 from .graph import Graph
@@ -22,7 +23,7 @@ class legoHDL:
                 continue
             elif(i == 1):
                 command = arg
-            elif(arg[0] == '-'):
+            elif(len(arg) and arg[0] == '-'):
                 options.append(arg[1:])
             elif(package == ''):
                 package = arg
@@ -33,12 +34,12 @@ class legoHDL:
             pass
         
         apt.load() #load settings.yml
-        self.capsulePKG = None
-        self.capsuleCWD = None
+        self.BlockPKG = None
+        self.BlockCWD = None
         #defines path to dir of remote code base
         self.db = Registry(apt.getMarkets())
         if(apt.inWorkspace()):
-            Capsule.fetchLibs(self.db.availableLibs())
+            Block.fetchLibs(self.db.availableLibs())
         if(not apt.inWorkspace() and (command != 'config' and command != 'help' and (command != 'open' or "settings" not in options))):
             exit()
         self.parse(command, package, options)
@@ -48,7 +49,7 @@ class legoHDL:
         cap = None
         if(self.db.capExists(title, "cache", updt=True)):
             cache = self.db.getCaps("cache")
-            l,n = Capsule.split(title)
+            l,n = Block.split(title)
             cap = cache[l][n]
         else:
             exit(log.error("The module is not located in the cache"))
@@ -94,7 +95,7 @@ class legoHDL:
         pass
 
     def install(self, title, ver=None, opt=list()):
-        l,n = Capsule.split(title)
+        l,n = Block.split(title)
         cap = None
         cache_path = apt.WORKSPACE+"cache/"
         lib_path = apt.WORKSPACE+"lib/"+l+"/"
@@ -168,7 +169,7 @@ class legoHDL:
 
     def uninstall(self, pkg, opt=None):
         #remove from cache
-        l,n = Capsule.split(pkg)
+        l,n = Block.split(pkg)
         if(self.db.capExists(pkg, "cache")):
             cache = self.db.getCaps("cache")
             cache_path = cache[l][n].getPath()
@@ -208,7 +209,7 @@ class legoHDL:
             return label_list
         #go to YML of dependencies and add edges to build dependency tree
         for d in dep_list:
-            l,n = Capsule.split(d)
+            l,n = Block.split(d)
             n = n.replace("_pkg", "")
             if(os.path.isfile(apt.WORKSPACE+"cache/"+l+"/"+n+"/"+apt.MARKER)):
                 #here is where we check for matching files with custom recursive labels
@@ -321,7 +322,7 @@ class legoHDL:
                 grph.addEdge(k, dep)
             #see what external packages are referenced
             for extern_lib in e.getExternal():
-                L,N = Capsule.grabExternalProject(extern_lib[1])
+                L,N = Block.grabExternalProject(extern_lib[1])
                 #create project object based on this external package
                 ext_cap = self.db.getCaps("cache")[L][N]
                 #recursively feed into dependency tree
@@ -347,7 +348,7 @@ class legoHDL:
                 hierarchy.addEdge(k, dep)
             #see what external projects are referenced
             for extern_lib in e.getExternal():
-                L,N = Capsule.grabExternalProject(extern_lib[1])
+                L,N = Block.grabExternalProject(extern_lib[1])
                 #create project object based on this external project
                 ext_cap = self.db.getCaps("cache")[L][N]
                 #recursively feed into dependency tree
@@ -378,11 +379,11 @@ class legoHDL:
                 c_set.add(f)
 
         for f in c_set:
-            lib,_ = Capsule.grabExternalProject(f)
+            lib,_ = Block.grabExternalProject(f)
             if(len(lib)):
                 lib = "@LIB "+lib+" "
             else:
-                if(f in self.capsuleCWD.gatherSources(excludeTB=True)):
+                if(f in self.BlockCWD.gatherSources(excludeTB=True)):
                     lib = "@SRC "
                 else:
                     lib = "@SIM "
@@ -392,7 +393,7 @@ class legoHDL:
 
     #will also install project into cache and have respective pkg in lib
     def download(self, title):
-        l,n = Capsule.split(title)
+        l,n = Block.split(title)
 
         if(True):
             if(self.db.capExists(title, "cache") and not self.db.capExists(title, "local")):
@@ -541,17 +542,36 @@ class legoHDL:
         # BUILD SCRIPT CONFIGURATION
         elif(options[0] == 'script'):
             #parse into cmd and filepath
-            ext = Capsule.getExt(val)
+            ext = Block.getExt(val)
             if(ext != ''):
                 ext = '.'+ext
+                if(ext.count("/") or ext.count("\\")):
+                    ext = ''
             cmd = val[:val.find(' ')]
-            path = val[val.find(' ')+1:].strip()
+            args = val[val.find(' ')+1:].strip().split()
+
+            path = oldPath = ''
+            #find which part of the args is the path to the file being used as the script
+            for p in args:
+                if(os.path.isfile(p)):
+                    path = os.path.realpath(os.path.expanduser(p)).replace("\\", "/")
+                    oldPath = p
+                    break
+            if(path == ''):
+                 exit(log.error("Could not an accepted file"))
+            #reassemble val with new file properly formatted filepath
+            val = cmd
+            for i in range(len(args)):
+                if(args[i] == oldPath):
+                    val = val + " " +path
+                else:
+                    val = val + " " + args[i]
+            
             #skip link option- copy file and rename it same as name 
             if(options.count("lnk") == 0 and val != ''):   
                 dst = apt.HIDDEN+"scripts/"+key+ext
-                oldPath = path[path.rfind(' ')+1:]
-                shutil.copyfile(oldPath, dst)
-                dst = path.replace(oldPath, dst)
+                shutil.copyfile(path, dst)
+                dst = path.replace(path, dst)
                 val = cmd+' '+dst
             #initialization
             if(not isinstance(apt.SETTINGS[options[0]],dict)):
@@ -562,13 +582,18 @@ class legoHDL:
             #deletion
             elif(isinstance(apt.SETTINGS[options[0]],dict) and key in apt.SETTINGS[options[0]].keys()):
                 val = apt.SETTINGS[options[0]][key]
-                ext = Capsule.getExt(val)
+                ext = Block.getExt(val)
                 del apt.SETTINGS[options[0]][key]
                 try:
                     os.remove(apt.HIDDEN+"scripts/"+key+ext)
                 except:
                     pass
             pass
+        elif(options[0] == 'template'):
+            if(choice == ''):
+                apt.SETTINGS[options[0]] = None
+            else:
+                apt.SETTINGS[options[0]] = apt.fs(choice)
         # LABEL CONFIGURATION
         elif(options[0] == 'label'):
             depth = "shallow"
@@ -600,7 +625,7 @@ class legoHDL:
     #TO-DO: implement
     def convert(self, title):
         #must look through tags of already established repo
-        l,n = Capsule.split(title)
+        l,n = Block.split(title)
         if(l == '' or n == ''):
             exit(log.error("Must provide a library.project"))
         cwd = apt.fs(os.getcwd())
@@ -617,9 +642,9 @@ class legoHDL:
 
         log.info("Transforming project into lego...")
         #add .gitignore file if not present and it is present in template project
-        if(os.path.isfile(apt.HIDDEN+"/template/.gitignore")):
+        if(os.path.isfile(apt.TEMPLATE+".gitignore")):
             if(not os.path.isfile(cwd+"/.gitignore")):
-                shutil.copy(apt.HIDDEN+"/template/.gitignore",cwd+"/.gitignore")
+                shutil.copy(apt.TEMPLATE+".gitignore",cwd+"/.gitignore")
             pass
         #rename current folder to the name of library.project
         last_slash = cwd.rfind('/')
@@ -636,7 +661,7 @@ class legoHDL:
             pass
         
         #create marker file
-        cap = Capsule(title=title, path=cwdb1)
+        cap = Block(title=title, path=cwdb1)
         log.info("Creating "+apt.MARKER+" file...")
         cap.create(fresh=False, git_exists=git_exists)
         pass
@@ -745,7 +770,7 @@ class legoHDL:
 
     def parse(self, cmd, pkg, opt):
         #check if we are in a project directory (necessary to run a majority of commands)
-        self.capsuleCWD = Capsule(path=os.getcwd()+"/")
+        self.BlockCWD = Block(path=os.getcwd()+"/")
    
         command = cmd
         package = pkg
@@ -755,30 +780,30 @@ class legoHDL:
         value = package
         package = package.replace("-", "_")
         if(apt.inWorkspace()):
-            self.capsulePKG = Capsule(title=package)
+            self.BlockPKG = Block(title=package)
 
-        L,N = Capsule.split(package)
+        L,N = Block.split(package)
         
         #branching through possible commands
         if(command == "install"):
-            print(self.capsulePKG.getTitle())
+            print(self.BlockPKG.getTitle())
             ver = None
             if(len(options)):
                 ver = options[0]
-            self.install(self.capsulePKG.getTitle(), ver)
+            self.install(self.BlockPKG.getTitle(), ver)
             pass
         elif(command == "uninstall"):
             self.uninstall(package, options) #TO-DO
             pass
-        elif(command == "build" and self.capsuleCWD.isValid()):
+        elif(command == "build" and self.BlockCWD.isValid()):
             self.build(value)
-        elif(command == "new" and len(package) and not self.capsulePKG.isValid()):
+        elif(command == "new" and len(package) and not self.BlockPKG.isValid()):
             if(options.count("file")):
                 options.remove("file")
-                if(self.capsuleCWD.isValid()):
+                if(self.BlockCWD.isValid()):
                     if(len(options) == 0):
                         exit(log.error("Please specify a file from your template to copy from"))
-                    self.capsuleCWD.fillTemplateFile(package, options[0])
+                    self.BlockCWD.fillTemplateFile(package, options[0])
                 else:
                     exit(log.error("Cannot create a project file when not inside a project"))
                 return
@@ -805,30 +830,30 @@ class legoHDL:
                     git_url = opt
             print(git_url,mkt_sync)
             log.debug("package name: "+package)
-            self.capsulePKG = Capsule(title=package, new=True, market=mkt_sync, remote=git_url)
+            self.BlockPKG = Block(title=package, new=True, market=mkt_sync, remote=git_url)
 
             if(startup):
-                self.capsulePKG.load()
+                self.BlockPKG.load()
             pass
-        elif(command == "release" and self.capsuleCWD.isValid()):
+        elif(command == "release" and self.BlockCWD.isValid()):
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
-            self.upload(self.capsuleCWD, options=options)
+            self.upload(self.BlockCWD, options=options)
             if(len(options) == 2 and options.count('d')):
-                self.cleanup(self.capsuleCWD, False)
+                self.cleanup(self.BlockCWD, False)
             pass
-        elif(command == 'graph' and self.capsuleCWD.isValid()):
+        elif(command == 'graph' and self.BlockCWD.isValid()):
             #generate dependency tree
-            self.formGraph(self.capsuleCWD)
+            self.formGraph(self.BlockCWD)
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
             cap = self.download(package)
             if('o' in options):
                 cap.load()
             pass
-        elif(command == "summ" and self.capsuleCWD.isValid()):
-            self.capsuleCWD.getMeta()['summary'] = description
-            self.capsuleCWD.pushYML("Updates project summary")
+        elif(command == "summ" and self.BlockCWD.isValid()):
+            self.BlockCWD.getMeta()['summary'] = description
+            self.BlockCWD.pushYML("Updates project summary")
             pass
         elif(command == 'del' and self.db.capExists(package, "local")):
             force = False
@@ -852,7 +877,7 @@ class legoHDL:
             self.convert(package)
         elif(command == "refresh"):
             self.db.sync()
-        elif(command == "export" and self.capsuleCWD.isValid()): #a visual aide to help a developer see what package's are at the ready to use
+        elif(command == "export" and self.BlockCWD.isValid()): #a visual aide to help a developer see what package's are at the ready to use
             #'' and list() are default to pkg and options
             mod = package
             tb = None
@@ -860,13 +885,13 @@ class legoHDL:
                 mod = None
             if(len(options) > 0):
                 tb = options[0]
-            self.export(self.capsuleCWD, mod, tb)
+            self.export(self.BlockCWD, mod, tb)
             pass
         elif(command == "open"):
             if(apt.SETTINGS['editor'] == None):
                 exit(log.error("No text-editor configured!"))
             if(options.count("template") or package.lower() == "template"):
-                os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/template\"")
+                os.system(apt.SETTINGS['editor']+" \""+apt.TEMPLATE+"\"")
             elif(options.count("script") or package.lower() == "script"):
                     os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/scripts\"")
             elif(options.count("settings") or package.lower() == "settings"):
@@ -889,9 +914,6 @@ class legoHDL:
             
             if((self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
                 print(self.db.getCaps("local","cache")[L][N].ports(mapp,ent_name))
-        elif(command == "template" and apt.SETTINGS['editor'] != None):
-            os.system(apt.SETTINGS['editor']+" "+apt.HIDDEN+"/template")
-            pass
         elif(command == "config"):
             self.setSetting(options, value)
             pass

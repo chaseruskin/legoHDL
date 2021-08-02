@@ -1,3 +1,4 @@
+from genericpath import isfile
 import os, yaml, shutil
 from datetime import date
 import stat
@@ -8,8 +9,8 @@ from .apparatus import Apparatus as apt
 from .vhdl import Vhdl
 
 
-#a capsule is a package/module that is signified by having the marker file
-class Capsule:
+#a Block is a package/module that is signified by having the marker file
+class Block:
 
     allLibs = []
 
@@ -21,7 +22,7 @@ class Capsule:
         self.__market = market
  
         if(title != None):
-            self.__lib,self.__name = Capsule.split(title)
+            self.__lib,self.__name = Block.split(title)
         if(path != None):
             self.__local_path = apt.fs(path)
             #print(path)
@@ -235,7 +236,7 @@ integrates: {}
         template_ext = self.getExt(templateFile)
         if(template_ext == ''):
             templateFile = templateFile + extension
-        replacements = glob.glob(apt.HIDDEN+"template/**/"+templateFile, recursive=True)
+        replacements = glob.glob(apt.TEMPLATE+"**/"+templateFile, recursive=True)
         #copy the template file into the proper location
         if(len(replacements) < 1):
             exit(log.error("Could not find "+templateFile+" file in template project"))
@@ -265,8 +266,8 @@ integrates: {}
     def create(self, fresh=True, git_exists=False):
         log.info('Initializing new project')
         if(fresh):
-            if(os.path.isdir(apt.HIDDEN+"template/")):
-                shutil.copytree(apt.HIDDEN+"template/", self.__local_path)
+            if(os.path.isdir(apt.TEMPLATE)):
+                shutil.copytree(apt.TEMPLATE, self.__local_path)
             else:
                 os.makedirs(self.__local_path, exist_ok=True)
         
@@ -286,7 +287,8 @@ integrates: {}
             replacements = glob.glob(self.__local_path+"/**/*template*", recursive=True)
             file_swaps = list()
             for f in replacements:
-                file_swaps.append((f,f.replace('template', self.__name)))
+                if(os.path.isfile(f)):
+                    file_swaps.append((f,f.replace('template', self.__name)))
 
             today = date.today().strftime("%B %d, %Y")
             for x in file_swaps:
@@ -376,7 +378,7 @@ integrates: {}
             self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
             self.__repo.remotes.origin.push("--tags")
 
-    #return true if the requested project folder is a valid capsule package
+    #return true if the requested project folder is a valid Block package
     def isValid(self):
         try:
             return os.path.isfile(self.metadataPath())

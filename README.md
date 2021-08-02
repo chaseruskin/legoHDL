@@ -7,7 +7,7 @@ _lego_**HDL** is a simple, powerful, and flexible package manager for VHDL desig
 
 <br />
 
-LegoHDL is available to work completely local or along with remote locations to collaborate and share modules with others. It is designed to give the developer maximum freedom in their workflow.
+LegoHDL is available to work completely local or along with remote locations to collaborate and share modules with others. It is designed to give the developer maximum freedom in their workflow. At a minimum, no git knowledge is required as legoHDL will automate basic git commands that are required.
 
 <br />
 
