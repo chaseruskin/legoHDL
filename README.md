@@ -15,21 +15,23 @@ LegoHDL is available to work completely local or along with remote locations to 
 
 Let's go over some important terminology regarding legoHDL.
 
+__Lego.lock__ : The metadata file that signifies if a project is a block. This file is automatically maintained by the legoHDL. It contains information such as the version number, remote url repository, and dependencies. It is highly recommended to not modify this file.
+
 __project__ : A group of VHDL files grouped together to create a design. A project is a block if it has a "Lego.lock" file at the root of the its directory.
+
+__block__ : This is a self-contained project that contains a Lego.lock file. A block's title must consist of a library and a name. An example block title is "util.fifo". It is good practice to have the block's name match the top-level entity.
 
 __workspace__ : This is your working environment. Only one can be active on your local machine at a time. It consists of a local path and optionally any markets. The local path is where all blocks can freely live when downloaded.
 
-__market__ : This is a repository that hosts a "collection" of released blocks. This can be a local repository or remote repository. In order for a package to be added to the collection it must have its own remote repository.
-
-__block__ : This is a self-contained project that contains a Lego.lock file. A block's title must consist of a library and a name. An example block title is "util.fifo".
+__market__ : This is a repository that hosts a "collection" of released blocks. This can be a local repository or remote repository. In order for a block to be added to the collection it must have its own remote repository. Markets are self-maintained by legoHDL.
 
 __script__ : A user created file. These can be stored within legoHDL or linked to if say the script belongs to some repository where users are actively developing it. Scripts can be used to build/run a block, but also to more generally store common files across all blocks, like a constraint file.
 
-__recipe__ : A list of all required files for a given block to be built from, in the  correct order needed. It is a file with identifying labels regarding the block and its dependencies. This is intended to be the "golden link" between the package management process and building a design.
-
 __label__ : A identifier that can be used to gather dependencies to be written to the recipe. Default labels are @LIB, @SRC, @SIM, @SRC-TOP, @SIM-TOP. Developers can can create labels and provide their own extensions, like creating an @IP for .xci files.
 
-__Lego.lock__ : The metadata file that signifies if a project is a block. This file is automatically maintained by the tool. It is strongly recommended to not modify this file.
+__recipe__ : A list of all required files for a given block to be built from, in the  correct order needed. It is a file with identifying labels regarding the block and its dependencies. This is intended to be the "golden link" between the package management process and building a design.
+
+
 
 <br />
 
@@ -133,7 +135,7 @@ begin
 end architecture;
 ```
 
-I've added a python file into my template for generating inputs/outputs for simulation as well as a templated testbench file similiar to the above code.
+I've added a python file into the template for generating inputs/outputs for simulation as well as a templated testbench file similiar to the above code.
 
 > __Note__: Opening the template through legoHDL opens a folder named template within legoHDL. If we have a template project structure living elsewhere, we can reference that instead when creating projects with: ```legohdl config "/users/chase/develop/hdl/template" -template```
 
@@ -145,7 +147,7 @@ Now that the template is fit for our preferences, let's use it. It is time to ma
 
 Okay and it is open in our text-editor ready to work!
 
-3. __Develop a Block__
+3. __Developing a Block__
 
 At this point, a lot has happened. There is an metadata file titled "Lego.lock" inside our project, the project is already initialized with git, and our template auto-populated the project with files ready to go. This project is now considered a "block" because it has a Lego.lock file.
 
@@ -167,7 +169,7 @@ First, we need the recipe file.
 
 This creates the recipe file with the auto-determined toplevel design for the current project. 
 
-You can explicitly set the toplevel design by adding the entity name to the export command.
+You can explicitly set the block's toplevel design by adding the entity name to the export command.
 
 ```legohdl export mux```
 
@@ -288,7 +290,7 @@ We can view our scripts with
 ```legohdl list -script```
 
 
-5. __Releasing a project as package__
+5. __Releasing a Block__
 
 Up until this point, everything has been local and the block has not yet been officially "released". It has been on version 0.0.0, which is an unreleased state. Now we are ready to release the current code's state as a version.
 
@@ -303,7 +305,7 @@ _MAJOR.MINOR.PATCH versioning suggestions:_
 
 Seeing our block with ```legohdl list``` now highlights common.mux as version 1.0.0.
 
-6. __Incorporating a project as a dependency__
+6. __Incorporating a Block as a Dependency__
 
 Okay, the project is now ready to be incorporated into any other design! Upon releasing, it will install the release to the cache folder alongside generating a VHDL package file for the toplevel entity into the library folder, if a toplevel exists. The lines
 ``` VHDL
@@ -345,9 +347,34 @@ to grab the format for instantation and any required signals.
 
 
 
+<br/>
 
+## Commands
 
+```
+USAGE:             
+        legohdl <command> [block] [args]            
 
+COMMANDS:
+   init         initialize the current folder into a valid block
+   new          create a templated empty block into workspace
+   open         opens the downloaded block with the configured text-editor
+   release      release a new version of the current block
+   list         print list of all blocks available
+   install      grab block from its market for dependency use
+   uninstall    remove block from cache
+   download     grab block from its market for development
+   update       update installed block to be to the latest version
+   export       generate a recipe file to build the block
+   build        run a custom configured script
+   del          deletes the block from the local workspace
+   search       search markets or local workspace for specified block
+   refresh      sync local markets with their remotes
+   port         print ports list of specified block's entity
+   show         read further detail about a specified block
+   summ         add description to current block
+   config       set package manager settings
+```
 
 
 
