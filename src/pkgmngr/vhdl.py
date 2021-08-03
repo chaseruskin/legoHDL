@@ -1,6 +1,7 @@
 from .apparatus import Apparatus as apt
 import logging as log
 from .entity import Entity
+from .unit import Unit
 
 class Vhdl:
 
@@ -8,11 +9,13 @@ class Vhdl:
         self._file_path = apt.fs(fpath)
         pass
 
-    def decipher(self, availLibs, design_book, cur_lib):
+    def decipher(self, availLibs, design_book, cur_lib, fromEnt=None):
         log.info("Deciphering VHDL file...")
+        log.info(self._file_path)
         lib_headers = []
         libs_using = []
         pre_files = []
+        hidden_pkgs = []
         entity_bank = dict()
         in_entity = in_arch = in_true_arch = in_pkg = False
         entity_name = arch_name = pkg_name = ent =  None
@@ -32,16 +35,43 @@ class Vhdl:
                     #stash all "uses" from above
                     ent = Entity(self._file_path, cur_lib+'.'+entity_name, lib_headers, pre_files)
                     ent.addExterns(extern_libs)
-                    ent.setLibDeclarations(libs_using)
+                    ent.addLibDeclarations(libs_using)
                     extern_libs = list()
                     pre_files = list()
                     lib_headers = list()
+
+                    #perform recursion on any hidden files
+                    for hp in hidden_pkgs:
+                        pkg_name = hp[0]
+                        unt = hp[1]
+                        #print("Entering recursion...")
+                        ent = Vhdl(unt._filepath).decipher(availLibs, design_book, unt._lib, ent)
                 #enter package
                 if(words[0].lower() == "package"):
                     in_pkg = True
                     pkg_name = words[1].lower()
+                    #this package is a hidden package (was called by an entity)
+                    if(fromEnt != None):
+                        ent = fromEnt
+                        ent.addExterns(extern_libs)
+                        ent.addLibDeclarations(libs_using)
+                        for pre in pre_files:
+                            ent.addPreFile(pre)
+                        for dep in lib_headers:
+                            ent.addDependency(dep)
+
+                        #perform recursion on any hidden files
+                        for hp in hidden_pkgs:
+                            pkg_name = hp[0]
+                            unt = hp[1]
+                            #print("Entering recursion...")
+                            ent = Vhdl(unt._filepath).decipher(availLibs, design_book, unt._lib, ent)
                     #stash all "uses" from above
+                    #recursively go through the package and add all of its "pre's" to the called entity
+                    extern_libs = list()
+                    pre_files = list()
                     lib_headers = list()
+
                 #enter architecture
                 if(words[0].lower() == "architecture"):
                     in_arch = True
@@ -60,17 +90,21 @@ class Vhdl:
                             package_name = cur_lib+'.'+package_name
                         elif(impt[0].lower() in availLibs):
                             package_name = impt[0].lower()+'.'+package_name
-
                         if(impt[0].lower() in availLibs):
+                            #print(impt[0].lower())
+                            #print(package_name)
                             if(package_name not in design_book.keys()):
                                 exit(log.error("Cannot find "+package_name+" in workspace cache or lib"))
                             extern_libs.append((package_name,design_book[package_name]))
                             pre_files.append(design_book[package_name])
+                            #add as a hidden package that will need to be recursively deciphered
+                            if(design_book[package_name]._dtype == Unit.Type.PACKAGE):
+                                hidden_pkgs.append((package_name,design_book[package_name]))
                         else:
                             #print("file needed for entity as use:",design_book[package_name])
                             pre_files.append(design_book[package_name])
                         #lib_headers.append(words[1][:len(words[1])-1])
-                        comps = self.grabComponents(design_book[package_name], impt[0])
+                        comps = self.grabComponents(design_book[package_name]._filepath, impt[0])
                         
                         #3 parts to word -> library.package.entity; or library.package.all;
                         if(len(impt) == 3):
@@ -94,8 +128,11 @@ class Vhdl:
                 if(words[0].lower() == "component" and in_pkg):
                     pass
                 #find in-line package usage cases from a library declaration
-                if(in_entity or in_arch or in_pkg and ent != None):
-                    for l in ent.getLibDeclarations():
+                if((in_entity or in_arch and ent != None) or in_pkg):
+                    tmp_libs = libs_using
+                    if(ent != None):
+                        tmp_libs = ent.getLibDeclarations()
+                    for l in tmp_libs:
                         for word in words:
                             #exit if we encounter a comment in this line
                             if(word.startswith("--")):
@@ -107,8 +144,19 @@ class Vhdl:
                                 nextDot = foundUsage+(len(l+"."))+word[foundUsage+(len(l+".")):].find(".")
                                 package_name = word[foundUsage:nextDot]
                                 if(len(package_name) > len(l)):
-                                    ent.addExterns([(package_name,design_book[package_name])])
-                                    ent.addPreFile(design_book[package_name])
+                                    if(ent != None):
+                                        ent.addExterns([(package_name,design_book[package_name])])
+                                        ent.addPreFile(design_book[package_name])
+                                        #print(entity_name)
+                                        if(design_book[package_name]._dtype == Unit.Type.PACKAGE):
+                                            unt = design_book[package_name]
+                                            #print("THIS IS A PACKAGE UNIT")
+                                            #print(package_name,unt._filepath,l)
+                                            #print("Entering recursion...")
+                                            ent = Vhdl(unt._filepath).decipher(availLibs, design_book, unt._lib, ent)
+                                    else:
+                                        extern_libs.append((package_name,design_book[package_name]))
+                                        pre_files.append(design_book[package_name])
                                 pass
 
                 if(in_arch):
@@ -153,6 +201,7 @@ class Vhdl:
                         in_entity = False
                         ent.setPorts(port_txt)
                         port_txt = ''
+                        extern_libs = list()
                     if(in_arch and (arch_name+";" in words or words[1].lower().count("architecture"))):
                         entity_bank[cur_lib+'.'+ent.getName()] = ent
                         in_arch = in_true_arch = False
@@ -161,8 +210,11 @@ class Vhdl:
                 pass
             file.close()
             pass
-        return entity_bank
-        pass
+        
+        if(fromEnt != None):
+            return fromEnt
+        else:
+            return entity_bank
 
     def grabComponents(self, filepath, lib):
         comp_list = list()

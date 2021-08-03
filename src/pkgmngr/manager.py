@@ -10,6 +10,7 @@ from .apparatus import Apparatus as apt
 from .market import Market
 import logging as log
 from ordered_set import OrderedSet
+from .unit import Unit
 
 class legoHDL:
 
@@ -348,7 +349,7 @@ class legoHDL:
                 hierarchy.addEdge(k, dep)
             #see what external projects are referenced
             for extern_lib in e.getExternal():
-                L,N = Block.grabExternalProject(extern_lib[1])
+                L,N = Block.grabExternalProject(extern_lib[1]._filepath)
                 #create project object based on this external project
                 ext_cap = self.db.getCaps("cache")[L][N]
                 #recursively feed into dependency tree
@@ -376,6 +377,8 @@ class legoHDL:
         order = hierarchy.topologicalSort()
         for ent in order:
             for f in ent.getAllFiles():
+                if(isinstance(f, Unit)):
+                    f = f._filepath
                 c_set.add(f)
 
         for f in c_set:
@@ -627,7 +630,7 @@ class legoHDL:
         #must look through tags of already established repo
         l,n = Block.split(title)
         if(l == '' or n == ''):
-            exit(log.error("Must provide a library.project"))
+            exit(log.error("Must provide a library.block"))
         cwd = apt.fs(os.getcwd())
         #find the src dir and testbench dir through autodetect top-level modules
         #name of package reflects folder, a library name must be specified though

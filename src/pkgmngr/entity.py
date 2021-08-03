@@ -5,13 +5,14 @@ class Entity:
         self._lib,self._name = title.split('.')
         self._pre_files = preFiles
         self._dpndencies = deps
+        self._lib_decs = []
         self._is_tb = isTB
 
     def getFull(self):
         return self.getLib()+'.'+self.getName()
 
-    def setLibDeclarations(self, lib_decs):
-        self._lib_decs = lib_decs
+    def addLibDeclarations(self, lib_decs):
+        self._lib_decs = self._lib_decs + lib_decs
     
     def getLibDeclarations(self):
         if(hasattr(self, "_lib_decs")):
@@ -58,7 +59,7 @@ class Entity:
             self._dpndencies.append(deps)
 
     def addPreFile(self, f):
-        self._pre_files.append(f)
+        self._pre_files = [f] + self._pre_files
 
     def addFile(self, file):
         self._reg_file.append(file)

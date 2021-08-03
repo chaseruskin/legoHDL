@@ -7,6 +7,7 @@ import logging as log
 from .market import Market
 from .apparatus import Apparatus as apt
 from .vhdl import Vhdl
+from .unit import Unit
 
 
 #a Block is a package/module that is signified by having the marker file
@@ -575,17 +576,17 @@ integrates: {}
         else:
             log.error("No testbench configured for this top-level entity.")
             return None
-        pass
 
     def grabEntities(self, excludeTB=False):
         if(hasattr(self, "_entity_bank")):
             return self._entity_bank
+
         srcs = self.gatherSources(excludeTB=excludeTB)
         self._entity_bank = dict()
         for f in srcs:
             f = apt.fs(f)
-            self._entity_bank.update(Vhdl(f).decipher(self.allLibs, self.grabDesigns("cache","current"), self.getLib()))
-            log.info(f)
+            ents = Vhdl(f).decipher(self.allLibs, self.grabDesigns("cache","current"), self.getLib())
+            self._entity_bank.update(ents)
         return self._entity_bank
 
     def grabDesigns(self, *args):
@@ -614,8 +615,10 @@ integrates: {}
                     words = line.split()
                     if(len(words) == 0 or (L == self.getLib() and N == self.getName())): #skip if its a blank line
                         continue
-                    if(words[0].lower() == "entity" or (words[0].lower() == "package" and words[1].lower() != 'body')):
-                        self._cache_designs[L+'.'+words[1].lower()] = f
+                    if(words[0].lower() == "entity"):
+                        self._cache_designs[L+'.'+words[1].lower()] = Unit(f,Unit.Type.ENTITY,L)
+                    elif((words[0].lower() == "package" and words[1].lower() != 'body')):
+                        self._cache_designs[L+'.'+words[1].lower()] = Unit(f,Unit.Type.PACKAGE,L)
                 file.close()
         #log.debug("Cache-Level designs: "+str(self._cache_designs))
         return self._cache_designs
@@ -631,8 +634,10 @@ integrates: {}
                     words = line.split()
                     if(len(words) == 0): #skip if its a blank line
                         continue
-                    if(words[0].lower() == "entity" or (words[0].lower() == "package" and words[1].lower() != 'body')):
-                        self._cur_designs[self.getLib()+'.'+words[1].lower()] = f
+                    if(words[0].lower() == "entity"):
+                        self._cur_designs[self.getLib()+'.'+words[1].lower()] = Unit(f,Unit.Type.ENTITY,self.getLib())
+                    elif((words[0].lower() == "package" and words[1].lower() != 'body')):
+                        self._cur_designs[self.getLib()+'.'+words[1].lower()] = Unit(f,Unit.Type.PACKAGE,self.getLib())
                 file.close()
         #log.debug("Project-Level Designs: "+str(self._cur_designs))
         return self._cur_designs

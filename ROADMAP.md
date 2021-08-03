@@ -15,6 +15,7 @@
 - [ ] prompt user if multiple top-level testbenches are found
 - [ ] implement additional "help" command documentation
 
+- [ ] investigate adding entity from pkg and pkg order getting swapped up
 
 
 __Completed__
