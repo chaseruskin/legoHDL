@@ -17,6 +17,7 @@
 
 - [ ] investigate adding entity from pkg and pkg order getting swapped up
 
+- [!] fix how export selects testbench unit when user choosing top without one (aid.helper block)
 
 __Completed__
 - [x] verify both double/single quotes are okay for config command strings/values

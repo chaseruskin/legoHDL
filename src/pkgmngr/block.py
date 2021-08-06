@@ -1,4 +1,3 @@
-from genericpath import isfile
 import os, yaml, shutil
 from datetime import date
 import stat
@@ -6,7 +5,7 @@ import glob, git
 import logging as log
 from .market import Market
 from .apparatus import Apparatus as apt
-from .vhdl import Vhdl
+from .vhdl2 import Vhdl
 from .unit import Unit
 
 
@@ -464,15 +463,40 @@ integrates: {}
             file.close()
         return lib_headers
 
+    def getHighestUnit(self):
+        #return toplevel design unit
+        unit = self.identifyTop()
+        if(self.identifyBench(unit.getName()) != None):
+            #return toplevel testbench unit
+            unit = self.identifyBench(unit.getName())
+        #return all files if neither exist
+        if(unit == None):
+            unit = []
+            log.error("Nothing to build! Giving all project files")
+            for L,U in self.grabUnits().items():
+                if(U.getBlock() == self.getName() and U.getLib() == self.getLib()):
+                    unit.append(U)
+            return unit
+        else:
+            return [unit]
+
     def updateDerivatives(self):
-        ents = self.grabEntities()
+
+        #recursively find any external blocks that are used in the hierarchy
+        def recursion(u, d_sett):
+            dpnd = u.getRequirements()
+            for d in dpnd:
+                if(d.getBlock() == self.getName() and d.getLib() == self.getLib()):
+                    d_sett = recursion(d, d_sett)
+                else:
+                    d_sett.add(d.getLib()+"."+d.getBlock())
+            return d_sett
+
+        units = self.getHighestUnit()
         d_set = set()
-        for k,e in ents.items():
-            dpndencies = e.getDependencies()
-            for dep in dpndencies:
-                if(dep not in ents.keys()):
-                    d_set.add(dep)
-        print(d_set)
+        for u in units:
+            d_set = recursion(u, d_set)
+        print("Derives:",d_set)
         update = False
         if(len(self.__metadata['derives']) != len(d_set)):
             update = True
@@ -485,17 +509,12 @@ integrates: {}
             self.pushYML("Updates project derivatives")
         pass
 
-    def gatherSources(self, ext=[".vhd"], excludeTB=False):
+    def gatherSources(self, ext=[".vhd"]):
         srcs = []
         for e in ext:
             srcs = srcs + glob.glob(self.__local_path+"/**/*"+e, recursive=True)
         #print(srcs)
-        if(excludeTB):
-            for k,e in self.grabEntities().items():
-                if(e.isTb() and e.getFile() in srcs):
-                    srcs.remove(e.getFile())
         return srcs
-        pass
     
     @classmethod
     def getExt(cls, file_path):
@@ -518,21 +537,23 @@ integrates: {}
         name = dep[dot+1:dot+1+dot2]
         return lib,name
 
-    #auto detect top-level designe entity
+    #auto detect top-level design entity
     def identifyTop(self):
-        ents = self.grabEntities()
-        top_contenders = list(ents.keys())
+        if(hasattr(self, "_top")):
+            return self._top
+        units = self.grabUnits()
+        top_contenders = list(units[self.getLib()].keys())
         log.debug(top_contenders)
-        top = None
-        for k,e in ents.items():
+        self._top = None
+        for name,unit in list(units[self.getLib()].items()):
             #if the entity is value under this key, it is lower-level
-            if(e.isTb()):
-                top_contenders.remove(e.getFull())
+            if(unit.isTB() or unit.isPKG()):
+                top_contenders.remove(name)
                 continue
                 
-            for dep in e.getDependencies():
-                if(dep in top_contenders):
-                    top_contenders.remove(dep)
+            for dep in unit.getRequirements():
+                if(dep._unit in top_contenders):
+                    top_contenders.remove(dep._unit)
 
         if(len(top_contenders) == 0):
             log.error("No top level detected.")
@@ -544,50 +565,58 @@ integrates: {}
             
             top_contenders = [validTop]
         if(len(top_contenders) == 1):
-            top = ents[top_contenders[0]]
+            self._top = units[self.getLib()][top_contenders[0]]
 
-            log.info("DETECTED TOP-LEVEL ENTITY: "+top.getName())
-            bench = self.identifyBench(top.getName(), save=True)
+            log.info("DETECTED TOP-LEVEL ENTITY: "+self._top.getName())
+            bench = self.identifyBench(self._top.getName(), save=True)
             #break up into src_dir and file name
             #add to metadata, ensure to push meta data if results differ from previously loaded
-            if(top.getName() != self.getMeta("toplevel")):
-                log.debug("TOPLEVEL: "+top.getName())
-                self.__metadata['toplevel'] = top.getName()
+            if(self._top.getName() != self.getMeta("toplevel")):
+                log.debug("TOPLEVEL: "+self._top.getName())
+                self.__metadata['toplevel'] = self._top.getName()
                 self.pushYML("Auto updates top level design module to "+self.getMeta("toplevel"))
             pass
-        return top
+        return self._top
 
     #determine what testbench is used for the top-level design entity
     def identifyBench(self, entity_name, save=False):
-        ents = self.grabEntities()
-        bench = None
-        for k,e in ents.items():
-            for dep in e.getDependencies():
-                if(dep.lower() == self.getLib()+'.'+entity_name.lower() and e.isTb()):
-                    bench = e
+        if(hasattr(self, "_bench")):
+            return self._bench
+        units = self.grabUnits()
+        self._bench = None
+        for name,unit in list(units[self.getLib()].items()):
+            for dep in unit.getRequirements():
+                if(dep.getLib() == self.getLib() and dep.getName() == entity_name and unit.isTB()):
+                    self._bench = unit
                     break
 
-        if(bench != None):
-            log.info("DETECTED TOP-LEVEL BENCH: "+bench.getName())
-            if(save and self.getMeta("bench") != bench.getName()):
-                self.__metadata['bench'] = bench.getName()
+        if(self._bench != None):
+            log.info("DETECTED TOP-LEVEL BENCH: "+self._bench.getName())
+            if(save and self.getMeta("bench") != self._bench.getName()):
+                self.__metadata['bench'] = self._bench.getName()
                 self.pushYML("Auto updates testbench module to "+self.getMeta("bench"))
-            return bench #return the entity
+            return self._bench #return the entity
         else:
             log.error("No testbench configured for this top-level entity.")
             return None
 
-    def grabEntities(self, excludeTB=False):
-        if(hasattr(self, "_entity_bank")):
-            return self._entity_bank
+    def grabUnits(self, excludeTB=False):
+        if(hasattr(self, "_unit_bank")):
+            return self._unit_bank
 
-        srcs = self.gatherSources(excludeTB=excludeTB)
-        self._entity_bank = dict()
+        self._unit_bank = self.grabDesigns("cache","current")
+
+        srcs = self.gatherSources()
+        #print(srcs)
         for f in srcs:
             f = apt.fs(f)
-            ents = Vhdl(f).decipher(self.allLibs, self.grabDesigns("cache","current"), self.getLib())
-            self._entity_bank.update(ents)
-        return self._entity_bank
+            self._unit_bank = Vhdl(f).decipher(self._unit_bank, self.getLib())
+        #print(self._unit_bank)
+        if(excludeTB):
+            for k,u in self._unit_bank[self.getLib()].copy().items():
+                if(u.isTB()):
+                    del self._unit_bank[self.getLib()][k]
+        return self._unit_bank
 
     def grabDesigns(self, *args):
         design_book = dict()
@@ -595,7 +624,7 @@ integrates: {}
             design_book = self.grabCurrentDesigns().copy()
             pass
         if("cache" in args):
-            design_book.update(self.grabCacheDesigns())
+            design_book = apt.merge(self.grabCacheDesigns(),design_book)
             pass
         return design_book
 
@@ -613,12 +642,15 @@ integrates: {}
             with open(f, 'r') as file:
                 for line in file.readlines():
                     words = line.split()
-                    if(len(words) == 0 or (L == self.getLib() and N == self.getName())): #skip if its a blank line
+                    if(len(words) == 0): #skip if its a blank line
                         continue
+                    if(L not in self._cache_designs.keys()):
+                        self._cache_designs[L] = dict()
+                    
                     if(words[0].lower() == "entity"):
-                        self._cache_designs[L+'.'+words[1].lower()] = Unit(f,Unit.Type.ENTITY,L)
+                        self._cache_designs[L][words[1].lower()] = Unit(f,Unit.Type.ENTITY,L,N,words[1].lower())
                     elif((words[0].lower() == "package" and words[1].lower() != 'body')):
-                        self._cache_designs[L+'.'+words[1].lower()] = Unit(f,Unit.Type.PACKAGE,L)
+                        self._cache_designs[L][words[1].lower()] = Unit(f,Unit.Type.PACKAGE,L,N,words[1].lower())
                 file.close()
         #log.debug("Cache-Level designs: "+str(self._cache_designs))
         return self._cache_designs
@@ -627,6 +659,8 @@ integrates: {}
         if(hasattr(self, "_cur_designs")):
             return self._cur_designs
         self._cur_designs = dict()
+
+        L,N = self.split(self.getTitle())
         files = self.gatherSources()
         for f in files:
             with open(f, 'r') as file:
@@ -634,10 +668,13 @@ integrates: {}
                     words = line.split()
                     if(len(words) == 0): #skip if its a blank line
                         continue
+                    if(L not in self._cur_designs.keys()):
+                        self._cur_designs[L] = dict()
                     if(words[0].lower() == "entity"):
-                        self._cur_designs[self.getLib()+'.'+words[1].lower()] = Unit(f,Unit.Type.ENTITY,self.getLib())
+                        #print(words[1].lower())
+                        self._cur_designs[L][words[1].lower()] = Unit(f,Unit.Type.ENTITY,L,N,words[1].lower())
                     elif((words[0].lower() == "package" and words[1].lower() != 'body')):
-                        self._cur_designs[self.getLib()+'.'+words[1].lower()] = Unit(f,Unit.Type.PACKAGE,self.getLib())
+                        self._cur_designs[L][words[1].lower()] = Unit(f,Unit.Type.PACKAGE,L,N,words[1].lower())
                 file.close()
         #log.debug("Project-Level Designs: "+str(self._cur_designs))
         return self._cur_designs

@@ -128,28 +128,13 @@ class Registry:
             if(folders == None):
                 folders = self.getProjectsCache(updt)
             else:
-                folders = self.merge(folders,self.getProjectsCache(updt))
+                folders = apt.merge(folders,self.getProjectsCache(updt))
         if(args.count("local")):
             if(folders == None):
                 folders = self.getProjectsLocal(updt)
             else:
-                folders = self.merge(folders,self.getProjectsLocal(updt))
+                folders = apt.merge(folders,self.getProjectsLocal(updt))
         return folders
-
-    #merge: place1 <- place2 (place2 has precedence)
-    def merge(self, place1, place2):
-        tmp = copy.deepcopy(place1)
-        for lib,prjs in place1.items(): #go through each current lib
-            if lib in place2.keys(): #is this lib already in merging lib?
-                for prj in place2[lib]:
-                    tmp[lib][prj] = place2[lib][prj]
-        
-        for lib,prjs in place2.items(): #go through all libs not in current lib
-            if not lib in place1.keys():
-                tmp[lib] = dict()
-                for prj in place2[lib]:
-                    tmp[lib][prj] = place2[lib][prj]
-        return tmp
 
     def getProjectsLocal(self, updt=False):
         if hasattr(self,"_local_prjs") and not updt:

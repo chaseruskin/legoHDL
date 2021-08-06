@@ -272,7 +272,6 @@ class legoHDL:
         log.info("Finding toplevel design...")
         #add export option to override auto detection
         if(top == None):
-            cap.identifyTop()
             top = cap.getMeta("toplevel")
             tb = cap.getMeta("bench")
         elif(top != None and tb == None):
@@ -307,7 +306,7 @@ class legoHDL:
         print("success")
         pass
 
-    def recursiveGraph(self, cap, grph, lbls):
+    def recursiveGraph(self, cap, grph, lbls, viewed):
         #find any project-level labels (must be enabled as recursive)
         for label,ext in apt.SETTINGS['label']['recursive'].items():
             files = cap.gatherSources(ext=[ext])
@@ -315,51 +314,67 @@ class legoHDL:
                 lbls.append("@"+label+" "+f)
 
         #grab only source-design entities (its an external referenced project)
-        ents = cap.grabEntities(excludeTB=True)
-        for k,e in ents.items():
-            grph.addLeaf(e)
-            #make the connections between an entity and its dependency entity
-            for dep in e.getDependencies():
-                grph.addEdge(k, dep)
-            #see what external packages are referenced
-            for extern_lib in e.getExternal():
-                L,N = Block.grabExternalProject(extern_lib[1])
-                #create project object based on this external package
-                ext_cap = self.db.getCaps("cache")[L][N]
-                #recursively feed into dependency tree
-                grph, lbls = self.recursiveGraph(ext_cap, grph, lbls)
-        return grph, lbls
+        units = cap.grabUnits(excludeTB=True)
+        for name,unit in list(units[cap.getLib()].items()):
+            #print(name)
+            grph.addLeaf(unit)
+            #make the connections between a unit and its dependencies
+            for dep in unit.getRequirements():
+                grph.addEdge(unit.getFull(), dep.getFull())
+                pass
+                #only go to cache if the if the requirement is not a part of the current block
+                if(dep.getLib() != cap.getLib() and dep.getBlock() != cap.getName()):
+                    #create project object based on this external package
+                    ext_cap = self.db.getCaps("cache")[dep.getLib()][dep.getBlock()]
+                    blk = ext_cap.getTitle()
+                    if(blk not in viewed):
+                        #print("NEXT CAP:",ext_cap.getTitle())
+                        viewed.append(ext_cap.getTitle())
+                        #recursively feed into dependency tree
+                        grph, lbls, viewed = self.recursiveGraph(ext_cap, grph, lbls, viewed)
+            pass
+        return grph, lbls, viewed
 
     def formGraph(self, cap):
         log.info("Generating dependency tree...")
         hierarchy = Graph()
         labels = []
+        viewed = []
         #find any project-level labels
         for depth,val in apt.SETTINGS['label'].items():
             for label,ext in val.items():
                 files = cap.gatherSources(ext=[ext])
                 for f in files:
                     labels.append("@"+label+" "+f)
+
         #grab current project's entity list
-        ents = cap.grabEntities()
-        for k,e in ents.items():
-            hierarchy.addLeaf(e)
+        #units = cap.grabUnits()
+        units = cap.getHighestUnit()
+        for unit in units:
+            hierarchy.addLeaf(unit)
             #make the connections between an entity and its dependency entity
-            for dep in e.getDependencies():
-                hierarchy.addEdge(k, dep)
-            #see what external projects are referenced
-            for extern_lib in e.getExternal():
-                L,N = Block.grabExternalProject(extern_lib[1]._filepath)
-                #create project object based on this external project
-                ext_cap = self.db.getCaps("cache")[L][N]
-                #recursively feed into dependency tree
-                hierarchy,labels = self.recursiveGraph(ext_cap, hierarchy, labels)
+            for dep in unit.getRequirements():
+                #print(dep.getFull())
+                hierarchy.addEdge(unit.getFull(), dep.getFull())
+                #only go to cache if the if the requirement is not a part of the current block
+                if(dep.getLib() != cap.getLib() and dep.getBlock() != cap.getName()):
+                    #add that dependency's project to be investigated
+                    ext_cap = self.db.getCaps("cache")[dep.getLib()][dep.getBlock()]
+                    blk = ext_cap.getTitle()
+                    if(blk not in viewed):
+                        #print("NEXT CAP:",ext_cap.getTitle())
+                        viewed.append(ext_cap.getTitle())
+                        #recursively feed into dependency tree
+                        hierarchy,labels,viewed = self.recursiveGraph(ext_cap, hierarchy, labels, viewed)
+                else:
+                    hierarchy.addLeaf(dep)
         
         hierarchy.output()
-        es = hierarchy.topologicalSort()
+        us = hierarchy.topologicalSort()
         print('---BUILD ORDER---')
-        for e in es:
-            print(e.getFull(),end=' -> ')
+        for u in us:
+            if(not u.isPKG()):
+                print(u.getFull(),end=' -> ')
         print()
 
         l_set = OrderedSet()
@@ -373,20 +388,21 @@ class legoHDL:
     def compileList(self, hierarchy):
         c_set = OrderedSet()
         c_list = []
+        tb_files = []
 
         order = hierarchy.topologicalSort()
-        for ent in order:
-            for f in ent.getAllFiles():
-                if(isinstance(f, Unit)):
-                    f = f._filepath
-                c_set.add(f)
+        for u in order:
+            c_set.add(u.getFile())
+            if(u.isTB()):
+                tb_files.append(u.getFile())
 
         for f in c_set:
-            lib,_ = Block.grabExternalProject(f)
+            #print(f)
+            lib,_= Block.grabExternalProject(f)
             if(len(lib)):
                 lib = "@LIB "+lib+" "
             else:
-                if(f in self.BlockCWD.gatherSources(excludeTB=True)):
+                if(f not in tb_files):
                     lib = "@SRC "
                 else:
                     lib = "@SIM "
