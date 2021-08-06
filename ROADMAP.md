@@ -17,7 +17,17 @@
 
 - [ ] investigate adding entity from pkg and pkg order getting swapped up
 
-- [!] fix how export selects testbench unit when user choosing top without one (aid.helper block)
+- [ ] rename "cap" functions to "block"
+
+- [ ] allow codestream to support case sensitivity
+
+- [ ] allow codestream to be called outside the class
+
+- [ ] use recursion within decipher function to fill out design book (also prevent overlap)
+
+- [ ] use recursion between block chain (dependency tree of blocks) to get all recursive label discoveries
+
+- [!] fix how export selects testbench unit when user choosing a top without a testbench (aid.helper block)
 
 __Completed__
 - [x] verify both double/single quotes are okay for config command strings/values

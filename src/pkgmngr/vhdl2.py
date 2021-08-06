@@ -9,34 +9,71 @@ class Vhdl:
         self._file_path = apt.fs(fpath)
         pass
 
-    def generateCodeStream(self):
+    def generateCodeStream(self, keep_case=False):
         if(hasattr(self, "_code_stream")):
             return self._code_stream
         self._code_stream = []
+        #take in a single word, return a list of the broken up words
+        def chopSticks(piece, delimiter):
+            index = piece.find(delimiter)
+            chopped = []
+            if(piece == delimiter or index == -1):
+                return [piece]
+            else:
+                while True:
+                    #append the front half
+                    if(index > 0):
+                        chopped.append(piece[0:index])
+                    #append the demiliter by itself
+                    #print(index)
+                    chopped.append(piece[index])
+                    
+                    next_index = piece[index+1:].find(delimiter)
+                    #print("next", next_index,piece[index+1:])
+                    if(next_index > -1):
+                        #append what will be skipped over
+                        if(next_index > 0):
+                            chopped.append(piece[index+1:next_index+index+1])
+                        piece = piece[index+next_index+1:]
+                        index = next_index
+                        #print("new piece:",piece)
+                        index = 0
+                    else:
+                        #append the back half
+                        if(index+1 < len(piece)):
+                            chopped.append(piece[index+1:])
+                        break
+                #print(chopped)
+            return chopped
+
         with open(self._file_path, 'r') as file:
             for line in file.readlines():
                 next_line = line.split()
                 for word in next_line:
-                    word = word.lower()
+                    #convert all word's to lowercase if not keeping case sensitivity
+                    if(not keep_case):
+                        word = word.lower()
+                    #drop all semicolons
                     word = word.replace(";","")
-                    l_parenth = word.find("(")
-                    r_parenth = word.find(")")
-                    if(l_parenth > -1):
-                        if(r_parenth > -1):
-                            word = word.replace("(","").replace(")","")
-                        sub_words_l = word.split("(")
-                        for codeword in sub_words_l:
-                                if(len(codeword)):
-                                    self._code_stream = self._code_stream + [codeword]
-                    elif(r_parenth > -1):
-                            sub_words_r = word.split(")")
-                            for codeword in sub_words_r:
-                                if(len(codeword)):
-                                    self._code_stream = self._code_stream + [codeword]
-                    else:
-                        self._code_stream = self._code_stream + [word]
+                    #perform a split on words containing "(" ")" or ":"
+                    single_chop = chopSticks(word, "(")
+                    double_chop = triple_chop = []
+                    for c in single_chop:
+                        double_chop = double_chop + chopSticks(c, ")")
 
-        #print(self._code_stream)
+                    for c in double_chop:
+                        triple_chop = triple_chop + chopSticks(c, ":")
+
+                    #drop all parentheses
+                    for i in range(0, len(triple_chop)):
+                        triple_chop[i] = triple_chop[i].replace("(","")
+                        triple_chop[i] = triple_chop[i].replace(")","")
+
+                    for c in triple_chop:
+                        if(len(c) > 0):
+                            self._code_stream = self._code_stream + [c]
+
+        print(self._code_stream)
         return self._code_stream
 
     def decipher(self, design_book, cur_lib):
