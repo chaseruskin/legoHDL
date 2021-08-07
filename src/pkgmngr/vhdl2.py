@@ -2,40 +2,89 @@ from .apparatus import Apparatus as apt
 import logging as log
 from .entity import Entity
 from .unit import Unit
+import sys
+from .signal import Signal
 
 class Vhdl:
 
     def __init__(self, fpath):
         self._file_path = apt.fs(fpath)
+        self.writePortFormat()
         pass
 
-    def generateCodeStream(self, keep_case=False):
-        if(hasattr(self, "_code_stream")):
-            return self._code_stream
-        self._code_stream = []
+
+    def writePortFormat(self):
+        true_code = self.generateCodeStream(keep_case=True, keep_terminators=True)
+        cs = self.generateCodeStream(keep_case=False, keep_terminators=True)
+        print(true_code)
+        in_ports = in_gens = False
+        signals = []
+        names = []
+        for i in range(0,len(cs)):
+            if(cs[i] == "generic"):
+                names = []
+                in_ports = False
+                in_gens = True
+            elif(cs[i] == "port"):
+                names = []
+                in_gens = False
+                in_ports = True
+                while true_code[i+1] != ':':
+                    if(true_code[i+1] != '('):
+                        names.append(true_code[i+1])
+                    i = i + 1
+                for n in names:
+                    signals.append(n)
+            elif(cs[i] == "end"):
+                break
+            elif(in_ports):
+                if(cs[i] == ';' and cs[i+1] != 'end'):
+                    signals.append(true_code[i+1])
+            elif(in_gens):
+                pass
+        pass
+        print(signals)
+    
+    #turn a vhdl file in to a string of words
+    def generateCodeStream(self, keep_case=False, keep_terminators=False):
+        code_stream = []
         #take in a single word, return a list of the broken up words
-        def chopSticks(piece, delimiter):
-            index = piece.find(delimiter)
+        def chopSticks(piece, *delimiters):
+
+            def computeNextIndex(w):
+                min_index = sys.maxsize
+                for d in delimiters:
+                    tmp_i = w.find(d)
+                    if(tmp_i > -1 and tmp_i < min_index):
+                        min_index = tmp_i
+                if(min_index == sys.maxsize):
+                    return -1
+                else:
+                    return min_index
+
+            #print(delimiters)
+            index = computeNextIndex(piece)
+
             chopped = []
-            if(piece == delimiter or index == -1):
+            #return if no delimiter or if word is only the delimiter
+            if(piece in delimiters or index == -1):
                 return [piece]
             else:
                 while True:
                     #append the front half
                     if(index > 0):
                         chopped.append(piece[0:index])
-                    #append the demiliter by itself
-                    #print(index)
+                    #append the demiliter itself
                     chopped.append(piece[index])
-                    
-                    next_index = piece[index+1:].find(delimiter)
-                    #print("next", next_index,piece[index+1:])
+                    #see if there is another delimiter in this word to split up
+                    next_index = computeNextIndex(piece[index+1:])
+                    #print("next:", next_index,"word:",piece[index+1:])
                     if(next_index > -1):
                         #append what will be skipped over
                         if(next_index > 0):
                             chopped.append(piece[index+1:next_index+index+1])
+                        #shorten piece to what remains
                         piece = piece[index+next_index+1:]
-                        index = next_index
                         #print("new piece:",piece)
                         index = 0
                     else:
@@ -45,37 +94,38 @@ class Vhdl:
                         break
                 #print(chopped)
             return chopped
-
+        #read the vhdl file to break into words
         with open(self._file_path, 'r') as file:
             for line in file.readlines():
+                #drop rest of line if comment is started
+                comment_start = line.find('--')
+                if(comment_start == 0):
+                    continue
+                elif(comment_start > -1):
+                    line = line[:comment_start]
+
                 next_line = line.split()
+                #iterate through each word in the line
                 for word in next_line:
                     #convert all word's to lowercase if not keeping case sensitivity
                     if(not keep_case):
                         word = word.lower()
                     #drop all semicolons
-                    word = word.replace(";","")
+                    if(not keep_terminators):
+                        word = word.replace(";","")
                     #perform a split on words containing "(" ")" or ":"
-                    single_chop = chopSticks(word, "(")
-                    double_chop = triple_chop = []
-                    for c in single_chop:
-                        double_chop = double_chop + chopSticks(c, ")")
-
-                    for c in double_chop:
-                        triple_chop = triple_chop + chopSticks(c, ":")
-
+                    chopped = chopSticks(word, "(",")",":",";")
                     #drop all parentheses
-                    for i in range(0, len(triple_chop)):
-                        triple_chop[i] = triple_chop[i].replace("(","")
-                        triple_chop[i] = triple_chop[i].replace(")","")
+                    for sliced in chopped:
+                        if(not keep_terminators):
+                            sliced = sliced.replace("(","")
+                            sliced = sliced.replace(")","")
+                        if(len(sliced)):
+                            code_stream = code_stream + [sliced]
+        #print(code_stream)
+        return code_stream
 
-                    for c in triple_chop:
-                        if(len(c) > 0):
-                            self._code_stream = self._code_stream + [c]
-
-        print(self._code_stream)
-        return self._code_stream
-
+    #function to determine required modules for self units
     def decipher(self, design_book, cur_lib):
         log.info("Deciphering VHDL file...")
         log.info(self._file_path)
