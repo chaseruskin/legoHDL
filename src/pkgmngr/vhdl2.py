@@ -37,8 +37,9 @@ class Vhdl:
         isEnding = False
 
         def resetNamespace(uses):
+            #the current unit is now complete ("checked")
             design_book[cur_lib][unit_name].setChecked(True)
-            print(cur_lib,unit_name)
+            #now try to check the unit's dependencies
             for u in uses:
                 if(u not in design_book[cur_lib][unit_name].getRequirements()):
                     design_book[cur_lib][unit_name].addRequirement(u)

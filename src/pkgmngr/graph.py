@@ -1,6 +1,7 @@
 #graph module used to generate flat dependency tree, topologically sort it
 from .entity import Entity
-
+from ordered_set import OrderedSet
+import logging as log
 
 class Graph:
     def __init__(self):
@@ -32,6 +33,7 @@ class Graph:
 
     def topologicalSort(self):
         order = list()
+        block_order = OrderedSet()
         nghbr_count = dict()
         #print(len(self.__adj_list))
         #determine number of dependencies a vertex has
@@ -39,19 +41,25 @@ class Graph:
             nghbr_count[v] = len(self.__adj_list[v])
         #no connections were made, just add all units found
         if(len(self.__adj_list) == 0):
+            log.warning("No edges found.")
             for key,u in self._unit_bank.items():
                 order.append(u)
+                block_order.add(u.getLib()+"."+u.getBlock())
   
         #continue until all are transferred
         while len(order) < len(self.__adj_list):
             #if a vertex has zero dependencies, add it to the list
             for v in nghbr_count.keys():
                 if nghbr_count[v] == 0:
-                    if(not self._unit_bank[v].isPKG() or True):
-                        #print(self._unit_bank[v])
-                        order.append(self._unit_bank[v]) #add actual entity obj
-
-                    nghbr_count[v] = -1 #will not be recounted
+                    unit = self._unit_bank[v]
+                    if(not unit.isPKG() or True):
+                        #print(unit)
+                        #add actual unit object to list
+                        order.append(unit) 
+                    #add block name to ordered set
+                    block_order.add(unit.getLib()+"."+unit.getBlock())
+                    #will not be recounted
+                    nghbr_count[v] = -1 
                     #who all depends on this module?
                     for k in self.__adj_list.keys():
                         if(v in self.__adj_list[k]):
@@ -59,7 +67,7 @@ class Graph:
                             nghbr_count[k] = nghbr_count[k] - 1
                     continue
 
-        return order
+        return order,block_order
 
     #only display entities in the tree (no package units)
     def output(self):

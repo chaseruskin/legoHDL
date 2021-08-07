@@ -283,14 +283,32 @@ class legoHDL:
         output = open(build_dir+"recipe", 'w')    
 
         #mission: recursively search through every src VHD file for what else needs to be included
-        hierarchy,labels = self.formGraph(cap)
-        order = self.compileList(hierarchy)  
+        unit_order,block_order = self.formGraph(cap)
+        file_order = self.compileList(cap, unit_order)  
 
         #add labels in order from lowest-projects to top-level project
-        labels = reversed(labels)
+        labels = []
+        for blk in block_order:
+            L,U = Block.split(blk)
+            tmp = self.db.getCaps("cache")[L][U]
+            #reassign tmp block to the current block
+            if(cap.getTitle() == blk):
+                tmp = cap
+            #add any recursive labels
+            for label,ext in apt.SETTINGS['label']['recursive'].items():
+                files = tmp.gatherSources(ext=[ext])
+                for f in files:
+                    labels.append("@"+label+" "+f)
+            #add any project-level labels
+            if(cap.getTitle() == blk):
+                for label,ext in apt.SETTINGS['label']['shallow'].items():
+                    files = cap.gatherSources(ext=[ext])
+                    for f in files:
+                        labels.append("@"+label+" "+f)
+
         for l in labels:
             output.write(l+"\n")
-        for f in order:
+        for f in file_order:
             output.write(f+"\n")
 
         #write current test dir where all testbench files are
@@ -337,78 +355,46 @@ class legoHDL:
 
     def formGraph(self, cap):
         log.info("Generating dependency tree...")
-        hierarchy = Graph()
-        labels = []
-        viewed = []
-        #find any project-level labels
-        for depth,val in apt.SETTINGS['label'].items():
-            for label,ext in val.items():
-                files = cap.gatherSources(ext=[ext])
-                for f in files:
-                    labels.append("@"+label+" "+f)
-
-        #grab current project's entity list
-        #units = cap.grabUnits()
+        #start with top unit (returns all units if no top unit is found (packages case))
         units = cap.getHighestUnit()
-        for unit in units:
-            hierarchy.addLeaf(unit)
-            #make the connections between an entity and its dependency entity
-            for dep in unit.getRequirements():
-                #print(dep.getFull())
-                hierarchy.addEdge(unit.getFull(), dep.getFull())
-                #only go to cache if the if the requirement is not a part of the current block
-                if(dep.getLib() != cap.getLib() and dep.getBlock() != cap.getName()):
-                    #add that dependency's project to be investigated
-                    ext_cap = self.db.getCaps("cache")[dep.getLib()][dep.getBlock()]
-                    blk = ext_cap.getTitle()
-                    if(blk not in viewed):
-                        #print("NEXT CAP:",ext_cap.getTitle())
-                        viewed.append(ext_cap.getTitle())
-                        #recursively feed into dependency tree
-                        hierarchy,labels,viewed = self.recursiveGraph(ext_cap, hierarchy, labels, viewed)
-                else:
-                    hierarchy.addLeaf(dep)
         
+        hierarchy = Unit.Hierarchy
         hierarchy.output()
-        us = hierarchy.topologicalSort()
+        unit_order,block_order = hierarchy.topologicalSort()
         print('---BUILD ORDER---')
-        for u in us:
+        for u in unit_order:
             if(not u.isPKG()):
                 print(u.getFull(),end=' -> ')
         print()
 
-        l_set = OrderedSet()
-        for lab in labels:
-            l_set.add(lab)
-        labels = l_set
+        print('---BLOCK ORDER---')
+        for b in block_order:
+            print(b,end=' -> ')
+        print()
 
-        return hierarchy,labels
+        return unit_order,block_order
 
     #given a dependency graph, write out the actual list of files needed
-    def compileList(self, hierarchy):
-        c_set = OrderedSet()
-        c_list = []
-        tb_files = []
+    def compileList(self, block, unit_order):
+        recipe_list = []
 
-        order = hierarchy.topologicalSort()
-        for u in order:
-            c_set.add(u.getFile())
-            if(u.isTB()):
-                tb_files.append(u.getFile())
-
-        for f in c_set:
-            #print(f)
-            lib,_= Block.grabExternalProject(f)
-            if(len(lib)):
-                lib = "@LIB "+lib+" "
+        for u in unit_order:
+            line = ''
+            #this unit comes from an external block so it is a library file
+            if(u.getLib() != block.getLib() or u.getBlock() != block.getName()):
+                line = '@LIB '+u.getLib()+' '
+            #this unit is a simulation file
+            elif(u.isTB()):
+                line = '@SIM '
+            #this unit is a source file
             else:
-                if(f not in tb_files):
-                    lib = "@SRC "
-                else:
-                    lib = "@SIM "
-            c_list.append(lib+f)
-    
-        return c_list
+                line = '@SRC '
+            #append file onto line
+            line = line + u.getFile()
+            #add to recipe list
+            recipe_list.append(line)
+
+        return recipe_list
 
     #will also install project into cache and have respective pkg in lib
     def download(self, title):

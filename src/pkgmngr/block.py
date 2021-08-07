@@ -601,35 +601,29 @@ integrates: {}
             return None
 
     def printUnits(self):
-        if(False):
-            print("===UNIT BOOK===")
-            for L in self.grabUnits().keys():
-                print("===LIBRARY===",L)
-                for U in self.grabUnits()[L]:
-                    print(self.grabUnits()[L][U])
-            print("===END UNIT BOOK===")
-        print(Unit.Hierarchy.output())
+        print("===UNIT BOOK===")
+        for L in self.grabUnits().keys():
+            print("===LIBRARY===",L)
+            for U in self.grabUnits()[L]:
+                print(self.grabUnits()[L][U])
+        print("===END UNIT BOOK===")
         pass
 
-    def grabUnits(self, excludeTB=False):
+    def grabUnits(self):
         if(hasattr(self, "_unit_bank")):
             return self._unit_bank
-
+        #get all units (not filled in)
         self._unit_bank = self.grabDesigns("cache","current")
-
+        #gather all project-level VHDL source files
         srcs = self.gatherSources()
-        #print(srcs)
+        #decipher every VHDL source file
         for f in srcs:
             f = apt.fs(f)
             self._unit_bank = Vhdl(f).decipher(self._unit_bank, self.getLib())
-        #print(self._unit_bank)
-        if(excludeTB):
-            for k,u in self._unit_bank[self.getLib()].copy().items():
-                if(u.isTB()):
-                    del self._unit_bank[self.getLib()][k]
-        self.printUnits()
+        #self.printUnits()
         return self._unit_bank
 
+    #return empty unit objects from cache and/or current block
     def grabDesigns(self, *args):
         design_book = dict()
         if("current" in args):
