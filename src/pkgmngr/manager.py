@@ -923,16 +923,24 @@ class legoHDL:
             self.db.getCaps("local","cache")[L][N].show()
             pass
         elif(command == "port"):
-            mapp = False
+            mapp = pure_ent = False
             ent_name = None
             if(len(options) and 'map' in options):
                 mapp = True
+            if(len(options) and 'inst' in options):
+                pure_ent = True
             if(package.count('.') == 2): #if provided an extra identifier, it is the entity in this given project
                 ent_name = package[package.rfind('.')+1:]
                 package = package[:package.rfind('.')]
+
+            inserted_lib = L
+            if(self.BlockCWD.isValid() and self.BlockCWD.getLib() == L):
+                inserted_lib = 'work'
             
             if((self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
-                print(self.db.getCaps("local","cache")[L][N].ports(mapp,ent_name))
+                print(self.db.getCaps("local","cache")[L][N].ports(mapp,inserted_lib,pure_ent,ent_name))
+            else:
+                exit(log.error("No block exists in local path or workspace cache."))
         elif(command == "config"):
             self.setSetting(options, value)
             pass
@@ -1046,7 +1054,7 @@ class legoHDL:
             printFmt("search","<package>")
             pass
         elif(cmd == "port"):
-            printFmt("port","<package>","[-map]")
+            printFmt("port","<package>","[-map -inst]")
             pass
         elif(cmd == "show"):
             printFmt("show","<package>")

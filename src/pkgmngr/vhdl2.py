@@ -1,59 +1,169 @@
 from .apparatus import Apparatus as apt
 import logging as log
-from .entity import Entity
-from .unit import Unit
 import sys
-from .signal import Signal
 
 class Vhdl:
 
     def __init__(self, fpath):
         self._file_path = apt.fs(fpath)
-        self.writePortFormat()
         pass
 
+    def addSignal(self, stash, c, stream, true_stream, declare_sig=False):
+        names = []
+        while true_stream[c+1] != ':':
+            if(true_stream[c+1] != '(' and true_stream[c+1] != ','):
+                names.append(true_stream[c+1])
+            c = c + 1
+        #go through all names found for this signal type
+        for n in names:
+            line = n
+            #add details needed for signal declaration
+            if(declare_sig):
+                line = 'signal ' + line + ' :'
+                #find the index where this port declaration ends (skip over ':' and direction keyword)
+                i_term = true_stream[c+3:].index(';')
+                #this was the last port declaration so truncate off the extra ')'
+                if(stream[c+3+i_term+1] == 'end'):
+                    i_term = i_term-1
+                #write out each word
+                prev_w = ''
+                for w in true_stream[c+3:c+3+i_term]:
+                    #don't add a surround ' ' if w is a parenthese
+                    if(w != '(' and w != ')' and prev_w != '(' and prev_w != ')'):
+                        line = line + ' '
+                    line = line + w
+                    prev_w = w
+                line = line + ';'
+            stash.append(line)
+        return stash
 
-    def writePortFormat(self):
-        true_code = self.generateCodeStream(keep_case=True, keep_terminators=True)
-        cs = self.generateCodeStream(keep_case=False, keep_terminators=True)
-        print(true_code)
+    def writeComponentSignals(self):
+        true_code = self.generateCodeStream(True, True, "(",")",":",";",',')
+        cs = self.generateCodeStream(False, True, "(",")",":",";",',')
+        #print(true_code)
         in_ports = in_gens = False
         signals = []
-        names = []
+        #iterate through all important code words
         for i in range(0,len(cs)):
             if(cs[i] == "generic"):
-                names = []
                 in_ports = False
                 in_gens = True
             elif(cs[i] == "port"):
-                names = []
                 in_gens = False
                 in_ports = True
-                while true_code[i+1] != ':':
-                    if(true_code[i+1] != '('):
-                        names.append(true_code[i+1])
-                    i = i + 1
-                for n in names:
-                    signals.append(n)
+                signals = self.addSignal(signals, i, cs, true_code, declare_sig=True)
             elif(cs[i] == "end"):
                 break
             elif(in_ports):
                 if(cs[i] == ';' and cs[i+1] != 'end'):
-                    signals.append(true_code[i+1])
+                    signals = self.addSignal(signals, i, cs, true_code, declare_sig=True)
             elif(in_gens):
                 pass
         pass
-        print(signals)
+        signals_txt = ''
+        for sig in signals:
+            signals_txt = signals_txt + sig + '\n'
+        #print(signals_txt)
+        return signals_txt
+
+
+    def writeComponentMapping(self, pureEntity=False, lib=''):
+        true_code = self.generateCodeStream(True, True, "(",")",":",";",',')
+        cs = self.generateCodeStream(False, True, "(",")",":",";",',')
+        #store names of all generics
+        gens = []
+        #store names of all ports
+        signals = []
+        in_ports = in_gens = False
+        entity_name = ''
+        for i in range(0,len(cs)):
+            if(cs[i] == 'entity'):
+                entity_name = true_code[i+1]
+            if(cs[i] == "generic"):
+                in_ports = False
+                in_gens = True
+                #add first line of generics
+                gens = self.addSignal(gens, i, cs, true_code, declare_sig=False)
+            elif(cs[i] == "port"):
+                in_gens = False
+                in_ports = True
+                #add first line of signals
+                signals = self.addSignal(signals, i, cs, true_code, declare_sig=False)
+            elif(cs[i] == "end"):
+                break
+            elif(in_ports):
+                #add all ports to list
+                if(cs[i] == ';' and cs[i+1] != 'end'):
+                    signals = self.addSignal(signals, i, cs, true_code, declare_sig=False)
+            elif(in_gens):
+                #add all generics to list
+                if(cs[i] == ';' and cs[i+1] != 'port'):
+                    gens = self.addSignal(gens, i, cs, true_code, declare_sig=False)
+                pass
+            pass
+
+        #print("generics",gens)
+        #print("signals",signals)
+        mapping_txt = "uX : "+entity_name+"\n"
+        #reassign beginning of mapping of it will be a pure entity instance
+        if(pureEntity):
+            mapping_txt = "uX : entity "+lib+"."+entity_name+"\n"
+
+        #if we have generics to map
+        if(len(gens)):
+            mapping_txt = mapping_txt + "generic map(\n"
+            for i in range(len(gens)):
+                line =  "    "+gens[i]+"=>"+gens[i]
+                #add a comma if not on last generic
+                if(i != len(gens)-1):
+                    line = line + ","
+                mapping_txt = mapping_txt + line+"\n"
+            #add necessary closing
+            mapping_txt = mapping_txt + ")\n"
+        if(len(signals)):
+            mapping_txt = mapping_txt + "port map(\n"
+            for i in range(len(signals)):
+                line = "    "+signals[i]+"=>"+signals[i]
+                #add a comma if not on the last signal
+                if(i != len(signals)-1):
+                    line = line + ","
+                mapping_txt = mapping_txt + line+"\n"
+            #add necessary closing
+            mapping_txt = mapping_txt + ");\n"
+        #print(mapping_txt)
+        return mapping_txt
+
+    def writeComponentDeclaration(self):
+        declaration_txt = ''
+        with open(self._file_path, 'r') as file:
+            in_entity = False
+            #iterate through file lines
+            for line in file.readlines():
+                words = line.split()
+                if(len(words) == 0):
+                    continue
+                if(words[0].lower() == 'entity'):
+                    in_entity = True
+                    declaration_txt = 'component'
+                    line = line[len('entity'):]
+                if(words[0].lower() == 'end'):
+                    declaration_txt = declaration_txt + 'end component;'
+                    break
+                if(in_entity):
+                    declaration_txt = declaration_txt + line
+        #print(declaration_txt)
+        return declaration_txt
+        pass
     
     #turn a vhdl file in to a string of words
-    def generateCodeStream(self, keep_case=False, keep_terminators=False):
+    def generateCodeStream(self, keep_case, keep_term, *extra_parsers):
         code_stream = []
         #take in a single word, return a list of the broken up words
-        def chopSticks(piece, *delimiters):
+        def chopSticks(piece):
 
             def computeNextIndex(w):
                 min_index = sys.maxsize
-                for d in delimiters:
+                for d in extra_parsers:
                     tmp_i = w.find(d)
                     if(tmp_i > -1 and tmp_i < min_index):
                         min_index = tmp_i
@@ -67,7 +177,7 @@ class Vhdl:
 
             chopped = []
             #return if no delimiter or if word is only the delimiter
-            if(piece in delimiters or index == -1):
+            if(piece in extra_parsers or index == -1):
                 return [piece]
             else:
                 while True:
@@ -111,13 +221,13 @@ class Vhdl:
                     if(not keep_case):
                         word = word.lower()
                     #drop all semicolons
-                    if(not keep_terminators):
+                    if(not keep_term):
                         word = word.replace(";","")
                     #perform a split on words containing "(" ")" or ":"
-                    chopped = chopSticks(word, "(",")",":",";")
+                    chopped = chopSticks(word)
                     #drop all parentheses
                     for sliced in chopped:
-                        if(not keep_terminators):
+                        if(not keep_term):
                             sliced = sliced.replace("(","")
                             sliced = sliced.replace(")","")
                         if(len(sliced)):
@@ -130,7 +240,7 @@ class Vhdl:
         log.info("Deciphering VHDL file...")
         log.info(self._file_path)
         #parse into words
-        cs = self.generateCodeStream()
+        cs = self.generateCodeStream(False, False, "(",")",":",";")
 
         def splitBlock(name):
             specs = name.split('.')

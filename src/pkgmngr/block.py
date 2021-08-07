@@ -41,7 +41,7 @@ class Block:
         #if(apt.linkedRemote()):
             #self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
         if(self.isValid()):
-            log.debug("Placing here: "+self.__local_path)
+            log.debug("Checking block here: "+self.__local_path)
             self.__repo = git.Repo(self.__local_path)
             #load in metadata from YML
             self.loadMeta()
@@ -698,18 +698,16 @@ integrates: {}
         N = path_parse[i+2].replace("_pkg.vhd", "")
         return L,N
 
-    def ports(self, mapp, entity=None):
-        ents = self.grabEntities()
-        printer = ''
+    def ports(self, mapp, lib, pure_entity, entity=None):
+        units = self.grabUnits()
+        info = ''
         if(entity == None):
             entity = self.getMeta("toplevel")
-        for k,e in ents.items():
-            if(e.getName() == entity):
-                printer = e.getPorts()
-                if(mapp):
-                    printer = printer + "\n" + e.getMapping()
-                break
-        return printer
+        if(entity == None):
+            return info
+        
+        info = units[self.getLib()][entity].writePortMap(mapp, lib, pure_entity)
+        return info
     pass
 
 

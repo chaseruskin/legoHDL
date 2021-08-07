@@ -1,4 +1,5 @@
 from enum import Enum
+from .vhdl2 import Vhdl
 
 class Unit:
     class Type(Enum):
@@ -13,8 +14,25 @@ class Unit:
         self._block = block
         self._unit = unitName
         self._isTB = True
+        self._vhdl = Vhdl(filepath)
         pass
     pass
+
+    def writePortMap(self,mapping,lib,pureEntity):
+        report = '\n'
+        if(self.isPKG()):
+            return ''
+        else:
+            if(not pureEntity or mapping):
+                report =  report + self._vhdl.writeComponentDeclaration() + "\n"
+            if(mapping or pureEntity):
+                report = report + "\n" + self._vhdl.writeComponentSignals() + "\n"
+                if(mapping):
+                    report = report + self._vhdl.writeComponentMapping(False, lib) + "\n"
+                if(pureEntity):
+                    report = report + self._vhdl.writeComponentMapping(pureEntity, lib) + "\n"
+                pass
+        return report
 
     def isPKG(self):
         return (self._dtype == self.Type.PACKAGE)

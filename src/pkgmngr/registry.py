@@ -144,11 +144,15 @@ class Registry:
         folders = folders + glob.glob(apt.getLocal()+"/*/"+apt.MARKER, recursive=False)
 
         for file in folders:
+            #print(file)
             #read .lock to get information
             file = apt.fs(file)
             with open(file, 'r') as f:
                 tmp = yaml.load(f, Loader=yaml.FullLoader)
                 #print(tmp)
+                if(tmp['name'] == None):
+                    log.warning("Invalid "+apt.MARKER+" file: "+file)
+                    continue
             s = file.rfind('/')
             c = Block(path=file[:s+1])
             if(c.getLib() not in self._local_prjs.keys()):
@@ -173,6 +177,7 @@ class Registry:
                 if(p[0] == '.'):
                     continue
                 self._cache_prjs[l][p] = Block(path=path+l+"/"+p+"/")
+        #print(self._cache_prjs)
         return self._cache_prjs
         pass
 
