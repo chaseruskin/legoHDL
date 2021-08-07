@@ -1,7 +1,12 @@
 from enum import Enum
 from .vhdl2 import Vhdl
+from .graph import Graph
 
 class Unit:
+
+    #class variable storing the dependency tree
+    Hierarchy = Graph()
+
     class Type(Enum):
         ENTITY = 1,
         PACKAGE = 2
@@ -15,8 +20,19 @@ class Unit:
         self._unit = unitName
         self._isTB = True
         self._vhdl = Vhdl(filepath)
+        self._checked = False
         pass
     pass
+
+    def setChecked(self, c):
+        #add to hierarchy if complete
+        if(c == True and not self.isChecked()):
+            self.Hierarchy.addLeaf(self)
+        self._checked = c
+        pass
+    
+    def isChecked(self):
+        return self._checked
 
     def writePortMap(self,mapping,lib,pureEntity):
         report = '\n'
@@ -24,15 +40,18 @@ class Unit:
             return ''
         else:
             if(not pureEntity or mapping):
-                report =  report + self._vhdl.writeComponentDeclaration() + "\n"
+                report =  report + self.getVHD().writeComponentDeclaration() + "\n"
             if(mapping or pureEntity):
-                report = report + "\n" + self._vhdl.writeComponentSignals() + "\n"
+                report = report + "\n" + self.getVHD().writeComponentSignals() + "\n"
                 if(mapping):
-                    report = report + self._vhdl.writeComponentMapping(False, lib) + "\n"
+                    report = report + self.getVHD().writeComponentMapping(False, lib) + "\n"
                 if(pureEntity):
-                    report = report + self._vhdl.writeComponentMapping(pureEntity, lib) + "\n"
+                    report = report + self.getVHD().writeComponentMapping(pureEntity, lib) + "\n"
                 pass
         return report
+
+    def getVHD(self):
+        return self._vhdl
 
     def isPKG(self):
         return (self._dtype == self.Type.PACKAGE)
@@ -60,6 +79,8 @@ class Unit:
 
     #add a unit as a requirement for itself
     def addRequirement(self, u):
+        #add new edge
+        self.Hierarchy.addEdge(self.getFull(), u.getFull())
         self._requirements = self.getRequirements() + [u]
         pass
     
@@ -71,7 +92,10 @@ class Unit:
             return []
 
     def __repr__(self):
-        return(f'''
-unit: {self._unit} | library: {self._lib} | block name: {self._block} | filepath: {self._filepath} | design type: {self._dtype} | 
-requires: {self.getRequirements()}
-\n''')
+        report = f'''
+{self._lib}.{self._block}.{self._unit} | {self._filepath} | {self._dtype}
+requires:\n'''
+        for dep in self.getRequirements():
+            report = report + '-'+dep.getLib()+'.'+dep.getBlock()+'.'+dep.getName()+"\n"
+        
+        return report

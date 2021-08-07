@@ -3,6 +3,9 @@ import logging as log
 from .entity import Entity
 from .unit import Unit
 
+
+##################### LEGACY #############################################
+
 class Vhdl:
 
     def __init__(self, fpath):

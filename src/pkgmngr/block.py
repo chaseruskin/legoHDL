@@ -600,6 +600,17 @@ integrates: {}
             log.error("No testbench configured for this top-level entity.")
             return None
 
+    def printUnits(self):
+        if(False):
+            print("===UNIT BOOK===")
+            for L in self.grabUnits().keys():
+                print("===LIBRARY===",L)
+                for U in self.grabUnits()[L]:
+                    print(self.grabUnits()[L][U])
+            print("===END UNIT BOOK===")
+        print(Unit.Hierarchy.output())
+        pass
+
     def grabUnits(self, excludeTB=False):
         if(hasattr(self, "_unit_bank")):
             return self._unit_bank
@@ -616,6 +627,7 @@ integrates: {}
             for k,u in self._unit_bank[self.getLib()].copy().items():
                 if(u.isTB()):
                     del self._unit_bank[self.getLib()][k]
+        self.printUnits()
         return self._unit_bank
 
     def grabDesigns(self, *args):

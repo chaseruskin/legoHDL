@@ -8,6 +8,169 @@ class Vhdl:
         self._file_path = apt.fs(fpath)
         pass
 
+
+    #function to determine required modules for self units
+    def decipher(self, design_book, cur_lib):
+        log.info("Deciphering VHDL file...")
+        log.info(self._file_path)
+        #parse into words
+        cs = self.generateCodeStream(False, False, "(",")",":",";")
+
+        def splitBlock(name):
+            specs = name.split('.')
+            if(name.find('.') == -1):
+                return '',''
+            if(specs[0] == 'work'):
+                specs[0] = cur_lib
+            return specs[0],specs[1]
+        #find all design unit names (package calls or entity calls) and trace it back in design_book to the
+        #block that is covers, this is a dependency,
+
+        #libraries found with the "library" keyword span over all units in the current file
+        library_declarations = [] 
+        #units being used with the "use" keyword span over the following unit in the file and resets
+        use_packages = []
+
+        in_pkg = in_body = in_true_body = False
+        in_entity = in_arch = in_true_arch = False
+        unit_name = arch_name = body_name =  None
+        isEnding = False
+
+        def resetNamespace(uses):
+            design_book[cur_lib][unit_name].setChecked(True)
+            print(cur_lib,unit_name)
+            for u in uses:
+                if(u not in design_book[cur_lib][unit_name].getRequirements()):
+                    design_book[cur_lib][unit_name].addRequirement(u)
+                #only enter recursion if the unit has not already been completed ("checked")
+                if(not design_book[u.getLib()][u.getName()].isChecked()):
+                    u.getVHD().decipher(design_book,u.getLib())
+            uses = []
+            return uses
+
+        #iterate through the code stream, identifying keywords as they come
+        for i in range(0,len(cs)):
+            cur_word = cs[i]
+            #add to file's global library calls
+            if(cur_word == 'library'):
+                if(cs[i+1] in design_book.keys()):
+                    library_declarations.append(cs[i+1])
+            elif(cur_word == 'use'):
+                # this is a unit being used for the current unit being evaluated
+                L,U = splitBlock(cs[i+1])
+                if(L in design_book.keys()):
+                    use_packages.append(design_book[L][U])
+            elif(cur_word == 'entity'):
+                # this is ending a entity declaration
+                if(isEnding):
+                    in_entity = isEnding = False
+                # this is the entity declaration
+                elif(not in_arch):
+                    in_entity = True
+                    unit_name = cs[i+1]
+                # this is a component instantiation
+                elif(in_arch and in_true_arch):
+                    L,U = splitBlock(cs[i+1])
+                    #print(L,U)
+                    if(L in design_book.keys()):
+                        #print(design_book[L][U])
+                        use_packages.append(design_book[L][U])
+                    pass
+                pass
+            elif(cur_word == 'port'):
+                #this entity has a ports list and therefore is not a testbench
+                if(in_entity):
+                    design_book[cur_lib][unit_name].unsetTB()
+            elif(cur_word == ":"):
+                # todo - entity instantiations from within deep architecture using full title (library.pkg.entity)
+                if(in_true_arch):
+                    P,U = splitBlock(cs[i+1])
+                    for lib in library_declarations:
+                        if(P in design_book[lib].keys()):
+                            use_packages.append(design_book[lib][U])
+                pass
+            elif(cur_word == 'architecture'):
+                # this is ending an architecture section
+                if(isEnding):
+                    use_packages = resetNamespace(use_packages)
+                    in_arch = in_true_arch = isEnding = False
+                # this is the architecture naming
+                else:
+                    in_arch = True
+                    arch_name = cs[i+1]
+                pass
+            elif(cur_word == "component"):
+                # todo - component declarations from within shallow architecture
+                pass
+            elif(cur_word == "begin"):
+                # this is entering the deep architecture
+                if(in_arch):
+                    in_true_arch = True
+                # this is entering the deep package body
+                elif(in_body):
+                    in_true_body = True
+            elif(cur_word == 'package'):
+                if(isEnding):
+                    use_packages = resetNamespace(use_packages)
+                    in_pkg = in_body = in_true_body = isEnding = False
+                else:
+                    in_pkg = True
+                    # this is a package declaration
+                    if(cs[i+1] != 'body'):
+                        unit_name = cs[i+1]
+                    # this is a package body
+                    else:
+                        in_body = True
+                        # skip over 'body' keyword to get to body name
+                        body_name = cs[i+2]
+            elif(cur_word == 'end'):
+                isEnding = True
+                pass
+            elif(cur_word == unit_name):
+                # this is ending the unit declaration
+                if(isEnding):
+                    if(in_true_body):
+                        use_packages = resetNamespace(use_packages)
+                    in_entity = in_pkg = in_body = in_true_body = isEnding = False
+                else:
+                    pass
+            elif(cur_word == arch_name):
+                # this is ending the architecture section
+                if(isEnding):
+                    use_packages = resetNamespace(use_packages)
+                    in_arch = in_true_arch = False
+                else:
+                    pass
+            elif(cur_word == body_name):
+                # this is ending the package body section
+                if(isEnding):
+                    use_packages = resetNamespace(use_packages)
+                    in_body = in_true_body = False
+                else:
+                    pass
+            pass
+
+        #print("===UNIT====",cur_lib,unit_name)
+
+        #print("===USING===",use_packages)
+        #print("===LIBS====",library_declarations)
+        return design_book
+
+    @DeprecationWarning
+    def grabComponents(self, filepath, lib):
+        comp_list = list()
+        with open(filepath, 'r') as file:
+            for line in file.readlines():
+                words = line.split()
+                if(len(words) == 0): #skip if its a blank line
+                    continue
+                if(words[0].lower() == "component"):
+                    comp_list.append(lib+'.'+words[1].lower())
+            file.close()
+        #print("Components:",comp_list)
+        return comp_list
+
+    #append a signal/generic string to a list of its respective type
     def addSignal(self, stash, c, stream, true_stream, declare_sig=False):
         names = []
         while true_stream[c+1] != ':':
@@ -37,10 +200,12 @@ class Vhdl:
             stash.append(line)
         return stash
 
+    #generate string of component's signal declarations to be interfaced with the port
     def writeComponentSignals(self):
+        #keep cases and keep terminators
         true_code = self.generateCodeStream(True, True, "(",")",":",";",',')
+        #ignore cases and keep terminators
         cs = self.generateCodeStream(False, True, "(",")",":",";",',')
-        #print(true_code)
         in_ports = in_gens = False
         signals = []
         #iterate through all important code words
@@ -58,6 +223,7 @@ class Vhdl:
                 if(cs[i] == ';' and cs[i+1] != 'end'):
                     signals = self.addSignal(signals, i, cs, true_code, declare_sig=True)
             elif(in_gens):
+                #todo : add generics as constants to be written to declarations
                 pass
         pass
         signals_txt = ''
@@ -66,7 +232,7 @@ class Vhdl:
         #print(signals_txt)
         return signals_txt
 
-
+    #write out the mapping instance of an entity (can be pure instance using 'entity' keyword also)
     def writeComponentMapping(self, pureEntity=False, lib=''):
         true_code = self.generateCodeStream(True, True, "(",")",":",";",',')
         cs = self.generateCodeStream(False, True, "(",")",":",";",',')
@@ -101,7 +267,6 @@ class Vhdl:
                     gens = self.addSignal(gens, i, cs, true_code, declare_sig=False)
                 pass
             pass
-
         #print("generics",gens)
         #print("signals",signals)
         mapping_txt = "uX : "+entity_name+"\n"
@@ -133,6 +298,7 @@ class Vhdl:
         #print(mapping_txt)
         return mapping_txt
 
+    #write out the entity but as a component
     def writeComponentDeclaration(self):
         declaration_txt = ''
         with open(self._file_path, 'r') as file:
@@ -153,7 +319,6 @@ class Vhdl:
                     declaration_txt = declaration_txt + line
         #print(declaration_txt)
         return declaration_txt
-        pass
     
     #turn a vhdl file in to a string of words
     def generateCodeStream(self, keep_case, keep_term, *extra_parsers):
@@ -234,157 +399,5 @@ class Vhdl:
                             code_stream = code_stream + [sliced]
         #print(code_stream)
         return code_stream
-
-    #function to determine required modules for self units
-    def decipher(self, design_book, cur_lib):
-        log.info("Deciphering VHDL file...")
-        log.info(self._file_path)
-        #parse into words
-        cs = self.generateCodeStream(False, False, "(",")",":",";")
-
-        def splitBlock(name):
-            specs = name.split('.')
-            if(name.find('.') == -1):
-                return '',''
-            if(specs[0] == 'work'):
-                specs[0] = cur_lib
-            return specs[0],specs[1]
-        #find all design unit names (package calls or entity calls) and trace it back in design_book to the
-        #block that is covers, this is a dependency,
-
-        #libraries found with the "library" keyword span over all units in the current file
-        library_declarations = [] 
-        #units being used with the "use" keyword span over the following unit in the file and resets
-        use_packages = []
-
-        in_pkg = in_body = in_true_body = False
-        in_entity = in_arch = in_true_arch = False
-        unit_name = arch_name = body_name =  None
-        isEnding = False
-
-        def resetNamespace(uses):
-            for u in uses:
-                design_book[cur_lib][unit_name].addRequirement(u)
-            uses = []
-            return uses
-
-        #iterate through the code stream, identifying keywords as they come
-        for i in range(0,len(cs)):
-            cur_word = cs[i]
-            #add to file's global library calls
-            if(cur_word == 'library'):
-                if(cs[i+1] in design_book.keys()):
-                    library_declarations.append(cs[i+1])
-            elif(cur_word == 'use'):
-                # this is a unit being used for the current unit being evaluated
-                L,U = splitBlock(cs[i+1])
-                if(L in design_book.keys()):
-                    use_packages.append(design_book[L][U])
-            elif(cur_word == 'entity'):
-                # this is ending a entity declaration
-                if(isEnding):
-                    in_entity = isEnding = False
-                # this is the entity declaration
-                elif(not in_arch):
-                    in_entity = True
-                    unit_name = cs[i+1]
-                # this is a component instantiation
-                elif(in_arch and in_true_arch):
-                    L,U = splitBlock(cs[i+1])
-                    if(L in design_book.keys()):
-                        use_packages.append(design_book[L][U])
-                    pass
-                pass
-            elif(cur_word == 'port'):
-                #this entity has a ports list and therefore is not a testbench
-                if(in_entity):
-                    design_book[cur_lib][unit_name].unsetTB()
-            elif(cur_word == ":"):
-                # todo - entity instantiations from within deep architecture
-                if(in_true_arch):
-                    P,U = splitBlock(cs[i+1])
-                    for lib in library_declarations:
-                        if(P in design_book[lib].keys()):
-                            use_packages.append(design_book[lib][U])
-                pass
-            elif(cur_word == 'architecture'):
-                # this is ending an architecture section
-                if(isEnding):
-                    use_packages = resetNamespace(use_packages)
-                    in_arch = in_true_arch = isEnding = False
-                # this is the architecture naming
-                else:
-                    in_arch = True
-                    arch_name = cs[i+1]
-                pass
-            elif(cur_word == "component"):
-                # todo - component declarations from within shallow architecture
-                pass
-            elif(cur_word == "begin"):
-                # this is entering the deep architecture
-                if(in_arch):
-                    in_true_arch = True
-                # this is entering the deep package body
-                elif(in_body):
-                    in_true_body = True
-            elif(cur_word == 'package'):
-                if(isEnding):
-                    use_packages = resetNamespace(use_packages)
-                    in_pkg = in_body = in_true_body = isEnding = False
-                else:
-                    in_pkg = True
-                    # this is a package declaration
-                    if(cs[i+1] != 'body'):
-                        unit_name = cs[i+1]
-                    # this is a package body
-                    else:
-                        in_body = True
-                        # skip over 'body' keyword to get to body name
-                        body_name = cs[i+2]
-            elif(cur_word == 'end'):
-                isEnding = True
-                pass
-            elif(cur_word == unit_name):
-                # this is ending the unit declaration
-                if(isEnding):
-                    if(in_true_body):
-                        use_packages = resetNamespace(use_packages)
-                    in_entity = in_pkg = in_body = in_true_body = isEnding = False
-                else:
-                    pass
-            elif(cur_word == arch_name):
-                # this is ending the architecture section
-                if(isEnding):
-                    use_packages = resetNamespace(use_packages)
-                    in_arch = in_true_arch = False
-                else:
-                    pass
-            elif(cur_word == body_name):
-                # this is ending the package body section
-                if(isEnding):
-                    use_packages = resetNamespace(use_packages)
-                    in_body = in_true_body = False
-                else:
-                    pass
-            pass
-
-        #print("===UNIT====",cur_lib,unit_name)
-
-        #print("===USING===",use_packages)
-        #print("===LIBS====",library_declarations)
-        return design_book
-
-    def grabComponents(self, filepath, lib):
-        comp_list = list()
-        with open(filepath, 'r') as file:
-            for line in file.readlines():
-                words = line.split()
-                if(len(words) == 0): #skip if its a blank line
-                    continue
-                if(words[0].lower() == "component"):
-                    comp_list.append(lib+'.'+words[1].lower())
-            file.close()
-        #print("Components:",comp_list)
-        return comp_list
 
     pass
