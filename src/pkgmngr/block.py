@@ -543,7 +543,7 @@ integrates: {}
             return self._top
         units = self.grabUnits()
         top_contenders = list(units[self.getLib()].keys())
-        log.debug(top_contenders)
+        #log.debug(top_contenders)
         self._top = None
         for name,unit in list(units[self.getLib()].items()):
             #if the entity is value under this key, it is lower-level

@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-from genericpath import isdir
 import os, sys, shutil
-import yaml, glob
 from .block import Block
 from .__version__ import __version__
 from .registry import Registry
-from .graph import Graph
 from .apparatus import Apparatus as apt
 from .market import Market
 import logging as log
-from ordered_set import OrderedSet
 from .unit import Unit
 
 class legoHDL:
+
+    #! === INITIALIZE ===
 
     def __init__(self):
 
@@ -32,7 +30,6 @@ class legoHDL:
         if(command == '--version'):
             print(__version__)
             exit()
-            pass
         
         apt.load() #load settings.yml
         self.BlockPKG = None
@@ -45,6 +42,8 @@ class legoHDL:
             exit()
         self.parse(command, package, options)
         pass
+
+    #! === INSTALL COMMAND ===
 
     def genPKG(self, title):
         cap = None
@@ -168,6 +167,8 @@ class legoHDL:
         shutil.copy(filename, os.path.expanduser("~/.vhdl_ls.toml"))
         pass
 
+    #! === UNINSTALL COMMAND ===
+
     def uninstall(self, pkg, opt=None):
         #remove from cache
         l,n = Block.split(pkg)
@@ -203,35 +204,12 @@ class legoHDL:
         #update current map.toml as well
         shutil.copy(filename, os.path.expanduser("~/.vhdl_ls.toml"))
         pass
-    
-    @DeprecationWarning
-    def recurseScan(self, dep_list, label_list):
-        if(len(dep_list) == 0):
-            return label_list
-        #go to YML of dependencies and add edges to build dependency tree
-        for d in dep_list:
-            l,n = Block.split(d)
-            n = n.replace("_pkg", "")
-            if(os.path.isfile(apt.WORKSPACE+"cache/"+l+"/"+n+"/"+apt.MARKER)):
-                #here is where we check for matching files with custom recursive labels
-                for key,val in apt.SETTINGS['label'].items():
-                    ext,recur = val
-                    if(recur == True): #recursive
-                        results = glob.glob(apt.WORKSPACE+"cache/"+l+"/"+n+"/**/*"+ext, recursive=True)
-                        for find in results:
-                            label_list.append("@"+key+" "+find)
-                        pass
-                #open the metadata to retrieve data to be used to build dependency chain
-                with open(apt.WORKSPACE+"cache/"+l+"/"+n+"/"+apt.MARKER, "r") as file:
-                    tmp = yaml.load(file, Loader=yaml.FullLoader)
-            else:
-                continue
-            label_list = self.recurseScan(tmp['derives'], label_list)
-        return label_list
 
     #TO-DO: make std version option checker
     def validVersion(self, ver):
         pass
+
+    #! === BUILD COMMAND ===
 
     def build(self, script):
         arg_start = 3
@@ -258,6 +236,8 @@ class legoHDL:
             else:
                 cmd = cmd + arg + " "
         os.system(cmd)
+
+    #! === EXPORT/GRAPH COMMAND ===
 
     def export(self, cap, top=None, tb=None):
         log.info("Exporting...")
@@ -324,35 +304,6 @@ class legoHDL:
         print("success")
         pass
 
-    def recursiveGraph(self, cap, grph, lbls, viewed):
-        #find any project-level labels (must be enabled as recursive)
-        for label,ext in apt.SETTINGS['label']['recursive'].items():
-            files = cap.gatherSources(ext=[ext])
-            for f in files:
-                lbls.append("@"+label+" "+f)
-
-        #grab only source-design entities (its an external referenced project)
-        units = cap.grabUnits(excludeTB=True)
-        for name,unit in list(units[cap.getLib()].items()):
-            #print(name)
-            grph.addLeaf(unit)
-            #make the connections between a unit and its dependencies
-            for dep in unit.getRequirements():
-                grph.addEdge(unit.getFull(), dep.getFull())
-                pass
-                #only go to cache if the if the requirement is not a part of the current block
-                if(dep.getLib() != cap.getLib() and dep.getBlock() != cap.getName()):
-                    #create project object based on this external package
-                    ext_cap = self.db.getCaps("cache")[dep.getLib()][dep.getBlock()]
-                    blk = ext_cap.getTitle()
-                    if(blk not in viewed):
-                        #print("NEXT CAP:",ext_cap.getTitle())
-                        viewed.append(ext_cap.getTitle())
-                        #recursively feed into dependency tree
-                        grph, lbls, viewed = self.recursiveGraph(ext_cap, grph, lbls, viewed)
-            pass
-        return grph, lbls, viewed
-
     def formGraph(self, cap):
         log.info("Generating dependency tree...")
         #start with top unit (returns all units if no top unit is found (packages case))
@@ -377,7 +328,6 @@ class legoHDL:
     #given a dependency graph, write out the actual list of files needed
     def compileList(self, block, unit_order):
         recipe_list = []
-
         for u in unit_order:
             line = ''
             #this unit comes from an external block so it is a library file
@@ -393,8 +343,9 @@ class legoHDL:
             line = line + u.getFile()
             #add to recipe list
             recipe_list.append(line)
-
         return recipe_list
+
+    #! === DOWNLOAD COMMAND ===
 
     #will also install project into cache and have respective pkg in lib
     def download(self, title):
@@ -429,6 +380,8 @@ class legoHDL:
         print("success")
         pass
 
+    #! === RELEASE COMMAND ===
+
     def upload(self, cap, options=None):
         err_msg = "Flag the next version for release with one of the following args:\n"\
                     "\t[-v0.0.0 | -maj | -min | -fix]"
@@ -451,6 +404,8 @@ class legoHDL:
         self.install(cap.getTitle(), cap.getVersion())
         log.info(cap.getLib()+"."+cap.getName()+" is now available as version "+cap.getVersion()+".")
         pass
+
+    #! === CONFIG COMMAND ===
 
     def setSetting(self, options, choice):
         if(len(options) == 0):
@@ -626,6 +581,8 @@ class legoHDL:
         apt.save()
         log.info("Setting saved successfully.")
         pass
+
+    #! === INIT COMMAND ===
     
     #TO-DO: implement
     def convert(self, title):
@@ -671,10 +628,7 @@ class legoHDL:
         cap.create(fresh=False, git_exists=git_exists)
         pass
 
-    def inventory(self, options):
-        self.db.listCaps(options)
-        print()
-        pass
+    #! === DEL COMMAND ===
 
     def cleanup(self, cap, force=False):
         if(not cap.isValid()):
@@ -708,6 +662,13 @@ class legoHDL:
             self.uninstall(cap.getTitle())
             log.info("Uninstalled "+cap.getTitle()+" from cache.")
         #delete the module remotely?
+        pass
+
+    #! === LIST COMMAND ===
+
+    def inventory(self, options):
+        self.db.listCaps(options)
+        print()
         pass
 
     def listLabels(self):
@@ -772,6 +733,8 @@ class legoHDL:
         else:
             log.info("No scripts added!")
         pass
+
+    #! === PARSING ===
 
     def parse(self, cmd, pkg, opt):
         #check if we are in a project directory (necessary to run a majority of commands)
@@ -988,6 +951,8 @@ class legoHDL:
         else:
             print("Invalid command; type \"legohdl help\" to see a list of available commands")
         pass
+
+    #! === HELP COMMAND ===
 
     def commandHelp(self, cmd):
         def printFmt(cmd,val,options=''):
