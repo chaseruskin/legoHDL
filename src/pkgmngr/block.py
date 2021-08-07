@@ -5,7 +5,7 @@ import glob, git
 import logging as log
 from .market import Market
 from .apparatus import Apparatus as apt
-from .vhdl2 import Vhdl
+from .vhdl import Vhdl
 from .unit import Unit
 
 
@@ -473,39 +473,24 @@ integrates: {}
         if(unit == None):
             unit = []
             log.error("Nothing to build! Giving all project files")
-            for L,U in self.grabUnits().items():
+            for U in self.grabUnits().values():
                 if(U.getBlock() == self.getName() and U.getLib() == self.getLib()):
                     unit.append(U)
             return unit
         else:
             return [unit]
 
-    def updateDerivatives(self):
-
-        #recursively find any external blocks that are used in the hierarchy
-        def recursion(u, d_sett):
-            dpnd = u.getRequirements()
-            for d in dpnd:
-                if(d.getBlock() == self.getName() and d.getLib() == self.getLib()):
-                    d_sett = recursion(d, d_sett)
-                else:
-                    d_sett.add(d.getLib()+"."+d.getBlock())
-            return d_sett
-
-        units = self.getHighestUnit()
-        d_set = set()
-        for u in units:
-            d_set = recursion(u, d_set)
-        print("Derives:",d_set)
+    def updateDerivatives(self, block_list):
+        #print("Derives:",block_list)
         update = False
-        if(len(self.__metadata['derives']) != len(d_set)):
+        if(len(self.__metadata['derives']) != len(block_list)):
             update = True
-        for d in d_set:
-            if(d not in self.__metadata['derives']):
+        for b in block_list:
+            if(b not in self.__metadata['derives']):
                 update = True
                 break
         if(update):
-            self.__metadata['derives'] = list(d_set)
+            self.__metadata['derives'] = list(block_list)
             self.pushYML("Updates project derivatives")
         pass
 
@@ -568,7 +553,7 @@ integrates: {}
             self._top = units[self.getLib()][top_contenders[0]]
 
             log.info("DETECTED TOP-LEVEL ENTITY: "+self._top.getName())
-            bench = self.identifyBench(self._top.getName(), save=True)
+            self.identifyBench(self._top.getName(), save=True)
             #break up into src_dir and file name
             #add to metadata, ensure to push meta data if results differ from previously loaded
             if(self._top.getName() != self.getMeta("toplevel")):
@@ -584,7 +569,7 @@ integrates: {}
             return self._bench
         units = self.grabUnits()
         self._bench = None
-        for name,unit in list(units[self.getLib()].items()):
+        for unit in list(units[self.getLib()].values()):
             for dep in unit.getRequirements():
                 if(dep.getLib() == self.getLib() and dep.getName() == entity_name and unit.isTB()):
                     self._bench = unit
@@ -600,6 +585,7 @@ integrates: {}
             log.error("No testbench configured for this top-level entity.")
             return None
 
+    #helpful for readable debugging
     def printUnits(self):
         print("===UNIT BOOK===")
         for L in self.grabUnits().keys():
@@ -612,18 +598,18 @@ integrates: {}
     def grabUnits(self):
         if(hasattr(self, "_unit_bank")):
             return self._unit_bank
-        #get all units (not filled in)
+        #get all possible units (status: incomplete)
         self._unit_bank = self.grabDesigns("cache","current")
-        #gather all project-level VHDL source files
-        srcs = self.gatherSources()
-        #decipher every VHDL source file
-        for f in srcs:
-            f = apt.fs(f)
-            self._unit_bank = Vhdl(f).decipher(self._unit_bank, self.getLib())
+       
+        #todo : only start from top-level unit if it exists
+        #gather all project-level units
+        project_level_units = self.grabDesigns("current")[self.getLib()]
+        for unit in project_level_units.values():
+            self._unit_bank = unit.getVHD().decipher(self._unit_bank, self.getLib())
         #self.printUnits()
         return self._unit_bank
 
-    #return empty unit objects from cache and/or current block
+    #return incomplete unit objects from cache and/or current block
     def grabDesigns(self, *args):
         design_book = dict()
         if("current" in args):
@@ -645,16 +631,22 @@ integrates: {}
 
         for f in files:
             L,N = self.grabExternalProject(f)
+            #do not add the cache files of the current level project
+            if(L == self.getLib() and N == self.getName()):
+                continue
             with open(f, 'r') as file:
                 for line in file.readlines():
                     words = line.split()
-                    if(len(words) == 0): #skip if its a blank line
+                    #skip if its a blank line
+                    if(len(words) == 0): 
                         continue
+                    #create new library dictionary if DNE
                     if(L not in self._cache_designs.keys()):
                         self._cache_designs[L] = dict()
-                    
+                    #add entity units
                     if(words[0].lower() == "entity"):
                         self._cache_designs[L][words[1].lower()] = Unit(f,Unit.Type.ENTITY,L,N,words[1].lower())
+                    #add package units
                     elif((words[0].lower() == "package" and words[1].lower() != 'body')):
                         self._cache_designs[L][words[1].lower()] = Unit(f,Unit.Type.PACKAGE,L,N,words[1].lower())
                 file.close()
@@ -672,13 +664,16 @@ integrates: {}
             with open(f, 'r') as file:
                 for line in file.readlines():
                     words = line.split()
-                    if(len(words) == 0): #skip if its a blank line
+                    #skip if its a blank line
+                    if(len(words) == 0): 
                         continue
+                    #create new library dictionary if DNE
                     if(L not in self._cur_designs.keys()):
                         self._cur_designs[L] = dict()
+                    #add entity units
                     if(words[0].lower() == "entity"):
-                        #print(words[1].lower())
                         self._cur_designs[L][words[1].lower()] = Unit(f,Unit.Type.ENTITY,L,N,words[1].lower())
+                    #add package units
                     elif((words[0].lower() == "package" and words[1].lower() != 'body')):
                         self._cur_designs[L][words[1].lower()] = Unit(f,Unit.Type.PACKAGE,L,N,words[1].lower())
                 file.close()

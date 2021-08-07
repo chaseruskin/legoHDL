@@ -1,5 +1,4 @@
 #graph module used to generate flat dependency tree, topologically sort it
-from .entity import Entity
 from ordered_set import OrderedSet
 import logging as log
 

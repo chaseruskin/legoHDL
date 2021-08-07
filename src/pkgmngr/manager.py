@@ -300,7 +300,7 @@ class legoHDL:
 
         output.close()
 
-        cap.updateDerivatives()
+        cap.updateDerivatives(block_order[:len(block_order)-1])
         print("success")
         pass
 
@@ -323,7 +323,7 @@ class legoHDL:
             print(b,end=' -> ')
         print()
 
-        return unit_order,block_order
+        return unit_order,list(block_order)
 
     #given a dependency graph, write out the actual list of files needed
     def compileList(self, block, unit_order):

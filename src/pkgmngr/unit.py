@@ -1,5 +1,5 @@
 from enum import Enum
-from .vhdl2 import Vhdl
+from .vhdl import Vhdl
 from .graph import Graph
 
 class Unit:
