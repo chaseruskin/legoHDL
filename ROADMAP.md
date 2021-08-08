@@ -7,8 +7,10 @@
 - [ ] change .lego.lock to Block.lock
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all legal pieces are available
 
+- [ ] improve list by adding an option to search (legohdl list util.m, legohdl list gfx)
 
-- [ ] rewrite how config command deletes
+- [ ] provide meaningful feedback if a desired version for release is invalid (what's the next possible version?)
+- [ ] rewrite how config command deletes (maybe use del command with flags?)
 - [ ] see if improvements can be made to "set settings" code (config command)
 
 
