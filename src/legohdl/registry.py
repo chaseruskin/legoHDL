@@ -30,7 +30,14 @@ class Registry:
         self.__registry_path = apt.HIDDEN+"registry/"
         pass
 
-    def listBlocks(self, options):
+    def listBlocks(self, search_for, options):
+        i_dot = search_for.find('.')
+        search_blk = ''
+        search_lib = search_for          
+        if(i_dot > -1):
+            search_lib = search_for[:i_dot]
+            search_blk = search_for[i_dot+1:]
+
         reg = None
         if(options.count("local") or not apt.linkedMarket()):
             reg = self.getBlocks("local","cache")
@@ -61,7 +68,9 @@ class Registry:
         print('{:<12}'.format("Library"),'{:<22}'.format("Module"),'{:<12}'.format("Status"),'{:<10}'.format("Version"))
         print("-"*12+" "+"-"*22+" "+"-"*12+" "+"-"*8)
         for lib,prjs in reg.items():
-            for blk in prjs.values():
+            for name,blk in prjs.items():
+                if(not (lib.startswith(search_lib) and name.startswith(search_blk))):
+                    continue
                 status = '-'
                 ver = ''
                 info = ''

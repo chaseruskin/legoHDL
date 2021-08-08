@@ -2,17 +2,10 @@
 
 - [ ] implement versioning (folders for each version created on-demand)
 - [ ] auto-install dependencies if found in remote (occurs on export command)
-- [ ] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace)
+- [!] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace)
 
-- [ ] change .lego.lock to Block.lock
+- [!] change .lego.lock to Block.lock
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all legal pieces are available
-
-- [ ] improve list by adding an option to search (legohdl list util.m, legohdl list gfx, legohdl list .j)
-
-- [ ] provide meaningful feedback if a desired version for release is invalid (what's the next possible version?)
-- [ ] rewrite how config command deletes (maybe use del command with flags?)
-- [ ] see if improvements can be made to "set settings" code (config command)
-
 
 - [ ] implement additional "help" command documentation
 
@@ -23,6 +16,10 @@
 
 
 __Completed__
+- [-] see if improvements can be made to "set settings" code (config command)
+- [x] rewrite how config command deletes (maybe use del command with flags?) -> uses "del" command w/ flags
+- [x] provide meaningful feedback if a desired version for release is invalid (what's the next possible version?)
+- [x] improve list by adding an option to search (legohdl list util.m, legohdl list gfx, legohdl list .j)
 - [x] rename "cap" functions to "block"
 - [x] investigate using "work." on one instance in a library when in a different block using that other block
 - [x] test using in-line external package calls within another package in a project (within package body)

@@ -21,7 +21,7 @@ class Market:
                 log.warning("No remote repository configured for "+self._name)
                 url_name = self._name
             os.rename(apt.HIDDEN+"registry/"+url_name, self._local_path)
-
+            
         self._repo = git.Repo(self._local_path)
         pass
 

@@ -67,9 +67,10 @@ class Vhdl:
                 # this is a unit being used for the current unit being evaluated
                 L,U = splitBlock(cs[i+1])
                 if(L in design_book.keys()):
+                    #add this package as a key/value pair with its components if it has the ".all"
                     if(cs[i+1].endswith(".all")):
-                        print("THIS PACKAGE ALLOWS FOR ALL COMPONENTS")
                         components_on_standby[L+'.'+U] = self.grabComponents(design_book[L][U].getFile())
+                    #add the package unit itself
                     use_packages.append(design_book[L][U])
             elif(code_word == 'entity'):
                 # this is ending a entity declaration

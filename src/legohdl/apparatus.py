@@ -86,6 +86,17 @@ workspace: {}
             open(workspace_dir+"map.toml", 'w').write("[libraries]\n")
         if(not cls.inWorkspace()):
             cls.SETTINGS['active-workspace'] = name
+
+    @classmethod
+    def confirmation(cls, prompt):
+        log.warning(prompt+" [y/n]")
+        verify = input().lower()
+        while True:
+            verify = input("[y/n]").lower()
+            if(verify == 'y'):
+                return True
+            elif(verify == 'n'):
+                return False
     
     @classmethod
     def save(cls):

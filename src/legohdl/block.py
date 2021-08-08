@@ -96,10 +96,11 @@ class Block:
         return self.getMeta('version')
 
     def release(self, ver='', options=None):
-        if(ver != '' and self.biggerVer(ver,self.getVersion()) == self.getVersion()):
-            exit(log.error("Invalid version selection!"))
         major,minor,patch = self.sepVer(self.getVersion())
-        log.info("Uploading v"+str(major)+"."+str(minor)+"."+str(patch))
+        if(ver != '' and self.biggerVer(ver,self.getVersion()) == self.getVersion()):
+            next_min_version = "v"+str(major)+"."+str(minor)+"."+str(patch+1)
+            exit(log.error("Invalid version selection! Next minimum version is: "+next_min_version))
+        print("Uploading v"+str(major)+"."+str(minor)+"."+str(patch),end='')
         if(ver == ''):
             if(options.count("maj")):
                 major += 1
@@ -175,9 +176,6 @@ integrates: {}
         first_dot = ver.find('.')
         last_dot = ver.rfind('.')
 
-        major = int(ver[:first_dot])
-        minor = int(ver[first_dot+1:last_dot])
-        patch = int(ver[last_dot+1:])
         try:
             r_major = int(ver[:first_dot])
         except:

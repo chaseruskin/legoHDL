@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from genericpath import isdir
 import os, sys, shutil
 from .block import Block
 from .__version__ import __version__
@@ -413,7 +414,7 @@ class legoHDL:
 
     #! === CONFIG COMMAND ===
 
-    def setSetting(self, options, choice):
+    def setSetting(self, options, choice, delete=False):
         if(len(options) == 0):
             log.error("No setting was flagged to as an option")
             return
@@ -431,47 +432,81 @@ class legoHDL:
         if(eq == -1):
             val = ''
             key = choice
+        if(delete):
+            log.info("Deleting from setting: "+options[0])
+            st = options[0].lower()
+            #delete a key/value pair from the labels
+            if(st == 'label'):
+                if(choice in apt.SETTINGS[st]['recursive'].keys()):
+                    del apt.SETTINGS[st]['recursive'][choice]
+                if(choice in apt.SETTINGS[st]['shallow'].keys()):
+                    del apt.SETTINGS[st]['shallow'][choice]
+            #delete a key/value pair from the scripts or workspaces
+            elif(st == 'script' or st == 'workspace' or st == 'market'):
+                if(choice in apt.SETTINGS[st].keys()):
+                    #print("delete")
+                    #update active workspace if user deleted the current workspace
+                    if(st == 'workspace'):
+                        if(apt.SETTINGS['active-workspace'] == choice):
+                            apt.SETTINGS['active-workspace'] = None
+                            #prompt user to verify to delete active workspace
+                            verify = apt.confirmation("Are you sure you want to delete the active workspace?")
+                            if(not verify):
+                                log.info("Command cancelled.")
+                                return
+                        #move forward with workspace removal
+                        bad_directory = apt.HIDDEN+"workspaces/"+choice
+                        print(bad_directory)
+                        if(os.path.isdir(bad_directory)):
+                            shutil.rmtree(bad_directory)
+                            log.info("Deleted workspace directory: "+bad_directory)
+                    elif(st == 'market'):
+                        Market(key,val).delete()
+                        #remove from all workspace configurations
+                        for nm in apt.SETTINGS['workspace'].keys():
+                            if(key in apt.SETTINGS['workspace'][nm]['market']):
+                                apt.SETTINGS['workspace'][nm]['market'].remove(key)
+                            pass
+                    del apt.SETTINGS[st][choice]
+
+            apt.save()
+            log.info("Setting saved successfully.")
+            return
         if(options[0] == 'active-workspace'):
             if(choice not in apt.SETTINGS['workspace'].keys()):
                 exit(log.error("Workspace not found!"))
             else:
                 #copy the map.toml for this workspace into user root for VHDL_LS
-                shutil.copy(apt.HIDDEN+choice+"/map.toml", os.path.expanduser("~/.vhdl_ls.toml"))
+                shutil.copy(apt.HIDDEN+"workspaces/"+choice+"/map.toml", os.path.expanduser("~/.vhdl_ls.toml"))
                 pass
-
-        if(options[0] == 'market-append' and key in apt.SETTINGS['market'].keys()):
-            if(key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
-                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market'].append(key)
-            pass
-        elif(options[0] == 'market-rm'):
-            if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
-                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market'].remove(key)
-            pass
+        #invalid option flag
+        if(not options[0] in apt.SETTINGS.keys()):
+            exit(log.error("No setting exists under that flag"))
         elif(options[0] == 'market'):
             #@IDEA automatically appends new config to current workspace, can be skipped with -skip
-            #entire wipe if wihout args and value is None
-            #remove only from current workspace with -rm
-            #append to current -workspace with -append
-            #add/change value to all-remote list
-            mkt = Market(key,val) #create market object!    
-            if(val != ''): #only create remote in the list
+            #remove from current workspace with -remove
+            #append to current workspace with -append
+
+            #allow for just referencing the market if trying to append to current workspace
+            if(val == '' and (options.count("append") or options.count("remove"))):
+                pass
+            else:
+                #add/change value to all-remote list
+                mkt = Market(key,val) #create market object!  
+                #only create remote in the list
                 if(key in apt.SETTINGS['market'].keys()):
-                    mkt.setRemote(val) #market name already exists
+                    #market name already exists
+                    mkt.setRemote(val) 
+                #set to null if the tried remote DNE
+                if(not mkt.isRemote()):
+                    val = None
                 apt.SETTINGS['market'][key] = val
-                
-                if(options.count("append") and key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']): # add to active workspaces
-                    apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market'].append(key)
-            elif(key in apt.SETTINGS['market'].keys()):
-                del apt.SETTINGS['market'][key]
-                mkt.delete()
-                #remove from all workspace configurations
-                for nm,ws in apt.SETTINGS['workspace'].items():
-                    if(key in apt.SETTINGS['workspace'][nm]['market']):
-                        apt.SETTINGS['workspace'][nm]['market'].remove(key)
-                    pass
-        elif(not options[0] in apt.SETTINGS.keys()):
-            exit(log.error("No setting exists under that flag"))
-            return
+            # add to active workspace markets
+            if(options.count("append") and key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']): 
+                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market'].append(key)
+            # remove from active workspace markets
+            elif(options.count("remove") and key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
+                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market'].remove(key)
         # WORKSPACE CONFIGURATION
         elif(options[0] == 'workspace'):
             #create entire new workspace settings
@@ -499,11 +534,8 @@ class legoHDL:
                         continue
                     if rem not in apt.SETTINGS[options[0]][key]['market']:
                         apt.SETTINGS[options[0]][key]['market'].append(rem)
-            #empty value -> deletion of workspace from list
             else:
-                #will not delete old workspace directories but can remove from list
-                if(key in apt.SETTINGS[options[0]].keys()):
-                    del apt.SETTINGS[options[0]][key]
+                exit(log.error("Workspace not added. Provide a local path for the workspace"))
             pass
         # BUILD SCRIPT CONFIGURATION
         elif(options[0] == 'script'):
@@ -524,7 +556,7 @@ class legoHDL:
                     oldPath = p
                     break
             if(path == ''):
-                 exit(log.error("Could not an accepted file"))
+                 exit(log.error("Could not find an accepted file"))
             #reassemble val with new file properly formatted filepath
             val = cmd
             for i in range(len(args)):
@@ -563,7 +595,7 @@ class legoHDL:
         # LABEL CONFIGURATION
         elif(options[0] == 'label'):
             depth = "shallow"
-            if(options.count("recur")):
+            if(options.count("recursive")):
                 depth = "recursive"
             if(val == ''): #signal for deletion
                 if(isinstance(apt.SETTINGS[options[0]],dict)):
@@ -672,8 +704,8 @@ class legoHDL:
 
     #! === LIST COMMAND ===
 
-    def inventory(self, options):
-        self.db.listBlocks(options)
+    def inventory(self, search_for, options):
+        self.db.listBlocks(search_for.lower(), options)
         print()
         pass
 
@@ -836,12 +868,19 @@ class legoHDL:
             self.blockCWD.getMeta()['summary'] = description
             self.blockCWD.pushYML("Updates project summary")
             pass
-        elif(command == 'del' and self.db.blockExists(package, "local")):
-            force = False
-            if(len(options) > 0):
-                if(options[0].lower() == 'u'):
-                    force = True
-            self.cleanup(self.db.getBlocks("local")[L][N], force)
+        elif(command == 'del'):
+            #try to delete a block
+            if(self.db.blockExists(package, "local")):
+                force = False
+                if(len(options) > 0):
+                    if(options[0].lower() == 'u'):
+                        force = True
+                self.cleanup(self.db.getBlocks("local")[L][N], force)
+            #try to delete a setting
+            else:
+                self.setSetting(options, value, delete=True)
+
+
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             if(options.count("script")):
                 self.listScripts()
@@ -852,7 +891,7 @@ class legoHDL:
             elif(options.count("workspace")):
                 self.listWorkspace()
             else:
-                self.inventory(options)
+                self.inventory(package,options)
             pass
         elif(command == "init"):
             self.convert(package)
@@ -928,39 +967,13 @@ class legoHDL:
             formatHelp("update","update installed block to be to the latest version")
             formatHelp("export","generate a recipe file to build the block")
             formatHelp("build","run a custom configured script")
-            formatHelp("del","deletes the block from the local workspace")
-            formatHelp("search","search markets or local workspace for specified block")
+            formatHelp("del","deletes a block from local workspace or a configured setting")
             formatHelp("refresh","sync local markets with their remotes")
             formatHelp("port","print ports list of specified entity")
             formatHelp("show","read further detail about a specified block")
             formatHelp("summ","add description to current block")
             formatHelp("config","set package manager settings")
             print("\nType \'legohdl help <command>\' to read more on entered command.")
-            exit()
-            print("\nOptions:\
-            \n\t-v0.0.0\t\tspecify package version (insert values replacing 0's)\
-            \n\t-:\" \"\t\tproject summary (insert between quotes)\
-            \n\t-i\t\tset installation flag to install package(s) on project creation\
-            \n\t-alpha\t\talphabetical order\
-            \n\t-o\t\topen the project\
-            \n\t-rm\t\tremoves the released package from your local codebase\
-            \n\t-f\t\tforce project uninstallation alongside deletion from local codebase\
-            \n\t-map\t\tprint port mapping of specified package\
-            \n\t-local\t\tset local path setting\
-            \n\t-remote\t\tset remote path setting\
-            \n\t-build\t\tenable listing build scripts\
-            \n\t-editor\t\tset text-editor setting\
-            \n\t-author\t\tset author setting\
-            \n\t-gl-token\t\tset gitlab access token\
-            \n\t-gh-token\t\tset github access token\
-            \n\t-maj\t\trelease as next major update (^.0.0)\
-            \n\t-min\t\trelease as next minor update (-.^.0)\
-            \n\t-fix\t\trelease as next patch update (-.-.^)\
-            \n\t-script\t\tset a script setting\
-            \n\t-label\t\tset a export label setting\
-            \n\t-template\t\ttrigger the project template to open\
-            \n\t-lnk\t\tuse the build script from its specified location- default is to copy\
-            ")
         else:
             print("Invalid command; type \"legohdl help\" to see a list of available commands")
         pass
@@ -975,13 +988,13 @@ class legoHDL:
         if(cmd == ''):
             return
         elif(cmd == "init"):
-            printFmt("init", "<package>")
+            printFmt("init", "<block>")
             pass
         elif(cmd == "new"):
-            printFmt("new","<package>","[-o -<remote-url> -<market-name>")
+            printFmt("new","<block>","[-o -<remote-url> -<market-name>")
             pass
         elif(cmd == "open"):
-            printFmt("open","<package>","[-template -script -settings]")
+            printFmt("open","<block>","[-template -script -settings]")
             pass
         elif(cmd == "release"):
             printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d -strict -request]")
@@ -989,19 +1002,19 @@ class legoHDL:
             print("\n   -request -> will push a side branch to the linked market")
             pass
         elif(cmd == "list"):
-            printFmt("list","\b","[-alpha -local -script -label -market -workspace]")
+            printFmt("list","[search]","[-alpha -local -script -label -market -workspace]")
             pass
         elif(cmd == "install"):
-            printFmt("install","<package>","[-v0.0.0]")
+            printFmt("install","<block>","[-v0.0.0]")
             pass
         elif(cmd == "uninstall"):
-            printFmt("uninstall","<package>")
+            printFmt("uninstall","<block>")
             pass
         elif(cmd == "download"):
-            printFmt("download","<package>","[-v0.0.0 -o]")
+            printFmt("download","<block>","[-v0.0.0 -o]")
             pass
         elif(cmd == "update"):
-            printFmt("update","<package>")
+            printFmt("update","<block>")
             pass
         elif(cmd == "export"):
             printFmt("export","[toplevel]","[-testbench]")
@@ -1012,27 +1025,24 @@ class legoHDL:
             print("   If no script name is specified, it will default to looking for script \"master\"")
             pass
         elif(cmd == "del"):
-            printFmt("del","<package>","[-u]")
-            pass
-        elif(cmd == "search"):
-            printFmt("search","<package>")
+            printFmt("del","<block/value>","[-u | -market | -script | -label | -workspace]")
             pass
         elif(cmd == "port"):
-            printFmt("port","<package>","[-map -inst]")
+            printFmt("port","<block>","[-map -inst]")
             pass
         elif(cmd == "show"):
-            printFmt("show","<package>")
+            printFmt("show","<block>")
             pass
         elif(cmd == "summ"):
             printFmt("summ","[-:\"summary\"]")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","""[-market [-rm | -append] | -author | -script [-lnk] | -label [-recur] | -editor |\n\
-                    \t\t-workspace [-<market-name> ...] | -active-workspace | -market-append | -market-rm]\
+            printFmt("config","<value>","""[-market [-remove | -append] | -author | -script [-lnk] | -label [-recursive] | -editor |\n\
+                    \t\t-workspace [-<market-name> ...] | -active-workspace]\
             """)
             print("\n   Setting [-script], [-label], [-workspace], [-market] requires <value> to be <key>=\"<value>\"")
-            print("   An empty value will signal to delete the key") 
-            print("   legohdl config myWorkspace=\"~/develop/hdl/\" -workspace") 
+            print("   Using -append or -remove does not require the <value> to be <key>\"<value\"")
+            print("   legohdl config lab=\"~/develop/hdl/\" -workspace") 
             pass
         exit()
         pass
