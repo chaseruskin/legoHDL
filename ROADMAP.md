@@ -14,15 +14,13 @@
 - [ ] implement additional "help" command documentation
 
 
-- [ ] rename "cap" functions to "block"
-
-
 - [ ] only do single git push and single git pull when working with a block
 
 - [ ] -all option on graph/export to grab all project-level code
 
 
 __Completed__
+- [x] rename "cap" functions to "block"
 - [x] investigate using "work." on one instance in a library when in a different block using that other block
 - [x] test using in-line external package calls within another package in a project (within package body)
 - [x] allow .all from pkgs with instantiations in entities

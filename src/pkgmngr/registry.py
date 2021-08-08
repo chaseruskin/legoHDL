@@ -30,12 +30,12 @@ class Registry:
         self.__registry_path = apt.HIDDEN+"registry/"
         pass
 
-    def listCaps(self, options):
+    def listBlocks(self, options):
         reg = None
         if(options.count("local") or not apt.linkedMarket()):
-            reg = self.getCaps("local","cache")
+            reg = self.getBlocks("local","cache")
         else:
-            reg = self.getCaps("local","cache","market")
+            reg = self.getBlocks("local","cache","market")
         #alpha sort
         if(options.count('alpha')):
             lib_list = list()
@@ -61,25 +61,25 @@ class Registry:
         print('{:<12}'.format("Library"),'{:<22}'.format("Module"),'{:<12}'.format("Status"),'{:<10}'.format("Version"))
         print("-"*12+" "+"-"*22+" "+"-"*12+" "+"-"*8)
         for lib,prjs in reg.items():
-            for name,cp in prjs.items():
+            for blk in prjs.values():
                 status = '-'
                 ver = ''
                 info = ''
-                L,N = Block.split(cp.getTitle())
-                if(self.capExists(cp.getTitle(), "local")):
+                L,N = Block.split(blk.getTitle())
+                if(self.blockExists(blk.getTitle(), "local")):
                     status = 'dnld'
                     ver = self.getProjectsLocal()[L][N].getMeta("version")
-                elif(self.capExists(cp.getTitle(), "cache")):
+                elif(self.blockExists(blk.getTitle(), "cache")):
                     status = 'instl' 
                     ver = self.getProjectsCache()[L][N].getMeta("version")
-                elif(self.capExists(cp.getTitle(), "market")):
-                    ver = self.getMarketLatestVer(self.getCaps("market")[L][N])
+                elif(self.blockExists(blk.getTitle(), "market")):
+                    ver = self.getMarketLatestVer(self.getBlocks("market")[L][N])
                 else:
                     continue
 
-                if(self.capExists(cp.getTitle(), "market")):
+                if(self.blockExists(blk.getTitle(), "market")):
                     #does this version have a later update available? check its marker files
-                    rem_ver = self.getMarketLatestVer(self.getCaps("market")[L][N])
+                    rem_ver = self.getMarketLatestVer(self.getBlocks("market")[L][N])
                     
                     if(Block.biggerVer(ver,rem_ver) == rem_ver and rem_ver != ver):
                         info = '(update)-> '+rem_ver
@@ -88,11 +88,11 @@ class Registry:
                 print('{:<12}'.format(L),'{:<22}'.format(N),'{:<12}'.format(status),'{:<8}'.format(ver),info)
         pass
 
-    def getMarketLatestVer(self, cap):
-        pathway = apt.fs(cap.getPath()).split('/')
+    def getMarketLatestVer(self, block):
+        pathway = apt.fs(block.getPath()).split('/')
         #remove any additional path that is a specific version
-        if(cap.getVersion() in pathway):
-            pathway.remove(cap.getVersion())
+        if(block.getVersion() in pathway):
+            pathway.remove(block.getVersion())
         ver_dir = ''
         for p in pathway:
             ver_dir = ver_dir + p + "/"
@@ -120,7 +120,7 @@ class Registry:
         base_url = url[:i+i_2]
         return  base_url,tail_url
 
-    def getCaps(self, *args, updt=False):
+    def getBlocks(self, *args, updt=False):
         folders = None
         if(args.count("market")):
             folders = self.getProjectsMarket(updt)
@@ -193,12 +193,12 @@ class Registry:
             #print(lego_files)
             for x in lego_files:
                 path = apt.fs(x.replace(apt.MARKER,""))
-                cap = Block(path=path, excludeGit=True)
-                L,N = Block.split(cap.getTitle())
+                block = Block(path=path, excludeGit=True)
+                L,N = Block.split(block.getTitle())
                 if(L not in self._remote_prjs.keys()):
                     self._remote_prjs[L] = dict()
                 if(N not in self._remote_prjs[L].keys()):
-                    self._remote_prjs[L][N] = cap
+                    self._remote_prjs[L][N] = block
         #print(self._remote_prjs)
         return self._remote_prjs
         pass
@@ -215,10 +215,10 @@ class Registry:
         return self.__galaxy
 
     def availableLibs(self):
-        return list(self.getCaps("local","cache","market").keys())
+        return list(self.getBlocks("local","cache","market").keys())
 
     #use title="lib.*" to check if library exists
-    def capExists(self, title, place, updt=False):
+    def blockExists(self, title, place, updt=False):
         folder = None
         l,n = Block.split(title)
         if(place == "local"):

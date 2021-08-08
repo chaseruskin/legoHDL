@@ -32,8 +32,8 @@ class legoHDL:
             exit()
         
         apt.load() #load settings.yml
-        self.BlockPKG = None
-        self.BlockCWD = None
+        self.blockPKG = None
+        self.blockCWD = None
         #defines path to dir of remote code base
         self.db = Registry(apt.getMarkets())
         if(apt.inWorkspace()):
@@ -46,31 +46,31 @@ class legoHDL:
     #! === INSTALL COMMAND ===
 
     def genPKG(self, title):
-        cap = None
-        if(self.db.capExists(title, "cache", updt=True)):
-            cache = self.db.getCaps("cache")
+        block = None
+        if(self.db.blockExists(title, "cache", updt=True)):
+            cache = self.db.getBlocks("cache")
             l,n = Block.split(title)
-            cap = cache[l][n]
+            block = cache[l][n]
         else:
             exit(log.error("The module is not located in the cache"))
             return
 
-        lib_path = apt.WORKSPACE+"lib/"+cap.getLib()+"/"
+        lib_path = apt.WORKSPACE+"lib/"+block.getLib()+"/"
         os.makedirs(lib_path, exist_ok=True)
         
-        vhd_pkg = open(lib_path+cap.getName()+"_pkg.vhd", 'w')
+        vhd_pkg = open(lib_path+block.getName()+"_pkg.vhd", 'w')
 
-        pkg_entry = "package "+cap.getName()+"_pkg is"
+        pkg_entry = "package "+block.getName()+"_pkg is"
         pkg_close = "end package;"
 
-        pkg_body_entry = "\n\npackage body "+cap.getName()+"_pkg is"
+        pkg_body_entry = "\n\npackage body "+block.getName()+"_pkg is"
         pkg_body_close = "\nend package body;"
 
         pkg_lines = [pkg_entry, pkg_close, pkg_body_entry, pkg_body_close]
 
         #need to look at toplevel VHD file to transfer correct library uses
         #search through all library uses and see what are chained dependencies
-        derivatives = cap.scanLibHeaders(cap.getMeta("toplevel"))
+        derivatives = block.scanLibHeaders(block.getMeta("toplevel"))
         #write in all library and uses
         #print(derivatives)
         for dep in derivatives:
@@ -83,7 +83,7 @@ class legoHDL:
         for line in pkg_lines:
             if not addedCompDec and line.startswith("package"):
                 addedCompDec = True
-                comp = cap.ports(False, cap.getLib(), False)
+                comp = block.ports(False, block.getLib(), False)
                 comp_break = comp.split('\n')
 
                 line = line + "\n"
@@ -96,29 +96,29 @@ class legoHDL:
 
     def install(self, title, ver=None, opt=list()):
         l,n = Block.split(title)
-        cap = None
+        block = None
         cache_path = apt.WORKSPACE+"cache/"
         lib_path = apt.WORKSPACE+"lib/"+l+"/"
         #does the package already exist in the cache directory?
-        if(self.db.capExists(title, "cache", updt=True)):
+        if(self.db.blockExists(title, "cache", updt=True)):
             log.info("The module is already installed.")
             return
-        elif(self.db.capExists(title, "market")):
-            cap = self.db.getCaps("market")[l][n]
+        elif(self.db.blockExists(title, "market")):
+            block = self.db.getBlocks("market")[l][n]
             pass
-        elif(self.db.capExists(title, "local")):
-            cap = self.db.getCaps("local")[l][n]
+        elif(self.db.blockExists(title, "local")):
+            block = self.db.getBlocks("local")[l][n]
         else:
             log.error("The module cannot be found anywhere.")
             return
         # clone the repo -> cache      
         #possibly make directory for cached project
         print("Installing... ",end='')
-        cache_path = cache_path+cap.getLib()+"/"
+        cache_path = cache_path+block.getLib()+"/"
         os.makedirs(cache_path, exist_ok=True)
         #see what the latest version available is and clone from that version unless specified
         #print(rep.git_url)#print(rep.last_version)
-        cap.install(cache_path, ver)
+        block.install(cache_path, ver)
         print("success")
     
         #link it all together through writing paths into "map.toml"
@@ -130,11 +130,11 @@ class legoHDL:
         mapfile = open(filename, 'w')
         inc_paths = list()
         #generate PKG VHD
-        if(cap.getMeta("toplevel") != None):
-            self.genPKG(cap.getTitle())
-            inc_paths.append("\'"+lib_path+cap.getName()+"_pkg.vhd"+"\',\n")
+        if(block.getMeta("toplevel") != None):
+            self.genPKG(block.getTitle())
+            inc_paths.append("\'"+lib_path+block.getName()+"_pkg.vhd"+"\',\n")
 
-        for f in cap.gatherSources():
+        for f in block.gatherSources():
             inc_paths.append("\'"+f+"\',\n")
         inc = False
         found_lib = False
@@ -143,7 +143,7 @@ class legoHDL:
             mapfile.write("[libraries]\n")
 
         for line in cur_lines:
-            if(line.count(cap.getLib()+".files") > 0): #include into already established library section
+            if(line.count(block.getLib()+".files") > 0): #include into already established library section
                 inc = True
                 found_lib = True
             elif(inc and not line.count("]") > 0):
@@ -157,7 +157,7 @@ class legoHDL:
 
         if(len(cur_lines) == 0 or not found_lib):
             #create new library section
-            mapfile.write(cap.getLib()+".files = [\n")
+            mapfile.write(block.getLib()+".files = [\n")
             for p in inc_paths:
                 mapfile.write(p)
             mapfile.write("]\n")
@@ -172,8 +172,8 @@ class legoHDL:
     def uninstall(self, pkg, opt=None):
         #remove from cache
         l,n = Block.split(pkg)
-        if(self.db.capExists(pkg, "cache")):
-            cache = self.db.getCaps("cache")
+        if(self.db.blockExists(pkg, "cache")):
+            cache = self.db.getBlocks("cache")
             cache_path = cache[l][n].getPath()
             shutil.rmtree(cache_path)
             #if empty dir then do some cleaning
@@ -239,10 +239,10 @@ class legoHDL:
 
     #! === EXPORT/GRAPH COMMAND ===
 
-    def export(self, cap, top=None, tb=None):
+    def export(self, block, top=None, tb=None):
         log.info("Exporting...")
-        log.info("Block's path: "+cap.getPath())
-        build_dir = cap.getPath()+"build/"
+        log.info("Block's path: "+block.getPath())
+        build_dir = block.getPath()+"build/"
         #create a clean build folder
         log.info("Cleaning build folder...")
         if(os.path.isdir(build_dir)):
@@ -251,39 +251,39 @@ class legoHDL:
 
         log.info("Finding toplevel design...")
 
-        top_dog,top,tb = cap.identifyTopDog(top, tb)
+        top_dog,top,tb = block.identifyTopDog(top, tb)
         
         output = open(build_dir+"recipe", 'w')    
 
         #mission: recursively search through every src VHD file for what else needs to be included
-        unit_order,block_order = self.formGraph(cap, top_dog)
-        file_order = self.compileList(cap, unit_order)  
+        unit_order,block_order = self.formGraph(block, top_dog)
+        file_order = self.compileList(block, unit_order)  
 
         #add labels in order from lowest-projects to top-level project
         labels = []
         for blk in block_order:
             L,U = Block.split(blk)
             #assign tmp block to the current block
-            if(cap.getTitle() == blk):
-                tmp = cap
+            if(block.getTitle() == blk):
+                tmp = block
             #assign tmp block to the cache block
-            elif(self.db.capExists(blk, "cache")):
-                tmp = self.db.getCaps("cache")[L][U]
+            elif(self.db.blockExists(blk, "cache")):
+                tmp = self.db.getBlocks("cache")[L][U]
             else:
                 log.warning("Cannot locate block "+blk)
                 continue
 
-            if(cap.getTitle() == blk):
-                tmp = cap
+            if(block.getTitle() == blk):
+                tmp = block
             #add any recursive labels
             for label,ext in apt.SETTINGS['label']['recursive'].items():
                 files = tmp.gatherSources(ext=[ext])
                 for f in files:
                     labels.append("@"+label+" "+f)
             #add any project-level labels
-            if(cap.getTitle() == blk):
+            if(block.getTitle() == blk):
                 for label,ext in apt.SETTINGS['label']['shallow'].items():
-                    files = cap.gatherSources(ext=[ext])
+                    files = block.gatherSources(ext=[ext])
                     for f in files:
                         labels.append("@"+label+" "+f)
 
@@ -301,14 +301,14 @@ class legoHDL:
 
         output.close()
 
-        cap.updateDerivatives(block_order[:len(block_order)-1])
+        block.updateDerivatives(block_order[:len(block_order)-1])
         print("success")
         pass
 
-    def formGraph(self, cap, top):
+    def formGraph(self, block, top):
         log.info("Generating dependency tree...")
         #start with top unit (returns all units if no top unit is found (packages case))
-        cap.grabUnits(top, override=True)
+        block.grabUnits(top, override=True)
         hierarchy = Unit.Hierarchy
         hierarchy.output()
         
@@ -321,8 +321,8 @@ class legoHDL:
 
         print('---BLOCK ORDER---')
         #ensure the current block is the last one on order
-        block_order.remove(cap.getTitle())
-        block_order.append(cap.getTitle())
+        block_order.remove(block.getTitle())
+        block_order.append(block.getTitle())
         for b in block_order:
             print(b,end=' -> ')
         print()
@@ -356,37 +356,37 @@ class legoHDL:
         l,n = Block.split(title)
 
         if(True):
-            if(self.db.capExists(title, "cache") and not self.db.capExists(title, "local")):
-                instl = self.db.getCaps("cache")[l][n]
+            if(self.db.blockExists(title, "cache") and not self.db.blockExists(title, "local")):
+                instl = self.db.getBlocks("cache")[l][n]
                 instl.clone(src=instl.getPath())
-                return self.db.getCaps("local",updt=True)[l][n]
+                return self.db.getBlocks("local",updt=True)[l][n]
             exit(log.error("No remote code base configured to download modules"))
 
-        if(not self.db.capExists(title, "market")):
+        if(not self.db.blockExists(title, "market")):
             exit(log.error('Module \''+title+'\' does not exist in market'))
 
         #TO-DO: retesting
-        if(self.db.capExists(title, "local")):
+        if(self.db.blockExists(title, "local")):
             log.info("Module already exists in local workspace- pulling from remote...")
-            self.db.getCaps("local")[l][n].pull()
+            self.db.getBlocks("local")[l][n].pull()
         else:
             log.info("Cloning from market...")
-            self.db.getCaps("market")[l][n].clone()
+            self.db.getBlocks("market")[l][n].clone()
     
         try: #remove cached project already there
             shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/")
         except:
             pass
         #install to cache and generate PKG VHD 
-        cap = self.db.getCaps("local", updt=True)[l][n]  
-        self.install(cap.getTitle(), cap.getVersion())
+        block = self.db.getBlocks("local", updt=True)[l][n]  
+        self.install(block.getTitle(), block.getVersion())
 
         print("success")
         pass
 
     #! === RELEASE COMMAND ===
 
-    def upload(self, cap, options=None):
+    def upload(self, block, options=None):
         err_msg = "Flag the next version for release with one of the following args:\n"\
                     "\t[-v0.0.0 | -maj | -min | -fix]"
         if(len(options) == 0):
@@ -399,16 +399,16 @@ class legoHDL:
         if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == ''):
             exit(log.error(err_msg))
         #ensure top has been identified for release
-        top_dog,_,_ = cap.identifyTopDog(None, None)
+        top_dog,_,_ = block.identifyTopDog(None, None)
         #update block requirements
-        _,block_order = self.formGraph(cap, top_dog)
-        cap.updateDerivatives(block_order)
-        cap.release(ver, options)
-        if(os.path.isdir(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())):
-            shutil.rmtree(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())
+        _,block_order = self.formGraph(block, top_dog)
+        block.updateDerivatives(block_order)
+        block.release(ver, options)
+        if(os.path.isdir(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName())):
+            shutil.rmtree(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName())
         #clone new project's progress into cache
-        self.install(cap.getTitle(), cap.getVersion())
-        log.info(cap.getLib()+"."+cap.getName()+" is now available as version "+cap.getVersion()+".")
+        self.install(block.getTitle(), block.getVersion())
+        log.info(block.getLib()+"."+block.getName()+" is now available as version "+block.getVersion()+".")
         pass
 
     #! === CONFIG COMMAND ===
@@ -601,10 +601,10 @@ class legoHDL:
         #name of package reflects folder, a library name must be specified though
         if(cwd.lower().count(apt.getLocal().lower()) == 0):
             exit(log.error("Cannot initialize outside of workspace"))
-        cap = None
+        block = None
 
         files = os.listdir(cwd)
-        if apt.MARKER in files or self.db.capExists(title, "local") or self.db.capExists(title, "cache") or self.db.capExists(title, "market"):
+        if apt.MARKER in files or self.db.blockExists(title, "local") or self.db.blockExists(title, "cache") or self.db.blockExists(title, "market"):
             log.info("Already a packaged module")
             return
 
@@ -629,21 +629,21 @@ class legoHDL:
             pass
         
         #create marker file
-        cap = Block(title=title, path=cwdb1)
+        block = Block(title=title, path=cwdb1)
         log.info("Creating "+apt.MARKER+" file...")
-        cap.create(fresh=False, git_exists=git_exists)
+        block.create(fresh=False, git_exists=git_exists)
         pass
 
     #! === DEL COMMAND ===
 
-    def cleanup(self, cap, force=False):
-        if(not cap.isValid()):
-            log.info('Module '+cap.getName()+' does not exist locally.')
+    def cleanup(self, block, force=False):
+        if(not block.isValid()):
+            log.info('Module '+block.getName()+' does not exist locally.')
             return
         
-        if(not cap.isLinked() and force):
+        if(not block.isLinked() and force):
             log.warning('No market is configured for this package, if this module is deleted and uninstalled\n\
-            it may be unrecoverable. PERMANENTLY REMOVE '+cap.getTitle()+'? [y/n]\
+            it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'? [y/n]\
             ')
             response = ''
             while(True):
@@ -651,29 +651,29 @@ class legoHDL:
                 if(response.lower() == 'y' or response.lower() == 'n'):
                     break
             if(response.lower() == 'n'):
-                log.info("Module "+cap.getTitle()+' not uninstalled.')
+                log.info("Module "+block.getTitle()+' not uninstalled.')
                 force = False
         #if there is a remote then the project still lives on, can be "redownloaded"
-        print(cap.getPath())
-        shutil.rmtree(cap.getPath())
+        print(block.getPath())
+        shutil.rmtree(block.getPath())
     
         #if empty dir then do some cleaning
-        slash = cap.getPath()[:len(cap.getPath())-2].rfind('/')
-        root = cap.getPath()[:slash+1]
+        slash = block.getPath()[:len(block.getPath())-2].rfind('/')
+        root = block.getPath()[:slash+1]
         if(len(os.listdir(root)) == 0):
             os.rmdir(root)
-        log.info('Deleted '+cap.getTitle()+' from local workspace.')
+        log.info('Deleted '+block.getTitle()+' from local workspace.')
         
         if(force):
-            self.uninstall(cap.getTitle())
-            log.info("Uninstalled "+cap.getTitle()+" from cache.")
+            self.uninstall(block.getTitle())
+            log.info("Uninstalled "+block.getTitle()+" from cache.")
         #delete the module remotely?
         pass
 
     #! === LIST COMMAND ===
 
     def inventory(self, options):
-        self.db.listCaps(options)
+        self.db.listBlocks(options)
         print()
         pass
 
@@ -744,7 +744,7 @@ class legoHDL:
 
     def parse(self, cmd, pkg, opt):
         #check if we are in a project directory (necessary to run a majority of commands)
-        self.BlockCWD = Block(path=os.getcwd()+"/")
+        self.blockCWD = Block(path=os.getcwd()+"/")
    
         command = cmd
         package = pkg
@@ -754,30 +754,30 @@ class legoHDL:
         value = package
         package = package.replace("-", "_")
         if(apt.inWorkspace()):
-            self.BlockPKG = Block(title=package)
+            self.blockPKG = Block(title=package)
 
         L,N = Block.split(package)
         
         #branching through possible commands
         if(command == "install"):
-            print(self.BlockPKG.getTitle())
+            print(self.blockPKG.getTitle())
             ver = None
             if(len(options)):
                 ver = options[0]
-            self.install(self.BlockPKG.getTitle(), ver)
+            self.install(self.blockPKG.getTitle(), ver)
             pass
         elif(command == "uninstall"):
             self.uninstall(package, options) #TO-DO
             pass
-        elif(command == "build" and self.BlockCWD.isValid()):
+        elif(command == "build" and self.blockCWD.isValid()):
             self.build(value)
-        elif(command == "new" and len(package) and not self.BlockPKG.isValid()):
+        elif(command == "new" and len(package) and not self.blockPKG.isValid()):
             if(options.count("file")):
                 options.remove("file")
-                if(self.BlockCWD.isValid()):
+                if(self.blockCWD.isValid()):
                     if(len(options) == 0):
                         exit(log.error("Please specify a file from your template to copy from"))
-                    self.BlockCWD.fillTemplateFile(package, options[0])
+                    self.blockCWD.fillTemplateFile(package, options[0])
                 else:
                     exit(log.error("Cannot create a project file when not inside a project"))
                 return
@@ -804,44 +804,44 @@ class legoHDL:
                     git_url = opt
             print(git_url,mkt_sync)
             log.debug("package name: "+package)
-            self.BlockPKG = Block(title=package, new=True, market=mkt_sync, remote=git_url)
+            self.blockPKG = Block(title=package, new=True, market=mkt_sync, remote=git_url)
 
             if(startup):
-                self.BlockPKG.load()
+                self.blockPKG.load()
             pass
-        elif(command == "release" and self.BlockCWD.isValid()):
+        elif(command == "release" and self.blockCWD.isValid()):
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
-            self.upload(self.BlockCWD, options=options)
+            self.upload(self.blockCWD, options=options)
             if(len(options) == 2 and options.count('d')):
-                self.cleanup(self.BlockCWD, False)
+                self.cleanup(self.blockCWD, False)
             pass
-        elif(command == 'graph' and self.BlockCWD.isValid()):
+        elif(command == 'graph' and self.blockCWD.isValid()):
             top = package
             tb = None
             if(top == ''):
                 top = None
             if(len(options)):
                 tb = options[0]
-            top_dog = self.BlockCWD.identifyTopDog(top, tb)
+            top_dog = self.blockCWD.identifyTopDog(top, tb)
             #generate dependency tree
-            self.formGraph(self.BlockCWD, top_dog)
+            self.formGraph(self.blockCWD, top_dog)
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
-            cap = self.download(package)
+            block = self.download(package)
             if('o' in options):
-                cap.load()
+                block.load()
             pass
-        elif(command == "summ" and self.BlockCWD.isValid()):
-            self.BlockCWD.getMeta()['summary'] = description
-            self.BlockCWD.pushYML("Updates project summary")
+        elif(command == "summ" and self.blockCWD.isValid()):
+            self.blockCWD.getMeta()['summary'] = description
+            self.blockCWD.pushYML("Updates project summary")
             pass
-        elif(command == 'del' and self.db.capExists(package, "local")):
+        elif(command == 'del' and self.db.blockExists(package, "local")):
             force = False
             if(len(options) > 0):
                 if(options[0].lower() == 'u'):
                     force = True
-            self.cleanup(self.db.getCaps("local")[L][N], force)
+            self.cleanup(self.db.getBlocks("local")[L][N], force)
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             if(options.count("script")):
                 self.listScripts()
@@ -858,7 +858,7 @@ class legoHDL:
             self.convert(package)
         elif(command == "refresh"):
             self.db.sync()
-        elif(command == "export" and self.BlockCWD.isValid()): #a visual aide to help a developer see what package's are at the ready to use
+        elif(command == "export" and self.blockCWD.isValid()): #a visual aide to help a developer see what package's are at the ready to use
             #'' and list() are default to pkg and options
             mod = package
             tb = None
@@ -866,7 +866,7 @@ class legoHDL:
                 mod = None
             if(len(options) > 0):
                 tb = options[0]
-            self.export(self.BlockCWD, mod, tb)
+            self.export(self.blockCWD, mod, tb)
             pass
         elif(command == "open"):
             if(apt.SETTINGS['editor'] == None):
@@ -877,12 +877,12 @@ class legoHDL:
                     os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/scripts\"")
             elif(options.count("settings") or package.lower() == "settings"):
                 os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/settings.yml\"")
-            elif(self.db.capExists(package, "local")):
-                self.db.getCaps("local")[L][N].load()
+            elif(self.db.blockExists(package, "local")):
+                self.db.getBlocks("local")[L][N].load()
             else:
                 exit(log.error("No module "+package+" exists in your workspace."))
-        elif(command == "show" and (self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
-            self.db.getCaps("local","cache")[L][N].show()
+        elif(command == "show" and (self.db.blockExists(package, "local") or self.db.blockExists(package, "cache"))):
+            self.db.getBlocks("local","cache")[L][N].show()
             pass
         elif(command == "port"):
             mapp = pure_ent = False
@@ -896,11 +896,11 @@ class legoHDL:
                 package = package[:package.rfind('.')]
 
             inserted_lib = L
-            if(self.BlockCWD.isValid() and self.BlockCWD.getLib() == L):
+            if(self.blockCWD.isValid() and self.blockCWD.getLib() == L):
                 inserted_lib = 'work'
             
-            if((self.db.capExists(package, "local") or self.db.capExists(package, "cache"))):
-                print(self.db.getCaps("local","cache")[L][N].ports(mapp,inserted_lib,pure_ent,ent_name))
+            if((self.db.blockExists(package, "local") or self.db.blockExists(package, "cache"))):
+                print(self.db.getBlocks("local","cache")[L][N].ports(mapp,inserted_lib,pure_ent,ent_name))
             else:
                 exit(log.error("No block exists in local path or workspace cache."))
         elif(command == "config"):
