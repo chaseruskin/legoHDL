@@ -23,6 +23,7 @@ class Vhdl:
                 return '',''
             if(specs[0] == 'work'):
                 specs[0] = cur_lib
+            
             return specs[0],specs[1]
         #find all design unit names (package calls or entity calls) and trace it back in design_book to the
         #block that is covers, this is a dependency,

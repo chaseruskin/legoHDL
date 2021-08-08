@@ -425,7 +425,8 @@ integrates: {}
             ver = self.getVersion()
         
         if(ver == 'v0.0.0'):
-            exit(log.error('No available version'))
+            log.error('No available version')
+            return
 
         log.debug("version "+ver)
         
@@ -616,13 +617,14 @@ integrates: {}
             #reset graph
             Unit.Hierarchy = Graph()
             
-        #get all possible units (status: incomplete)
+        #get all possible units (units are incomplete (this is good))
         self._unit_bank = self.grabDesigns(override, "cache","current")
        
         #todo : only start from top-level unit if it exists
         #gather all project-level units
         project_level_units = self.grabDesigns(False, "current")[self.getLib()]
         for unit in project_level_units.values():
+            #start with top-level unit and complete all required units in unit bank
             if(unit.getName() == toplevel or toplevel == None):
                 self._unit_bank = unit.getVHD().decipher(self._unit_bank, self.getLib(), override)
         #self.printUnits()
@@ -647,6 +649,10 @@ integrates: {}
         self._cache_designs = dict()
         files = (glob.glob(apt.WORKSPACE+"lib/**/*.vhd", recursive=True))
         files = files + glob.glob(apt.WORKSPACE+"cache/**/*.vhd", recursive=True)
+
+        #todo : look at all the blocks that should be in cache
+        
+        #if they don't appear in the cache, install that project to the cache before moving forward
 
         for f in files:
             L,N = self.grabExternalProject(f)

@@ -2,7 +2,9 @@
 
 - [ ] implement versioning (folders for each version created on-demand)
 - [ ] auto-install dependencies if found in remote (occurs on export command)
-- [!] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace)
+- [-] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace)
+
+- [!] verify that the workspaces folder gets deleted when deleting workspace
 
 - [!] change .lego.lock to Block.lock
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all legal pieces are available
@@ -13,6 +15,13 @@
 - [ ] only do single git push and single git pull when working with a block
 
 - [ ] '-all' option on graph/export to grab all project-level code
+
+
+### Future Roadmap
+
+- [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
+- [ ] add ability to search by market
+- [ ] if a block belongs to a remote market, perform a -soft release to checkout a new branch and push that to remote
 
 
 __Completed__

@@ -95,7 +95,7 @@ class legoHDL:
         vhd_pkg.close()
         pass
 
-    def install(self, title, ver=None, opt=list()):
+    def install(self, title, ver=None, opt=list(), required_by=[]):
         l,n = Block.split(title)
         block = None
         cache_path = apt.WORKSPACE+"cache/"
@@ -112,6 +112,28 @@ class legoHDL:
         else:
             log.error("The module cannot be found anywhere.")
             return
+        print(block.getTitle()+" prereqs")
+        #append to required_by list used to prevent cyclic recursive nature
+        required_by.append(block.getTitle())
+        #see if all cache designs are available by looking at block's derives list
+        for prereq in block.getMeta("derives"):
+            L,N = block.split(prereq)
+            if(prereq == block.getTitle() or prereq in required_by):
+                continue
+            print("Requires",prereq)
+            tmp_blk = Block(prereq)
+            cache_designs = block.grabCacheDesigns(True)
+            needs_instl = False
+            if(L not in cache_designs.keys()):
+                #needs to install
+                self.install(prereq, required_by=required_by)
+                needs_instl = True
+            else:
+                for U in tmp_blk.grabCurrentDesigns(True)[L].keys():
+                    if U not in cache_designs[L].keys():
+                        needs_instl = True
+            if(needs_instl):
+                self.install(prereq, required_by=required_by)
         # clone the repo -> cache      
         #possibly make directory for cached project
         print("Installing... ",end='')
@@ -515,13 +537,14 @@ class legoHDL:
             #insertion
             if(val != ''):
                 #create new workspace profile
-                for item,lp in apt.SETTINGS[options[0]].items():
+                for lp in apt.SETTINGS[options[0]].values():
                     if(lp['local'].lower() == apt.fs(val).lower()):
                         exit(log.error("Workspace already exists with this path."))
                 if(key not in apt.SETTINGS[options[0]]):
                     apt.SETTINGS[options[0]][key] = dict()
                     apt.SETTINGS[options[0]][key]['market'] = list()
                     apt.SETTINGS[options[0]][key]['local'] = None
+                    #initialize the workspace folders and structure
                     apt.initializeWorkspace(key)
                 #now insert value
                 apt.SETTINGS[options[0]][key]['local'] = apt.fs(val)
@@ -529,6 +552,19 @@ class legoHDL:
                 if(not os.path.isdir(apt.SETTINGS[options[0]][key]['local'])):
                     log.info("Making new directory "+apt.SETTINGS[options[0]][key]['local'])
                     os.makedirs(apt.fs(val), exist_ok=True)
+                #otherwise that directory already exists, are there any blocks already there?
+                else:
+                    #go through all the found blocks and see if any are "released"
+                    blks = self.db.getBlocks("local")
+                    for sects in blks.values():
+                        for blk in sects.values():
+                            apt.WORKSPACE = apt.HIDDEN+"workspaces/"+key+"/"
+                            if(Block.biggerVer(blk.getVersion(),'0.0.0') != '0.0.0'):
+                                #install to cache
+                                log.info("Found "+blk.getTitle()+" already a released block.")
+                                self.install(blk.getTitle())
+                        pass
+                    pass
                 for rem in options:
                     if rem == options[0]:
                         continue
