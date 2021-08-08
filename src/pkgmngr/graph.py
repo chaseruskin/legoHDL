@@ -66,6 +66,8 @@ class Graph:
                             nghbr_count[k] = nghbr_count[k] - 1
                     continue
 
+        if(len(block_order) == 0):
+            exit(log.error("Invalid toplevel for current block"))
         return order,block_order
 
     #only display entities in the tree (no package units)

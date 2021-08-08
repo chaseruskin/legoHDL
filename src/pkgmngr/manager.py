@@ -241,7 +241,7 @@ class legoHDL:
 
     def export(self, cap, top=None, tb=None):
         log.info("Exporting...")
-        log.info(cap.getPath())
+        log.info("Block's path: "+cap.getPath())
         build_dir = cap.getPath()+"build/"
         #create a clean build folder
         log.info("Cleaning build folder...")
@@ -252,18 +252,21 @@ class legoHDL:
         log.info("Finding toplevel design...")
         #add export option to override auto detection
         if(top == None):
-            top = cap.getMeta("toplevel")
-            tb = cap.getMeta("bench")
-        elif(top != None and tb == None):
-            tb = cap.getMeta("bench")
+            top = cap.identifyTop()
+        
+        #override auto detection if manually set testbench
+        if(tb != None):
+            top = tb
+        #find the top's testbench
+        else:
             bench_ent = cap.identifyBench(top)
             if(bench_ent != None):
-                tb = bench_ent.getName()
+                top = bench_ent.getName()
         
         output = open(build_dir+"recipe", 'w')    
 
         #mission: recursively search through every src VHD file for what else needs to be included
-        unit_order,block_order = self.formGraph(cap)
+        unit_order,block_order = self.formGraph(cap, top)
         file_order = self.compileList(cap, unit_order)  
 
         #add labels in order from lowest-projects to top-level project
@@ -312,10 +315,10 @@ class legoHDL:
         print("success")
         pass
 
-    def formGraph(self, cap):
+    def formGraph(self, cap, top):
         log.info("Generating dependency tree...")
         #start with top unit (returns all units if no top unit is found (packages case))
-        units = cap.getHighestUnit()
+        cap.grabUnits(top, override=True)
         hierarchy = Unit.Hierarchy
         hierarchy.output()
         
@@ -825,7 +828,7 @@ class legoHDL:
             pass
         elif(command == 'graph' and self.BlockCWD.isValid()):
             #generate dependency tree
-            self.formGraph(self.BlockCWD)
+            self.formGraph(self.BlockCWD, None)
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
             cap = self.download(package)

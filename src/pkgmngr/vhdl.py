@@ -9,9 +9,10 @@ class Vhdl:
         pass
 
     #function to determine required modules for self units
-    def decipher(self, design_book, cur_lib):
-        log.info("Deciphering VHDL file...")
-        log.info(self._file_path)
+    def decipher(self, design_book, cur_lib, verbose):
+        if(verbose):
+            log.info("Deciphering VHDL file...")
+            log.info(self._file_path)
         #parse into words
         cs = self.generateCodeStream(False, False, "(",")",":",";")
 
@@ -44,7 +45,7 @@ class Vhdl:
                     design_book[cur_lib][unit_name].addRequirement(u)
                 #only enter recursion if the unit has not already been completed ("checked")
                 if(not design_book[u.getLib()][u.getName()].isChecked()):
-                    u.getVHD().decipher(design_book,u.getLib())
+                    u.getVHD().decipher(design_book,u.getLib(), verbose)
             uses = []
             return uses
 

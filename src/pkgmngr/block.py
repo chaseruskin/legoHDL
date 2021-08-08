@@ -5,7 +5,7 @@ import glob, git
 import logging as log
 from .market import Market
 from .apparatus import Apparatus as apt
-from .vhdl import Vhdl
+from .graph import Graph 
 from .unit import Unit
 
 
@@ -463,23 +463,6 @@ integrates: {}
             file.close()
         return lib_headers
 
-    def getHighestUnit(self):
-        #return toplevel design unit
-        unit = self.identifyTop()
-        #return all files if neither exist
-        if(unit == None):
-            unit = []
-            log.error("Nothing to build! Giving all project files")
-            for U in self.grabUnits()[self.getLib()].values():
-                if(U.getBlock() == self.getName() and U.getLib() == self.getLib()):
-                    unit.append(U)
-            return unit
-        else:
-            if(self.identifyBench(unit.getName()) != None):
-                #return toplevel testbench unit
-                unit = self.identifyBench(unit.getName())
-            return [unit]
-
     def updateDerivatives(self, block_list):
         #print("Derives:",block_list)
         update = False
@@ -596,35 +579,40 @@ integrates: {}
         print("===END UNIT BOOK===")
         pass
 
-    def grabUnits(self):
-        if(hasattr(self, "_unit_bank")):
+    def grabUnits(self, toplevel=None, override=False):
+        if(hasattr(self, "_unit_bank") and not override):
             return self._unit_bank
+        elif(override):
+            #reset graph
+            Unit.Hierarchy = Graph()
+            
         #get all possible units (status: incomplete)
-        self._unit_bank = self.grabDesigns("cache","current")
+        self._unit_bank = self.grabDesigns(override, "cache","current")
        
         #todo : only start from top-level unit if it exists
         #gather all project-level units
-        project_level_units = self.grabDesigns("current")[self.getLib()]
+        project_level_units = self.grabDesigns(False, "current")[self.getLib()]
         for unit in project_level_units.values():
-            self._unit_bank = unit.getVHD().decipher(self._unit_bank, self.getLib())
+            if(unit.getName() == toplevel or toplevel == None):
+                self._unit_bank = unit.getVHD().decipher(self._unit_bank, self.getLib(), override)
         #self.printUnits()
         return self._unit_bank
 
     #return incomplete unit objects from cache and/or current block
-    def grabDesigns(self, *args):
+    def grabDesigns(self, override, *args):
         design_book = dict()
         if("current" in args):
-            design_book = self.grabCurrentDesigns().copy()
+            design_book = self.grabCurrentDesigns(override).copy()
             pass
         if("cache" in args):
-            design_book = apt.merge(self.grabCacheDesigns(),design_book)
+            design_book = apt.merge(self.grabCacheDesigns(override),design_book)
             pass
         return design_book
 
     #return dictionary of entities with their respective files as values
     #all possible entities or packages to be used in current project
-    def grabCacheDesigns(self):
-        if(hasattr(self, "_cache_designs")):
+    def grabCacheDesigns(self, override):
+        if(hasattr(self, "_cache_designs") and not override):
             return self._cache_designs
         self._cache_designs = dict()
         files = (glob.glob(apt.WORKSPACE+"lib/**/*.vhd", recursive=True))
@@ -654,8 +642,8 @@ integrates: {}
         #log.debug("Cache-Level designs: "+str(self._cache_designs))
         return self._cache_designs
 
-    def grabCurrentDesigns(self):
-        if(hasattr(self, "_cur_designs")):
+    def grabCurrentDesigns(self, override):
+        if(hasattr(self, "_cur_designs") and not override):
             return self._cur_designs
         self._cur_designs = dict()
 
