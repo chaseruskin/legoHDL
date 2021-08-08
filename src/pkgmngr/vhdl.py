@@ -8,7 +8,6 @@ class Vhdl:
         self._file_path = apt.fs(fpath)
         pass
 
-
     #function to determine required modules for self units
     def decipher(self, design_book, cur_lib):
         log.info("Deciphering VHDL file...")
@@ -51,17 +50,18 @@ class Vhdl:
 
         #iterate through the code stream, identifying keywords as they come
         for i in range(0,len(cs)):
-            cur_word = cs[i]
+            code_word = cs[i]
+
             #add to file's global library calls
-            if(cur_word == 'library'):
+            if(code_word == 'library'):
                 if(cs[i+1] in design_book.keys()):
                     library_declarations.append(cs[i+1])
-            elif(cur_word == 'use'):
+            elif(code_word == 'use'):
                 # this is a unit being used for the current unit being evaluated
                 L,U = splitBlock(cs[i+1])
                 if(L in design_book.keys()):
                     use_packages.append(design_book[L][U])
-            elif(cur_word == 'entity'):
+            elif(code_word == 'entity'):
                 # this is ending a entity declaration
                 if(isEnding):
                     in_entity = isEnding = False
@@ -78,11 +78,11 @@ class Vhdl:
                         use_packages.append(design_book[L][U])
                     pass
                 pass
-            elif(cur_word == 'port'):
+            elif(code_word == 'port'):
                 #this entity has a ports list and therefore is not a testbench
                 if(in_entity):
                     design_book[cur_lib][unit_name].unsetTB()
-            elif(cur_word == ":"):
+            elif(code_word == ":"):
                 # todo - entity instantiations from within deep architecture using full title (library.pkg.entity)
                 if(in_true_arch):
                     P,U = splitBlock(cs[i+1])
@@ -90,7 +90,7 @@ class Vhdl:
                         if(P in design_book[lib].keys()):
                             use_packages.append(design_book[lib][U])
                 pass
-            elif(cur_word == 'architecture'):
+            elif(code_word == 'architecture'):
                 # this is ending an architecture section
                 if(isEnding):
                     use_packages = resetNamespace(use_packages)
@@ -100,17 +100,20 @@ class Vhdl:
                     in_arch = True
                     arch_name = cs[i+1]
                 pass
-            elif(cur_word == "component"):
+            elif(code_word == "component"):
                 # todo - component declarations from within shallow architecture
+                #the entity exists in the current library
+                if(cs[i+1] in design_book[cur_lib].keys()):
+                    use_packages.append(design_book[cur_lib][cs[i+1]])
                 pass
-            elif(cur_word == "begin"):
+            elif(code_word == "begin"):
                 # this is entering the deep architecture
                 if(in_arch):
                     in_true_arch = True
                 # this is entering the deep package body
                 elif(in_body):
                     in_true_body = True
-            elif(cur_word == 'package'):
+            elif(code_word == 'package'):
                 if(isEnding):
                     use_packages = resetNamespace(use_packages)
                     in_pkg = in_body = in_true_body = isEnding = False
@@ -124,10 +127,10 @@ class Vhdl:
                         in_body = True
                         # skip over 'body' keyword to get to body name
                         body_name = cs[i+2]
-            elif(cur_word == 'end'):
+            elif(code_word == 'end'):
                 isEnding = True
                 pass
-            elif(cur_word == unit_name):
+            elif(code_word == unit_name):
                 # this is ending the unit declaration
                 if(isEnding):
                     if(in_true_body):
@@ -135,20 +138,27 @@ class Vhdl:
                     in_entity = in_pkg = in_body = in_true_body = isEnding = False
                 else:
                     pass
-            elif(cur_word == arch_name):
+            elif(code_word == arch_name):
                 # this is ending the architecture section
                 if(isEnding):
                     use_packages = resetNamespace(use_packages)
                     in_arch = in_true_arch = False
                 else:
                     pass
-            elif(cur_word == body_name):
+            elif(code_word == body_name):
                 # this is ending the package body section
                 if(isEnding):
                     use_packages = resetNamespace(use_packages)
                     in_body = in_true_body = False
                 else:
                     pass
+            else:
+                #look for a full package call
+                if(in_entity or in_arch or in_pkg or in_body):
+                    L,U = splitBlock(code_word)
+                    if(L in design_book.keys() and U != unit_name):
+                        #print(design_book[L][U])
+                        use_packages.append(design_book[L][U])
             pass
 
         #print("===UNIT====",cur_lib,unit_name)
@@ -172,7 +182,7 @@ class Vhdl:
         return comp_list
 
     #append a signal/generic string to a list of its respective type
-    def addSignal(self, stash, c, stream, true_stream, declare_sig=False):
+    def addSignal(self, stash, c, stream, true_stream, declare=False, isSig=False):
         names = []
         while true_stream[c+1] != ':':
             if(true_stream[c+1] != '(' and true_stream[c+1] != ','):
@@ -182,18 +192,26 @@ class Vhdl:
         for n in names:
             line = n
             #add details needed for signal declaration
-            if(declare_sig):
-                line = 'signal ' + line + ' :'
+            if(declare):
+                #modifications if declaring constant
+                t_type = 'constant'
+                z = 2
+                #modifications if declaring signal
+                if(isSig):
+                    t_type = 'signal'
+                    z = 3
+                #formulate the line to declare the signal/constant
+                line = t_type+' ' + line + ' :'
                 #find the index where this port declaration ends (skip over ':' and direction keyword)
-                i_term = true_stream[c+3:].index(';')
+                i_term = true_stream[c+z:].index(';')
                 #this was the last port declaration so truncate off the extra ')'
-                if(stream[c+3+i_term+1] == 'end'):
+                if(stream[c+z+i_term+1] == 'end' or stream[c+z+i_term+1] == 'port'):
                     i_term = i_term-1
                 #write out each word
                 prev_w = ''
-                for w in true_stream[c+3:c+3+i_term]:
+                for w in true_stream[c+z:c+z+i_term]:
                     #don't add a surround ' ' if w is a parenthese
-                    if(w != '(' and w != ')' and prev_w != '(' and prev_w != ')'):
+                    if(w != '(' and w != ')' and prev_w != '(' and prev_w != ')' and w != '='):
                         line = line + ' '
                     line = line + w
                     prev_w = w
@@ -209,25 +227,36 @@ class Vhdl:
         cs = self.generateCodeStream(False, True, "(",")",":",";",',')
         in_ports = in_gens = False
         signals = []
+        constants = []
         #iterate through all important code words
         for i in range(0,len(cs)):
             if(cs[i] == "generic"):
                 in_ports = False
                 in_gens = True
+                constants = self.addSignal(constants, i, cs, true_code, declare=True, isSig=False)
             elif(cs[i] == "port"):
                 in_gens = False
                 in_ports = True
-                signals = self.addSignal(signals, i, cs, true_code, declare_sig=True)
+                signals = self.addSignal(signals, i, cs, true_code, declare=True, isSig=True)
             elif(cs[i] == "end"):
                 break
             elif(in_ports):
                 if(cs[i] == ';' and cs[i+1] != 'end'):
-                    signals = self.addSignal(signals, i, cs, true_code, declare_sig=True)
+                    signals = self.addSignal(signals, i, cs, true_code, declare=True, isSig=True)
             elif(in_gens):
-                #todo : add generics as constants to be written to declarations
+                #todo [complete] : add generics as constants to be written to declarations
+                if(cs[i] == ';' and cs[i+1] != 'end' and cs[i+1] != 'port'):
+                    constants = self.addSignal(constants, i, cs, true_code, declare=True, isSig=False)
                 pass
         pass
         signals_txt = ''
+        #write all identified constants
+        for const in constants:
+            signals_txt = signals_txt + const + "\n"
+        #write an extra new line to separate constants from signals
+        if(len(constants)):
+            signals_txt = signals_txt + "\n"
+        #write all identified signals
         for sig in signals:
             signals_txt = signals_txt + sig + '\n'
         #print(signals_txt)
@@ -250,22 +279,22 @@ class Vhdl:
                 in_ports = False
                 in_gens = True
                 #add first line of generics
-                gens = self.addSignal(gens, i, cs, true_code, declare_sig=False)
+                gens = self.addSignal(gens, i, cs, true_code, declare=False)
             elif(cs[i] == "port"):
                 in_gens = False
                 in_ports = True
                 #add first line of signals
-                signals = self.addSignal(signals, i, cs, true_code, declare_sig=False)
+                signals = self.addSignal(signals, i, cs, true_code, declare=False)
             elif(cs[i] == "end"):
                 break
             elif(in_ports):
                 #add all ports to list
                 if(cs[i] == ';' and cs[i+1] != 'end'):
-                    signals = self.addSignal(signals, i, cs, true_code, declare_sig=False)
+                    signals = self.addSignal(signals, i, cs, true_code, declare=False)
             elif(in_gens):
                 #add all generics to list
                 if(cs[i] == ';' and cs[i+1] != 'port'):
-                    gens = self.addSignal(gens, i, cs, true_code, declare_sig=False)
+                    gens = self.addSignal(gens, i, cs, true_code, declare=False)
                 pass
             pass
         #print("generics",gens)

@@ -270,8 +270,16 @@ class legoHDL:
         labels = []
         for blk in block_order:
             L,U = Block.split(blk)
-            tmp = self.db.getCaps("cache")[L][U]
-            #reassign tmp block to the current block
+            #assign tmp block to the current block
+            if(cap.getTitle() == blk):
+                tmp = cap
+            #assign tmp block to the cache block
+            elif(self.db.capExists(blk, "cache")):
+                tmp = self.db.getCaps("cache")[L][U]
+            else:
+                log.warning("Cannot locate block "+blk)
+                continue
+
             if(cap.getTitle() == blk):
                 tmp = cap
             #add any recursive labels
@@ -308,9 +316,9 @@ class legoHDL:
         log.info("Generating dependency tree...")
         #start with top unit (returns all units if no top unit is found (packages case))
         units = cap.getHighestUnit()
-        
         hierarchy = Unit.Hierarchy
         hierarchy.output()
+        
         unit_order,block_order = hierarchy.topologicalSort()
         print('---BUILD ORDER---')
         for u in unit_order:
@@ -319,6 +327,9 @@ class legoHDL:
         print()
 
         print('---BLOCK ORDER---')
+        #ensure the current block is the last one on order
+        block_order.remove(cap.getTitle())
+        block_order.append(cap.getTitle())
         for b in block_order:
             print(b,end=' -> ')
         print()
@@ -394,9 +405,11 @@ class legoHDL:
         
         if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == ''):
             exit(log.error(err_msg))
-        
+        #ensure top has been identified for release
         cap.identifyTop()
-        cap.updateDerivatives()
+        #update block requirements
+        _,block_order = self.formGraph(cap)
+        cap.updateDerivatives(block_order)
         cap.release(ver, options)
         if(os.path.isdir(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())):
             shutil.rmtree(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())

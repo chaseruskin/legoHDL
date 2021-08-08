@@ -41,7 +41,7 @@ class Graph:
         #no connections were made, just add all units found
         if(len(self.__adj_list) == 0):
             log.warning("No edges found.")
-            for key,u in self._unit_bank.items():
+            for u in self._unit_bank.values():
                 order.append(u)
                 block_order.add(u.getLib()+"."+u.getBlock())
   

@@ -466,18 +466,18 @@ integrates: {}
     def getHighestUnit(self):
         #return toplevel design unit
         unit = self.identifyTop()
-        if(self.identifyBench(unit.getName()) != None):
-            #return toplevel testbench unit
-            unit = self.identifyBench(unit.getName())
         #return all files if neither exist
         if(unit == None):
             unit = []
             log.error("Nothing to build! Giving all project files")
-            for U in self.grabUnits().values():
+            for U in self.grabUnits()[self.getLib()].values():
                 if(U.getBlock() == self.getName() and U.getLib() == self.getLib()):
                     unit.append(U)
             return unit
         else:
+            if(self.identifyBench(unit.getName()) != None):
+                #return toplevel testbench unit
+                unit = self.identifyBench(unit.getName())
             return [unit]
 
     def updateDerivatives(self, block_list):
@@ -569,7 +569,8 @@ integrates: {}
             return self._bench
         units = self.grabUnits()
         self._bench = None
-        for unit in list(units[self.getLib()].values()):
+        for unit in units[self.getLib()].values():
+            #print(unit)
             for dep in unit.getRequirements():
                 if(dep.getLib() == self.getLib() and dep.getName() == entity_name and unit.isTB()):
                     self._bench = unit
@@ -659,6 +660,10 @@ integrates: {}
         self._cur_designs = dict()
 
         L,N = self.split(self.getTitle())
+
+        #create new library dictionary if DNE
+        if(L not in self._cur_designs.keys()):
+            self._cur_designs[L] = dict()
         files = self.gatherSources()
         for f in files:
             with open(f, 'r') as file:
@@ -667,9 +672,6 @@ integrates: {}
                     #skip if its a blank line
                     if(len(words) == 0): 
                         continue
-                    #create new library dictionary if DNE
-                    if(L not in self._cur_designs.keys()):
-                        self._cur_designs[L] = dict()
                     #add entity units
                     if(words[0].lower() == "entity"):
                         self._cur_designs[L][words[1].lower()] = Unit(f,Unit.Type.ENTITY,L,N,words[1].lower())
