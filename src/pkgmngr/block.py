@@ -445,7 +445,7 @@ integrates: {}
         return
 
     def scanLibHeaders(self, entity):
-        ent = self.grabEntities()[self.getLib()+'.'+entity]
+        ent = self.grabUnits()[self.getLib()][entity]
         filepath = ent.getFile()
 
         #open top-level file and inspect lines for using libraries
@@ -551,13 +551,26 @@ integrates: {}
         if(hasattr(self, "_bench")):
             return self._bench
         units = self.grabUnits()
-        self._bench = None
+        benches = []
         for unit in units[self.getLib()].values():
             #print(unit)
             for dep in unit.getRequirements():
                 if(dep.getLib() == self.getLib() and dep.getName() == entity_name and unit.isTB()):
-                    self._bench = unit
-                    break
+                    benches.append(unit)
+        self._bench = None    
+        if(len(benches) == 1):
+            self._bench = benches[0]
+        elif(len(benches) > 1):
+            top_contenders = []
+            for b in benches:
+                top_contenders.append(b.getName())
+            log.warning("Multiple top level testbenches detected. "+str(top_contenders))
+            validTop = input("Enter a valid toplevel testbench: ").lower()
+            #force ask for the required testbench choice
+            while validTop not in top_contenders:
+                validTop = input("Enter a valid toplevel testbench: ").lower()
+            #assign the testbench entered by the user
+            self._bench = units[self.getLib()][validTop]
 
         if(self._bench != None):
             log.info("DETECTED TOP-LEVEL BENCH: "+self._bench.getName())
@@ -566,8 +579,27 @@ integrates: {}
                 self.pushYML("Auto updates testbench module to "+self.getMeta("bench"))
             return self._bench #return the entity
         else:
-            log.error("No testbench configured for this top-level entity.")
+            log.warning("No testbench configured for "+entity_name)
             return None
+
+    def identifyTopDog(self, top, tb):
+        #override auto detection
+        if(top == None):
+            top_ent = self.identifyTop()
+            if(top_ent != None):
+                top = top_ent.getName()
+        top_dog = top
+        #find the top's testbench
+        bench_ent = self.identifyBench(top)
+        #override auto detection if manually set testbench
+        if(tb != None):
+            top_dog = tb
+        #set auto detected testbench
+        elif(bench_ent != None):
+            #print(bench_ent)
+            tb = bench_ent.getName()
+            top_dog = tb
+        return top_dog,top,tb
 
     #helpful for readable debugging
     def printUnits(self):

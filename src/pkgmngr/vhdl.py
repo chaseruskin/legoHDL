@@ -6,6 +6,7 @@ class Vhdl:
 
     def __init__(self, fpath):
         self._file_path = apt.fs(fpath)
+        self._std_parsers = "(",")",":",";"
         pass
 
     #function to determine required modules for self units
@@ -14,7 +15,7 @@ class Vhdl:
             log.info("Deciphering VHDL file...")
             log.info(self._file_path)
         #parse into words
-        cs = self.generateCodeStream(False, False, "(",")",":",";")
+        cs = self.generateCodeStream(False, False, *self._std_parsers)
 
         def splitBlock(name):
             specs = name.split('.')
@@ -31,12 +32,17 @@ class Vhdl:
         #units being used with the "use" keyword span over the following unit in the file and resets
         use_packages = []
 
+        #key: library.package, value: list of component names
+        components_on_standby = dict()
+
         in_pkg = in_body = in_true_body = False
         in_entity = in_arch = in_true_arch = False
         unit_name = arch_name = body_name =  None
         isEnding = False
 
         def resetNamespace(uses):
+            #reset to no available components at disposal from any package files
+            components_on_standby = dict()
             #the current unit is now complete ("checked")
             design_book[cur_lib][unit_name].setChecked(True)
             #now try to check the unit's dependencies
@@ -61,6 +67,9 @@ class Vhdl:
                 # this is a unit being used for the current unit being evaluated
                 L,U = splitBlock(cs[i+1])
                 if(L in design_book.keys()):
+                    if(cs[i+1].endswith(".all")):
+                        print("THIS PACKAGE ALLOWS FOR ALL COMPONENTS")
+                        components_on_standby[L+'.'+U] = self.grabComponents(design_book[L][U].getFile())
                     use_packages.append(design_book[L][U])
             elif(code_word == 'entity'):
                 # this is ending a entity declaration
@@ -86,10 +95,19 @@ class Vhdl:
             elif(code_word == ":"):
                 # todo - entity instantiations from within deep architecture using full title (library.pkg.entity)
                 if(in_true_arch):
+                    #the instance has a package and unit with it
                     P,U = splitBlock(cs[i+1])
                     for lib in library_declarations:
                         if(P in design_book[lib].keys()):
                             use_packages.append(design_book[lib][U])
+                            continue
+                    #the instance may belong to a previously called package that used .all
+                    entity_name = cs[i+1]
+                    for pkg,comps in components_on_standby.items():
+                        L,U = splitBlock(pkg)
+                        if(entity_name in comps):
+                            #now add the unit for the entity instance itself
+                            use_packages.append(design_book[L][entity_name])
                 pass
             elif(code_word == 'architecture'):
                 # this is ending an architecture section
@@ -104,7 +122,7 @@ class Vhdl:
             elif(code_word == "component"):
                 # todo - component declarations from within shallow architecture
                 #the entity exists in the current library
-                if(cs[i+1] in design_book[cur_lib].keys()):
+                if(in_arch and cs[i+1] in design_book[cur_lib].keys()):
                     use_packages.append(design_book[cur_lib][cs[i+1]])
                 pass
             elif(code_word == "begin"):
@@ -168,19 +186,36 @@ class Vhdl:
         #print("===LIBS====",library_declarations)
         return design_book
 
-    @DeprecationWarning
-    def grabComponents(self, filepath, lib):
-        comp_list = list()
-        with open(filepath, 'r') as file:
-            for line in file.readlines():
-                words = line.split()
-                if(len(words) == 0): #skip if its a blank line
-                    continue
-                if(words[0].lower() == "component"):
-                    comp_list.append(lib+'.'+words[1].lower())
-            file.close()
-        #print("Components:",comp_list)
-        return comp_list
+    #return a list of components available by this package
+    def grabComponents(self, filepath):
+        #reassign file path so code stream comes from right file
+        tmp_file = self._file_path
+        self._file_path = filepath
+        cs = self.generateCodeStream(False, False, *self._std_parsers)
+
+        in_pkg = False
+        entity_name = pkg_name = None
+        #iterate through the code stream, identifying keywords as they come
+        comps = []
+        for i in range(0,len(cs)):
+            code_word = cs[i]
+            if(code_word == 'package'):
+                in_pkg = (cs[i+1] != 'body')
+                if(in_pkg):
+                    pkg_name = cs[i+1]
+            elif(code_word == 'component'):
+                if(in_pkg and cs[i-1] != 'end'):
+                    #snag to entity name
+                    entity_name = cs[i+1]
+                    comps.append(entity_name)
+            elif(code_word == 'end'):
+                if(cs[i+1] == 'package' or cs[i+1] == pkg_name):
+                    break
+            pass
+        #print("Components from this package:",comps)
+        #restore file path back to its original assignment
+        self._file_path = tmp_file
+        return comps
 
     #append a signal/generic string to a list of its respective type
     def addSignal(self, stash, c, stream, true_stream, declare=False, isSig=False):
@@ -223,9 +258,9 @@ class Vhdl:
     #generate string of component's signal declarations to be interfaced with the port
     def writeComponentSignals(self):
         #keep cases and keep terminators
-        true_code = self.generateCodeStream(True, True, "(",")",":",";",',')
+        true_code = self.generateCodeStream(True, True, *self._std_parsers,',')
         #ignore cases and keep terminators
-        cs = self.generateCodeStream(False, True, "(",")",":",";",',')
+        cs = self.generateCodeStream(False, True, *self._std_parsers,',')
         in_ports = in_gens = False
         signals = []
         constants = []

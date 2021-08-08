@@ -83,7 +83,7 @@ class legoHDL:
         for line in pkg_lines:
             if not addedCompDec and line.startswith("package"):
                 addedCompDec = True
-                comp = cap.ports(False)
+                comp = cap.ports(False, cap.getLib(), False)
                 comp_break = comp.split('\n')
 
                 line = line + "\n"
@@ -250,23 +250,13 @@ class legoHDL:
         os.mkdir(build_dir)
 
         log.info("Finding toplevel design...")
-        #add export option to override auto detection
-        if(top == None):
-            top = cap.identifyTop()
-        
-        #override auto detection if manually set testbench
-        if(tb != None):
-            top = tb
-        #find the top's testbench
-        else:
-            bench_ent = cap.identifyBench(top)
-            if(bench_ent != None):
-                top = bench_ent.getName()
+
+        top_dog,top,tb = cap.identifyTopDog(top, tb)
         
         output = open(build_dir+"recipe", 'w')    
 
         #mission: recursively search through every src VHD file for what else needs to be included
-        unit_order,block_order = self.formGraph(cap, top)
+        unit_order,block_order = self.formGraph(cap, top_dog)
         file_order = self.compileList(cap, unit_order)  
 
         #add labels in order from lowest-projects to top-level project
@@ -409,9 +399,9 @@ class legoHDL:
         if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == ''):
             exit(log.error(err_msg))
         #ensure top has been identified for release
-        cap.identifyTop()
+        top_dog,_,_ = cap.identifyTopDog(None, None)
         #update block requirements
-        _,block_order = self.formGraph(cap)
+        _,block_order = self.formGraph(cap, top_dog)
         cap.updateDerivatives(block_order)
         cap.release(ver, options)
         if(os.path.isdir(apt.WORKSPACE+"cache/"+cap.getLib()+"/"+cap.getName())):
@@ -827,8 +817,15 @@ class legoHDL:
                 self.cleanup(self.BlockCWD, False)
             pass
         elif(command == 'graph' and self.BlockCWD.isValid()):
+            top = package
+            tb = None
+            if(top == ''):
+                top = None
+            if(len(options)):
+                tb = options[0]
+            top_dog = self.BlockCWD.identifyTopDog(top, tb)
             #generate dependency tree
-            self.formGraph(self.BlockCWD, None)
+            self.formGraph(self.BlockCWD, top_dog)
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
             cap = self.download(package)
