@@ -1,11 +1,12 @@
 ## Roadmap to Release v0.1.0
 
 - [ ] implement versioning (folders for each version created on-demand)
-- [ ] auto-install dependencies if found in remote
-- [ ] auto-install to cache when creating a workspace and blocks already exist in that path
+- [ ] auto-install dependencies if found in remote (occurs on export command)
+- [ ] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace)
 
+- [ ] change .lego.lock to Block.lock
+- [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all legal pieces are available
 
-- [ ] add additional safety measures to all Lego.lock files and settings.yml to ensure all legal pieces are available
 
 - [ ] rewrite how config command deletes
 - [ ] see if improvements can be made to "set settings" code (config command)
@@ -16,7 +17,7 @@
 
 - [ ] only do single git push and single git pull when working with a block
 
-- [ ] -all option on graph/export to grab all project-level code
+- [ ] '-all' option on graph/export to grab all project-level code
 
 
 __Completed__

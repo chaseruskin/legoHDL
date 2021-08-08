@@ -1,12 +1,11 @@
 import setuptools
-from setuptools.command.install import install
 #code inspired by:
 # https://packaging.python.org/tutorials/packaging-projects/
 
 with open("README.md", "r", encoding="utf-8") as fh:
     entire_description = fh.read()
 
-exec(open('src/pkgmngr/__version__.py').read())
+exec(open('src/legohdl/__version__.py').read())
 setuptools.setup(
     name="legohdl",
     version=__version__,
@@ -27,7 +26,7 @@ setuptools.setup(
     ],
     entry_points='''
             [console_scripts]
-            legohdl=pkgmngr.manager:main
+            legohdl=legohdl.manager:main
         ''',
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),

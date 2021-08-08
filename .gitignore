@@ -1,6 +1,10 @@
+build
 build/
-build/lib/pkgmngr
+build/**/*
+
 dist/
+
 src/legoHDL.egg-info/
-src/pkgmngr/__pycache__/
+src/legohdl/__pycache__/
+
 pip-wheel-metadata/
