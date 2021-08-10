@@ -4,6 +4,8 @@
 - [ ] auto-install dependencies if found in remote (occurs on export command)
 - [-] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace)
 
+- [ ] change label for tops to include the paths
+
 - [!] verify that the workspaces folder gets deleted when deleting workspace
 
 - [!] change .lego.lock to Block.lock

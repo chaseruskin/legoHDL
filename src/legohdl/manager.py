@@ -116,20 +116,21 @@ class legoHDL:
         #append to required_by list used to prevent cyclic recursive nature
         required_by.append(block.getTitle())
         #see if all cache designs are available by looking at block's derives list
+        #? make download section have precedence over cache section?
         for prereq in block.getMeta("derives"):
             L,N = block.split(prereq)
             if(prereq == block.getTitle() or prereq in required_by):
                 continue
             print("Requires",prereq)
             tmp_blk = Block(prereq)
-            cache_designs = block.grabCacheDesigns(True)
+            cache_designs = block.grabCacheDesigns(override=True)
             needs_instl = False
             if(L not in cache_designs.keys()):
                 #needs to install
                 self.install(prereq, required_by=required_by)
                 needs_instl = True
             else:
-                for U in tmp_blk.grabCurrentDesigns(True)[L].keys():
+                for U in tmp_blk.grabCurrentDesigns(override=True)[L].keys():
                     if U not in cache_designs[L].keys():
                         needs_instl = True
             if(needs_instl):
@@ -285,13 +286,13 @@ class legoHDL:
         #add labels in order from lowest-projects to top-level project
         labels = []
         for blk in block_order:
-            L,U = Block.split(blk)
+            L,N = Block.split(blk)
             #assign tmp block to the current block
             if(block.getTitle() == blk):
                 tmp = block
             #assign tmp block to the cache block
             elif(self.db.blockExists(blk, "cache")):
-                tmp = self.db.getBlocks("cache")[L][U]
+                tmp = self.db.getBlocks("cache")[L][N]
             else:
                 log.warning("Cannot locate block "+blk)
                 continue
@@ -310,17 +311,28 @@ class legoHDL:
                     for f in files:
                         labels.append("@"+label+" "+f)
 
+        topfile_tb = None
+        if(tb != None):
+            topfile_tb = block.grabCurrentDesigns()[block.getLib()][tb].getFile()
+        topfile_top = None
+        if(top != None):
+            topfile_top = block.grabCurrentDesigns()[block.getLib()][top].getFile()
         for l in labels:
             output.write(l+"\n")
         for f in file_order:
+            #skip files if the file is a toplevel
+            if((topfile_tb != None and f.endswith(topfile_tb)) or (topfile_top != None and f.endswith(topfile_top))):
+                continue
             output.write(f+"\n")
 
         #write current test dir where all testbench files are
         if(tb != None):
-            output.write("@SIM-TOP "+tb+"\n")
+            output.write("@SIM-TOP "+tb+" "+topfile_tb+"\n")
+            
 
         if(top != None):
-            output.write("@SRC-TOP "+top+"\n")
+            output.write("@SRC-TOP "+top+" "+topfile_top+"\n")
+            
 
         output.close()
 
@@ -891,7 +903,7 @@ class legoHDL:
                 top = None
             if(len(options)):
                 tb = options[0]
-            top_dog = self.blockCWD.identifyTopDog(top, tb)
+            top_dog,_,_ = self.blockCWD.identifyTopDog(top, tb)
             #generate dependency tree
             self.formGraph(self.blockCWD, top_dog)
         elif(command == "download"):

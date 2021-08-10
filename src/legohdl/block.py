@@ -643,7 +643,7 @@ integrates: {}
 
     #return dictionary of entities with their respective files as values
     #all possible entities or packages to be used in current project
-    def grabCacheDesigns(self, override):
+    def grabCacheDesigns(self, override=False):
         if(hasattr(self, "_cache_designs") and not override):
             return self._cache_designs
         self._cache_designs = dict()
@@ -678,7 +678,7 @@ integrates: {}
         #log.debug("Cache-Level designs: "+str(self._cache_designs))
         return self._cache_designs
 
-    def grabCurrentDesigns(self, override):
+    def grabCurrentDesigns(self, override=False):
         if(hasattr(self, "_cur_designs") and not override):
             return self._cur_designs
         self._cur_designs = dict()

@@ -55,6 +55,8 @@ class Vhdl:
                     u.getVHD().decipher(design_book,u.getLib(), verbose)
             uses = []
             return uses
+        #print("###")
+        #print(design_book)
 
         #iterate through the code stream, identifying keywords as they come
         for i in range(0,len(cs)):
@@ -178,7 +180,6 @@ class Vhdl:
                 if(in_entity or in_arch or in_pkg or in_body):
                     L,U = splitBlock(code_word)
                     if(L in design_book.keys() and U != unit_name):
-                        #print(design_book[L][U])
                         use_packages.append(design_book[L][U])
             pass
 
