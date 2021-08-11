@@ -311,18 +311,20 @@ class legoHDL:
                     for f in files:
                         labels.append("@"+label+" "+f)
 
+        #register what files the top levels originate from
         topfile_tb = None
         if(tb != None):
             topfile_tb = block.grabCurrentDesigns()[block.getLib()][tb].getFile()
         topfile_top = None
         if(top != None):
             topfile_top = block.grabCurrentDesigns()[block.getLib()][top].getFile()
+
         for l in labels:
             output.write(l+"\n")
         for f in file_order:
             #skip files if the file is a toplevel
-            if((topfile_tb != None and f.endswith(topfile_tb)) or (topfile_top != None and f.endswith(topfile_top))):
-                continue
+            #if((topfile_tb != None and f.endswith(topfile_tb)) or (topfile_top != None and f.endswith(topfile_top))):
+            #    continue
             output.write(f+"\n")
 
         #write current test dir where all testbench files are

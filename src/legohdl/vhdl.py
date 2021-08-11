@@ -20,11 +20,13 @@ class Vhdl:
         def splitBlock(name):
             specs = name.split('.')
             if(name.find('.') == -1):
-                return '',''
+                return '','',''
             if(specs[0] == 'work'):
                 specs[0] = cur_lib
-            
-            return specs[0],specs[1]
+            if(name.count('.') == 2):
+                return specs[0],specs[1],specs[2]
+            else:
+                return specs[0],specs[1],''
         #find all design unit names (package calls or entity calls) and trace it back in design_book to the
         #block that is covers, this is a dependency,
 
@@ -42,6 +44,7 @@ class Vhdl:
         isEnding = False
 
         def resetNamespace(uses):
+            global components_on_standby
             #reset to no available components at disposal from any package files
             components_on_standby = dict()
             #the current unit is now complete ("checked")
@@ -68,7 +71,7 @@ class Vhdl:
                     library_declarations.append(cs[i+1])
             elif(code_word == 'use'):
                 # this is a unit being used for the current unit being evaluated
-                L,U = splitBlock(cs[i+1])
+                L,U,_ = splitBlock(cs[i+1])
                 if(L in design_book.keys()):
                     #add this package as a key/value pair with its components if it has the ".all"
                     if(cs[i+1].endswith(".all")):
@@ -85,7 +88,7 @@ class Vhdl:
                     unit_name = cs[i+1]
                 # this is a component instantiation
                 elif(in_arch and in_true_arch):
-                    L,U = splitBlock(cs[i+1])
+                    L,U,_ = splitBlock(cs[i+1])
                     #print(L,U)
                     if(L in design_book.keys()):
                         #print(design_book[L][U])
@@ -100,7 +103,7 @@ class Vhdl:
                 # todo - entity instantiations from within deep architecture using full title (library.pkg.entity)
                 if(in_true_arch):
                     #the instance has a package and unit with it
-                    P,U = splitBlock(cs[i+1])
+                    P,U,_ = splitBlock(cs[i+1])
                     for lib in library_declarations:
                         if(P in design_book[lib].keys()):
                             use_packages.append(design_book[lib][U])
@@ -108,7 +111,7 @@ class Vhdl:
                     #the instance may belong to a previously called package that used .all
                     entity_name = cs[i+1]
                     for pkg,comps in components_on_standby.items():
-                        L,U = splitBlock(pkg)
+                        L,U,_ = splitBlock(pkg)
                         if(entity_name in comps):
                             #now add the unit for the entity instance itself
                             use_packages.append(design_book[L][entity_name])
@@ -178,9 +181,13 @@ class Vhdl:
             else:
                 #look for a full package call
                 if(in_entity or in_arch or in_pkg or in_body):
-                    L,U = splitBlock(code_word)
+                    L,U,E = splitBlock(code_word)
+                    #append if the package exists
                     if(L in design_book.keys() and U != unit_name):
                         use_packages.append(design_book[L][U])
+                    #append if the entity exists (three-part unit name (library.package.entity))
+                    if(L in design_book.keys() and E != unit_name and E in design_book[L].keys()):
+                        use_packages.append(design_book[L][E])
             pass
 
         #print("===UNIT====",cur_lib,unit_name)
