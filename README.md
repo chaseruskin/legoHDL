@@ -15,11 +15,11 @@ LegoHDL is available to work completely local or along with remote locations to 
 
 Let's go over some important terminology regarding legoHDL.
 
-__Lego.lock__ : The metadata file that signifies if a project is a block. This file is automatically maintained by the legoHDL. It contains information such as the version number, remote url repository, and dependencies. It is highly recommended to not modify this file.
+__Block.lock__ : The metadata file that signifies if a project is a block. This file is automatically maintained by the legoHDL. It contains information such as the version number, remote url repository, and dependencies. It is highly recommended to not modify this file.
 
-__project__ : A group of VHDL files grouped together to create a design. A project is a block if it has a "Lego.lock" file at the root of the its directory.
+__project__ : A group of VHDL files grouped together to create a design. A project is a block if it has a "Block.lock" file at the root of the its directory.
 
-__block__ : This is a self-contained project that contains a Lego.lock file. A block's title must consist of a library and a name. An example block title is "util.fifo". It is good practice to have the block's name match the top-level entity.
+__block__ : This is a self-contained project that contains a Block.lock file. A block's title must consist of a library and a name. An example block title is "util.fifo". It is good practice to have the block's name match the top-level entity.
 
 __workspace__ : This is your working environment. Only one can be active on your local machine at a time. It consists of a local path and optionally any markets. The local path is where all blocks can freely live when downloaded.
 
@@ -27,7 +27,7 @@ __market__ : This is a repository that hosts a "collection" of released blocks. 
 
 __script__ : A user created file. These can be stored within legoHDL or linked to if say the script belongs to some repository where users are actively developing it. Scripts can be used to build/run a block, but also to more generally store common files across all blocks, like a constraint file.
 
-__label__ : A identifier that can be used to gather dependencies to be written to the recipe. Default labels are @LIB, @SRC, @SIM, @SRC-TOP, @SIM-TOP. Developers can can create labels and provide their own extensions, like creating an @IP for .xci files.
+__label__ : An identifier that can be used to gather dependencies to be written to the recipe. Default labels are @LIB, @SRC, @SIM, @SRC-TOP, @SIM-TOP. Developers can can create labels and provide their own extensions, like creating an @IP for .xci files.
 
 __recipe__ : A list of all required files for a given block to be built from, in the  correct order needed. It is a file with identifying labels regarding the block and its dependencies. This is intended to be the "golden link" between the package management process and building a design.
 
@@ -83,9 +83,9 @@ _string_ is accepted with `" "` or `' '`.
 
 _key/value pair_ is accepted with `key="value"` or `key='value'`.
 
-2. __Make a new project__
+2. __Make a new Block__
 
-A project can be made directly from legohdl CLI. This provides the benefit of adding key information and automatically setting up a developer's preferred project structure through the use of a template.
+A block can be made directly from legohdl CLI. This provides the benefit of adding key information and automatically setting up a developer's preferred project structure through the use of a template.
 
 The template can be opened and freely edited.
 
@@ -149,7 +149,7 @@ Okay and it is open in our text-editor ready to work!
 
 3. __Developing a Block__
 
-At this point, a lot has happened. There is an metadata file titled "Lego.lock" inside our project, the project is already initialized with git, and our template auto-populated the project with files ready to go. This project is now considered a "block" because it has a Lego.lock file.
+At this point, a lot has happened. There is an metadata file titled "Block.lock" inside our project, the project is already initialized with git, and our template auto-populated the project with files ready to go. This project is now considered a "block" because it has a Block.lock file.
 
 The development process is now no different than before. We will create our design, and then our testbench, making git commits along the way if desired. When we have our entity declared and written, we can view it with:
 
@@ -213,8 +213,8 @@ Here's a sample recipe file:
 @SRC /Users/chase/Develop/hdl-dev/mem/flipflop/design/flipflop.vhd
 @LIB verif /Users/chase/.legohdl/workspaces/lab/cache/verif/fileio/design/fileio.vhd
 @SIM /Users/chase/Develop/hdl-dev/mem/flipflop/bench/flipflop_tb.vhd
-@SIM-TOP flipflop_tb
-@SRC-TOP flipflop
+@SIM-TOP flipflop_tb /Users/chase/Develop/hdl-dev/mem/flipflop/bench/flipflop_tb.vhd
+@SRC-TOP flipflop /Users/chase/Develop/hdl-dev/mem/flipflop/design/flipflop.vhd
 ```
 
 Notice the _@BENCH_ label is a custom label set like so:
@@ -307,33 +307,56 @@ Seeing our block with ```legohdl list``` now highlights common.mux as version 1.
 
 6. __Incorporating a Block as a Dependency__
 
-Okay, the project is now ready to be incorporated into any other design! Upon releasing, it will install the release to the cache folder alongside generating a VHDL package file for the toplevel entity into the library folder, if a toplevel exists. The lines
+Okay, the project is now ready to be incorporated into any other design! Upon releasing, it will install the release to the cache folder alongside generating a VHDL package file for the toplevel entity into the library folder, if a toplevel exists. Legohdl provides a lot of flexibility in how the designer wants to incorporate a block into another design. Here are some common ways:
+
+1. Include library and use keywords and then instantiate the dependent block's toplevel entity in the architecture.
 ``` VHDL
 library common;
 use common.mux_pkg.all;
 ```
-are all that are needed for legoHDL to recognize the library and files being used and throw the required files in the recipe.
 
-You could also instantiate the entity directly without having to use the auto-generated package file
-
+2. You could also instantiate the entity directly without having to use the auto-generated package file. Running `legohdl port common.mux -inst` will give the instantiation form shown below along with any required signals.
 ``` VHDL
 library common;
 
-entity ...
+entity ALU is
+...
 end entity;
 
-architecture ...
+architecture bhv of ALU is
+...
 begin
+
     u0 : entity common.mux
     port map(
-        IN_A=>IN_A,
-        IN_B=>IN_B,
-        SEL=>SEL,
-        OUT_F=>OUT_F
+        ...
     );
-...
-end architecture;
+end architecture
 ```
+
+3.
+``` VHDL
+library common;
+
+entity ALU is
+...
+end entity;
+
+architecture bhv of ALU is
+...
+    component common.mux is
+    ...
+    end component;
+begin
+
+    u0 : common.mux
+    port map(
+        ...
+    );
+end architecture
+```
+
+legoHDL will recognize the library and files being used and throw the required files in the recipe. If a library is called in the VHDL file that does not exist as a custom created library, such as ieee or std, it will be ignored as it assumes the tool will automatically have these libraries.
 
 Don't remember the ports list? Run
 
