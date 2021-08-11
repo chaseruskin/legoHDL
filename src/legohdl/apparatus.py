@@ -71,7 +71,8 @@ workspace: {}
     def inWorkspace(cls):
         #determine current workspace currently being used
         cls.__active_workspace = cls.SETTINGS['active-workspace']
-        if(cls.__active_workspace == None or cls.__active_workspace not in cls.SETTINGS['workspace'].keys()):
+        if(cls.__active_workspace == None or cls.__active_workspace not in cls.SETTINGS['workspace'].keys() or \
+           os.path.isdir(cls.HIDDEN+"workspaces/"+cls.__active_workspace) == False):
             return False
         else:
             return True
@@ -79,13 +80,17 @@ workspace: {}
     @classmethod
     def initializeWorkspace(cls, name):
         workspace_dir = cls.HIDDEN+"workspaces/"+name+"/"
-        os.makedirs(workspace_dir, exist_ok=True)
+        if(os.path.isdir(workspace_dir) == False):
+            log.info("Creating workspace directories.")
+            os.makedirs(workspace_dir, exist_ok=True)
         os.makedirs(workspace_dir+"lib", exist_ok=True)
         os.makedirs(workspace_dir+"cache", exist_ok=True)
         if(not os.path.isfile(workspace_dir+"map.toml")):
             open(workspace_dir+"map.toml", 'w').write("[libraries]\n")
+        #if no active-workspace then set it as active
         if(not cls.inWorkspace()):
             cls.SETTINGS['active-workspace'] = name
+            cls.__active_workspace = name
 
     @classmethod
     def confirmation(cls, prompt):

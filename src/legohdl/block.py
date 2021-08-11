@@ -95,7 +95,7 @@ class Block:
     def getVersion(self):
         return self.getMeta('version')
 
-    def release(self, ver='', options=None):
+    def release(self, ver='', options=[]):
         major,minor,patch = self.sepVer(self.getVersion())
         if(ver != '' and self.biggerVer(ver,self.getVersion()) == self.getVersion()):
             next_min_version = "v"+str(major)+"."+str(minor)+"."+str(patch+1)
@@ -124,7 +124,11 @@ class Block:
             self.__metadata['version'] = ver[1:]
             self.save()
             log.info("Saving...")
-            if(options != None and options.count('strict')):
+            #should we checkout a soft branch for the market?
+            if(options.count("soft") and self.__market != None):
+                branch_name = self.getTitle()+"-"+ver
+                log.info("Creating new branch ["+branch_name+"] to release block to: "+self.__market)
+            if(options.count('strict')):
                 self.__repo.index.add(apt.MARKER)
             else:   
                 self.__repo.git.add(update=True)
@@ -135,7 +139,7 @@ class Block:
             if(self.__remote):
                 self.pushRemote()
             #publish on market/bazaar!
-            if(self.__market):
+            if(self.__market and self.__remote):
                 self.__market.publish(self.__metadata, options)
         pass
 
@@ -189,6 +193,20 @@ integrates: {}
         except:
             r_patch = 0
         return r_major,r_minor,r_patch
+
+    def bindMarket(self, mkt):
+        log.info("Tying "+mkt+" as the market for "+self.getTitle())
+        self.__metadata['market'] = mkt
+        self.save()
+        pass
+
+    def setRemote(self, rem):
+        log.info("Setting "+rem+"as the remote git url for "+self.getTitle())
+        self.__metadata['remote'] = rem
+        self.__remote = rem
+        self.genRemote()
+        self.save()
+        pass
 
     def loadMeta(self):
         #print("-",self.getName(),'-',end='')
@@ -265,7 +283,11 @@ integrates: {}
         log.info('Initializing new project')
         if(fresh):
             if(os.path.isdir(apt.TEMPLATE)):
+                #copy all files from template project
                 shutil.copytree(apt.TEMPLATE, self.__local_path)
+                #delete any previous git repository that was attached to template
+                if(os.path.isdir(self.__local_path+"/.git/")):
+                    shutil.rmtree(self.__local_path+"/.git/")
             else:
                 os.makedirs(self.__local_path, exist_ok=True)
         
@@ -334,6 +356,7 @@ integrates: {}
                 with self.__repo.remotes.origin.config_writer as cw:
                     cw.set("url", remote_url)
             #now set it up to track
+            self.__repo.git.pull()
             self.__repo.git.push("-u","origin",str(self.__repo.head.reference))
             self.__repo.remotes.origin.push("--tags")
         pass
@@ -650,10 +673,6 @@ integrates: {}
         files = (glob.glob(apt.WORKSPACE+"lib/**/*.vhd", recursive=True))
         files = files + glob.glob(apt.WORKSPACE+"cache/**/*.vhd", recursive=True)
 
-        #todo : look at all the blocks that should be in cache
-        
-        #if they don't appear in the cache, install that project to the cache before moving forward
-
         for f in files:
             L,N = self.grabExternalProject(f)
             #do not add the cache files of the current level project
@@ -709,13 +728,13 @@ integrates: {}
     #search for the projects attached to the external package
     @classmethod
     def grabExternalProject(cls, path):
-        #use its file to find out what project uses it
+        #use its file to find out what block uses it
         path_parse = apt.fs(path).split('/')
-        # if in lib {library}/{project}_pkg.vhd
+        # if in lib {library}/{block}_pkg.vhd
         if("lib" in path_parse):
             i = path_parse.index("lib")
             pass
-        #if in cache {library}/{project}/../.vhd
+        #if in cache {library}/{block}/../.vhd
         elif("cache" in path_parse):
             i = path_parse.index("cache")
             pass

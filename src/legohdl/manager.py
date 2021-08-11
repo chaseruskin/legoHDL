@@ -46,6 +46,7 @@ class legoHDL:
 
     #! === INSTALL COMMAND ===
 
+    #todo : do not overwrite anything previous in the package file (old versions)
     def genPKG(self, title):
         block = None
         if(self.db.blockExists(title, "cache", updt=True)):
@@ -54,7 +55,6 @@ class legoHDL:
             block = cache[l][n]
         else:
             exit(log.error("The module is not located in the cache"))
-            return
 
         lib_path = apt.WORKSPACE+"lib/"+block.getLib()+"/"
         os.makedirs(lib_path, exist_ok=True)
@@ -104,14 +104,13 @@ class legoHDL:
         if(self.db.blockExists(title, "cache", updt=True)):
             log.info("The module is already installed.")
             return
-        elif(self.db.blockExists(title, "market")):
-            block = self.db.getBlocks("market")[l][n]
-            pass
         elif(self.db.blockExists(title, "local")):
             block = self.db.getBlocks("local")[l][n]
+        elif(self.db.blockExists(title, "market")):
+            block = self.db.getBlocks("market")[l][n]
         else:
-            log.error("The module cannot be found anywhere.")
-            return
+            exit(log.error("The module cannot be found anywhere."))
+
         print(block.getTitle()+" prereqs")
         #append to required_by list used to prevent cyclic recursive nature
         required_by.append(block.getTitle())
@@ -193,10 +192,10 @@ class legoHDL:
 
     #! === UNINSTALL COMMAND ===
 
-    def uninstall(self, pkg, opt=None):
+    def uninstall(self, blk, opt=None):
         #remove from cache
-        l,n = Block.split(pkg)
-        if(self.db.blockExists(pkg, "cache")):
+        l,n = Block.split(blk)
+        if(self.db.blockExists(blk, "cache")):
             cache = self.db.getBlocks("cache")
             cache_path = cache[l][n].getPath()
             shutil.rmtree(cache_path)
@@ -330,12 +329,9 @@ class legoHDL:
         #write current test dir where all testbench files are
         if(tb != None):
             output.write("@SIM-TOP "+tb+" "+topfile_tb+"\n")
-            
-
         if(top != None):
             output.write("@SRC-TOP "+top+" "+topfile_top+"\n")
             
-
         output.close()
 
         block.updateDerivatives(block_order[:len(block_order)-1])
@@ -441,8 +437,11 @@ class legoHDL:
         _,block_order = self.formGraph(block, top_dog)
         block.updateDerivatives(block_order)
         block.release(ver, options)
+        #remove from cache and library to be reinstalled
         if(os.path.isdir(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName())):
             shutil.rmtree(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName())
+        if(os.path.isfile(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg")):
+            shutil.rmtree(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg")
         #clone new project's progress into cache
         self.install(block.getTitle(), block.getVersion())
         log.info(block.getLib()+"."+block.getName()+" is now available as version "+block.getVersion()+".")
@@ -550,6 +549,8 @@ class legoHDL:
                 apt.SETTINGS[options[0]] = dict()
             #insertion
             if(val != ''):
+                #initialize the workspace folders and structure
+                apt.initializeWorkspace(key)
                 #create new workspace profile
                 for lp in apt.SETTINGS[options[0]].values():
                     if(lp['local'].lower() == apt.fs(val).lower()):
@@ -558,14 +559,13 @@ class legoHDL:
                     apt.SETTINGS[options[0]][key] = dict()
                     apt.SETTINGS[options[0]][key]['market'] = list()
                     apt.SETTINGS[options[0]][key]['local'] = None
-                    #initialize the workspace folders and structure
-                    apt.initializeWorkspace(key)
                 #now insert value
                 apt.SETTINGS[options[0]][key]['local'] = apt.fs(val)
                 #will make new directories if needed when setting local path
                 if(not os.path.isdir(apt.SETTINGS[options[0]][key]['local'])):
                     log.info("Making new directory "+apt.SETTINGS[options[0]][key]['local'])
                     os.makedirs(apt.fs(val), exist_ok=True)
+
                 #otherwise that directory already exists, are there any blocks already there?
                 else:
                     #go through all the found blocks and see if any are "released"
@@ -673,7 +673,7 @@ class legoHDL:
     #! === INIT COMMAND ===
     
     #TO-DO: implement
-    def convert(self, title):
+    def convert(self, title, value, options=[]):
         #must look through tags of already established repo
         l,n = Block.split(title)
         if(l == '' or n == ''):
@@ -685,9 +685,24 @@ class legoHDL:
             exit(log.error("Cannot initialize outside of workspace"))
         block = None
 
+        if(options.count("market")):
+            if(value not in apt.SETTINGS['market'].keys()):
+                exit(log.error("No market is recognized under "+value))
+            if(value not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
+                exit(log.error("The current workspace does not have "+value+" configured as a market"))
+            self.blockCWD.bindMarket(value)
+            return
+        elif(options.count("remote")):
+            if(apt.isValidURL(value)):
+                self.blockCWD.setRemote(value)
+                return
+            else:
+                exit(log.error("Invalid git url."))
+            pass
+
         files = os.listdir(cwd)
         if apt.MARKER in files or self.db.blockExists(title, "local") or self.db.blockExists(title, "cache") or self.db.blockExists(title, "market"):
-            log.info("Already a packaged module")
+            log.info("Already a block here")
             return
 
         log.info("Transforming project into lego...")
@@ -944,7 +959,7 @@ class legoHDL:
                 self.inventory(package,options)
             pass
         elif(command == "init"):
-            self.convert(package)
+            self.convert(package, value, options)
         elif(command == "refresh"):
             self.db.sync()
         elif(command == "export" and self.blockCWD.isValid()): #a visual aide to help a developer see what package's are at the ready to use
@@ -1047,9 +1062,9 @@ class legoHDL:
             printFmt("open","<block>","[-template -script -settings]")
             pass
         elif(cmd == "release"):
-            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d -strict -request]")
+            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d -strict -soft]")
             print("\n   -strict -> won't add any uncommitted changes along with release")
-            print("\n   -request -> will push a side branch to the linked market")
+            print("\n   -soft -> will push a side branch to the linked market")
             pass
         elif(cmd == "list"):
             printFmt("list","[search]","[-alpha -local -script -label -market -workspace]")

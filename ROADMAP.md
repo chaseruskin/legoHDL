@@ -3,10 +3,8 @@
 - [ ] implement versioning (folders for each version created on-demand)
 - [ ] auto-install dependencies if found in remote (occurs on export command)
 - [-] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace)
+- [ ] ensure init command is up to par
 
-- [ ] change label for tops to include the paths
-
-- [!] verify that the workspaces folder gets deleted when deleting workspace
 
 - [!] change .lego.lock to Block.lock
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all legal pieces are available
@@ -23,10 +21,14 @@
 
 - [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
 - [ ] add ability to search by market
+- [ ] add -soft release option
 - [ ] if a block belongs to a remote market, perform a -soft release to checkout a new branch and push that to remote
 
 
 __Completed__
+- [x] verify that the workspaces folder gets deleted when deleting workspace
+- [x] test using templated repo (don't copy over .git)
+- [x] test using templated repo (don't copy over .git)
 - [-] see if improvements can be made to "set settings" code (config command)
 - [x] rewrite how config command deletes (maybe use del command with flags?) -> uses "del" command w/ flags
 - [x] provide meaningful feedback if a desired version for release is invalid (what's the next possible version?)
