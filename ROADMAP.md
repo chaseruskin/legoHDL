@@ -2,9 +2,11 @@
 
 - [ ] implement versioning (folders for each version created on-demand)
 - [ ] auto-install dependencies if found in remote (occurs on export command)
-- [-] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace)
-- [ ] ensure init command is up to par
+- [-] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace) (does it work when doing it on just a regular block?) (say install block from market and gets requirements installs automatically?)
 
+- [ ] ensure init command is up to par
+- [ ] test init adding a remote already to git repo and then doing legohdl command
+- [ ] test init on blank git url
 
 - [!] change .lego.lock to Block.lock
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all legal pieces are available
