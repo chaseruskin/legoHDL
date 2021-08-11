@@ -399,6 +399,97 @@ COMMANDS:
    config       set package manager settings
 ```
 
+### init
+
+    legohdl init <block/value> [-market | -remote]
+
+### new
+
+    legohdl new <block> [-o -<remote-url> -<market-name>]
+
+    legohdl new <new-file> -<template-file>
+
+### open
+
+    legohdl open <block>
+
+    legohdl open <-setting | -template | -script>
+
+### release
+
+    legohdl release [-maj | -min | -fix | -v0.0.0] [-strict -soft]
+
+### list
+
+    legohdl list [optional.searching]
+
+    legohdl list -script
+
+    legohdl list -workspace
+
+    legohdl list -label
+
+### install
+
+    legohdl install <block> [-v0.0.0]
+
+### uninstall
+
+    legohdl uninstall <block> [-v0.0.0]
+
+### download
+
+    legohdl download <block> [-o]
+
+### update
+
+    legohdl update <block>
+
+### export
+
+    legohdl export [toplevel] [-toplevel_testbench]
+
+### build
+
+    legohdl build @<script-name> [arguments to script file]
+
+### del
+
+    legohdl del <block> -u
+
+    legohdl del <market> -market
+
+    legohdl del <workspace> -workspace
+
+    legohdl del <label> -label
+
+### refresh
+
+    legohdl refresh [-market1 | -market2 | ...]
+
+### port
+
+    legohdl port <block> [-map -inst]
+    
+    legohdl port <block>.entity [-map -inst]
+
+### show
+
+    legohdl show <block>
+
+### summ
+
+    legohdl summ <description>
+
+### config
+
+    legohdl config <"value"> [-author | -editor | -active-workspace]
+
+    legohdl config <key="value"> [-label [-recursive] | -market | -workspace | -script [-lnk]]
+
+
+
+
 
 
 

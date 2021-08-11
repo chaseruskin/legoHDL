@@ -235,12 +235,10 @@ integrates: {}
     def fillTemplateFile(self, newfile, templateFile):
         #ensure this file doesn't already exist
         newfile = apt.fs(newfile)
-        if(os.path.isfile(newfile)):
-            log.info("File already exists")
-            return
-        log.info("Creating new file...")
+
         #find the template file to use
         extension = '.'+self.getExt(newfile)
+
         fileName = ''
         last_slash = newfile.rfind('/')
         if(extension == '.'):
@@ -252,6 +250,15 @@ integrates: {}
         template_ext = self.getExt(templateFile)
         if(template_ext == ''):
             templateFile = templateFile + extension
+        #add extension if none was specified to new file
+        if(extension == '.'):
+            newfile = newfile + extension + template_ext
+
+        if(os.path.isfile(newfile)):
+            log.info("File already exists")
+            return
+        log.info("Creating new file...")
+
         replacements = glob.glob(apt.TEMPLATE+"**/"+templateFile, recursive=True)
         #copy the template file into the proper location
         if(len(replacements) < 1):
@@ -264,11 +271,14 @@ integrates: {}
         today = date.today().strftime("%B %d, %Y")
         file_in = open(newfile, "r")
         lines = []
+        author = apt.SETTINGS["author"]
+        if(author == None):
+            author = ''
         #find and replace all proper items
         for line in file_in.readlines():
             line = line.replace("template", fileName)
             line = line.replace("%DATE%", today)
-            line = line.replace("%AUTHOR%", apt.SETTINGS["author"])
+            line = line.replace("%AUTHOR%", author)
             line = line.replace("%PROJECT%", self.getTitle())
             lines.append(line)
             file_in.close()
@@ -309,7 +319,9 @@ integrates: {}
             for f in replacements:
                 if(os.path.isfile(f)):
                     file_swaps.append((f,f.replace('template', self.__name)))
-
+            author = apt.SETTINGS["author"]
+            if(author == None):
+                author = ''
             today = date.today().strftime("%B %d, %Y")
             for x in file_swaps:
                 file_in = open(x[0], "r")
@@ -317,7 +329,7 @@ integrates: {}
                 for line in file_in:
                     line = line.replace("template", self.__name)
                     line = line.replace("%DATE%", today)
-                    line = line.replace("%AUTHOR%", apt.SETTINGS["author"])
+                    line = line.replace("%AUTHOR%", author)
                     line = line.replace("%PROJECT%", self.getTitle())
                     file_out.write(line) #insert date into template
                 file_in.close()
