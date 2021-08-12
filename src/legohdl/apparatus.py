@@ -5,8 +5,7 @@ from subprocess import check_output
 
 class Apparatus:
     SETTINGS = dict()
-    #defines path to working dir of 'legoHDL' tool
-    PKGMNG_PATH = os.path.realpath(__file__)[:os.path.realpath(__file__).replace("\\","/").rfind('/')+1]
+
     #path to registry and cachess
     HIDDEN = os.path.expanduser("~/.legohdl/")
 
@@ -45,7 +44,7 @@ workspace: {}
     @classmethod
     def load(cls):
         cls.initialize()
-        log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.DEBUG)
+        log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.INFO)
 
         with open(cls.HIDDEN+"settings.yml", "r") as file:
             cls.SETTINGS = yaml.load(file, Loader=yaml.FullLoader)
@@ -141,6 +140,8 @@ workspace: {}
     #forward-slash fixer
     @classmethod
     def fs(cls, path):
+        if(path == None):
+            return None
         path = os.path.expanduser(path)
         path = path.replace('\\','/')
         dot = path.rfind('.')

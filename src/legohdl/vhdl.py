@@ -339,7 +339,7 @@ class Vhdl:
                     signals = self.addSignal(signals, i, cs, true_code, declare=False)
             elif(in_gens):
                 #add all generics to list
-                if(cs[i] == ';' and cs[i+1] != 'port'):
+                if(cs[i] == ';' and cs[i+1] != 'port' and cs[i+1] != 'end'):
                     gens = self.addSignal(gens, i, cs, true_code, declare=False)
                 pass
             pass
@@ -360,9 +360,9 @@ class Vhdl:
                     line = line + ","
                 mapping_txt = mapping_txt + line+"\n"
             #add necessary closing
-            mapping_txt = mapping_txt + ")\n"
+            mapping_txt = mapping_txt + ")"
         if(len(signals)):
-            mapping_txt = mapping_txt + "port map(\n"
+            mapping_txt = mapping_txt + "\nport map(\n"
             for i in range(len(signals)):
                 line = "    "+signals[i]+"=>"+signals[i]
                 #add a comma if not on the last signal
@@ -370,8 +370,9 @@ class Vhdl:
                     line = line + ","
                 mapping_txt = mapping_txt + line+"\n"
             #add necessary closing
-            mapping_txt = mapping_txt + ");\n"
+            mapping_txt = mapping_txt + ")"
         #print(mapping_txt)
+        mapping_txt = mapping_txt + ";\n"
         return mapping_txt
 
     #write out the entity but as a component

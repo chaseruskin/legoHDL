@@ -169,7 +169,6 @@ class Registry:
             self._local_prjs[c.getLib()][c.getName()] = c
         #print(self._local_prjs)
         return self._local_prjs
-        pass
 
     def getProjectsCache(self, updt=False):
         if hasattr(self,"_cache_prjs") and not updt:
@@ -181,11 +180,11 @@ class Registry:
             if(l[0] == '.'):
                 continue
             self._cache_prjs[l] = dict()
-            pkgs = os.listdir(path+l+"/")
-            for p in pkgs:
-                if(p[0] == '.'):
+            blks = os.listdir(path+l+"/")
+            for b in blks:
+                if(b[0] == '.'):
                     continue
-                self._cache_prjs[l][p] = Block(path=path+l+"/"+p+"/")
+                self._cache_prjs[l][b] = Block(path=path+l+"/"+b+"/")
         #print(self._cache_prjs)
         return self._cache_prjs
         pass
@@ -203,6 +202,7 @@ class Registry:
             for x in lego_files:
                 path = apt.fs(x.replace(apt.MARKER,""))
                 block = Block(path=path, excludeGit=True)
+
                 L,N = Block.split(block.getTitle())
                 if(L not in self._remote_prjs.keys()):
                     self._remote_prjs[L] = dict()

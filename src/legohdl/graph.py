@@ -67,7 +67,7 @@ class Graph:
                     continue
 
         if(len(block_order) == 0):
-            exit(log.error("Invalid toplevel for current block"))
+            exit(log.error("Invalid current block, try adding a VHDL file"))
         return order,block_order
 
     #only display entities in the tree (no package units)

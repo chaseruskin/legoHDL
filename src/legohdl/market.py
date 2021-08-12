@@ -57,12 +57,19 @@ class Market:
                 if(self.isRemote()):
                     self.url = self._repo.remotes.origin.url
 
-    def publish(self, meta, options):
+    def publish(self, meta, options=[]):
+        #switch to new branch
+        active_branch = self._repo.active_branch
+        tmp_branch = meta['library']+"."+meta['name']+"-"+meta['version']
+        if(self.url != None and options.count("soft")):
+            log.info("Creating new branch ["+tmp_branch+"] to release block to: "+self.getName())
+            self._repo.git.checkout("-b",tmp_branch)
+
         #create new directory
         fp = self._local_path+"/"+meta['library']+"/"+meta['name']+"/"+meta['version']+"/"
         #save yaml file
         os.makedirs(fp)
-        order = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives', 'integrates']
+        order = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
         with open(fp+apt.MARKER, 'w') as file:
             for key in order:
                 #pop off front key/val pair of yaml data
@@ -75,12 +82,13 @@ class Market:
         #save changes to repository
         self._repo.index.add(self._repo.untracked_files)
         self._repo.index.commit("Adds "+meta['library']+'.'+meta['name']+" v"+meta['version'])
-        if(self.url != 'local'):
-            active_branch = self._repo.active_branch
-            if(options.count("request")):
-                self._repo.git.checkout("-b",meta['library']+"."+meta['name']+"-"+meta['version'])
+        #push to remote market repository
+        if(self.url != None):
             self._repo.git.push("-u","origin",str(self._repo.head.reference))
             self._repo.git.checkout(active_branch)
+            # delete soft/tmp branch that was created for release
+            if(options.count("soft")):
+                self._repo.git.branch("-d",tmp_branch)
         pass
 
     def isRemote(self):

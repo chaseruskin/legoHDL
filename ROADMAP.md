@@ -4,6 +4,8 @@
 - [ ] auto-install dependencies if found in remote (occurs on export command)
 - [-] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace) (does it work when doing it on just a regular block?) (say install block from market and gets requirements installs automatically?)
 
+- [ ] implement update command (have -all flag to update all installs, otherwise update by block name?) (could occur on refresh command?)
+
 - [ ] ensure init command is up to par
 - [ ] test init adding a remote already to git repo and then doing legohdl command
 - [ ] test init on blank git url
@@ -25,6 +27,7 @@
 - [ ] add ability to search by market
 - [ ] add -soft release option
 - [ ] if a block belongs to a remote market, perform a -soft release to checkout a new branch and push that to remote
+- [ ] have some way of notifying user that a block is missing from installations when trying to export
 
 
 __Completed__

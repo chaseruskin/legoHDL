@@ -12,37 +12,35 @@ from .unit import Unit
 #a Block is a package/module that is signified by having the marker file
 class Block:
 
-    allLibs = []
-
     def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False, market=None):
         self.__metadata = dict()
-        self.__lib = ''
-        self.__name = ''
+        self.__lib,self.__name = Block.split(title)
+
         self.__remote = remote #remote cannot be reconfigured through legohdl after setting
         self.__market = market
- 
-        if(title != None):
-            self.__lib,self.__name = Block.split(title)
+        self.__local_path = apt.fs(path)
         if(path != None):
-            self.__local_path = apt.fs(path)
             #print(path)
             if(self.isValid()):
-                self.loadMeta()
                 if(not excludeGit):
-                    self.__repo = git.Repo(self.__local_path)
+                    self._repo = git.Repo(self.__local_path)
+                self.loadMeta()
                 self.__name = self.getMeta("name")
             return
 
+        if(path == None):
+            self.__local_path = apt.fs(apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/')
+
+        #try to see if this directory is indeed a git repo
+        try:
+            self._repo = git.Repo(self.__local_path)
+        except:
+            self._repo = None
+
         if(remote != None):
-            self.__remote = remote #pass in remote object
-        
-        self.__local_path = apt.fs(apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/')
-        #configure remote url
-        #if(apt.linkedRemote()):
-            #self.__remote_url = apt.SETTINGS['remote']+'/'+self.__lib+"/"+self.__name+".git"
+            self.grabGitRemote(remote)
+
         if(self.isValid()):
-            log.debug("Checking block here: "+self.__local_path)
-            self.__repo = git.Repo(self.__local_path)
             #load in metadata from YML
             self.loadMeta()
         elif(new): #create a new project
@@ -64,6 +62,15 @@ class Block:
     def getPath(self):
         return self.__local_path
 
+    def downloadFromURL(self, rem):
+        rem = apt.fs(rem)
+        new_path = apt.fs(apt.getLocal()+"/"+self.getLib()+"/")
+        os.makedirs(new_path, exist_ok=True)
+        git.Git(new_path).clone(rem)
+        if(rem.endswith(".git")):
+            url_name = rem[rem.rfind('/')+1:rem.rfind('.git')]
+            os.rename(new_path+url_name, new_path+self.getName())
+
     def cache(self):
         os.makedirs(apt.WORKSPACE+"cache/"+self.getMeta("library")+"/", exist_ok=True)
         cache_dir = apt.WORKSPACE+"cache/"+self.getMeta("library")+"/"
@@ -73,6 +80,7 @@ class Block:
     def getTitle(self):
         return self.getLib()+'.'+self.getName()
 
+    #download a block
     def clone(self, src=None, dst=None):
         local = apt.getLocal()+"/"+self.getLib()+"/"
         #grab library level path (default location)
@@ -85,12 +93,17 @@ class Block:
     
         log.debug(dst)
         os.makedirs(dst, exist_ok=True)
-        self.__repo = git.Git(dst).clone(src)
+        self._repo = git.Git(dst).clone(src)
         self.loadMeta()
-        self.__repo = git.Repo(dst+"/"+self.getName())
-        #if downloaded from cache, make a master branch
-        if(len(self.__repo.heads) == 0):
-            self.__repo.git.checkout("-b","master")
+        self._repo = git.Repo(dst+"/"+self.getName())
+
+        #todo : 
+        #clone that correct version from market
+        if(self._market != None):
+            pass
+        #if downloaded from cache, make a master branch if no remote  
+        elif(len(self._repo.heads) == 0):
+            self._repo.git.checkout("-b","master")
 
     def getVersion(self):
         return self.getMeta('version')
@@ -99,7 +112,7 @@ class Block:
         major,minor,patch = self.sepVer(self.getVersion())
         if(ver != '' and self.biggerVer(ver,self.getVersion()) == self.getVersion()):
             next_min_version = "v"+str(major)+"."+str(minor)+"."+str(patch+1)
-            exit(log.error("Invalid version selection! Next minimum version is: "+next_min_version))
+            exit(log.error("Invalid version selected! Next minimum version is: "+next_min_version))
         print("Uploading v"+str(major)+"."+str(minor)+"."+str(patch),end='')
         if(ver == ''):
             if(options.count("maj")):
@@ -124,22 +137,30 @@ class Block:
             self.__metadata['version'] = ver[1:]
             self.save()
             log.info("Saving...")
-            #should we checkout a soft branch for the market?
-            if(options.count("soft") and self.__market != None):
-                branch_name = self.getTitle()+"-"+ver
-                log.info("Creating new branch ["+branch_name+"] to release block to: "+self.__market)
+            #add only changes made to Block.lock file
             if(options.count('strict')):
-                self.__repo.index.add(apt.MARKER)
+                self._repo.index.add(apt.MARKER)
+            #add all untracked changes to be included in the release commit
             else:   
-                self.__repo.git.add(update=True)
-                self.__repo.index.add(self.__repo.untracked_files)
-            self.__repo.index.commit("Release version -> "+self.getVersion())
-            self.__repo.create_tag(ver)
-            #push to remote codebase!!
-            if(self.__remote):
+                self._repo.git.add(update=True)
+                self._repo.index.add(self._repo.untracked_files)
+            self._repo.index.commit("Release version -> "+self.getVersion())
+            #create a tag with this version
+            self._repo.create_tag(ver)
+
+            #in order to release to market, we must have a valid git remote url
+            url = self.grabGitRemote()
+            if(url == None):
+                if(self.__market != None):
+                    log.warning("Could not release to market "+self.__market.getName()+" because this block is not tied to a remote.")
+                return
+            #push to remote codebase!! (we have a valid remote url to use)
+            else:
                 self.pushRemote()
+
             #publish on market/bazaar!
-            if(self.__market and self.__remote):
+            if(self.__market != None):
+                #todo : publish every version that DNE on market?
                 self.__market.publish(self.__metadata, options)
         pass
 
@@ -209,7 +230,6 @@ integrates: {}
         pass
 
     def loadMeta(self):
-        #print("-",self.getName(),'-',end='')
         with open(self.metadataPath(), "r") as file:
             self.__metadata = yaml.load(file, Loader=yaml.FullLoader)
             file.close()
@@ -217,11 +237,11 @@ integrates: {}
         if(self.getMeta('derives') == None):
             self.__metadata['derives'] = dict()
 
-        if(self.getMeta('integrates') == None):
-            self.__metadata['integrates'] = dict()
         if('remote' in self.__metadata.keys()):
-            if(self.__remote != None):
-                self.__metadata['remote'] = self.__remote
+            #upon every boot up, try to grab the remote from this git repo if it exists
+            self.grabGitRemote()
+            if(self._remote != None):
+                self.__metadata['remote'] = self._remote
             else:
                 self.__remote = self.__metadata['remote']
         if('market' in self.__metadata.keys()):
@@ -304,12 +324,12 @@ integrates: {}
         open(self.__local_path+apt.MARKER, 'w').write(self.legoLockFile())
         
         if(not git_exists):
-            self.__repo = git.Repo.init(self.__local_path)
+            self._repo = git.Repo.init(self.__local_path)
         else:
-            self.__repo = git.Repo(self.__local_path)
+            self._repo = git.Repo(self.__local_path)
     
         if(self.isLinked()):
-            self.__repo.create_remote('origin', self.__remote) #attach to remote code base
+            self._repo.create_remote('origin', self.__remote) #attach to remote code base
 
         #run the commands to generate new project from template
         #file to find/replace word 'template'
@@ -343,46 +363,75 @@ integrates: {}
         self.identifyTop()
         log.debug(self.getName())
         self.save() #save current progress into yaml
-        self.__repo.index.add(self.__repo.untracked_files)
-        self.__repo.index.commit("Initializes project")
-        if(self.__remote != None):
+        self._repo.index.add(self._repo.untracked_files)
+        self._repo.index.commit("Initializes block")
+        if(self.grabGitRemote() != None):
             log.info('Generating new remote repository...')
             # !!! set it up to track
-            print(str(self.__repo.head.reference))
-            self.__repo.git.push("-u","origin",str(self.__repo.head.reference))
-            #self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
+            print(str(self._repo.head.reference))
+            self._repo.git.push("-u","origin",str(self._repo.head.reference))
         else:
             log.warning('No remote code base attached to local repository')
         pass
+
+    #dynamically grab the origin url if it has been changed/added by user using git
+    def grabGitRemote(self, newValue=None):
+        if(hasattr(self, "_remote")):
+            return self._remote
+        if(hasattr(self, "_repo") == False or self._repo == None):
+            self._remote = None
+            return self._remote
+        if(newValue != None):
+            self._remote = newValue
+            return self._remote
+        #try to grab from git repo object
+        self._remote = None
+        #print(self._repo.remotes)
+        if(len(self._repo.remotes)):
+            origin = self._repo.remotes
+            for o in origin:
+                if(o.url == self.__local_path):
+                    continue
+                elif(o.url.endswith(".git")):
+                    self._remote = o.url
+                    break
+        #print(self.getTitle(),self._remote)
+        #make sure to save if it differs
+        if(self.getMeta("remote") != self._remote):
+            self.__metadata['remote'] = self._remote
+            self.save()
+        return self._remote
+
 
     #generate new link to remote if previously unestablished
     def genRemote(self):
         if(self.isLinked()):
             try: #attach to remote code base
-                self.__repo.create_remote('origin', self.__remote) 
+                self._repo.create_remote('origin', self.__remote) 
             except: #relink origin to new remote url
-                print(self.__repo.remotes.origin.url)
+                print(self._repo.remotes.origin.url)
                 remote_url = self.getMeta("remote")
                 if(remote_url == None):
                     return
-                with self.__repo.remotes.origin.config_writer as cw:
+                with self._repo.remotes.origin.config_writer as cw:
                     cw.set("url", remote_url)
             #now set it up to track
-            self.__repo.git.pull()
-            self.__repo.git.push("-u","origin",str(self.__repo.head.reference))
-            self.__repo.remotes.origin.push("--tags")
+            self._repo.git.pull()
+            self._repo.git.push("-u","origin",str(self._repo.head.reference))
+            self._repo.remotes.origin.push("--tags")
         pass
 
     def pushRemote(self):
-        self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
-        self.__repo.remotes.origin.push("--tags")
+        self._repo.remotes.origin.push(refspec='{}:{}'.format(self._repo.head.reference, self._repo.head.reference))
+        self._repo.remotes.origin.push("--tags")
 
     def getName(self):
-        return self.__name
-
-    @classmethod
-    def fetchLibs(cls, reg_libs):
-        cls.allLibs = reg_libs
+        try:
+            if(self.getMeta("name") == None):
+                return ''
+            return self.getMeta("name")
+        except:
+            return self.__name
 
     def getLib(self):
         try:
@@ -399,25 +448,15 @@ integrates: {}
             return self.__metadata[key]
 
     def pull(self):
-        self.__repo.remotes.origin.pull()
+        if(self.grabGitRemote() != None):
+            log.info("Block already exists in local workspace- pulling from remote...")
+            self._repo.remotes.origin.pull()
+        else:
+            log.info("Block already exists in local workspace")
 
-    def pushYML(self, msg):
-        self.save()
-        self.__repo.index.add(apt.MARKER)
-        
-        self.__repo.index.commit(msg)
-        
-        if(self.isLinked()):
-            self.__repo.remotes.origin.push(refspec='{}:{}'.format(self.__repo.head.reference, self.__repo.head.reference))
-            self.__repo.remotes.origin.push("--tags")
-
-    #return true if the requested project folder is a valid Block package
+    #return true if the requested project folder is a valid Block
     def isValid(self):
-        try:
-            return os.path.isfile(self.metadataPath())
-        except:
-            return False
-        pass
+        return os.path.isfile(self.metadataPath())
 
     def metadataPath(self):
         return self.__local_path+apt.MARKER
@@ -436,8 +475,8 @@ integrates: {}
         #unlock metadata to write to it
         os.chmod(self.metadataPath(), stat.S_IWOTH | stat.S_IWGRP | stat.S_IWUSR | stat.S_IWRITE)
         #write back YAML info
-        order = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives', 'integrates']
-        #a little magic to save YAML in custom order for easier readability
+        order = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
+        #write values with respect to order
         with open(self.metadataPath(), "w") as file:
             for key in order:
                 #pop off front key/val pair of yaml data
@@ -452,7 +491,7 @@ integrates: {}
         pass
 
     def isLinked(self):
-        return self.__remote != None
+        return self.grabGitRemote() != None
 
     def install(self, cache_dir, ver=None, src=None):
         #CMD: git clone (rep.git_url) (location) --branch (rep.last_version) --single-branch
@@ -473,8 +512,8 @@ integrates: {}
         ver = "v"+ver
         git.Git(cache_dir).clone(src,"--branch",ver,"--single-branch")
         self.__local_path = cache_dir+self.getName()+"/"
-        self.__repo = git.Repo(self.__local_path)
-        self.__repo.git.checkout(ver)
+        self._repo = git.Repo(self.__local_path)
+        self._repo.git.checkout(ver)
         self.loadMeta()
         return
 
@@ -500,6 +539,8 @@ integrates: {}
     def updateDerivatives(self, block_list):
         #print("Derives:",block_list)
         update = False
+        if(self.getTitle() in block_list):
+            block_list.remove(self.getTitle())
         if(len(self.__metadata['derives']) != len(block_list)):
             update = True
         for b in block_list:
@@ -508,7 +549,7 @@ integrates: {}
                 break
         if(update):
             self.__metadata['derives'] = list(block_list)
-            self.pushYML("Updates project derivatives")
+            self.save()
         pass
 
     def gatherSources(self, ext=[".vhd"]):
@@ -524,10 +565,12 @@ integrates: {}
         if(dot == -1):
             return ''
         else:
-            return file_path[dot+1:]
+            return file_path[dot+1:].lower()
     
     @classmethod
     def split(cls, dep):
+        if(dep == None):
+            return '',''
         dot = dep.find('.')
         lib = dep[:dot]
         dot2 = dep[dot+1:].find('.')
@@ -537,7 +580,7 @@ integrates: {}
         if(dot2 == -1):
             dot2 = len(dep)
         name = dep[dot+1:dot+1+dot2]
-        return lib,name
+        return lib.lower(),name.lower()
 
     #auto detect top-level design entity
     def identifyTop(self):
@@ -576,8 +619,8 @@ integrates: {}
             if(self._top.getName() != self.getMeta("toplevel")):
                 log.debug("TOPLEVEL: "+self._top.getName())
                 self.__metadata['toplevel'] = self._top.getName()
-                self.pushYML("Auto updates top level design module to "+self.getMeta("toplevel"))
-            pass
+                self.save()
+
         return self._top
 
     #determine what testbench is used for the top-level design entity
@@ -610,12 +653,14 @@ integrates: {}
             log.info("DETECTED TOP-LEVEL BENCH: "+self._bench.getName())
             if(save and self.getMeta("bench") != self._bench.getName()):
                 self.__metadata['bench'] = self._bench.getName()
-                self.pushYML("Auto updates testbench module to "+self.getMeta("bench"))
-            return self._bench #return the entity
+                self.save()
+            #return the entity
+            return self._bench 
         else:
-            log.warning("No testbench configured for "+entity_name)
+            log.warning("No testbench detected.")
             return None
 
+    #determine what unit is utmost highest, whether it be a testbench (if applicable) or entity
     def identifyTopDog(self, top, tb):
         #override auto detection
         if(top == None):

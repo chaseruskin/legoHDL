@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from genericpath import isdir
 import os, sys, shutil
 from .block import Block
 from .__version__ import __version__
@@ -37,8 +36,6 @@ class legoHDL:
         self.blockCWD = None
         #defines path to dir of remote code base
         self.db = Registry(apt.getMarkets())
-        if(apt.inWorkspace()):
-            Block.fetchLibs(self.db.availableLibs())
         if(not apt.inWorkspace() and (command != 'config' and command != 'help' and (command != 'open' or "settings" not in options))):
             exit()
         self.parse(command, package, options)
@@ -111,7 +108,7 @@ class legoHDL:
         else:
             exit(log.error("The module cannot be found anywhere."))
 
-        print(block.getTitle()+" prereqs")
+        #print(block.getTitle()+" prereqs")
         #append to required_by list used to prevent cyclic recursive nature
         required_by.append(block.getTitle())
         #see if all cache designs are available by looking at block's derives list
@@ -120,12 +117,13 @@ class legoHDL:
             L,N = block.split(prereq)
             if(prereq == block.getTitle() or prereq in required_by):
                 continue
-            print("Requires",prereq)
+
             tmp_blk = Block(prereq)
             cache_designs = block.grabCacheDesigns(override=True)
             needs_instl = False
             if(L not in cache_designs.keys()):
                 #needs to install
+                print("Requires",prereq)
                 self.install(prereq, required_by=required_by)
                 needs_instl = True
             else:
@@ -333,8 +331,8 @@ class legoHDL:
             output.write("@SRC-TOP "+top+" "+topfile_top+"\n")
             
         output.close()
-
-        block.updateDerivatives(block_order[:len(block_order)-1])
+        #update the derives section to give details into what blocks are required for this one
+        block.updateDerivatives(block_order)
         print("success")
         pass
 
@@ -387,33 +385,34 @@ class legoHDL:
     #will also install project into cache and have respective pkg in lib
     def download(self, title):
         l,n = Block.split(title)
-
-        if(True):
-            if(self.db.blockExists(title, "cache") and not self.db.blockExists(title, "local")):
-                instl = self.db.getBlocks("cache")[l][n]
-                instl.clone(src=instl.getPath())
-                return self.db.getBlocks("local",updt=True)[l][n]
-            exit(log.error("No remote code base configured to download modules"))
-
-        if(not self.db.blockExists(title, "market")):
-            exit(log.error('Module \''+title+'\' does not exist in market'))
-
-        #TO-DO: retesting
+        #1. download
+        #update local block if it has a remote
         if(self.db.blockExists(title, "local")):
-            log.info("Module already exists in local workspace- pulling from remote...")
-            self.db.getBlocks("local")[l][n].pull()
+            blk = self.db.getBlocks("local")[l][n]
+            #pull from remote url
+            blk.pull()
+        #download from market
+        elif(self.db.blockExists(title, "market")):
+            blk = self.db.getBlocks("market")[l][n]
+            #use the remote git url to download/clone the block
+            blk.downloadFromURL(blk.getMeta("remote"))
+        #download from the cache
+        elif(self.db.blockExists(title, "cache")):
+            blk = self.db.getBlocks("cache")[l][n]
+            #use the cache directory to download/clone the block
+            blk.downloadFromURL(blk.getPath())
+            #now return the block if wanting to open it with -o option
+            return
         else:
-            log.info("Cloning from market...")
-            self.db.getBlocks("market")[l][n].clone()
-    
+            exit(log.error('Block \''+title+'\' does not exist in any linked market for this workspace'))
+        
+        #2. perform re-install
         try: #remove cached project already there
             shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/")
         except:
             pass
         #install to cache and generate PKG VHD 
-        block = self.db.getBlocks("local", updt=True)[l][n]  
-        self.install(block.getTitle(), block.getVersion())
-
+        self.install(title, blk.getVersion())
         print("success")
         pass
 
@@ -735,11 +734,11 @@ class legoHDL:
 
     def cleanup(self, block, force=False):
         if(not block.isValid()):
-            log.info('Module '+block.getName()+' does not exist locally.')
+            log.info('Block '+block.getName()+' does not exist locally.')
             return
         
         if(not block.isLinked() and force):
-            log.warning('No market is configured for this package, if this module is deleted and uninstalled\n\
+            log.warning('No market is configured for this block, if this module is deleted and uninstalled\n\
             it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'? [y/n]\
             ')
             response = ''
@@ -850,13 +849,21 @@ class legoHDL:
         description = package
         value = package
         package = package.replace("-", "_")
-        if(apt.inWorkspace()):
-            self.blockPKG = Block(title=package)
 
         L,N = Block.split(package)
+
+        if(apt.inWorkspace()):
+            if(self.db.blockExists(package,"local")):
+                self.blockPKG = self.db.getBlocks("local")[L][N]
+            else:
+                self.blockPKG = None
+
+        valid = (self.blockPKG != None)
         
         #branching through possible commands
-        if(command == "install"):
+        if(valid and command == "install"):
+            if(self.blockPKG == None):
+                return
             print(self.blockPKG.getTitle())
             ver = None
             if(len(options)):
@@ -868,7 +875,8 @@ class legoHDL:
             pass
         elif(command == "build" and self.blockCWD.isValid()):
             self.build(value)
-        elif(command == "new" and len(package) and not self.blockPKG.isValid()):
+        elif(not valid and command == "new" and len(package)):
+            #option to create a new file
             if(options.count("file")):
                 options.remove("file")
                 if(self.blockCWD.isValid()):
@@ -878,6 +886,7 @@ class legoHDL:
                 else:
                     exit(log.error("Cannot create a project file when not inside a project"))
                 return
+            #option to create a new block
             mkt_sync = None
             git_url = None
             startup = False
@@ -900,7 +909,7 @@ class legoHDL:
                 if(apt.isValidURL(opt)):
                     git_url = opt
             print(git_url,mkt_sync)
-            log.debug("package name: "+package)
+            log.debug("block name: "+package)
             self.blockPKG = Block(title=package, new=True, market=mkt_sync, remote=git_url)
 
             if(startup):
@@ -913,6 +922,7 @@ class legoHDL:
             if(len(options) == 2 and options.count('d')):
                 self.cleanup(self.blockCWD, False)
             pass
+        #a visual aide to help a developer see what package's are at the ready to use
         elif(command == 'graph' and self.blockCWD.isValid()):
             top = package
             tb = None
@@ -925,26 +935,22 @@ class legoHDL:
             self.formGraph(self.blockCWD, top_dog)
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
-            block = self.download(package)
+            self.download(package)
             if('o' in options):
-                block.load()
+                self.db.getBlocks("local", updt=True)[L][N].load()
             pass
         elif(command == "summ" and self.blockCWD.isValid()):
             self.blockCWD.getMeta()['summary'] = description
-            self.blockCWD.pushYML("Updates project summary")
+            #self.blockCWD.pushYML("Updates project summary")
             pass
         elif(command == 'del'):
             #try to delete a block
-            if(self.db.blockExists(package, "local")):
-                force = False
-                if(len(options) > 0):
-                    if(options[0].lower() == 'u'):
-                        force = True
-                self.cleanup(self.db.getBlocks("local")[L][N], force)
+            if(valid):
+                force = options.count('uninstall')
+                self.cleanup(self.blockPKG, force)
             #try to delete a setting
             else:
                 self.setSetting(options, value, delete=True)
-
 
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             if(options.count("script")):
@@ -962,7 +968,7 @@ class legoHDL:
             self.convert(package, value, options)
         elif(command == "refresh"):
             self.db.sync()
-        elif(command == "export" and self.blockCWD.isValid()): #a visual aide to help a developer see what package's are at the ready to use
+        elif(command == "export" and self.blockCWD.isValid()):
             #'' and list() are default to pkg and options
             mod = package
             tb = None
@@ -975,18 +981,22 @@ class legoHDL:
         elif(command == "open"):
             if(apt.SETTINGS['editor'] == None):
                 exit(log.error("No text-editor configured!"))
-            if(options.count("template") or package.lower() == "template"):
+
+            if(options.count("template")):
                 os.system(apt.SETTINGS['editor']+" \""+apt.TEMPLATE+"\"")
-            elif(options.count("script") or package.lower() == "script"):
-                    os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/scripts\"")
-            elif(options.count("settings") or package.lower() == "settings"):
+            elif(options.count("script")):
+                os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/scripts\"")
+            elif(options.count("settings")):
                 os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/settings.yml\"")
-            elif(self.db.blockExists(package, "local")):
-                self.db.getBlocks("local")[L][N].load()
+            elif(valid):
+                self.blockPKG.load()
             else:
                 exit(log.error("No module "+package+" exists in your workspace."))
-        elif(command == "show" and (self.db.blockExists(package, "local") or self.db.blockExists(package, "cache"))):
-            self.db.getBlocks("local","cache")[L][N].show()
+        elif(command == "show" and 
+            (self.db.blockExists(package, "local") or \
+                self.db.blockExists(package, "cache") or \
+                self.db.blockExists(package, "market"))):
+            self.db.getBlocks("local","cache","market")[L][N].show()
             pass
         elif(command == "port"):
             mapp = pure_ent = False
@@ -1013,9 +1023,8 @@ class legoHDL:
         elif(command == "help" or command == ''):
             #list all of command details
             self.commandHelp(package)
-            #print("VHDL's package manager")
             print('USAGE: \
-            \n\tlegohdl <command> [package] [args]\
+            \n\tlegohdl <command> [block] [flags]\
             \n')
             print("COMMANDS:")
             def formatHelp(cmd, des):
@@ -1030,6 +1039,7 @@ class legoHDL:
             formatHelp("uninstall","remove block from cache")
             formatHelp("download","grab block from its market for development")
             formatHelp("update","update installed block to be to the latest version")
+            formatHelp("graph","visualize dependency graph for reference")
             formatHelp("export","generate a recipe file to build the block")
             formatHelp("build","run a custom configured script")
             formatHelp("del","deletes a block from local workspace or a configured setting")
@@ -1090,7 +1100,7 @@ class legoHDL:
             print("   If no script name is specified, it will default to looking for script \"master\"")
             pass
         elif(cmd == "del"):
-            printFmt("del","<block/value>","[-u | -market | -script | -label | -workspace]")
+            printFmt("del","<block/value>","[-uninstall | -market | -script | -label | -workspace]")
             pass
         elif(cmd == "port"):
             printFmt("port","<block>","[-map -inst]")
