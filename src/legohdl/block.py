@@ -56,7 +56,7 @@ class Block:
                 except:
                     log.warning("could not clone")
                     pass
-            self.create() #create the repo and directory structure
+            self.create(remote=remote) #create the repo and directory structure
         pass
 
     def getPath(self):
@@ -175,7 +175,6 @@ bench:
 remote:
 market:
 derives: {}
-integrates: {}
         """
         return body
 
@@ -223,8 +222,9 @@ integrates: {}
 
     def setRemote(self, rem):
         log.info("Setting "+rem+"as the remote git url for "+self.getTitle())
+        self.grabGitRemote(rem)
         self.__metadata['remote'] = rem
-        self.__remote = rem
+        self._remote = rem
         self.genRemote()
         self.save()
         pass
@@ -309,7 +309,7 @@ integrates: {}
         file_out.close()
         pass
 
-    def create(self, fresh=True, git_exists=False):
+    def create(self, fresh=True, git_exists=False, remote=None):
         log.info('Initializing new project')
         if(fresh):
             if(os.path.isdir(apt.TEMPLATE)):
@@ -328,8 +328,6 @@ integrates: {}
         else:
             self._repo = git.Repo(self.__local_path)
     
-        if(self.isLinked()):
-            self._repo.create_remote('origin', self.__remote) #attach to remote code base
 
         #run the commands to generate new project from template
         #file to find/replace word 'template'
@@ -362,6 +360,8 @@ integrates: {}
         self.__metadata['version'] = '0.0.0'
         self.identifyTop()
         log.debug(self.getName())
+        if(remote != None):
+            self.setRemote(remote)
         self.save() #save current progress into yaml
         self._repo.index.add(self._repo.untracked_files)
         self._repo.index.commit("Initializes block")
@@ -402,23 +402,18 @@ integrates: {}
             self.save()
         return self._remote
 
-
-    #generate new link to remote if previously unestablished
+    #generate new link to remote if previously unestablished (only for creation)
     def genRemote(self):
         if(self.isLinked()):
+            remote_url = self.getMeta("remote")
             try: #attach to remote code base
-                self._repo.create_remote('origin', self.__remote) 
+                self._repo.create_remote('origin', remote_url) 
             except: #relink origin to new remote url
                 print(self._repo.remotes.origin.url)
-                remote_url = self.getMeta("remote")
-                if(remote_url == None):
-                    return
-                with self._repo.remotes.origin.config_writer as cw:
-                    cw.set("url", remote_url)
-            #now set it up to track
-            self._repo.git.pull()
-            self._repo.git.push("-u","origin",str(self._repo.head.reference))
-            self._repo.remotes.origin.push("--tags")
+            if(remote_url == None):
+                return
+            with self._repo.remotes.origin.config_writer as cw:
+                cw.set("url", remote_url)
         pass
 
     def pushRemote(self):
