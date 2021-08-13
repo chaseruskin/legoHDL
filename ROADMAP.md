@@ -2,9 +2,10 @@
 
 - [ ] implement versioning (folders for each version created on-demand) (installing spec. versions)
 - [ ] auto-install dependencies if found in remote (occurs on export command)
+
 - [-] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace) (does it work when doing it on just a regular block?) (say install block from market and gets requirements installs automatically?)
 
-- [ ] implement update command (have -all flag to update all installs, otherwise update by block name?) (could occur on refresh command?)
+- [!] implement update command (have -all flag to update all installs, otherwise update by block name?) (could occur on refresh command?)
 
 - [ ] ensure init command is up to par
 - [ ] test init adding a remote already to git repo and then doing legohdl command
@@ -13,14 +14,9 @@
 
 - [!] change .lego.lock to Block.lock
 
-- [ ] test making market from local to remote
 - [ ] ensure download will download the entire remote ("clone") (unless no remote is configured and block is in cache)
 
-- [ ] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock)
-
 - [ ] test installing a block, then auto-installs requirements to cache if DNE in cache and if the requirement is found in local path or in market
-
-- [ ] issue warning if market is removed from registries but a block still is tied to that market?
 
 - [ ] implement additional "help" command documentation
 
@@ -28,15 +24,25 @@
 ### Future Roadmap
 
 - [ ] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
-- [ ] '-all' option on graph/export to grab all project-level code
+
+- [ ] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock)
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
 - [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
 - [ ] add ability to search by market
-- [ ] add cool logging
-- [ ] see if improvements can be made to "set settings" code (config command)
+
 - [ ] have some way of notifying user that a block is missing from installations when trying to export
 
+- [ ] '-all' option on graph/export to grab all project-level code
+
+- [ ] add cool logging
+- [ ] see if improvements can be made to "set settings" code (config command)
+
+
 __Completed__
+- [x] test making market from local to remote
+- [x] dynamically manage workspaces if created/deleted within settings.yml
+- [x] dynamically manage markets if deleted/added within settings.yml
+- [x] issue warning if market is removed from registries but a block still is tied to that market?
 - [x] multi-block setting: allow for designs to prioritize blocks found locally over released blocks in cache (if version number is not appended to the entity name)
     the trade off: 
         -some designs may only work with unreleased versions if that intertwined block is not released again

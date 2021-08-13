@@ -1,8 +1,9 @@
 #load in settings
 import copy
-from genericpath import isfile
+from genericpath import isdir, isfile
 import yaml,os,logging as log
 from subprocess import check_output
+import shutil
 
 class Apparatus:
     SETTINGS = dict()
@@ -16,6 +17,9 @@ class Apparatus:
 
     WORKSPACE = HIDDEN
 
+    OPTIONS = ['active-workspace', 'multi-develop', 'author', 'template', \
+               'editor', 'label', 'market', 'script', 'workspace']
+
     __active_workspace = None
 
     @classmethod
@@ -28,20 +32,22 @@ class Apparatus:
         #create bare settings.yml if DNE
         if(not os.path.isfile(cls.HIDDEN+"settings.yml")):
             settings_file = open(cls.HIDDEN+"settings.yml", 'w')
-            structure = """active-workspace:
-multi-develop: false
-author:
-template:
-editor:
-label:
-  recursive: {}
-  shallow: {}
-market: {}
-script: {}
-workspace: {}            
-            """
+            structure = ''
+            for opt in cls.OPTIONS:
+                structure = structure + opt
+                if(opt == 'label'):
+                    structure = structure + ":\n  recursive: {}\n"
+                    structure = structure + "  shallow: {}\n"
+                else:
+                    structure = structure + ": null\n"
             settings_file.write(structure)
             settings_file.close()
+
+    @classmethod
+    def generateDefault(cls, t, *args):
+        for a in args:
+            if(isinstance(cls.SETTINGS[a], t) == False):
+                cls.SETTINGS[a] = {}
 
     @classmethod
     def load(cls):
@@ -49,9 +55,16 @@ workspace: {}
         #ensure all necessary hidden folder structures exist
         cls.initialize()
 
+        #load dictionary data in variable
         with open(cls.HIDDEN+"settings.yml", "r") as file:
             cls.SETTINGS = yaml.load(file, Loader=yaml.FullLoader)
-        
+
+        #ensure all pieces of settings are correct
+        cls.generateDefault(dict,"market","script","workspace")
+        cls.generateDefault(bool,"multi-develop")
+
+        cls.dynamicWorkspace()
+
         #determine current workspace currently being used
         cls.__active_workspace = cls.SETTINGS['active-workspace']
 
@@ -69,11 +82,37 @@ workspace: {}
         cls.WORKSPACE = cls.HIDDEN+"workspaces/"+cls.SETTINGS['active-workspace']+"/"
 
         #ensure no dead scripts are populated in 'script' section of settings
-        cls.verifyScripts()
+        cls.dynamicScripts()
         pass
-
+    
+    #automatically create local paths for workspaces or delete hidden folders
     @classmethod
-    def verifyScripts(cls):
+    def dynamicWorkspace(cls):
+        acting_ws = cls.SETTINGS['active-workspace']
+        for ws,val in cls.SETTINGS['workspace'].items():
+            #try to make this local directory
+            if("local" in val.keys() and os.path.isdir(val['local']) == False):
+                os.makedirs(val['local'],exist_ok=True)
+            cls.initializeWorkspace(ws)
+
+        ws_dirs = os.listdir(cls.HIDDEN+"workspaces/")
+        #remove any hidden workspace folders that are no longer in the settings.yml
+        for ws in ws_dirs:
+            if(ws not in cls.SETTINGS['workspace'].keys()):
+                #delete if found a directory type
+                if(os.path.isdir(cls.HIDDEN+"workspaces/"+ws)):
+                    shutil.rmtree(cls.HIDDEN+"workspaces/"+ws)
+                #delete if found a file type
+                else:
+                    os.remove(cls.HIDDEN+"workspaces/"+ws)
+
+        if(acting_ws != None):
+            cls.SETTINGS['active-workspace'] = acting_ws
+        pass
+    
+    #automatically manage if a script still exists and clean up non-existent scripts
+    @classmethod
+    def dynamicScripts(cls):
         #loop through all script entries
         deletions = []
         for key,val in cls.SETTINGS['script'].items():
@@ -135,23 +174,27 @@ workspace: {}
         with open(cls.HIDDEN+"settings.yml", "w") as file:
             yaml.dump(cls.SETTINGS, file)
         pass
-    
+
     @classmethod
     def getLocal(cls):
         return cls.SETTINGS['workspace'][cls.__active_workspace]['local']
 
+    #returns workspace-level markets or system-wide markets
     @classmethod
-    def getMarkets(cls):
+    def getMarkets(cls, workspace_level=True):
         returnee = dict()
         #key: name, val: url
-        if(cls.inWorkspace()):
+        if(cls.inWorkspace() and workspace_level):
             for name in cls.SETTINGS['workspace'][cls.__active_workspace]['market']:
+                returnee[name] = cls.SETTINGS['market'][name]
+        elif(cls.inWorkspace()):
+            for name in cls.SETTINGS['market']:
                 returnee[name] = cls.SETTINGS['market'][name]
         return returnee
 
     @classmethod
     def isValidURL(cls, url):
-        if(url.count(".git") == 0): #quick test to pass before actually verifying url
+        if(url == None or url.count(".git") == 0): #quick test to pass before actually verifying url
             return False
         log.info("Checking ability to link to url...")
         try:
@@ -160,6 +203,7 @@ workspace: {}
             return False
         return True
 
+    #returns true if the current workspace has some markets listed
     @classmethod
     def linkedMarket(cls):
         rem = cls.SETTINGS['workspace'][cls.__active_workspace]['market']

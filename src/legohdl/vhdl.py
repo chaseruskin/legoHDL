@@ -284,7 +284,7 @@ class Vhdl:
                 in_gens = False
                 in_ports = True
                 signals = self.addSignal(signals, i, cs, true_code, declare=True, isSig=True)
-            elif(cs[i] == "end"):
+            elif(cs[i] == "end" or cs[i] == 'component' or cs[i] == 'package'):
                 break
             elif(in_ports):
                 if(cs[i] == ';' and cs[i+1] != 'end'):
@@ -331,7 +331,7 @@ class Vhdl:
                 in_ports = True
                 #add first line of signals
                 signals = self.addSignal(signals, i, cs, true_code, declare=False)
-            elif(cs[i] == "end"):
+            elif(cs[i] == "end" or cs[i] == 'component' or cs[i] == 'package'):
                 break
             elif(in_ports):
                 #add all ports to list

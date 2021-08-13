@@ -1,13 +1,14 @@
 #registry.py is in charge of seeing what packages are hosted remotely and syncing
 #packages between user and remote
 from enum import Enum
-import copy,git,yaml
+import git,yaml
+import logging as log
+import shutil
 import os,random,requests,json,glob
 from collections import OrderedDict
 from .block import Block
 from .apparatus import Apparatus as apt
 from .market import Market
-import logging as log
 
 class Registry:
     class Mode(Enum):
@@ -29,6 +30,20 @@ class Registry:
                 self.__galaxy.append(Market(rem,val))
         self.__registry_path = apt.HIDDEN+"registry/"
         pass
+    
+    @classmethod
+    def dynamicLoad(cls, mrkts):
+        #try to create system-wide markets if DNE
+        for rem,val in mrkts.items():
+            Market(rem,val)
+        #if a folder exists in registry path but key is not in settings, delete the registry
+        regs = os.listdir(apt.HIDDEN+"registry/")
+        for r in regs:
+            if r not in mrkts.keys():
+                if(os.path.isdir(apt.HIDDEN+"registry/"+r)):
+                    shutil.rmtree(apt.HIDDEN+"registry/"+r)
+                else:
+                    os.remove(apt.HIDDEN+"registry/"+r)
 
     def listBlocks(self, search_for, options):
         i_dot = search_for.find('.')

@@ -31,8 +31,12 @@ class legoHDL:
         if(command == '--version'):
             print(__version__)
             exit()
-        
-        apt.load() #load settings.yml
+        #load settings.yml
+        apt.load()
+        #dyamincally manage any registries that were added to settings.yml
+        Registry.dynamicLoad(apt.getMarkets(workspace_level=False))
+        apt.save()
+
         self.blockPKG = None
         self.blockCWD = None
         #defines path to dir of remote code base
@@ -530,15 +534,17 @@ class legoHDL:
             #append to current workspace with -append
 
             #allow for just referencing the market if trying to append to current workspace
-            if(val == '' and (options.count("append") or options.count("remove"))):
+            if(val == '' and options.count("append") or options.count("remove")):
                 pass
             else:
                 #add/change value to all-remote list
                 mkt = Market(key,val) #create market object!  
+                if(val == ''):
+                    val = None
                 #only create remote in the list
                 if(key in apt.SETTINGS['market'].keys()):
                     #market name already exists
-                    mkt.setRemote(val) 
+                    val = mkt.setRemote(val) 
                 #set to null if the tried remote DNE
                 if(not mkt.isRemote()):
                     val = None

@@ -163,6 +163,8 @@ class Block:
             if(self.__market != None):
                 #todo : publish every version that DNE on market?
                 self.__market.publish(self.__metadata, options)
+            elif(self.getMeta("market") != None):
+                log.warning("Market "+self.getMeta("market")+" is no longer attached to this workspace.")
         pass
 
     def legoLockFile(self):
@@ -246,9 +248,11 @@ derives: {}
             else:
                 self.__remote = self.__metadata['remote']
         if('market' in self.__metadata.keys()):
+            #did an actual market object already get passed in?
             if(self.__market != None):
                 self.__metadata['market'] = self.__market.getName()
-            elif(self.getMeta("market") != None and self.getMeta("market") in apt.SETTINGS['market'].keys()):
+            #see if the market is bound to your workspace
+            elif(self.getMeta("market") != None and self.getMeta("market") in apt.getMarkets().keys()):
                 self.__market = Market(self.__metadata['market'], apt.SETTINGS['market'][self.__metadata['market']])
         pass
 

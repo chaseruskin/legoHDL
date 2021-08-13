@@ -11,8 +11,10 @@ class Market:
         self._local_path = apt.HIDDEN+"registry/"+self._name
         #is there not a git repository here? if so, need to init
         if(not os.path.isdir(self._local_path+"/.git")):
-            valid_remote = apt.isValidURL(url)
-            url_name = url[url.rfind('/')+1:url.rfind('.git')]
+            valid_remote = False
+            if(url != None):
+                valid_remote = apt.isValidURL(url)
+                url_name = url[url.rfind('/')+1:url.rfind('.git')]
             if(valid_remote):
                 git.Git(apt.HIDDEN+"registry/").clone(url)
                 log.info("Found and linked remote repository to "+self._name)
@@ -34,11 +36,11 @@ class Market:
 
     def setRemote(self, url):
         if((self.isRemote() and self._repo.remotes.origin.url != self.url) or (not self.isRemote())):
-            if(url == "local"):
-                if(self.isRemote()): #unlink remote
-                    log.info("Removing link for "+self._name+" to "+self.url+"...")
-                    self._repo.git.remote("rm","origin")
-                return
+            if(url == None):
+                #if(self.isRemote()): #unlink remote
+                    #log.info("Removing link for "+self._name+" to "+self.url+"...")
+                    #self._repo.git.remote("rm","origin")
+                return None
             valid_remote = apt.isValidURL(url)
             #is this a valid remote path? if it is and we have no origin, make it linked!
             if(not self.isRemote() and valid_remote):
@@ -54,10 +56,21 @@ class Market:
                 os.rename(apt.HIDDEN+"registry/"+url_name, self._local_path)
             else:
                 log.error("Invalid link- setting could not be changed")
-                if(self.isRemote()):
+                if(self.isRemote() and url != None):
                     self.url = self._repo.remotes.origin.url
+        return self.url
 
     def publish(self, meta, options=[]):
+        if(self.url != None):
+            if(len(self._repo.remotes)):
+                self._repo.git.pull()  
+            #create remote origin
+            else:
+                if(apt.isValidURL(self.url)):
+                    self._repo.git.remote("add","origin",self.url)
+                else:
+                    log.warning("Remote url for market "+self.getName()+" does not exist")
+                    self.url = None
         #switch to new branch
         active_branch = self._repo.active_branch
         tmp_branch = meta['library']+"."+meta['name']+"-"+meta['version']
@@ -79,8 +92,8 @@ class Market:
                 pass
             pass
             file.close()
-        #save changes to repository
-        self._repo.index.add(self._repo.untracked_files)
+        #save changes to repository (only add and stage the file that was made)
+        self._repo.index.add(fp+apt.MARKER)
         self._repo.index.commit("Adds "+meta['library']+'.'+meta['name']+" v"+meta['version'])
         #push to remote market repository
         if(self.url != None):
