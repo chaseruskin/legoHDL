@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from genericpath import isfile
 import os, sys, shutil
 from .block import Block
 from .__version__ import __version__
@@ -344,18 +345,25 @@ class legoHDL:
         hierarchy.output()
         
         unit_order,block_order = hierarchy.topologicalSort()
-        print('---BUILD ORDER---')
-        for u in unit_order:
+
+        print('---ENTITY ORDER---')
+        for i in range(0, len(unit_order)):
+            u = unit_order[i]
             if(not u.isPKG()):
-                print(u.getFull(),end=' -> ')
+                print(u.getFull(),end='')
+                if(i < len(unit_order)-1):
+                    print(' -> ',end='')
         print()
 
         print('---BLOCK ORDER---')
         #ensure the current block is the last one on order
         block_order.remove(block.getTitle())
         block_order.append(block.getTitle())
-        for b in block_order:
-            print(b,end=' -> ')
+        for i in range(0, len(block_order)):
+            b = block_order[i]
+            print(b,end='')
+            if(i < len(block_order)-1):
+                print(' -> ',end='')
         print()
 
         return unit_order,list(block_order)
@@ -589,52 +597,65 @@ class legoHDL:
         # BUILD SCRIPT CONFIGURATION
         elif(options[0] == 'script'):
             #parse into cmd and filepath
-            ext = Block.getExt(val)
-            if(ext != ''):
-                ext = '.'+ext
-                if(ext.count("/") or ext.count("\\")):
-                    ext = ''
-            cmd = val[:val.find(' ')]
-            args = val[val.find(' ')+1:].strip().split()
-
-            path = oldPath = ''
-            #find which part of the args is the path to the file being used as the script
-            for p in args:
-                if(os.path.isfile(p)):
-                    path = os.path.realpath(os.path.expanduser(p)).replace("\\", "/")
-                    oldPath = p
+            val = val.replace("\"","").replace("\'","")
+            parsed = val.split()
+            if(len(parsed) == 1):
+                exit(log.error("At a minimum requires a command and a path"))
+            #take first component to be the command
+            cmd = parsed[0]
+            filepath = ''
+            file_index = -1
+            for pt in parsed:
+                if(os.path.isfile(pt)):
+                    filepath = os.path.realpath(os.path.expanduser(pt)).replace("\\", "/")
+                    #reinsert nice formatted path into the list of args
+                    file_index = parsed.index(pt)
+                    parsed[file_index] = filepath
                     break
-            if(path == ''):
-                 exit(log.error("Could not find an accepted file"))
-            #reassemble val with new file properly formatted filepath
-            val = cmd
-            for i in range(len(args)):
-                if(args[i] == oldPath):
-                    val = val + " " +path
-                else:
-                    val = val + " " + args[i]
-            
+            if(filepath == ''):
+                exit(log.error("No script path found in value"))
+
+            _,ext = os.path.splitext(filepath)
+
             #skip link option- copy file and rename it same as name 
             if(options.count("lnk") == 0 and val != ''):   
                 dst = apt.HIDDEN+"scripts/"+key+ext
-                shutil.copyfile(path, dst)
-                dst = path.replace(path, dst)
-                val = cmd+' '+dst
+                shutil.copyfile(filepath, dst)
+                dst = filepath.replace(filepath, dst)
+                #reassign the value for the filepath
+                parsed[file_index] = dst
+
+            #reassemble val with new file properly formatted filepath
+            val = cmd
+            for pt in parsed:
+                if(pt == cmd):
+                    continue
+                val = val + " " + pt
+                
             #initialization
             if(not isinstance(apt.SETTINGS[options[0]],dict)):
                 apt.SETTINGS[options[0]] = dict()
             #insertion
-            if(path != ''):
+            if(filepath != ''):
                 apt.SETTINGS[options[0]][key] = "\""+val+"\""
             #deletion
             elif(isinstance(apt.SETTINGS[options[0]],dict) and key in apt.SETTINGS[options[0]].keys()):
                 val = apt.SETTINGS[options[0]][key]
-                ext = Block.getExt(val)
+                _,ext = os.path.splitext(val)
                 del apt.SETTINGS[options[0]][key]
                 try:
                     os.remove(apt.HIDDEN+"scripts/"+key+ext)
                 except:
                     pass
+            pass
+        elif(options[0] == 'multi-develop'):
+            if(choice == '1' or choice.lower() == 'true'):
+                choice = True
+            elif(choice == '0' or choice.lower() == 'false'):
+                choice = False
+            else:
+                exit(log.error("Setting takes true or false values"))
+            apt.SETTINGS[options[0]] = choice
             pass
         elif(options[0] == 'template'):
             if(choice == ''):
@@ -675,7 +696,7 @@ class legoHDL:
     def convert(self, title, value, options=[]):
         #must look through tags of already established repo
         l,n = Block.split(title)
-        if(l == '' or n == ''):
+        if(l == '' or n == '' and len(options == 0)):
             exit(log.error("Must provide a library.block"))
         cwd = apt.fs(os.getcwd())
         #find the src dir and testbench dir through autodetect top-level modules
@@ -697,7 +718,10 @@ class legoHDL:
                 return
             else:
                 exit(log.error("Invalid git url."))
-            pass
+        elif(options.count("summary")):
+            self.blockCWD.getMeta()['summary'] = value
+            self.blockCWD.save()
+            return
 
         files = os.listdir(cwd)
         if apt.MARKER in files or self.db.blockExists(title, "local") or self.db.blockExists(title, "cache") or self.db.blockExists(title, "market"):
@@ -821,16 +845,17 @@ class legoHDL:
 
     def listScripts(self):
         if(isinstance(apt.SETTINGS['script'],dict)):
-            print('{:<12}'.format("Name"),'{:<14}'.format("Command"),'{:<54}'.format("Path"))
-            print("-"*12+" "+"-"*14+" "+"-"*54)
+            print('{:<12}'.format("Name"),'{:<12}'.format("Command"),'{:<54}'.format("Path"))
+            print("-"*12+" "+"-"*12+" "+"-"*54)
             for key,val in apt.SETTINGS['script'].items():
                 spce = val.find(' ')
                 cmd = val[1:spce]
                 path = val[spce:len(val)-1].strip()
-                if(spce == -1): #command not found
+                #command not found
+                if(spce == -1): 
                     path = cmd
                     cmd = ''
-                print('{:<12}'.format(key),'{:<14}'.format(cmd),'{:<54}'.format(path))
+                print('{:<12}'.format(key),'{:<12}'.format(cmd),'{:<54}'.format(path))
                 pass
         else:
             log.info("No scripts added!")
@@ -939,10 +964,6 @@ class legoHDL:
             if('o' in options):
                 self.db.getBlocks("local", updt=True)[L][N].load()
             pass
-        elif(command == "summ" and self.blockCWD.isValid()):
-            self.blockCWD.getMeta()['summary'] = description
-            #self.blockCWD.pushYML("Updates project summary")
-            pass
         elif(command == 'del'):
             #try to delete a block
             if(valid):
@@ -1039,6 +1060,7 @@ class legoHDL:
             formatHelp("uninstall","remove block from cache")
             formatHelp("download","grab block from its market for development")
             formatHelp("update","update installed block to be to the latest version")
+            print()
             formatHelp("graph","visualize dependency graph for reference")
             formatHelp("export","generate a recipe file to build the block")
             formatHelp("build","run a custom configured script")
@@ -1046,7 +1068,6 @@ class legoHDL:
             formatHelp("refresh","sync local markets with their remotes")
             formatHelp("port","print ports list of specified entity")
             formatHelp("show","read further detail about a specified block")
-            formatHelp("summ","add description to current block")
             formatHelp("config","set package manager settings")
             print("\nType \'legohdl help <command>\' to read more on entered command.")
         else:
@@ -1063,7 +1084,7 @@ class legoHDL:
         if(cmd == ''):
             return
         elif(cmd == "init"):
-            printFmt("init", "<block>")
+            printFmt("init", "<block>","[-remote | -market | -summary]")
             pass
         elif(cmd == "new"):
             printFmt("new","<block>","[-o -<remote-url> -<market-name>")

@@ -1,5 +1,6 @@
 #load in settings
 import copy
+from genericpath import isfile
 import yaml,os,logging as log
 from subprocess import check_output
 
@@ -28,6 +29,7 @@ class Apparatus:
         if(not os.path.isfile(cls.HIDDEN+"settings.yml")):
             settings_file = open(cls.HIDDEN+"settings.yml", 'w')
             structure = """active-workspace:
+multi-develop: false
 author:
 template:
 editor:
@@ -43,8 +45,9 @@ workspace: {}
 
     @classmethod
     def load(cls):
-        cls.initialize()
         log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.INFO)
+        #ensure all necessary hidden folder structures exist
+        cls.initialize()
 
         with open(cls.HIDDEN+"settings.yml", "r") as file:
             cls.SETTINGS = yaml.load(file, Loader=yaml.FullLoader)
@@ -64,7 +67,32 @@ workspace: {}
             log.error("Please specify a local path! See \'legohdl help config\' for more details")
 
         cls.WORKSPACE = cls.HIDDEN+"workspaces/"+cls.SETTINGS['active-workspace']+"/"
+
+        #ensure no dead scripts are populated in 'script' section of settings
+        cls.verifyScripts()
         pass
+
+    @classmethod
+    def verifyScripts(cls):
+        #loop through all script entries
+        deletions = []
+        for key,val in cls.SETTINGS['script'].items():
+            exists = False
+            parsed = val.split()
+            #try every part of the value as a path
+            for pt in parsed:
+                pt = pt.replace("\"","").replace("\'","")
+                if(os.path.isfile(pt)):
+                    exists = True
+                    break
+            #mark this pair for deletion from settings
+            if(not exists):
+                deletions.append(key)
+        #clean dead script from scripts section
+        for d in deletions:
+            del cls.SETTINGS['script'][d]
+            #print(d)
+        cls.save()
 
     @classmethod
     def inWorkspace(cls):

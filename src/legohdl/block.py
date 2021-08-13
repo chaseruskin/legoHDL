@@ -1,3 +1,4 @@
+from genericpath import isdir
 import os, yaml, shutil
 from datetime import date
 import stat
@@ -253,27 +254,13 @@ derives: {}
 
 
     def fillTemplateFile(self, newfile, templateFile):
-        #ensure this file doesn't already exist
-        newfile = apt.fs(newfile)
-
         #find the template file to use
-        extension = '.'+self.getExt(newfile)
-
-        fileName = ''
-        last_slash = newfile.rfind('/')
-        if(extension == '.'):
-            fileName = newfile[last_slash+1:]
-        else:
-            i = newfile.rfind(extension)
-            fileName = newfile[last_slash+1:i]
-
-        template_ext = self.getExt(templateFile)
-        if(template_ext == ''):
-            templateFile = templateFile + extension
-        #add extension if none was specified to new file
-        if(extension == '.'):
-            newfile = newfile + extension + template_ext
-
+        
+        #grab name of file
+        filename = os.path.basename(newfile)
+        file,_ = os.path.splitext(filename)
+        
+        #ensure this file doesn't already exist
         if(os.path.isfile(newfile)):
             log.info("File already exists")
             return
@@ -285,18 +272,22 @@ derives: {}
             exit(log.error("Could not find "+templateFile+" file in template project"))
         else:
             templateFile = replacements[0]
-
-        shutil.copy(templateFile, self.__local_path+newfile)
+        #make any necessary directories
+        os.makedirs(newfile.replace(filename,""), exist_ok=True)
+        #copy file to the new location
+        shutil.copyfile(templateFile, self.__local_path+newfile)
+        #reassign file to be the whole path
         newfile = self.__local_path+newfile
         today = date.today().strftime("%B %d, %Y")
         file_in = open(newfile, "r")
         lines = []
+        #write blank if no author configured
         author = apt.SETTINGS["author"]
         if(author == None):
             author = ''
         #find and replace all proper items
         for line in file_in.readlines():
-            line = line.replace("template", fileName)
+            line = line.replace("template", file)
             line = line.replace("%DATE%", today)
             line = line.replace("%AUTHOR%", author)
             line = line.replace("%PROJECT%", self.getTitle())
@@ -716,6 +707,26 @@ derives: {}
             pass
         return design_book
 
+    #return an updated dictionary object with any blank units found in the file
+    def skimVHDL(self, designs, filepath, L, N):
+        with open(filepath, 'r') as file:
+            for line in file.readlines():
+                words = line.split()
+                #skip if its a blank line
+                if(len(words) == 0): 
+                    continue
+                #create new library dictionary if DNE
+                if(L not in designs.keys()):
+                    designs[L] = dict()
+                #add entity units
+                if(words[0].lower() == "entity"):
+                    designs[L][words[1].lower()] = Unit(filepath,Unit.Type.ENTITY,L,N,words[1].lower())
+                #add package units
+                elif((words[0].lower() == "package" and words[1].lower() != 'body')):
+                    designs[L][words[1].lower()] = Unit(filepath,Unit.Type.PACKAGE,L,N,words[1].lower())
+        file.close()
+        return designs
+
     #return dictionary of entities with their respective files as values
     #all possible entities or packages to be used in current project
     def grabCacheDesigns(self, override=False):
@@ -730,23 +741,34 @@ derives: {}
             #do not add the cache files of the current level project
             if(L == self.getLib() and N == self.getName()):
                 continue
-            with open(f, 'r') as file:
-                for line in file.readlines():
-                    words = line.split()
-                    #skip if its a blank line
-                    if(len(words) == 0): 
-                        continue
-                    #create new library dictionary if DNE
-                    if(L not in self._cache_designs.keys()):
-                        self._cache_designs[L] = dict()
-                    #add entity units
-                    if(words[0].lower() == "entity"):
-                        self._cache_designs[L][words[1].lower()] = Unit(f,Unit.Type.ENTITY,L,N,words[1].lower())
-                    #add package units
-                    elif((words[0].lower() == "package" and words[1].lower() != 'body')):
-                        self._cache_designs[L][words[1].lower()] = Unit(f,Unit.Type.PACKAGE,L,N,words[1].lower())
-                file.close()
-        #log.debug("Cache-Level designs: "+str(self._cache_designs))
+            #print(f)
+            self._cache_designs = self.skimVHDL(self._cache_designs, f, L, N)
+
+        #print("Cache-Level designs: "+str(self._cache_designs))
+
+        #if multi-develop is enabled, overwrite the units with those found in the local path
+        #also allow to work with unreleased blocks? -> yes
+        if(apt.SETTINGS['multi-develop'] == True):
+            log.info("Multi-develop is enabled")
+            #1. first find all Block.lock files (roots of blocks)
+            files = glob.glob(apt.getLocal()+"**/"+apt.MARKER, recursive=True)
+            #print(files)
+            #2. go through each recursive search within these roots for vhd files (skip self block root)
+            for f in files:
+                f_dir = f.replace(apt.MARKER,"")
+                with open(f, 'r') as file:
+                    yml = yaml.load(file, Loader=yaml.FullLoader)
+                L = yml['library']
+                N = yml['name']
+                #skip self block
+                if(L == self.getLib() and N == self.getName()):
+                    continue
+                #3. open each found vhdl file and insert units into cache design
+                vhd_files = glob.glob(f_dir+"**/*.vhd", recursive=True)
+                for v in vhd_files:
+                    #print(v)
+                    self._cache_designs = self.skimVHDL(self._cache_designs, v, L, N)
+        #print("Cache-Level designs: "+str(self._cache_designs))
         return self._cache_designs
 
     def grabCurrentDesigns(self, override=False):
@@ -759,26 +781,14 @@ derives: {}
         #create new library dictionary if DNE
         if(L not in self._cur_designs.keys()):
             self._cur_designs[L] = dict()
+
         files = self.gatherSources()
         for f in files:
-            with open(f, 'r') as file:
-                for line in file.readlines():
-                    words = line.split()
-                    #skip if its a blank line
-                    if(len(words) == 0): 
-                        continue
-                    #add entity units
-                    if(words[0].lower() == "entity"):
-                        self._cur_designs[L][words[1].lower()] = Unit(f,Unit.Type.ENTITY,L,N,words[1].lower())
-                    #add package units
-                    elif((words[0].lower() == "package" and words[1].lower() != 'body')):
-                        self._cur_designs[L][words[1].lower()] = Unit(f,Unit.Type.PACKAGE,L,N,words[1].lower())
-                file.close()
+            self._cur_designs = self.skimVHDL(self._cur_designs, f, L, N)
         #log.debug("Project-Level Designs: "+str(self._cur_designs))
         return self._cur_designs
     
     #search for the projects attached to the external package
-    @classmethod
     def grabExternalProject(cls, path):
         #use its file to find out what block uses it
         path_parse = apt.fs(path).split('/')
