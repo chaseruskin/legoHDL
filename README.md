@@ -17,7 +17,7 @@ Let's go over some important terminology regarding legoHDL.
 
 __Block.lock__ : The metadata file that signifies if a project is a block. This file is automatically maintained by the legoHDL. It contains information such as the version number, remote url repository, and dependencies. It is highly recommended to not modify this file.
 
-__project__ : A group of VHDL files grouped together to create a design. A project is a block if it has a "Block.lock" file at the root of the its directory.
+__project__ : A group of HDL files grouped together to create a design. A project is a block if it has a "Block.lock" file at the root of the its directory.
 
 __block__ : This is a self-contained project that contains a Block.lock file. A block's title must consist of a library and a name. An example block title is "util.fifo". It is good practice to have the block's name match the top-level entity.
 
@@ -25,11 +25,11 @@ __workspace__ : This is your working environment. Only one can be active on your
 
 __market__ : This is a repository that hosts a "collection" of released blocks. This can be a local repository or remote repository. In order for a block to be added to the collection it must have its own remote repository. Markets are self-maintained by legoHDL.
 
-__script__ : A user created file. These can be stored within legoHDL or linked to if say the script belongs to some repository where users are actively developing it. Scripts can be used to build/run a block, but also to more generally store common files across all blocks, like a constraint file.
+__script__ : A user created file. These can be stored within legoHDL or linked to if say the script belongs to some repository where users are actively developing it. Scripts can be used to build/run a block. A script in legoHDL is essentially an alias to a execute a file.
 
-__label__ : An identifier that can be used to gather dependencies to be written to the recipe. Default labels are @LIB, @SRC, @SIM, @SRC-TOP, @SIM-TOP. Developers can can create labels and provide their own extensions, like creating an @IP for .xci files.
+__label__ : An identifier that can be used to gather dependencies to be written to the recipe. Default labels are @LIB, @SRC, @SIM, @SRC-TOP, @SIM-TOP. Developers can can create labels and provide their own extensions, like creating an @IP for .xci files. Extensions are glob-style patterns.
 
-__recipe__ : A list of all required files for a given block to be built from, in the  correct order needed. It is a file with identifying labels regarding the block and its dependencies. This is intended to be the "golden link" between the package management process and building a design.
+__recipe__ : A list of all required files for a given block to be built from, in the  correct order needed. It is a file with identifying labels regarding the block and its dependencies. This is intended to be the link between the package management process and building a design.
 
 
 
@@ -47,13 +47,13 @@ To ensure it is installed properly run:
 
 A version number should appear in the output. We are ready to go!
 
-## Getting Started
+# Getting Started
 
-1. __Configure a workspace and settings__
+## 1. __Configure a workspace and settings__
 
-A workspace's main job is to specify the local path where blocks are to be stored when downloaded. Any block outside of this path will not be seen by this workspace.
+A workspace's main job is to specify the local path where blocks are to be stored when downloaded. Any block outside of this path will not be seen by this workspace. My workspace name will be `lab` and my local path for it will be `"~/develop/hdl/"`
 
-```legohdl config home="~/develop/hdl/" -workspace```
+```legohdl config lab="~/develop/hdl/" -workspace```
 
 Easy! Every workspace has its own library and cache, but can share markets. Let's look at our new workspace.
 
@@ -63,7 +63,7 @@ As you can see, we have no markets linked to this workspace. If we did, all rele
 
 Now we will configure other important settings.
 
-```legohdl config "chase" -author```<br/>
+```legohdl config "Luke Skywalker, Jedi, One with the Force" -author```<br/>
 ```legohdl config "code" -editor```
 
 Configuring an editor allows you to automatically open projects with the `-o` flag.
@@ -83,51 +83,52 @@ _string_ is accepted with `" "` or `' '`.
 
 _key/value pair_ is accepted with `key="value"` or `key='value'`.
 
-2. __Make a new Block__
+See section __Managing Settings__ to get more in-depth overview of setting configurations.
+
+## 2. __Make a new Block__
 
 A block can be made directly from legohdl CLI. This provides the benefit of adding key information and automatically setting up a developer's preferred project structure through the use of a template.
 
-The template can be opened and freely edited.
+The template can be opened and freely edited LegoHDL has a built-in folder where it can store a template structure, but also can reference a folder from elsewhere. 
+
+Now let's open our template and populate with basic files that all our projects will need:
 
 ```legohdl open -template```
-
-> __Note__: Any where the word 'template' appears, it will be replaced by the name of the created project. %AUTHOR% will be replaced by our configured author setting, %DATE% will be replaced by that day's date, and %PROJECT% will be replaced by the project's name as well.
 
 Let's add some folders and files that may be needed for every project.
 
     template/
-        bench/
-            testbench.py
-            template_tb.vhd
         src/
             template.vhd
+        test/
+            testbench.py
+            template_tb.vhd
         README.md
 
-An example of how to set up a template VHDL file may look like this:
+An example of how to set up a template VHDL design file may look like this:
 
 ``` vhdl
+----------------------------------------
 --  Project: %PROJECT%
 --  Author: %AUTHOR%
 --  Date: %DATE%
 --  Description:
 --
+----------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
 
 entity template is
-    generic(
-        
-    );
     port(
-        clk     :   IN  std_logic;
-        reset   :   IN  std_logic;
+        Clock     :   IN  std_logic;
+        Reset     :   IN  std_logic;
 
     );
 end entity;
 
 
-architecture bhv of template is
+architecture rtl of template is
 
 begin
 
@@ -135,62 +136,243 @@ begin
 end architecture;
 ```
 
-I've added a python file into the template for generating inputs/outputs for simulation as well as a templated testbench file similiar to the above code.
+> __Note__: Any where the word 'template' appears, it will be replaced by the name of the created block. %AUTHOR% will be replaced by our configured author setting, %DATE% will be replaced by that day's date, and %PROJECT% will be replaced by the block's library and name.
 
-> __Note__: Opening the template through legoHDL opens a folder named template within legoHDL. If we have a template project structure living elsewhere, we can reference that instead when creating projects with: ```legohdl config "/users/chase/develop/hdl/template" -template```
+Here is an example VHDL template testbench file:
+``` vhdl
+----------------------------------------
+--  Project: %PROJECT%
+--  Author: %AUTHOR%
+--  Date: %DATE%
+--  Description:
+--
+----------------------------------------
 
-Setting this option to an empty string will refer back to the template folder found within legohdl.
+library ieee;
+use ieee.std_logic_1164.all;
+use std.textio.all;
+use std.env.finish;
 
-Now that the template is fit for our preferences, let's use it. It is time to make a new project! For this tutorial will make a simple mux to be used in a later design. We will design this mux to belong to our new library called "common".
+entity template_tb is
+end entity;
 
-```legohdl new common.mux -o```
+
+architecture rtl of template_tb is
+    --drives testbench
+    signal Clock : std_logic := '0';
+    signal Reset : std_logic;
+
+    --clock period definition
+    constant ClockPeriod : time := 10 ns;
+
+begin
+    --generate clock with 50% duty cycle
+    Clock <= not Clock after ClockPeriod/2;
+
+    --initially reset the DUT if applicable
+    bootup : process
+    begin
+        Reset <= '1';
+        wait for ClockPeriod*2;
+        Reset <= '0';
+        wait;
+    end process;
+
+    --instantiate the DUT
+
+
+    --read in inputs and feed into DUT
+    inputs : process
+        variable InFile     : text open read_mode is "inputs.txt";
+        variable DataLine   : line;
+    begin
+        while not endfile(InFile) loop
+            readline(InFile, DataLine);
+
+
+        end loop;
+        wait;
+    end process;
+
+    --read in expected outputs and assert from DUT
+    outputs : process
+        variable OutFile    : text open read_mode is "outputs.txt";
+        variable DataLine   : line;
+    begin
+        while not endfile(OutFile) loop
+            readline(OutFile, DataLine);
+            
+
+        end loop;
+        --simulation is complete
+        finish;
+    end process;
+
+end architecture;
+```
+
+I've also added a blank python file into the template for generating inputs/outputs for simulation as well as the templated VHDL testbench file.
+
+> __Note__: Opening the template through legoHDL opens a built-in folder named template within legoHDL. If we have a template project structure living elsewhere, we can reference that instead when creating projects with: ```legohdl config "/users/chase/develop/hdl/template" -template```. This would be handy if a group has a dedicated repository for an initial template project. Setting this option to an empty string will refer back to the template folder found within legoHDL.
+
+Now that the template is fit for our preferences, let's use it. It is time to make a new block! For this tutorial will make a half adder to be used in a later design. We will design this half adder to belong to our new library called "common".
+
+It is required to specify a library for every created block.
+
+```legohdl new common.halfadder -o```
+
+> __Note__: When creating new block or downloading a block that does not exist in the workspace's local path, the block will be stored to: "WORKSPACE-LOCAL-PATH/BLOCK-LIBRARY/BLOCK-NAME"
 
 Okay and it is open in our text-editor ready to work!
 
-3. __Developing a Block__
+## 3. __Developing a Block__
 
-At this point, a lot has happened. There is an metadata file titled "Block.lock" inside our project, the project is already initialized with git, and our template auto-populated the project with files ready to go. This project is now considered a "block" because it has a Block.lock file.
+At this point, our project's structure now looks like this:
 
-The development process is now no different than before. We will create our design, and then our testbench, making git commits along the way if desired. When we have our entity declared and written, we can view it with:
+    halfadder/
+        src/
+            halfadder.vhd
+        test/
+            testbench.py
+            halfadder_tb.vhd
+        README.md
+        Block.lock
 
-```legohdl port common.mux -map```
+Our template auto-populated the project with files ready to go, there is an metadata file titled "Block.lock" inside our project, and the project is already initialized with git with an initial commit. This project is now considered to the upgraded status of a "block" because it has a Block.lock file.
 
-This will print out this block's toplevel entity as a component, available to be easily copied and pasted into another source file in this project, like the testbench. The -map option will give us the format for the component's instantiation as well as the necessary signals for the architecture declaration section. Pretty handy.
+Now the user can begin designing the hardware to meet the specifications of the design.
 
-> __Note:__ To reference any internal entities within the block, append the entity's name to the block's title. If the block 'common.mux' had a internal entity called 'and_gate', we could view that component and its port map with: ```legohdl port common.mux.and_gate -map```
+Here is the code for the half adder design.
 
-4. __Building a Block__
+``` vhdl 
 
-legoHDL is a package manager. It has no means to build a design, as HDL tools are complex and are not a one-size-fits-all. Despite this, legoHDL provides capability through the use of its labels, recipes, and scripts to enable the developer to run with their own build tools exactly how they want. Got an awesome makefile calling GHDL? Use it. Got TCL scripts for the entire Vivado design suite? Bring them on! 
+--TODO: halfadder
+
+```
+
+
+### __Faster Instantiation__
+
+LegoHDL offers some commands to help improve the workflow while designing. The `port` command is one of them.
+
+Say we are now ready to move onto our VHDL testbench file. Inside this file we must instantiate our design as the Design Under Test (DUT). Our halfadder only has 4 ports, but imagine trying to instantiate a more complex design with many ports. It becomes very tedious and time-consuming to write out all the ports. With legoHDL, this mundane task gets a productivity boost. When we have an entity declared and written within a block, we can view it as a component with:
+
+```legohdl port common.halfadder.halfadder```
+
+> __Note:__ The split is "LIBRARY.BLOCK.ENTITY". If you left of the "ENTITY" then the entity returned is the toplevel one for that block. Since halfadder is also our toplevel entity (auto-detected by legoHDL), the command `legohdl port common.halfadder` yields the same result.
+
+This will print out the entity as a component declaration, available to be easily copied and pasted into any VHDL source file.
+``` vhdl
+component halfadder is
+    port(
+        A : in std_logic;
+        B : in std_logic;
+        Sum : out std_logic;
+        Carry : out std_logic
+    );
+end component;
+```
+
+The `-map` flag will print the format for the component's instantiation as well as the necessary signals and constants. 
+
+The `-inst` flag will print the direct entity instantiation along with the necessary signals and constants. Here is the return from using the `-inst` flag.
+``` vhdl
+signal A : std_logic;
+signal B : std_logic;
+signal Sum : std_logic;
+signal Carry : std_logic;
+
+uX : entity work.halfadder
+port map(
+    A=>A,
+    B=>B,
+    Sum=>Sum,
+    Carry=>Carry
+);
+```
+If you ran this same command from outside this block project, the library would not be "work" but "common". We will see this later in the tutorial.
+
+After copying and pasting the instantiation into the testbench and writing the code to simulate it, here is the testbench file:
+
+``` vhdl
+
+--TODO: halfadder_tb
+
+```
+
+Although writing a software model for a half adder is completely overkill, it will be used here because most practical designs may have a software model.
+
+Here is the code for the testbench python file:
+
+``` python
+import random
+#create inputs and expected outputs files for DUT
+inputs = open("inputs.txt",'w')
+outputs = open("outputs.txt",'w')
+
+count = 10
+for i in range(count):
+    #generate random inputs
+    a = random.randint(0,1)
+    b = random.randint(0,1)
+    inputs.write(str(a)+"\n"+str(b)+"\n")
+    #compute the expected outputs
+    s = 1 if(a + b == 1) else 0;
+    c = 1 if(a + b == 2) else 0;
+    outputs.write(str(s)+"\n"+str(c)+"\n")
+
+```
+
+We are now almost ready to `build` our block.
+
+
+## 4. __Building a Block__
+
+legoHDL is a package manager. It has no means to build a design, as HDL tools are complex and are not a one-size-fits-all. Despite this, legoHDL provides capability through the use of its labels, recipes, and scripts to enable the developer to run with their own build tools exactly how they want. Got an awesome makefile calling GHDL? Use it. Got TCL scripts for the entire Vivado design suite? Sweet!
+
+### __Exporting__
 
 First, we need the recipe file.
 
-``legohdl export``
+To create the recipe file with the auto-determined toplevel design for the current project, run:
 
-This creates the recipe file with the auto-determined toplevel design for the current project. 
+`legohdl export`
 
-You can explicitly set the block's toplevel design by adding the entity name to the export command.
+The command will not run unless you are inside the directory of the block you want to export.
 
-```legohdl export mux```
+The recipe file will be located within the block's folder in the folder called "build".
 
-Now to use the recipe file we need a script. From here, it is completely up to the developer to how they go about building; legoHDL is essentially passing off all the needed information for a build with the export command.
+It also prints out helpful information regarding the hierarchal structure.
+
+ ```
+
+#TODO- console output of graph
+
+ ```
+
+
+> __Note:__ If multiple toplevel entities are detected, legoHDL will prompt you with your choices to select one. The same is true for the VHDL testbench entity if it detects multiple testbenches that instantiate the selected toplevel.
+
+You can also explicitly set the block's toplevel entity by adding the entity name to the export command like: ```legohdl export halfadder```
+
+Now to use the recipe file we need a script. From here, it is completely up to the developer to how they go about building a block; legoHDL is essentially passing off all the needed information for a build from the export command.
 
 We could copy/paste our build scripts into every project's folder, but this problematic. First, with multiple copies it becomes difficult to update across the board. Second, we actually must include it in the project, and sometime we have more than one script to do different jobs. The solution is legoHDL's __scripts__.
 
 <br />
 
-> Scripts: A script is simply any user created file. legohdl can store scripts or store their file path to call for later use. It is practically using built-in aliases. Calling a script can be done like so:
-```legohdl build @<script-name> [args passed to script..]```
+> Scripts: A script is simply an alias for running user created files. legoHDL can store scripts in the built-in "scripts" folder or link to them and store their file path to call for later use. It is practically using built-in aliases. Calling a script can be done like so:
+```legohdl build @SCRIPT-NAME [args passed to script..]```, where SCRIPT-NAME is the name given by the user for legoHDL to remember the script.
     
-Scripts can be linked from where they currently reside, in case they are hosted in a repository where users are updating them.
+Scripts can be linked from where they currently reside, in case they are hosted in a repository where a group is updating them.
 
-This was designed to keep track of handy build scripts that you as the developer use to analyze, synthesize, simulate, or program your design. Allowing legoHDL to store/point to these files gives the developer power and freedom to completely customize and bind their workflow together.
+The scripts concept was designed to keep track of valuable build scripts that you as the developer use to analyze, synthesize, simulate, or program your design. Allowing legoHDL to store/point to these files gives the developer power and freedom to completely customize and glue their workflow together.
 
 <br/>
 
-__Recipes and Labels__
+### __Recipes and Labels__
 
-So, how will my build script know what files to analyze? Here's where recipes come into play. A recipe takes all labeled files and writes them to a file. All VHDL files and libraries will be in order to correctly be anaylzed. Default labels are:
+So, how will build scripts know what files to analyze or use? Here's where recipes come into play. A recipe takes all labeled files and writes them to a file. All VHDL files will be in order to correctly be anaylzed. Default labels are:
 -   @LIB for library VHDL code
 -   @SRC for project-level VHDL design code,
 -   @SIM for project-level  VHDL simulation code
@@ -199,39 +381,45 @@ So, how will my build script know what files to analyze? Here's where recipes co
 
 Labels are what the export command throws into the recipe file.
 
-Labels can be user-defined for the export command to additionally throw into the recipe file. These custom labels, if legoHDL finds any in the current block, will be inserted before the default labels.
+Labels can be user-defined for the export command to additionally throw into the recipe file. Custom labels can be either `shallow` or `recursive`. 
 
-Example:
+- shallow: looks for label within current block
+- recursive: looks for label from lowest-level blocks to the current block
 
-You have a test generation python file that would like to be added to the recipe. Why? Answer: If you set up the stored build script to check for this new label, then the build script could run the test generation at the right stage in your build process.
-
-Here's a sample recipe file:
+You from our last export command our recipe file looks like:
 
 ``` 
-@BENCH /Users/chase/Develop/hdl-dev/mem/flipflop/bench/testbench.py
-@SRC /Users/chase/Develop/hdl-dev/mem/flipflop/design/sidecar.vhd
-@SRC /Users/chase/Develop/hdl-dev/mem/flipflop/design/flipflop.vhd
-@LIB verif /Users/chase/.legohdl/workspaces/lab/cache/verif/fileio/design/fileio.vhd
-@SIM /Users/chase/Develop/hdl-dev/mem/flipflop/bench/flipflop_tb.vhd
-@SIM-TOP flipflop_tb /Users/chase/Develop/hdl-dev/mem/flipflop/bench/flipflop_tb.vhd
-@SRC-TOP flipflop /Users/chase/Develop/hdl-dev/mem/flipflop/design/flipflop.vhd
+#TODO show recipe file
 ```
 
-Notice the _@BENCH_ label is a custom label set like so:
+We are missing our testbench python file. Let's throw into our recipe with:
 
-```legohdl config BENCH="testbench.py" -label```
+`legohdl config BENCH=".py" -script`
 
-If IP were needed to be included for my script building, I could add a label
+Adding the `-recursive` flag will make that label recursive.
 
-```legohdl config IP=".xci" -label -recur```
+Let's rerun the export command to update our recipe file.
 
-where the recur flag will indicate to recursively grab all .xci files found within every dependency used.
+`legohdl export`
+
+Now our recipe file looks like:
+
+``` 
+#TODO show recipe file
+```
+
+
+If Xilinx IP were needed to be included for my build script, I could add a label
+
+```legohdl config IP=".xci" -label -recursive```
+
+where the recursive flag will indicate to recursively grab all .xci files found within every dependency block used.
 
 We can view our labels with
 
 ``legohdl list -label``
 
-Here's a simple build file:
+Here's the code for a simple build script file:
 ``` python
 import os
 #example build script demonstrating the easy handling of recipe file
@@ -265,47 +453,54 @@ if(tb_unit != ''):
     os.system("ghdl -r --std=08 --ieee=synopsys "+tb_unit+" --vcd=./wf.vcd")
 ```
 
-Now, we could add this to our legoHDL scripts, and further extend this script to do much more like take in any arguments. The sky is the limit when developer's are in control of how their scripts are to build HDL code. Let's add this file to my legohdl scripts.
+Now, we could add this to our legoHDL scripts, and further extend this script to do much more like take in any arguments. The sky is the limit when developer's are in control of how their scripts are to build HDL code. Let's add this file to my legoHDL scripts.
 
 Open the scripts folder.
 
 ```legohdl open -script```
 
-Make a new build script file. However you roll, write a file in Make, python, TCL, or even a shell script, and have it run whatever tools you have, whether it be Vivado, GHDL, or Quartus. When your done, configure it for legoHDL to see:
+Make a new build script file called `master.py` and copy above code into it.
 
-```legohdl config master="python /Users/chase/.legohdl/scripts/builder.py" -script -lnk```
+Now let's tell legoHDL to remember this script:
 
-> __Note:__ The -lnk flag will prevent legoHDL from trying to copy the file into the scripts folder. Since it is already in the scripts folder, it is wise to just link it. It would also be wise to use -lnk when you would like your script to live elsewhere, allowing you to continue to improve it from its original location.
+```legohdl config master="python /Users/chase/.legohdl/scripts/master.py" -script -lnk```
 
+> __Note:__ The `-lnk` flag will prevent legoHDL from trying to copy the file into the built-in scripts folder. Since it is already in the scripts folder, it is wise to just link it. It would also be wise to use `-lnk` when you would like your script to live elsewhere, allowing you to continue to improve it from its original location.
 
-To run this newly configured script:
+To run this newly configured script for our halfadder block run this command:
 
 ```legohdl build @master```
+
+The command will not run unless you are inside the directory of the block you want to build.
 
 > __Note:__ If there is a script's alias being "master", it can be omitted from the build args and will run as default.
 ```legohdl build``` has the same effect as the previous command because they both call the script under master.
 
-We can view our scripts with
+Nice! We have just tested our design.
 
-```legohdl list -script```
+We can view our scripts with: `legohdl list -script`
 
 
-5. __Releasing a Block__
+## 5. __Releasing a Block__
 
 Up until this point, everything has been local and the block has not yet been officially "released". It has been on version 0.0.0, which is an unreleased state. Now we are ready to release the current code's state as a version.
+
+If we have not made any git commits yet, that is okay. The release command will automatically add and commit altered files. If this is undesirable, you can use the `-strict` flag to only let legoHDL commit the changes it makes to the `Block.lock` file for that specific release.
 
 ```legohdl release -maj```
 
 This will set the version to the next major version for the project. It is best to follow semantic versioning for HDL design.
+
+You must select one of these flag options for release: `-maj`, `-min`, `-fix`, or `-v*.*.*`. the `-v*.*.*` flag allows the user to explicitly set the next version to release, where `*` are the version numbers.
     
 _MAJOR.MINOR.PATCH versioning suggestions:_  
 -   _major_: any entity port changes or inconsistent changes to the block's intended behavior
 -   _minor_: performance enhancements  
 -   _patch/fix_: bug fixing and small code tweaks 
 
-Seeing our block with ```legohdl list``` now highlights common.mux as version 1.0.0.
+Seeing our block with ```legohdl list``` now highlights common.halfadder as version 1.0.0.
 
-6. __Incorporating a Block as a Dependency__
+## 6. __Incorporating a Block as a Dependency__
 
 Okay, the project is now ready to be incorporated into any other design! Upon releasing, it will install the release to the cache folder alongside generating a VHDL package file for the toplevel entity into the library folder, if a toplevel exists. Legohdl provides a lot of flexibility in how the designer wants to incorporate a block into another design. Here are some common ways:
 
@@ -369,6 +564,20 @@ to grab the format for instantation and any required signals.
 ## Using Markets
 
 
+<br/>
+
+## Software Verification Chaining (SWVC)
+
+Take this example workflow. Testbenches are verified by having a software model written in a scripting language (maybe python) that generates an input file and expected outputs file. The user would make a label to get this sw model script added into the recipe, maybe like `BENCH="*.py"`. It would be a shallow label so only the current block's script gets added to the recipe.
+
+Now imagine the system being designed requires multiple blocks, and they are configured in a sequential order. A common example would be a communications system, where data is passed from one block to the next. We design a top-level block where all lower-level blocks are instantiated and wired in the sequential manner, but now the task of verifying this top-level block becomes cumbersome. Must we rewrite the sw models of each lower-level block into a new script to generate inputs and expected outputs files? What if one lower-level model gets updated? Now the top-level sw model must also be updated. This is problematic.
+
+Enter Software Verification Chaining (SWVC). The idea is to use the already designed sw model scripts and build up the input and expected output files, one script after another. Here's how it's done:
+
+Create the label to be recursive, so that all sw model scripts found in each of the required blocks as well as the current block's sw model will be added to the recipe list. Now, inside your build script, you can execute each sw model script identified by its label. For every stage after the initial one, the next sw model will read in the previous stage's expected outputs file and manipulate that data to generate a new expected outputs file. By the end you will have the correct initial inputs and correct expected outputs.
+
+    TODO: insert diagram of SWVC.
+
 
 <br/>
 
@@ -376,10 +585,10 @@ to grab the format for instantation and any required signals.
 
 ```
 USAGE:             
-        legohdl <command> [block] [args]            
+	legohdl <command> [block] [flags]            
 
 COMMANDS:
-   init         initialize the current folder into a valid block
+   init         initialize the current folder into a valid block format
    new          create a templated empty block into workspace
    open         opens the downloaded block with the configured text-editor
    release      release a new version of the current block
@@ -388,32 +597,38 @@ COMMANDS:
    uninstall    remove block from cache
    download     grab block from its market for development
    update       update installed block to be to the latest version
+
+   graph        visualize dependency graph for reference
    export       generate a recipe file to build the block
    build        run a custom configured script
-   del          deletes the block from the local workspace
-   search       search markets or local workspace for specified block
+   del          deletes a block from local workspace or a configured setting
    refresh      sync local markets with their remotes
-   port         print ports list of specified block's entity
+   port         print ports list of specified entity
    show         read further detail about a specified block
-   summ         add description to current block
    config       set package manager settings
+
+Type 'legohdl help <command>' to read more on entered command.
 ```
+
+> __Note:__ A block is in the format _library.block-name_
 
 ### init
 
-    legohdl init <block/value> [-market | -remote]
+    legohdl init <value> [-market | -remote]
+
+    legohdl init <block> [-<market-name> -<remote-url>]
 
 ### new
 
-    legohdl new <block> [-o -<remote-url> -<market-name>]
+    legohdl new <block> [-<market-name> -<remote-url> -o]
 
-    legohdl new <new-file> -<template-file>
+    legohdl new <new-file> -<template-file> -file
 
 ### open
 
     legohdl open <block>
 
-    legohdl open <-setting | -template | -script>
+    legohdl open <-settings | -template | -script>
 
 ### release
 
@@ -421,13 +636,15 @@ COMMANDS:
 
 ### list
 
-    legohdl list [optional.searching]
+    legohdl list [<block>]
 
     legohdl list -script
 
     legohdl list -workspace
 
     legohdl list -label
+
+    legohdl list -market
 
 ### install
 
@@ -447,7 +664,7 @@ COMMANDS:
 
 ### export
 
-    legohdl export [toplevel] [-toplevel_testbench]
+    legohdl export [<toplevel-entity>] [-<testbench-entity>]
 
 ### build
 
@@ -471,7 +688,7 @@ COMMANDS:
 
     legohdl port <block> [-map -inst]
     
-    legohdl port <block>.entity [-map -inst]
+    legohdl port <block>.<entity> [-map -inst]
 
 ### show
 
@@ -490,9 +707,82 @@ COMMANDS:
 
 
 
+# __Managing Settings__
 
+First, make sure you set up our preferred text-editor. This will be used to help us open various files related to legoHDL and our workspace.
 
+The general usage for setting the text-editor is:
 
+`legohdl config VALUE -editor`
+
+where VALUE is replaced by your actual editor (code, atom, nano, ...).
+
+I will be using VSCode so I run:
+
+`legohdl config code -editor`
+
+Now we will use the faster and more visual way to get set up, rather than use the config command. Let's open the settings file.
+
+`legohdl open -settings`
+
+The settings file is a YAML file type that is configured for the user-installed version of legoHDL. Here is a layout with example values and extra spacing to help illustrate the sections:
+
+``` yaml
+active-workspace: lab
+author: Luke Skywalker, Jedi, One with the Force
+editor: code
+
+label:
+  recursive:
+    IP: .xci
+  shallow:
+    BENCH: .py
+    XDC: .xdc
+
+market:
+  SuperMarket: https://gitlab.com/chase800/supermarket.git
+  open-market: https://gitlab.com/chase800/open-market.git
+  hdl-base: null
+
+multi-develop: false
+
+script:
+  master: '"python /Users/chase/.legohdl/scripts/master.py"'
+  simple: '"make -f /Users/chase/Develop/HDL/scripts/simplemake"'
+
+template: null
+
+workspace:
+  lab:
+    local: /Users/chase/develop/hdl/
+    market:
+    - open-market
+    - hdl-base
+  home:
+    local: /Users/chase/develop/home-space/
+    market: []
+
+```
+
+Lets discuss each setting in detail:
+
+- active-workspace:
+
+- author:
+
+- editor:
+
+- label:
+
+- market:
+
+- multi-develop:
+
+- script:
+
+- template:
+
+- workspace:
 
 
 
@@ -538,3 +828,29 @@ Now the developer has set up the build script to handle these two labels and run
 Assigning a -label or -build to "" or '' will effectively remove it from legohdl's settings and delete it if it was a script and had made a copy (configured without -lnk option).
 
     NOTE: A user-defined label can be recursively searched through dependencies, as would an @LIB label with the -recur flag.
+
+
+    > __Note__: Use `legohdl config "PATH" -template`, where PATH is the path to template folder, to specify where legoHDL should copy files from. This would be handy if a group has a dedicated repository for an inital template project.
+
+> __Note:__ To reference any internal entities within the block, append the entity's name to the block's title. If the block 'common.mux' had a internal entity called 'and_gate', we could view that component and its port map with: ```legohdl port common.mux.and_gate -map```
+
+
+Example:
+
+You have a test generation python file that would like to be added to the recipe. Why? Answer: If you set up the stored build script to check for this new label, then the build script could run the test generation at the right stage in your build process.
+
+Here's a sample recipe file:
+
+``` 
+@BENCH /Users/chase/Develop/hdl-dev/mem/flipflop/bench/testbench.py
+@SRC /Users/chase/Develop/hdl-dev/mem/flipflop/design/sidecar.vhd
+@SRC /Users/chase/Develop/hdl-dev/mem/flipflop/design/flipflop.vhd
+@LIB verif /Users/chase/.legohdl/workspaces/lab/cache/verif/fileio/design/fileio.vhd
+@SIM /Users/chase/Develop/hdl-dev/mem/flipflop/bench/flipflop_tb.vhd
+@SIM-TOP flipflop_tb /Users/chase/Develop/hdl-dev/mem/flipflop/bench/flipflop_tb.vhd
+@SRC-TOP flipflop /Users/chase/Develop/hdl-dev/mem/flipflop/design/flipflop.vhd
+```
+
+Notice the _@BENCH_ label is a custom label set like so:
+
+```legohdl config BENCH="testbench.py" -label```
