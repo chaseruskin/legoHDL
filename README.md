@@ -215,7 +215,7 @@ I've also added a blank python file into the template for generating inputs/outp
 
 > __Note__: Opening the template through legoHDL opens a built-in folder named template within legoHDL. If we have a template project structure living elsewhere, we can reference that instead when creating projects with: ```legohdl config "/users/chase/develop/hdl/template" -template```. This would be handy if a group has a dedicated repository for an initial template project. Setting this option to an empty string will refer back to the template folder found within legoHDL.
 
-Now that the template is fit for our preferences, let's use it. It is time to make a new block! For this tutorial will make a half adder to be used in a later design. We will design this half adder to belong to our new library called "common".
+Now that the template is fit for our preferences, let's use it. Close the template folder now once you are done with setting up the base files. It is time to make a new block! For this tutorial will make a half adder to be used in a later design. We will design this half adder to belong to our new library called "common".
 
 It is required to specify a library for every created block.
 
@@ -246,8 +246,34 @@ Here is the code for the half adder design.
 
 ``` vhdl 
 
---TODO: halfadder
+----------------------------------------
+--  Project: common.halfadder
+--  Author: Luke Skywalker, Jedi, One with the Force
+--  Date: August 14, 2021
+--  Description:
+--
+----------------------------------------
 
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity halfadder is
+    port(
+        A     :   IN  std_logic;
+        B     :   IN  std_logic;
+        S     :   OUT std_logic;
+        C     :   OUT std_logic
+    );
+end entity;
+
+architecture rtl of halfadder is
+begin
+    --sum is '1' when only one input is '1'
+    S <= A xor B;
+    --carry output when both inputs are '1'
+    C <= A and B;
+
+end architecture;
 ```
 
 
@@ -345,9 +371,20 @@ The recipe file will be located within the block's folder in the folder called "
 It also prints out helpful information regarding the hierarchal structure.
 
  ```
-
-#TODO- console output of graph
-
+INFO:   DETECTED TOP-LEVEL ENTITY: halfadder
+INFO:   DETECTED TOP-LEVEL BENCH: halfadder_tb
+INFO:   Generating dependency tree...
+INFO:   Deciphering VHDL file...
+INFO:   C:/Users/chase/develop/hdl/common/halfadder/test/halfadder_tb.vhd
+INFO:   Deciphering VHDL file...
+INFO:   C:/Users/chase/develop/hdl/common/halfadder/src/halfadder.vhd
+---DEPENDENCY TREE---
+vertex: [ common.halfadder_tb ] <-- common.halfadder
+vertex: [ common.halfadder ] <--
+---ENTITY ORDER---
+common.halfadder -> common.halfadder_tb
+---BLOCK ORDER---
+common.halfadder
  ```
 
 
