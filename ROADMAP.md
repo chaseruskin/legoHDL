@@ -9,8 +9,6 @@
 
 - [ ] add series of prompts to release command before actually doing anything
 
-- [!] change .lego.lock to Block.lock
-
 - [ ] test installing a block, then auto-installs requirements to cache if DNE in cache and if the requirement is found in local path or in market
 
 - [ ] implement additional "help" command documentation
@@ -38,6 +36,7 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] change .lego.lock to Block.lock
 - [x] ensure init command is up to par
 - [x] test having a remote project already (non-block), then running init
 - [x] test init adding a remote already to git repo and then doing legohdl command
