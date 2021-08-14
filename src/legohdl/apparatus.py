@@ -50,9 +50,9 @@ class Apparatus:
     def generateDefault(cls, t, *args):
         for a in args:
             if(isinstance(cls.SETTINGS[a], t) == False):
-                if(isinstance(t, dict)):
+                if(t == dict):
                     cls.SETTINGS[a] = {}
-                elif(isinstance(t, bool)):
+                elif(t == bool):
                     cls.SETTINGS[a] = False
 
     @classmethod
@@ -72,7 +72,7 @@ class Apparatus:
         #ensure all pieces of settings are correct
         cls.generateDefault(dict,"market","script","workspace")
         cls.generateDefault(bool,"multi-develop")
-
+        
         cls.dynamicWorkspace()
 
         #determine current workspace currently being used
