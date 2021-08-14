@@ -240,8 +240,7 @@ os.chdir("build")
 #open recipe file
 recipe = open("recipe", 'r')
 #parse recipe file and analyze units
-tb_unit = ''
-top_unit = ''
+tb_unit = top_unit = ''
 for rule in recipe.readlines():
     #break up line into list of strings
     parse = rule.split()
@@ -261,8 +260,9 @@ for rule in recipe.readlines():
     elif(tag == "@BENCH"): 
         #will run test-generation script to create input/output sim files
         os.system("python "+parse[1].strip())
-#now analyze and run simulation from testbench file
-os.system("ghdl -r --std=08 --ieee=synopsys "+tb_unit+" --vcd=./wf.vcd")
+if(tb_unit != ''):
+    #now analyze and run simulation from testbench file
+    os.system("ghdl -r --std=08 --ieee=synopsys "+tb_unit+" --vcd=./wf.vcd")
 ```
 
 Now, we could add this to our legoHDL scripts, and further extend this script to do much more like take in any arguments. The sky is the limit when developer's are in control of how their scripts are to build HDL code. Let's add this file to my legohdl scripts.

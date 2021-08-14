@@ -11,7 +11,7 @@ class Apparatus:
     #path to registry and cachess
     HIDDEN = os.path.expanduser("~/.legohdl/")
 
-    MARKER = ".lego.lock"
+    MARKER = "Block.lock"
 
     TEMPLATE = HIDDEN+"/template/"
 
@@ -19,6 +19,8 @@ class Apparatus:
 
     OPTIONS = ['active-workspace', 'multi-develop', 'author', 'template', \
                'editor', 'label', 'market', 'script', 'workspace']
+
+    META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
 
     __active_workspace = None
 
@@ -40,6 +42,7 @@ class Apparatus:
                     structure = structure + "  shallow: {}\n"
                 else:
                     structure = structure + ": null\n"
+
             settings_file.write(structure)
             settings_file.close()
 
@@ -47,7 +50,10 @@ class Apparatus:
     def generateDefault(cls, t, *args):
         for a in args:
             if(isinstance(cls.SETTINGS[a], t) == False):
-                cls.SETTINGS[a] = {}
+                if(isinstance(t, dict)):
+                    cls.SETTINGS[a] = {}
+                elif(isinstance(t, bool)):
+                    cls.SETTINGS[a] = False
 
     @classmethod
     def load(cls):
@@ -58,6 +64,10 @@ class Apparatus:
         #load dictionary data in variable
         with open(cls.HIDDEN+"settings.yml", "r") as file:
             cls.SETTINGS = yaml.load(file, Loader=yaml.FullLoader)
+        #create any missing options
+        for opt in cls.OPTIONS:
+            if(opt not in cls.SETTINGS.keys()):
+                cls.SETTINGS[opt] = None
 
         #ensure all pieces of settings are correct
         cls.generateDefault(dict,"market","script","workspace")

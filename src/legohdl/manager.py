@@ -411,8 +411,11 @@ class legoHDL:
         #download from the cache
         elif(self.db.blockExists(title, "cache")):
             blk = self.db.getBlocks("cache")[l][n]
+            dwnld_path = blk.getPath()
+            if(blk.grabGitRemote() != None):
+                dwnld_path = blk.grabGitRemote()
             #use the cache directory to download/clone the block
-            blk.downloadFromURL(blk.getPath())
+            blk.downloadFromURL(dwnld_path)
             #now return the block if wanting to open it with -o option
             return
         else:
@@ -702,63 +705,101 @@ class legoHDL:
     def convert(self, title, value, options=[]):
         #must look through tags of already established repo
         l,n = Block.split(title)
-        if(l == '' or n == '' and len(options == 0)):
+        if((l == '' or n == '') and len(options) == 0):
             exit(log.error("Must provide a library.block"))
         cwd = apt.fs(os.getcwd())
-        #find the src dir and testbench dir through autodetect top-level modules
-        #name of package reflects folder, a library name must be specified though
+
+        #make sure this path is witin our workspace's path before making it a block
         if(cwd.lower().count(apt.getLocal().lower()) == 0):
             exit(log.error("Cannot initialize outside of workspace"))
         block = None
 
-        if(options.count("market")):
-            if(value not in apt.SETTINGS['market'].keys()):
-                exit(log.error("No market is recognized under "+value))
-            if(value not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
-                exit(log.error("The current workspace does not have "+value+" configured as a market"))
+        if(self.blockCWD.isValid() and options.count("market")):
+            if(value.lower() != ""):
+                if(value not in apt.SETTINGS['market'].keys()):
+                    exit(log.error("No market is recognized under "+value))
+                if(value not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
+                    exit(log.error("The current workspace does not have "+value+" configured as a market"))
+            else:
+                value = None
             self.blockCWD.bindMarket(value)
             return
-        elif(options.count("remote")):
+        elif(self.blockCWD.isValid() and options.count("remote")):
             if(apt.isValidURL(value)):
                 self.blockCWD.setRemote(value)
                 return
+            elif(value == ''):
+                self.blockCWD.setRemote(None)
+                return
             else:
                 exit(log.error("Invalid git url."))
-        elif(options.count("summary")):
+        elif(self.blockCWD.isValid() and options.count("summary")):
             self.blockCWD.getMeta()['summary'] = value
             self.blockCWD.save()
             return
+        elif(len(options)):
+            if(l == '' or n == ''):
+                exit(log.error("Could not fulfill init option flag"))
 
         files = os.listdir(cwd)
         if apt.MARKER in files or self.db.blockExists(title, "local") or self.db.blockExists(title, "cache") or self.db.blockExists(title, "market"):
-            log.info("Already a block here")
-            return
+            exit(log.info("Already a block existing for "+title))
 
-        log.info("Transforming project into lego...")
-        #add .gitignore file if not present and it is present in template project
-        if(os.path.isfile(apt.TEMPLATE+".gitignore")):
-            if(not os.path.isfile(cwd+"/.gitignore")):
-                shutil.copy(apt.TEMPLATE+".gitignore",cwd+"/.gitignore")
-            pass
+        log.info("Transforming project into block...")
+        #check if we are wanting to initialize from a git url
+        #option to create a new block
+
+        startup = False
+        if(options.count("open")):
+            startup = True
+            options.remove("open")
+
+        git_url,mrkt_sync = self.validateMarketAndURL(options)
+
         #rename current folder to the name of library.project
         last_slash = cwd.rfind('/')
         if(last_slash == len(cwd)-1):
             last_slash = cwd[:cwd.rfind('/')].rfind('/')
 
         cwdb1 = cwd[:last_slash]+"/"+n+"/"
-        os.rename(cwd, cwdb1)
+        if(git_url == None):
+            os.rename(cwd, cwdb1)
+        else:
+            cwdb1 = apt.getLocal()+l+"/"+n
+            os.makedirs(cwdb1,exist_ok=True)
+        #print(cwd,cwdb1)
         git_exists = True
-        if ".git" not in files:
+        if ".git" not in files and git_url == None:
             #see if there is a .git folder and create if needed
             log.info("Initializing git repository...")
             git_exists = False
             pass
         
         #create marker file
-        block = Block(title=title, path=cwdb1)
+        block = Block(title=title, path=cwdb1, remote=git_url, market=mrkt_sync)
         log.info("Creating "+apt.MARKER+" file...")
         block.create(fresh=False, git_exists=git_exists)
         pass
+
+    def validateMarketAndURL(self, options):
+        mkt_sync = None
+        git_url = None
+        #try to find a valid market being used
+        for mkt in self.db.getGalaxy():
+            for opt in options:
+                if(mkt.getName() == opt):
+                    log.info("Tying market "+mkt+" to this initialized block")
+                    mkt_sync = mkt
+                    options.remove(opt)
+                    break
+            if(mkt_sync != None):
+                break
+        #now try to find a valid git url
+        for opt in options:
+            if(apt.isValidURL(opt)):
+                git_url = opt
+        #print(git_url,mkt_sync)
+        return git_url,mkt_sync
 
     #! === DEL COMMAND ===
 
@@ -918,29 +959,12 @@ class legoHDL:
                     exit(log.error("Cannot create a project file when not inside a project"))
                 return
             #option to create a new block
-            mkt_sync = None
-            git_url = None
             startup = False
             if(options.count("o")):
                 startup = True
                 options.remove("o")
 
-            mkts = self.db.getGalaxy()
-            for mkt in mkts:
-                for opt in options:
-                    if(mkt.getName() == opt):
-                        print("Identified market to synchronize with!")
-                        mkt_sync = mkt
-                        options.remove(opt)
-                        break
-                if(mkt_sync != None):
-                    break
-
-            for opt in options:
-                if(apt.isValidURL(opt)):
-                    git_url = opt
-            print(git_url,mkt_sync)
-            log.debug("block name: "+package)
+            git_url,mkt_sync = self.validateMarketAndURL(options)
             self.blockPKG = Block(title=package, new=True, market=mkt_sync, remote=git_url)
 
             if(startup):

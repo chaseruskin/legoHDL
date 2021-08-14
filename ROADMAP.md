@@ -5,16 +5,11 @@
 
 - [-] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace) (does it work when doing it on just a regular block?) (say install block from market and gets requirements installs automatically?)
 
-- [!] implement update command (have -all flag to update all installs, otherwise update by block name?) (could occur on refresh command?)
+- [!] implement update/upgrade command (have -all flag to update all installs, otherwise update by block name?) (could occur on refresh command?)
 
-- [ ] ensure init command is up to par
-- [ ] test init adding a remote already to git repo and then doing legohdl command
-- [ ] remotes that are not empty (already have branches) can not be initialized using legohdl command
-- [ ] test init on blank git url
+- [ ] add series of prompts to release command before actually doing anything
 
 - [!] change .lego.lock to Block.lock
-
-- [ ] ensure download will download the entire remote ("clone") (unless no remote is configured and block is in cache)
 
 - [ ] test installing a block, then auto-installs requirements to cache if DNE in cache and if the requirement is found in local path or in market
 
@@ -32,13 +27,24 @@
 
 - [ ] have some way of notifying user that a block is missing from installations when trying to export
 
+- [ ] allow renaming of block and/or library name?
+
+- [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive
+
 - [ ] '-all' option on graph/export to grab all project-level code
 
 - [ ] add cool logging
-- [ ] see if improvements can be made to "set settings" code (config command)
 
+- [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] ensure init command is up to par
+- [x] test having a remote project already (non-block), then running init
+- [x] test init adding a remote already to git repo and then doing legohdl command
+- [x] remotes that are not empty can be initialized using "legohdl init library.block -url.git"
+- [x] test init on blank git url
+- [x] must remove a git remote url from a block by doing "git remote remove 'name'"
+- [x] ensure download will download the entire remote ("clone") (unless no remote is configured and block is in cache)
 - [x] test making market from local to remote
 - [x] dynamically manage workspaces if created/deleted within settings.yml
 - [x] dynamically manage markets if deleted/added within settings.yml

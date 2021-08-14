@@ -362,7 +362,9 @@ class Vhdl:
             #add necessary closing
             mapping_txt = mapping_txt + ")"
         if(len(signals)):
-            mapping_txt = mapping_txt + "\nport map(\n"
+            if(len(gens)):
+                mapping_txt = mapping_txt + "\n"
+            mapping_txt = mapping_txt + "port map(\n"
             for i in range(len(signals)):
                 line = "    "+signals[i]+"=>"+signals[i]
                 #add a comma if not on the last signal

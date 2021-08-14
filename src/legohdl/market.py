@@ -37,9 +37,6 @@ class Market:
     def setRemote(self, url):
         if((self.isRemote() and self._repo.remotes.origin.url != self.url) or (not self.isRemote())):
             if(url == None):
-                #if(self.isRemote()): #unlink remote
-                    #log.info("Removing link for "+self._name+" to "+self.url+"...")
-                    #self._repo.git.remote("rm","origin")
                 return None
             valid_remote = apt.isValidURL(url)
             #is this a valid remote path? if it is and we have no origin, make it linked!
@@ -82,9 +79,8 @@ class Market:
         fp = self._local_path+"/"+meta['library']+"/"+meta['name']+"/"+meta['version']+"/"
         #save yaml file
         os.makedirs(fp)
-        order = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
         with open(fp+apt.MARKER, 'w') as file:
-            for key in order:
+            for key in apt.META:
                 #pop off front key/val pair of yaml data
                 single_dict = {}
                 single_dict[key] = meta[key]

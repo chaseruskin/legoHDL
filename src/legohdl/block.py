@@ -17,8 +17,9 @@ class Block:
         self.__metadata = dict()
         self.__lib,self.__name = Block.split(title)
 
-        self.__remote = remote #remote cannot be reconfigured through legohdl after setting
+        self._remote = remote #remote cannot be reconfigured through legohdl after setting
         self.__market = market
+
         self.__local_path = apt.fs(path)
         if(path != None):
             #print(path)
@@ -49,8 +50,8 @@ class Block:
                 try:
                     lp = self.__local_path.replace(self.__name, "")
                     os.makedirs(lp, exist_ok=True)
-                    git.Git(lp).clone(self.__remote)
-                    url_name = self.__remote[self.__remote.rfind('/')+1:self.__remote.rfind('.git')]
+                    git.Git(lp).clone(self._remote)
+                    url_name = self._remote[self._remote.rfind('/')+1:self._remote.rfind('.git')]
                     os.rename(lp+url_name, lp+self.__name)
                     log.info('Project already exists on remote code base; downloading now...')
                     return
@@ -68,14 +69,20 @@ class Block:
         new_path = apt.fs(apt.getLocal()+"/"+self.getLib()+"/")
         os.makedirs(new_path, exist_ok=True)
         git.Git(new_path).clone(rem)
+
         if(rem.endswith(".git")):
             url_name = rem[rem.rfind('/')+1:rem.rfind('.git')]
             os.rename(new_path+url_name, new_path+self.getName())
+        #assign the repo of the newly downloaded block
+        self._repo = git.Repo(new_path+self.getName())
+        #if downloaded from cache, make a master branch if no remote  
+        if(len(self._repo.heads) == 0):
+            self._repo.git.checkout("-b","master")
 
     def cache(self):
         os.makedirs(apt.WORKSPACE+"cache/"+self.getMeta("library")+"/", exist_ok=True)
         cache_dir = apt.WORKSPACE+"cache/"+self.getMeta("library")+"/"
-        git.Git(cache_dir).clone(self.__remote)
+        git.Git(cache_dir).clone(self._remote)
         pass
 
     def getTitle(self):
@@ -88,7 +95,7 @@ class Block:
         n = local.rfind(self.getName())
         
         if(src == None):
-            src = self.__remote
+            src = self._remote
         if(dst == None):
             dst = local[:n]
     
@@ -218,14 +225,18 @@ derives: {}
         return r_major,r_minor,r_patch
 
     def bindMarket(self, mkt):
-        log.info("Tying "+mkt+" as the market for "+self.getTitle())
+        if(mkt != None):
+            log.info("Tying "+mkt+" as the market for "+self.getTitle())
         self.__metadata['market'] = mkt
         self.save()
         pass
 
     def setRemote(self, rem):
-        log.info("Setting "+rem+"as the remote git url for "+self.getTitle())
-        self.grabGitRemote(rem)
+        if(rem != None):
+            log.info("Setting "+rem+"as the remote git url for "+self.getTitle())
+            self.grabGitRemote(rem)
+        elif(len(self._repo.remotes)):
+            self._repo.git.remote("remove","origin")
         self.__metadata['remote'] = rem
         self._remote = rem
         self.genRemote()
@@ -237,6 +248,11 @@ derives: {}
             self.__metadata = yaml.load(file, Loader=yaml.FullLoader)
             file.close()
 
+        #ensure all pieces are there
+        for key in apt.META:
+            if(key not in self.__metadata.keys()):
+                self.__metadata[key] = None
+
         if(self.getMeta('derives') == None):
             self.__metadata['derives'] = dict()
 
@@ -246,7 +262,7 @@ derives: {}
             if(self._remote != None):
                 self.__metadata['remote'] = self._remote
             else:
-                self.__remote = self.__metadata['remote']
+                self._remote = self.__metadata['remote']
         if('market' in self.__metadata.keys()):
             #did an actual market object already get passed in?
             if(self.__market != None):
@@ -254,6 +270,7 @@ derives: {}
             #see if the market is bound to your workspace
             elif(self.getMeta("market") != None and self.getMeta("market") in apt.getMarkets().keys()):
                 self.__market = Market(self.__metadata['market'], apt.SETTINGS['market'][self.__metadata['market']])
+        self.save()
         pass
 
 
@@ -305,7 +322,7 @@ derives: {}
         pass
 
     def create(self, fresh=True, git_exists=False, remote=None):
-        log.info('Initializing new project')
+        log.info('Initializing new block...')
         if(fresh):
             if(os.path.isdir(apt.TEMPLATE)):
                 #copy all files from template project
@@ -315,14 +332,24 @@ derives: {}
                     shutil.rmtree(self.__local_path+"/.git/")
             else:
                 os.makedirs(self.__local_path, exist_ok=True)
-        
-        open(self.__local_path+apt.MARKER, 'w').write(self.legoLockFile())
-        
-        if(not git_exists):
+
+        #clone from existing remote repo
+        if(self.grabGitRemote() != None):
+            log.info("Cloning project from remote url...")
+            self.downloadFromURL(self.grabGitRemote())
+        #make a new repo
+        elif(not git_exists):
             self._repo = git.Repo.init(self.__local_path)
+        #there is already a repo here
         else:
             self._repo = git.Repo(self.__local_path)
-    
+            #does a remote exist?
+            if(self.grabGitRemote(override=True) != None):
+                #ensure we have the latest version before creating marker file
+                self._repo.git.pull()
+
+        #create the marker file
+        open(self.__local_path+apt.MARKER, 'w').write(self.legoLockFile())
 
         #run the commands to generate new project from template
         #file to find/replace word 'template'
@@ -363,15 +390,15 @@ derives: {}
         if(self.grabGitRemote() != None):
             log.info('Generating new remote repository...')
             # !!! set it up to track
-            print(str(self._repo.head.reference))
+            #print(str(self._repo.head.reference))
             self._repo.git.push("-u","origin",str(self._repo.head.reference))
         else:
             log.warning('No remote code base attached to local repository')
         pass
 
     #dynamically grab the origin url if it has been changed/added by user using git
-    def grabGitRemote(self, newValue=None):
-        if(hasattr(self, "_remote")):
+    def grabGitRemote(self, newValue=None, override=False):
+        if(hasattr(self, "_remote") and not override):
             return self._remote
         if(hasattr(self, "_repo") == False or self._repo == None):
             self._remote = None
@@ -392,7 +419,7 @@ derives: {}
                     break
         #print(self.getTitle(),self._remote)
         #make sure to save if it differs
-        if(self.getMeta("remote") != self._remote):
+        if("remote" in self.__metadata.keys() and self.getMeta("remote") != self._remote):
             self.__metadata['remote'] = self._remote
             self.save()
         return self._remote
@@ -409,6 +436,7 @@ derives: {}
                 return
             with self._repo.remotes.origin.config_writer as cw:
                 cw.set("url", remote_url)
+            self._repo.git.push("-u","origin",str(self._repo.head.reference))
         pass
 
     def pushRemote(self):
@@ -464,11 +492,9 @@ derives: {}
     def save(self):
         #unlock metadata to write to it
         os.chmod(self.metadataPath(), stat.S_IWOTH | stat.S_IWGRP | stat.S_IWUSR | stat.S_IWRITE)
-        #write back YAML info
-        order = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
-        #write values with respect to order
+        #write back YAML values with respect to order
         with open(self.metadataPath(), "w") as file:
-            for key in order:
+            for key in apt.META:
                 #pop off front key/val pair of yaml data
                 single_dict = {}
                 single_dict[key] = self.getMeta(key)
@@ -494,8 +520,8 @@ derives: {}
 
         log.debug("version "+ver)
         
-        if(src == None and self.__remote != None):
-            src = self.__remote
+        if(src == None and self._remote != None):
+            src = self._remote
         elif(src == None):
             src = self.__local_path
 
