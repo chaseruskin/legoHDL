@@ -321,9 +321,96 @@ If you ran this same command from outside this block project, the library would 
 After copying and pasting the instantiation into the testbench and writing the code to simulate it, here is the testbench file:
 
 ``` vhdl
+----------------------------------------
+--  Project: common.halfadder
+--  Author: Luke Skywalker, Jedi, One with the Force
+--  Date: August 14, 2021
+--  Description:
+--
+----------------------------------------
 
---TODO: halfadder_tb
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use std.textio.all;
+use std.env.finish;
 
+entity halfadder_tb is
+end entity;
+
+architecture rtl of halfadder_tb is
+    --drives testbench
+    signal Clock : std_logic := '0';
+    signal Reset : std_logic;
+
+    --clock period definition
+    constant ClockPeriod : time := 10 ns;
+
+    --signals related to DUT
+    signal A : std_logic;
+    signal B : std_logic;
+    signal S : std_logic;
+    signal C : std_logic;
+
+begin
+    --generate clock with 50% duty cycle
+    Clock <= not Clock after ClockPeriod/2;
+
+    --instantiate the DUT
+    uX : entity work.halfadder
+    port map(
+        A=>A,
+        B=>B,
+        S=>S,
+        C=>C
+    );
+
+    --read in inputs and feed into DUT
+    inputs : process
+        file InFile         : text open read_mode is "inputs.txt";
+        variable DataLine   : line;
+        variable InVec      : std_logic_vector(1 downto 0);
+    begin
+        while not endfile(InFile) loop
+            --read in inputs for A and B as vector (A, B)
+            readline(InFile, DataLine);
+            read(DataLine, InVec);
+            --Leftmost bit is A input
+            A <= InVec(1);
+            --Rightmost bit is B input
+            B <= InVec(0);
+            --give time until moving on
+            wait until rising_edge(Clock);
+        end loop;
+        wait;
+    end process;
+
+    --read in expected outputs and assert from DUT
+    outputs : process
+        file OutFile        : text open read_mode is "outputs.txt";
+        variable DataLine   : line;
+        variable OutSC      : std_logic_vector(1 downto 0);
+    begin
+        while not endfile(OutFile) loop
+            --capture expected S and C value as vector (S, C)
+            readline(OutFile, DataLine);
+            read(DataLine, OutSC);
+            --wait a little to let DUT compute
+            wait for 1 ns;
+            --print info to console
+            report "Asserting " & integer'image(to_integer(unsigned(OutSC))) &
+            " = " & std_logic'image(S) & std_logic'image(C);
+            --confirm that the ouputs match as expected
+            assert S = OutSC(1) severity failure;
+            assert C = OutSC(0) severity failure;
+            --give time until moving on
+            wait until rising_edge(Clock);
+        end loop;
+        --simulation is complete
+        finish;
+    end process;
+
+end architecture;
 ```
 
 Although writing a software model for a half adder is completely overkill, it will be used here because most practical designs may have a software model.
@@ -332,6 +419,7 @@ Here is the code for the testbench python file:
 
 ``` python
 import random
+random.seed(9)
 #create inputs and expected outputs files for DUT
 inputs = open("inputs.txt",'w')
 outputs = open("outputs.txt",'w')
@@ -341,11 +429,11 @@ for i in range(count):
     #generate random inputs
     a = random.randint(0,1)
     b = random.randint(0,1)
-    inputs.write(str(a)+"\n"+str(b)+"\n")
+    inputs.write(str(a)+str(b)+"\n")
     #compute the expected outputs
     s = 1 if(a + b == 1) else 0;
     c = 1 if(a + b == 2) else 0;
-    outputs.write(str(s)+"\n"+str(c)+"\n")
+    outputs.write(str(s)+str(c)+"\n")
 
 ```
 
@@ -386,7 +474,6 @@ common.halfadder -> common.halfadder_tb
 ---BLOCK ORDER---
 common.halfadder
  ```
-
 
 > __Note:__ If multiple toplevel entities are detected, legoHDL will prompt you with your choices to select one. The same is true for the VHDL testbench entity if it detects multiple testbenches that instantiate the selected toplevel.
 
