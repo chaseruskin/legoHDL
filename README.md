@@ -291,10 +291,10 @@ This will print out the entity as a component declaration, available to be easil
 ``` vhdl
 component halfadder is
     port(
-        A : in std_logic;
-        B : in std_logic;
-        Sum : out std_logic;
-        Carry : out std_logic
+        A     :   IN  std_logic;
+        B     :   IN  std_logic;
+        S     :   OUT std_logic;
+        C     :   OUT std_logic
     );
 end component;
 ```
@@ -305,15 +305,15 @@ The `-inst` flag will print the direct entity instantiation along with the neces
 ``` vhdl
 signal A : std_logic;
 signal B : std_logic;
-signal Sum : std_logic;
-signal Carry : std_logic;
+signal S : std_logic;
+signal C : std_logic;
 
 uX : entity work.halfadder
 port map(
     A=>A,
     B=>B,
-    Sum=>Sum,
-    Carry=>Carry
+    S=>S,
+    C=>C
 );
 ```
 If you ran this same command from outside this block project, the library would not be "work" but "common". We will see this later in the tutorial.
