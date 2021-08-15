@@ -266,7 +266,7 @@ class legoHDL:
             if(i < arg_start):
                 continue
             else:
-                cmd = cmd + arg + " "
+                cmd = cmd + " " + arg
         print(cmd)
         os.system(cmd)
 
