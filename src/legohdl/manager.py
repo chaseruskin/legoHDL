@@ -638,7 +638,11 @@ class legoHDL:
             #skip link option- copy file and rename it same as name 
             if(options.count("lnk") == 0 and val != ''):   
                 dst = apt.HIDDEN+"scripts/"+key+ext
-                shutil.copyfile(filepath, dst)
+                #try to copy and catch exception if its the same file
+                try:
+                    shutil.copyfile(filepath, dst)
+                except shutil.SameFileError:
+                    pass
                 dst = filepath.replace(filepath, dst)
                 #reassign the value for the filepath
                 parsed[file_index] = dst
