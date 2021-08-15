@@ -1,6 +1,7 @@
 from enum import Enum
 from .vhdl import Vhdl
 from .graph import Graph
+from .apparatus import Apparatus as apt
 
 class Unit:
 
@@ -57,7 +58,7 @@ class Unit:
         return (self._dtype == self.Type.PACKAGE)
 
     def getFile(self):
-        return self._filepath
+        return apt.fs(self._filepath)
 
     def getBlock(self):
         return self._block

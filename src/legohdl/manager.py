@@ -305,13 +305,13 @@ class legoHDL:
             for label,ext in apt.SETTINGS['label']['recursive'].items():
                 files = tmp.gatherSources(ext=[ext])
                 for f in files:
-                    labels.append("@"+label+" "+f)
+                    labels.append("@"+label+" "+apt.fs(f))
             #add any project-level labels
             if(block.getTitle() == blk):
                 for label,ext in apt.SETTINGS['label']['shallow'].items():
                     files = block.gatherSources(ext=[ext])
                     for f in files:
-                        labels.append("@"+label+" "+f)
+                        labels.append("@"+label+" "+apt.fs(f))
 
         #register what files the top levels originate from
         topfile_tb = None

@@ -454,7 +454,7 @@ To create the recipe file with the auto-determined toplevel design for the curre
 
 The command will not run unless you are inside the directory of the block you want to export.
 
-The recipe file will be located within the block's folder in the folder called "build".
+The recipe file will be located within the block's folder in the folder called "build". I will add a .gitignore file to exclude the build directory from my block's git tracking.
 
 It also prints out helpful information regarding the hierarchal structure.
 
@@ -513,7 +513,10 @@ Labels can be user-defined for the export command to additionally throw into the
 You from our last export command our recipe file looks like:
 
 ``` 
-#TODO show recipe file
+@SRC C:/Users/chase/develop/hdl/common/halfadder/src/halfadder.vhd
+@SIM C:/Users/chase/develop/hdl/common/halfadder/test/halfadder_tb.vhd
+@SIM-TOP halfadder_tb C:/Users/chase/develop/hdl/common/halfadder/test/halfadder_tb.vhd
+@SRC-TOP halfadder C:/Users/chase/develop/hdl/common/halfadder/src/halfadder.vhd
 ```
 
 We are missing our testbench python file. Let's throw into our recipe with:
