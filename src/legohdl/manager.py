@@ -255,12 +255,19 @@ class legoHDL:
         else:
             exit(log.error("No scripts are configured!"))
 
-        cmd = "\""+cmd+"\" "
+        #add surround quotes to the command/alias
+        cmd = cmd.replace("\'","\"")
+        if(cmd.find("\"") != 0):
+            cmd = "\"" + cmd
+        if(cmd.rfind("\"") != len(cmd)-1):
+            cmd = cmd + "\""
+        #add any extra arguments that were found on legohdl command line
         for i,arg in enumerate(sys.argv):
             if(i < arg_start):
                 continue
             else:
                 cmd = cmd + arg + " "
+        print(cmd)
         os.system(cmd)
 
     #! === EXPORT/GRAPH COMMAND ===
@@ -615,6 +622,8 @@ class legoHDL:
             filepath = ''
             file_index = -1
             for pt in parsed:
+                if(pt == cmd):
+                    continue
                 if(os.path.isfile(pt)):
                     filepath = os.path.realpath(os.path.expanduser(pt)).replace("\\", "/")
                     #reinsert nice formatted path into the list of args
@@ -635,11 +644,11 @@ class legoHDL:
                 parsed[file_index] = dst
 
             #reassemble val with new file properly formatted filepath
-            val = cmd
+            val = apt.fs(cmd)
             for pt in parsed:
                 if(pt == cmd):
                     continue
-                val = val + " " + pt
+                val = val + " " + apt.fs(pt)
                 
             #initialization
             if(not isinstance(apt.SETTINGS[options[0]],dict)):
