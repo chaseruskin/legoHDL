@@ -676,7 +676,7 @@ The command will not run unless you are inside the directory of the block you wa
 > __Note:__ If there is a script's alias being "master", it can be omitted from the build args and will run as default.
 ```legohdl build``` has the same effect as the previous command because they both call the script under master.
 
-To run the TCL build script, if it's name is "viv", run:
+To run the TCL build script, if it's alias name is "vivado", run:
 
 `legohdl build @vivado`
 
