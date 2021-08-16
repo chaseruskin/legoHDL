@@ -1,5 +1,5 @@
 # _lego_**HDL** Documentation
-### The simple, lightweight, powerful package manager for HDL design modules.
+### The simple, lightweight, powerful package manager for HDL design.
   
 <br />  
 
@@ -7,7 +7,7 @@ _lego_**HDL** is a simple, powerful, and flexible package manager for VHDL desig
 
 <br />
 
-LegoHDL is available to work completely local or along with remote locations to collaborate and share modules with others. It is designed to give the developer maximum freedom in their workflow. At a minimum, no git knowledge is required as legoHDL will automate basic git commands that are required.
+LegoHDL is available to work completely local or along with remote locations to collaborate and share blocks with others. It is designed to give the developer maximum freedom in their workflow. At a minimum, no git knowledge is required as legoHDL will automate required basic git commands.
 
 <br />
 
@@ -136,7 +136,7 @@ begin
 end architecture;
 ```
 
-> __Note__: Any where the word 'template' appears, it will be replaced by the name of the created block. %AUTHOR% will be replaced by our configured author setting, %DATE% will be replaced by that day's date, and %BLOCK% will be replaced by the block's library and name.
+> __Note__: Any where the word 'template' appears, it will be replaced by the name of the created block. %AUTHOR% will be replaced by the configured author setting, %DATE% will be replaced by the day's date, and %BLOCK% will be replaced by the block's library and name.
 
 Here is an example VHDL template testbench file:
 ``` vhdl
@@ -616,7 +616,7 @@ while {[gets $fp data] >= 0} {
     #set toplevel entity
     if {[string compare "@SRC-TOP" $label] == 0} {
         set top_unit [lindex $data 1]
-     #set testbench entity
+    #set testbench entity
     } elseif {[string compare "@SIM-TOP" $label] == 0} {  
         set tb_unit [lindex $data 1]
     #add to simulation files
@@ -629,9 +629,9 @@ while {[gets $fp data] >= 0} {
     } elseif {[string compare "@LIB" $label] == 0} {
         set_property -library [lindex $data 1] [lindex $data 2]
         add_files -fileset sources_1 [lindex $data 2]
-    #run the python testbench generation script
-    } elseif {[string compare "@BENCH" $label] == 0} {
-        exec python [lindex $data 1]
+    #add constraint files
+    } elseif {[string compare "@XDC" $label] == 0} {
+        add_files -fileset constrs_1 [lindex $data 1]
     }
 }
 #set toplevel entity
@@ -643,9 +643,10 @@ if {$arc > 0} {
     if {[lindex $argv 0] == "synth"} {
         launch_runs synth_1
         wait_on_run synth_1
-    #simulate the design
-    } elseif {[lindex $argv 0] == "sim"} {
-        launch_simulation
+    #implement the design
+    } elseif {[lindex $argv 0] == "impl"} {
+        launch_runs impl_1
+        wait_on_run impl_1
     }
 }
 ```
@@ -664,7 +665,7 @@ Now let's tell legoHDL to remember this script:
 
 You can also go ahead and add the TCL build script into the built-in scripts folder and name it something like:
 
-`legohdl config vivado="c:/xilinx/vivado/2019.2/bin/vivado.bat -mode batch -source c:/users/chase/.legohdl/scripts/viv.tcl -nolog -nojou" -script -lnk`
+`legohdl config vivado="c:/xilinx/vivado/2019.2/bin/vivado.bat -mode batch -source c:/users/chase/.legohdl/scripts/vivado.tcl -nolog -nojou" -script -lnk`
 
 To run the newly configured master script for our halfadder block run this command at the base of the block's directory:
 
@@ -797,13 +798,13 @@ There are 3 main layers to how a block exists. A block can coexist and usually w
 
 Blocks to be developed must be downloaded to the local path.
 
-Blocks to be used as dependencies are installed to the cache.
+Blocks to be used as dependencies must be installed to the cache.
 
-Blocks to be available are released to a market. When running the `release` command, the new released version will be automatically installed to the cache, regardless of market status.
+Blocks to be available outside of the cache must be released to a market. When running the `release` command, the newly released version will automatically be installed to the cache, regardless if the block is bound to a market or not.
 
 _Some important concepts to understand:_
 
-If a block is downloaded or installed (via market) and it has dependencies, legoHDL will search the workspace's available markets to auto-install the dependencies to the cache.
+If a block is downloaded or installed (installed via market) and it has dependencies, legoHDL will search the workspace's available markets to auto-install the dependencies to the cache.
 
 If a block is downloaded and it has a remote repository, legoHDL will git clone the block to the local path.
 
@@ -815,15 +816,15 @@ A market can be either configured to a remote repository or not. Markets are spe
 
 The benefit of a market having a remote repository is that multiple users can use that market and therefore share blocks.
 
-A market contains the Block.lock files for its released blocks. These now act as essentially "pointers" to the actual block and version, indicated by the Block.lock's `version` and `remote`.
+A market contains the Block.lock files for its released blocks. These now act as "pointers" to the actual block and version, indicated by the Block.lock's values for `version` and `remote`.
 
 ### __Developing Related Blocks Together__
 
-As noted, a block will by default use the dependency located within the cache. This allows developing to be consistent so that when it is ready for release, anyone else to download the new released block can also replicate the results and behavior using the other released dependencies.
+As noted, a block will by default use the dependency located within the cache. This allows developing to be consistent so that when a block is ready for release, anyone else wishing to download the newly released block can also replicate the results and behavior using the other released dependencies.
 
 However, there may instances when multiple blocks must be developed together simultaneously. This can be achieved by setting the `multi-develop` setting to `true` through the command line with `legohdl config true -multi-develop` or by opening up the settings.yml file.
 
-Multi-develop will instead first check the local path for a block's dependencies before checking the cache. This means it will use the downloaded blocks over the installed blocks, if it found it in the local path.
+Multi-develop will instead first check the local path for a block's dependencies before checking the cache. This means it will use the downloaded blocks over the installed blocks, if they are found in the local path.
 
 <br/>
 
@@ -988,10 +989,6 @@ Type 'legohdl help <command>' to read more on entered command.
 ### show
 
     legohdl show <block>
-
-### summ
-
-    legohdl summ <description>
 
 ### config
 
