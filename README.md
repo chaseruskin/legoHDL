@@ -245,7 +245,6 @@ Now the user can begin designing the hardware to meet the specifications of the 
 Here is the code for the half adder design.
 
 ``` vhdl 
-
 ----------------------------------------
 --  Project: common.halfadder
 --  Author: Luke Skywalker, Jedi, One with the Force
@@ -585,7 +584,60 @@ Now, we could add this to our legoHDL scripts, and further extend this script to
 Here is another simple example build script but this time is written in TCL and uses Vivado. It will create a vivado project, parse the recipe file, add files to the correct file sets, and then passed on any tclargs will either run synthesis or simulation.
 
 ``` TCL
-#Add TCL file
+#grab directory name to set for vivado project name
+set PRJ [file tail [pwd]]
+#change directory to build
+cd build
+puts [pwd]
+
+#create vivado project
+create_project -part xc7a200tfbg676-2 -force $PRJ
+
+#open the recipe file and read its contents
+set fp [open "recipe" r]
+
+set top_unit ''
+set tb_unit ''
+#read line by line
+while {[gets $fp data] >= 0} {
+    #assign label as the first element in list
+    set label [lindex $data 0]
+    #conditionally branch based on the label
+    #set toplevel entity
+    if {[string compare "@SRC-TOP" $label] == 0} {
+        set top_unit [lindex $data 1]
+     #set testbench entity
+    } elseif {[string compare "@SIM-TOP" $label] == 0} {  
+        set tb_unit [lindex $data 1]
+    #add to simulation files
+    } elseif {[string compare "@SIM" $label] == 0} {
+        add_files -fileset sim_1 [lindex $data 1]
+    #add to design files
+    } elseif {[string compare "@SRC" $label] == 0} {
+        add_files -fileset sources_1 [lindex $data 1]
+    #add libraries
+    } elseif {[string compare "@LIB" $label] == 0} {
+        set_property -library [lindex $data 1] [lindex $data 2]
+        add_files -fileset sources_1 [lindex $data 2]
+    #run the python testbench generation script
+    } elseif {[string compare "@BENCH" $label] == 0} {
+        exec python [lindex $data 1]
+    }
+}
+#set toplevel entity
+set_property top $top_unit [current_fileset]
+
+#branch based on arguments based to the TCL script
+if {$arc > 0} {
+    #synthesize the design
+    if {[lindex $argv 0] == "synth"} {
+        launch_runs synth_1
+        wait_on_run synth_1
+    #simulate the design
+    } elseif {[lindex $argv 0] == "sim"} {
+        launch_simulation
+    }
+}
 ```
 
 Open the scripts folder.
@@ -620,6 +672,10 @@ To run the TCL build script, if it's name is "viv", run:
 Since we designed this script to take in arguments, we can pass them into the script like we wanted. So to do perform synthesis run:
 
 `legohdl build @vivado -tclargs synth`
+
+To run simulation:
+
+`legohdl build @vivado -tclargs sim`
 
 The `-tclargs` is specific to allowing vivado to pass in arguments to the TCL script. Remember, the `build` command is essentially the alias for the value of `vivado` that we configured.
 
