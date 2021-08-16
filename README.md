@@ -680,11 +680,11 @@ To run the TCL build script, if it's alias name is "vivado", run:
 
 `legohdl build @vivado`
 
-Since we designed this script to take in arguments, we can pass them into the script like we wanted. So to do perform synthesis run:
+Since we designed this script to take in arguments, we can pass them into the script like we wanted. So to perform synthesis run:
 
 `legohdl build @vivado -tclargs synth`
 
-To run implementation:
+To perform implementation:
 
 `legohdl build @vivado -tclargs impl`
 
