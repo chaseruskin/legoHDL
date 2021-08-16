@@ -368,12 +368,15 @@ begin
     inputs : process
         file InFile         : text open read_mode is "inputs.txt";
         variable DataLine   : line;
+        variable InInt      : integer;
         variable InVec      : std_logic_vector(1 downto 0);
     begin
         while not endfile(InFile) loop
             --read in inputs for A and B as vector (A, B)
             readline(InFile, DataLine);
-            read(DataLine, InVec);
+            read(DataLine, InInt);
+            --cast from integer to logic vector
+            InVec := std_logic_vector(to_unsigned(InInt,2));
             --Leftmost bit is A input
             A <= InVec(1);
             --Rightmost bit is B input
@@ -388,12 +391,15 @@ begin
     outputs : process
         file OutFile        : text open read_mode is "outputs.txt";
         variable DataLine   : line;
+        variable OutInt     : integer;
         variable OutSC      : std_logic_vector(1 downto 0);
     begin
         while not endfile(OutFile) loop
             --capture expected S and C value as vector (S, C)
             readline(OutFile, DataLine);
-            read(DataLine, OutSC);
+            read(DataLine, OutInt);
+            --cast from integer to logic vector
+            OutSC := std_logic_vector(to_unsigned(OutInt,2));
             --wait a little to let DUT compute
             wait for 1 ns;
             --print info to console
@@ -425,15 +431,15 @@ outputs = open("outputs.txt",'w')
 
 count = 10
 for i in range(count):
-    #generate random inputs
-    a = random.randint(0,1)
-    b = random.randint(0,1)
-    inputs.write(str(a)+str(b)+"\n")
+    #generate random inputs (0 to 3 is 00, 01, 10, and 11)
+    ab = random.randint(0,3)
+    inputs.write(str(ab)+"\n")
     #compute the expected outputs
-    s = 1 if(a + b == 1) else 0;
-    c = 1 if(a + b == 2) else 0;
-    outputs.write(str(s)+str(c)+"\n")
-
+    s = 1 if(ab == 1 or ab == 2) else 0;
+    c = 1 if(ab == 3) else 0;
+    #convert from binary digits to a integer value
+    sc = 2*s + c
+    outputs.write(str(sc)+"\n")
 ```
 
 We are now almost ready to `build` our block.
@@ -520,7 +526,7 @@ You from our last export command our recipe file looks like:
 
 We are missing our testbench python file. Let's throw into our recipe with:
 
-`legohdl config BENCH=".py" -script`
+`legohdl config BENCH=".py" -label`
 
 Adding the `-recursive` flag will make that label recursive.
 
@@ -531,7 +537,11 @@ Let's rerun the export command to update our recipe file.
 Now our recipe file looks like:
 
 ``` 
-#TODO show recipe file
+@BENCH C:/Users/chase/Develop/hdl/common/halfadder/test/testbench.py
+@SRC C:/Users/chase/Develop/hdl/common/halfadder/src/halfadder.vhd
+@SIM C:/Users/chase/Develop/hdl/common/halfadder/test/halfadder_tb.vhd
+@SIM-TOP halfadder_tb C:/Users/chase/Develop/hdl/common/halfadder/test/halfadder_tb.vhd
+@SRC-TOP halfadder C:/Users/chase/Develop/hdl/common/halfadder/src/halfadder.vhd
 ```
 
 
