@@ -119,7 +119,7 @@ class Block:
             next_min_version = "v"+str(major)+"."+str(minor)+"."+str(patch+1)
             exit(log.error("Invalid version selected! Next minimum version is: "+next_min_version))
         
-        oldVersion = "Uploading v"+str(major)+"."+str(minor)+"."+str(patch)
+        oldVerInfo = "Uploading v"+str(major)+"."+str(minor)+"."+str(patch)
         #determine next version if not manually set but set by 1 of 3 flags
         if(ver == ''):
             #increment version numbering according to flag
@@ -141,7 +141,7 @@ class Block:
         #update string syntax for new version
         ver = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
             
-        log.info(oldVersion+" -> "+ver)
+        log.info(oldVerInfo+" -> "+ver)
         
         if(ver != '' and ver[0] == 'v'):
             self.__metadata['version'] = ver[1:]
@@ -157,7 +157,8 @@ class Block:
             self._repo.index.commit("Release version -> "+self.getVersion())
             #create a tag with this version
             self._repo.create_tag(ver)
-
+            #print list of all tags
+            self.getTaggedVersions()
             #in order to release to market, we must have a valid git remote url
             url = self.grabGitRemote()
             if(url == None):
@@ -175,6 +176,20 @@ class Block:
             elif(self.getMeta("market") != None):
                 log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
+
+    def getTaggedVersions(self, ver=None):
+        all_tags = self._repo.git.tag(l=True)
+       
+        all_tags = all_tags.split("\n")
+        #remove any non-legohdl tags
+        tags = []
+        for t in all_tags:
+            if(t.startswith(apt.TAG_ID)):
+                tags.append(t[t.find(apt.TAG_ID)+len(apt.TAG_ID):])
+        print(tags)
+        #return all tags
+        if(ver == None):
+            return tags
     
     #return the writing for an empty marker file
     def lockFile(self):

@@ -22,6 +22,9 @@ class Apparatus:
                'editor', 'label', 'market', 'script', 'workspace']
 
     META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
+    
+    #this is preppended to the tag to make it unique for legoHDL
+    TAG_ID = ''        
 
     __active_workspace = None
 

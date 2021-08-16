@@ -255,19 +255,22 @@ class legoHDL:
         else:
             exit(log.error("No scripts are configured!"))
 
+        #remove quotes from command
+        cmd = cmd.replace("\'","")
+        cmd = cmd.replace("\"","")
         #add surround quotes to the command/alias
-        cmd = cmd.replace("\'","\"")
-        if(cmd.find("\"") != 0):
-            cmd = "\"" + cmd
-        if(cmd.rfind("\"") != len(cmd)-1):
-            cmd = cmd + "\""
-        #add any extra arguments that were found on legohdl command line
-        for i,arg in enumerate(sys.argv):
-            if(i < arg_start):
-                continue
-            else:
-                cmd = cmd + " " + arg
-        print(cmd)
+        # cmd = cmd.replace("\'","\"")
+        # if(cmd.find("\"") != 0):
+        #     cmd = "\"" + cmd
+        # if(cmd.rfind("\"") != len(cmd)-1):
+        #     cmd = cmd + "\""
+        # #add any extra arguments that were found on legohdl command line
+        # for i,arg in enumerate(sys.argv):
+        #     if(i < arg_start):
+        #         continue
+        #     else:
+        #         cmd = cmd + " " + arg
+        log.info(cmd)
         os.system(cmd)
 
     #! === EXPORT/GRAPH COMMAND ===
