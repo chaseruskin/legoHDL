@@ -5,12 +5,9 @@
 
 - [-] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace) (does it work when doing it on just a regular block?) (say install block from market and gets requirements installs automatically?)
 
-- [!] let the % % be used on all files in the template, even READMEs
-- [ ] allow users to touch Block.lock file? (it gets auto-updated anyway when performing things like release) -> 		leaning yes
 
 - [!] implement update/upgrade command (have -all flag to update all installs, otherwise update by block name?) (could occur on refresh command?)
 
-- [ ] add series of prompts to release command before actually doing anything
 
 - [ ] test installing a block, then auto-installs requirements to cache if DNE in cache and if the requirement is 			found in local path or in market
 
@@ -28,7 +25,7 @@
 
 - [ ] have some way of notifying user that a block is missing from installations when trying to export
 
-- [ ] allow renaming of block and/or library name?
+- [ ] add series of prompts to release command before actually doing anything
 
 - [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive
 
@@ -39,6 +36,9 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] allow renaming of block and/or library name? -> yes
+- [x] allow users to touch Block.lock file? (it gets auto-updated anyway when performing things like release) -> 	   leaning yes
+- [x] let the % % be used on all files in the template, even READMEs
 - [x] change .lego.lock to Block.lock
 - [x] ensure init command is up to par
 - [x] test having a remote project already (non-block), then running init

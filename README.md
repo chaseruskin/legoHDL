@@ -109,7 +109,7 @@ An example of how to set up a template VHDL design file may look like this:
 
 ``` vhdl
 ----------------------------------------
---  Project: %PROJECT%
+--  Project: %BLOCK%
 --  Author: %AUTHOR%
 --  Date: %DATE%
 --  Description:
@@ -136,12 +136,12 @@ begin
 end architecture;
 ```
 
-> __Note__: Any where the word 'template' appears, it will be replaced by the name of the created block. %AUTHOR% will be replaced by our configured author setting, %DATE% will be replaced by that day's date, and %PROJECT% will be replaced by the block's library and name.
+> __Note__: Any where the word 'template' appears, it will be replaced by the name of the created block. %AUTHOR% will be replaced by our configured author setting, %DATE% will be replaced by that day's date, and %BLOCK% will be replaced by the block's library and name.
 
 Here is an example VHDL template testbench file:
 ``` vhdl
 ----------------------------------------
---  Project: %PROJECT%
+--  Project: %BLOCK%
 --  Author: %AUTHOR%
 --  Date: %DATE%
 --  Description:
@@ -726,7 +726,7 @@ Blocks to be available are released to a market. When running the `release` comm
 
 _Some important concepts to understand:_
 
-If a block is downloaded and it has dependencies, legoHDL will search the workspace's available markets to auto-install the dependencies to the cache.
+If a block is downloaded or installed (via market) and it has dependencies, legoHDL will search the workspace's available markets to auto-install the dependencies to the cache.
 
 If a block is downloaded and it has a remote repository, legoHDL will git clone the block to the local path.
 
