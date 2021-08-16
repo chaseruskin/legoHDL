@@ -715,64 +715,71 @@ Seeing our block with ```legohdl list``` now highlights common.halfadder as vers
 
 ## 6. __Incorporating a Block as a Dependency__
 
-Say we are done with developing on common.halfadder for now, we can delete it from our local path by running:
+Okay, the project is now ready to be incorporated into any other design! This is where legoHDL shines.
+
+So upon releasing, it will install the released block to the cache alongside generating a VHDL package file for the toplevel entity, if a toplevel exists. LegoHDL provides flexibility in how the designer wants to incorporate a block into another design. Let's first make and open a new design.
+
+`legohdl new math.fulladder -o`
+
+Say we are finished developing on `common.halfadder` now. We can remove it from our local workspace. Either manually delete it from its location or run (make sure to close the text-editor window that had `common.halfadder` open):
 
 `legohdl del common.halfadder`
 
-Okay, the project is now ready to be incorporated into any other design! Upon releasing, it will install the release to the cache folder alongside generating a VHDL package file for the toplevel entity into the library folder, if a toplevel exists. Legohdl provides a lot of flexibility in how the designer wants to incorporate a block into another design. Here are some common ways:
+Running `legohdl list` will now show you that `common.halfadder` exists in the cache, as `instl` status.
 
-1. Include library and use keywords and then instantiate the dependent block's toplevel entity in the architecture.
+To use our released block in our new design, we have a few options. Here are some common ways:
+
+1. Include `library` and `use` keywords to then instantiate this block's toplevel entity in the architecture.
 ``` VHDL
 library common;
-use common.mux_pkg.all;
+use common.halfadder_pkg.all;
 ```
 
-2. You could also instantiate the entity directly without having to use the auto-generated package file. Running `legohdl port common.mux -inst` will give the instantiation form shown below along with any required signals.
+2. Directly instantiate the entity without having to use the auto-generated package file. Running `legohdl port common.halfadder -inst` will give the instantiation form shown below along with any required signals.
 ``` VHDL
 library common;
 
-entity ALU is
+entity fulladder is
 ...
 end entity;
 
-architecture bhv of ALU is
+architecture bhv of fulladder is
 ...
 begin
-
-    u0 : entity common.mux
+    uX : entity common.halfadder
     port map(
         ...
     );
 end architecture
 ```
 
-3.
+3. Avoid the package file and use the component declaration and then later instantiate.
 ``` VHDL
 library common;
 
-entity ALU is
+entity fulladder is
 ...
 end entity;
 
-architecture bhv of ALU is
+architecture bhv of fulladder is
 ...
-    component common.mux is
+    component common.halfadder is
     ...
     end component;
 begin
 
-    u0 : common.mux
+    uX : common.halfadder
     port map(
         ...
     );
 end architecture
 ```
 
-legoHDL will recognize the library and files being used and throw the required files in the recipe. If a library is called in the VHDL file that does not exist as a custom created library, such as ieee or std, it will be ignored as it assumes the tool will automatically have these libraries.
+legoHDL will recognize the library and entities being used and throw the required files in the recipe. If a library is called in the VHDL file that does not exist as a custom created library, such as ieee or std, it will be ignored as it assumes the tool will automatically have these libraries.
 
-Don't remember the ports list? Run
+Don't remember the ports list or component declaration? Run
 
-```legohdl port common.mux -map```
+```legohdl port common.halfadder -map```
 
 to grab the format for instantation and any required signals.
 

@@ -201,7 +201,7 @@ class legoHDL:
         if(self.db.blockExists(blk, "cache")):
             cache = self.db.getBlocks("cache")
             cache_path = cache[l][n].getPath()
-            shutil.rmtree(cache_path)
+            shutil.rmtree(cache_path, onerror=apt.rmReadOnly)
             #if empty dir then do some cleaning
             if(len(os.listdir(apt.WORKSPACE+"cache/"+l)) == 0):
                 os.rmdir(apt.WORKSPACE+"cache/"+l)
@@ -279,7 +279,7 @@ class legoHDL:
         #create a clean build folder
         log.info("Cleaning build folder...")
         if(os.path.isdir(build_dir)):
-            shutil.rmtree(build_dir)
+            shutil.rmtree(build_dir, onerror=apt.rmReadOnly)
         os.mkdir(build_dir)
 
         log.info("Finding toplevel design...")
@@ -430,7 +430,7 @@ class legoHDL:
         
         #2. perform re-install
         try: #remove cached project already there
-            shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/")
+            shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/", onerror=apt.rmReadOnly)
         except:
             pass
         #install to cache and generate PKG VHD 
@@ -460,9 +460,9 @@ class legoHDL:
         block.release(ver, options)
         #remove from cache and library to be reinstalled
         if(os.path.isdir(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName())):
-            shutil.rmtree(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName(), ignore_errors=True)
+            shutil.rmtree(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName(), onerror=apt.rmReadOnly)
         if(os.path.isfile(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg")):
-            shutil.rmtree(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg", ignore_errors=True)
+            shutil.rmtree(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg", onerror=apt.rmReadOnly)
         #clone new project's progress into cache
         self.install(block.getTitle(), block.getVersion())
         log.info(block.getLib()+"."+block.getName()+" is now available as version "+block.getVersion()+".")
@@ -514,7 +514,7 @@ class legoHDL:
                         bad_directory = apt.HIDDEN+"workspaces/"+choice
                         print(bad_directory)
                         if(os.path.isdir(bad_directory)):
-                            shutil.rmtree(bad_directory)
+                            shutil.rmtree(bad_directory, onerror=apt.rmReadOnly)
                             log.info("Deleted workspace directory: "+bad_directory)
                     elif(st == 'market'):
                         Market(key,val).delete()
@@ -834,8 +834,11 @@ class legoHDL:
                 log.info("Module "+block.getTitle()+' not uninstalled.')
                 force = False
         #if there is a remote then the project still lives on, can be "redownloaded"
-        print(block.getPath())
-        shutil.rmtree(block.getPath(),ignore_errors=True)
+        log.info("Deleting "+block.getTitle()+" block found here: "+block.getPath())
+        try:
+            shutil.rmtree(block.getPath(), onerror=apt.rmReadOnly)
+        except PermissionError:
+            log.warning("Could not delete block's root folder from local workspace because it is open in another process.")
 
         #if empty dir then do some cleaning
         slash = block.getPath()[:len(block.getPath())-2].rfind('/')
@@ -931,7 +934,6 @@ class legoHDL:
         package = pkg
         options = opt
         
-        description = package
         value = package
         package = package.replace("-", "_")
 
@@ -949,7 +951,7 @@ class legoHDL:
         if(valid and command == "install"):
             if(self.blockPKG == None):
                 return
-            print(self.blockPKG.getTitle())
+            log.info(self.blockPKG.getTitle())
             ver = None
             if(len(options)):
                 ver = options[0]
@@ -1013,8 +1015,10 @@ class legoHDL:
                 force = options.count('uninstall')
                 self.cleanup(self.blockPKG, force)
             #try to delete a setting
-            else:
+            elif(L == '' or N == ''):
                 self.setSetting(options, value, delete=True)
+            else:
+                log.info("Block does not exist in local path.")
 
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             if(options.count("script")):

@@ -41,7 +41,7 @@ class Registry:
         for r in regs:
             if r not in mrkts.keys():
                 if(os.path.isdir(apt.HIDDEN+"registry/"+r)):
-                    shutil.rmtree(apt.HIDDEN+"registry/"+r)
+                    shutil.rmtree(apt.HIDDEN+"registry/"+r, onerror=apt.rmReadOnly)
                 else:
                     os.remove(apt.HIDDEN+"registry/"+r)
 

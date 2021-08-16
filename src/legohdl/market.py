@@ -32,7 +32,7 @@ class Market:
 
     def delete(self):
          if(os.path.exists(self._local_path)):
-                shutil.rmtree(self._local_path)
+                shutil.rmtree(self._local_path, onerror=apt.rmReadOnly)
 
     def setRemote(self, url):
         if((self.isRemote() and self._repo.remotes.origin.url != self.url) or (not self.isRemote())):
@@ -47,7 +47,7 @@ class Market:
             #is this a valid remote path? do we already have one? if we already have a remote path, delete folder
                 log.info("Swapping link for "+self._name+" to "+self.url+"...")
                 if(os.path.exists(self._local_path)):
-                    shutil.rmtree(self._local_path)
+                    shutil.rmtree(self._local_path, onerror=apt.rmReadOnly)
                 git.Git(apt.HIDDEN+"registry/").clone(url) #and clone from new valid remote path
                 url_name = url[url.rfind('/')+1:url.rfind('.git')]
                 os.rename(apt.HIDDEN+"registry/"+url_name, self._local_path)

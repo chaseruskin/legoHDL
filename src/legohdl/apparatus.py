@@ -2,6 +2,7 @@
 import copy
 from genericpath import isdir, isfile
 import yaml,os,logging as log
+import stat
 from subprocess import check_output
 import shutil
 
@@ -111,7 +112,7 @@ class Apparatus:
             if(ws not in cls.SETTINGS['workspace'].keys()):
                 #delete if found a directory type
                 if(os.path.isdir(cls.HIDDEN+"workspaces/"+ws)):
-                    shutil.rmtree(cls.HIDDEN+"workspaces/"+ws)
+                    shutil.rmtree(cls.HIDDEN+"workspaces/"+ws, onerror=cls.rmReadOnly)
                 #delete if found a file type
                 else:
                     os.remove(cls.HIDDEN+"workspaces/"+ws)
@@ -247,4 +248,9 @@ class Apparatus:
                 for prj in place2[lib]:
                     tmp[lib][prj] = place2[lib][prj]
         return tmp
+
+    @classmethod
+    def rmReadOnly(cls, func, path, execinfo):
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
     pass

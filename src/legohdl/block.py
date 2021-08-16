@@ -335,7 +335,7 @@ derives: {}
                 shutil.copytree(apt.TEMPLATE, self.__local_path)
                 #delete any previous git repository that was attached to template
                 if(os.path.isdir(self.__local_path+"/.git/")):
-                    shutil.rmtree(self.__local_path+"/.git/")
+                    shutil.rmtree(self.__local_path+"/.git/", onerror=apt.rmReadOnly)
             else:
                 os.makedirs(self.__local_path, exist_ok=True)
 
