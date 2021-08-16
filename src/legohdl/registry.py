@@ -80,7 +80,7 @@ class Registry:
             reg = sortion #assign the sorted dictionary to reg
             pass
 
-        print('{:<12}'.format("Library"),'{:<22}'.format("Module"),'{:<12}'.format("Status"),'{:<10}'.format("Version"))
+        print('{:<12}'.format("Library"),'{:<22}'.format("Block"),'{:<12}'.format("Status"),'{:<10}'.format("Version"))
         print("-"*12+" "+"-"*22+" "+"-"*12+" "+"-"*8)
         for lib,prjs in reg.items():
             for name,blk in prjs.items():

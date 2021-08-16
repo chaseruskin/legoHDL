@@ -1,15 +1,13 @@
 ## Roadmap to Release v0.1.0
 
 - [ ] implement versioning (folders for each version created on-demand) (installing spec. versions)
-- [ ] auto-install dependencies if found in remote (occurs on export command)
 
-- [-] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace) (does it work when doing it on just a regular block?) (say install block from market and gets requirements installs automatically?)
+- [ ] when installing or downloading a block, auto-install dependencies if found in remote or block is in cache (and required version is not created)
+
+- [ ] when running export/graph command, auto-install dependencies if DNE and found in remote or block is in cache (and required version is not created)
 
 
 - [!] implement update/upgrade command (have -all flag to update all installs, otherwise update by block name?) (could occur on refresh command?)
-
-
-- [ ] test installing a block, then auto-installs requirements to cache if DNE in cache and if the requirement is 			found in local path or in market
 
 - [ ] implement additional "help" command documentation
 
@@ -18,7 +16,9 @@
 
 - [ ] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
 
-- [ ] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock)
+- [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock)
+
+- [ ] allow ability to open a script by specifying script 'alias' name `legohdl open master -script`
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
 - [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
 - [ ] add ability to search by market
@@ -36,6 +36,8 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [o] test installing a block, then auto-installs requirements to cache if DNE in cache and if the requirement is found in local path or in market -> already covered by a roadmap mission
+- [o] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace) (does it work when doing it on just a regular block?) (say install block from market and gets requirements installs automatically?)
 - [x] investigate rmdir errors on windows when releasing -> added error catch function for windows permission issues
 - [x] allow renaming of block and/or library name? -> yes
 - [x] allow users to touch Block.lock file? (it gets auto-updated anyway when performing things like release) -> 	   leaning yes
@@ -63,7 +65,6 @@ __Completed__
 - [x] add -soft release option
 - [x] verify that the workspaces folder gets deleted when deleting workspace
 - [x] test using templated repo (don't copy over .git)
-- [x] test using templated repo (don't copy over .git)
 - [-] see if improvements can be made to "set settings" code (config command)
 - [x] rewrite how config command deletes (maybe use del command with flags?) -> uses "del" command w/ flags
 - [x] provide meaningful feedback if a desired version for release is invalid (what's the next possible version?)
@@ -89,7 +90,7 @@ __Completed__
 - [x] add template reference option
 - [x] search all design VHD files to determine which is top-level design then find which testbench instantiates that design
 - [x] prompt user if multiple top-level testbenches are found
-- [x] rename capsule.py to block.py
+- [x] rename `capsule.py` to `block.py`
 - [x] allow user to open template folder
 - [x] allow user to open settings file
 - [x] allow remote to be null
