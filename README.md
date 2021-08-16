@@ -715,6 +715,10 @@ Seeing our block with ```legohdl list``` now highlights common.halfadder as vers
 
 ## 6. __Incorporating a Block as a Dependency__
 
+Say we are done with developing on common.halfadder for now, we can delete it from our local path by running:
+
+`legohdl del common.halfadder`
+
 Okay, the project is now ready to be incorporated into any other design! Upon releasing, it will install the release to the cache folder alongside generating a VHDL package file for the toplevel entity into the library folder, if a toplevel exists. Legohdl provides a lot of flexibility in how the designer wants to incorporate a block into another design. Here are some common ways:
 
 1. Include library and use keywords and then instantiate the dependent block's toplevel entity in the architecture.

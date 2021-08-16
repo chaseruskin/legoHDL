@@ -460,9 +460,9 @@ class legoHDL:
         block.release(ver, options)
         #remove from cache and library to be reinstalled
         if(os.path.isdir(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName())):
-            shutil.rmtree(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName())
+            shutil.rmtree(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName(), ignore_errors=True)
         if(os.path.isfile(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg")):
-            shutil.rmtree(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg")
+            shutil.rmtree(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg", ignore_errors=True)
         #clone new project's progress into cache
         self.install(block.getTitle(), block.getVersion())
         log.info(block.getLib()+"."+block.getName()+" is now available as version "+block.getVersion()+".")
@@ -835,8 +835,8 @@ class legoHDL:
                 force = False
         #if there is a remote then the project still lives on, can be "redownloaded"
         print(block.getPath())
-        shutil.rmtree(block.getPath())
-    
+        shutil.rmtree(block.getPath(),ignore_errors=True)
+
         #if empty dir then do some cleaning
         slash = block.getPath()[:len(block.getPath())-2].rfind('/')
         root = block.getPath()[:slash+1]
