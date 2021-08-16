@@ -804,7 +804,7 @@ Blocks to be available outside of the cache must be released to a market. When r
 
 _Some important concepts to understand:_
 
-If a block is downloaded or installed (installed via market) and it has dependencies, legoHDL will search the workspace's available markets to auto-install the dependencies to the cache.
+If a block is downloaded or installed (installed via market) and it has dependencies, legoHDL will search the workspace's available markets and cache itself to auto-install the dependencies and their correct versions to the cache.
 
 If a block is downloaded and it has a remote repository, legoHDL will git clone the block to the local path.
 
@@ -870,7 +870,7 @@ Now imagine the system being designed requires multiple blocks, and they are con
 
 Enter Software Verification Chaining (SWVC). The idea is to use the already designed sw model scripts and build up the input and expected output files, one script after another. Here's how it's done:
 
-Create the label to be recursive, so that all sw model scripts found in each of the required blocks as well as the current block's sw model will be added to the recipe list. Now, inside your build script, you can execute each sw model script identified by its label. For every stage after the initial one, the next sw model will read in the previous stage's expected outputs file and manipulate that data to generate a new expected outputs file. By the end you will have the correct initial inputs and correct expected outputs.
+Create the label to be recursive, so that all sw model scripts found in each of the required blocks as well as the current block's sw model will be added to the recipe list. Now, inside your build script, you can execute each sw model script identified by its label. For every stage after the initial one, the next sw model will read in the previous stage's expected outputs file and manipulate that data to generate a new expected outputs file. By the end you will have the correct initial inputs and correct expected outputs, without repetitive code.
 
     TODO: insert diagram of SWVC.
 
@@ -932,7 +932,7 @@ Type 'legohdl help <command>' to read more on entered command.
 
 ### list
 
-    legohdl list [<block>]
+    legohdl list [<block>] [-alpha]
 
     legohdl list -script
 

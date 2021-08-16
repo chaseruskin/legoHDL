@@ -54,6 +54,7 @@ class Registry:
             search_blk = search_for[i_dot+1:]
 
         reg = None
+        #todo : fix for adding more flags to see various block levels
         if(options.count("local") or not apt.linkedMarket()):
             reg = self.getBlocks("local","cache")
         else:
