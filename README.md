@@ -591,7 +591,7 @@ if(tb_unit != ''):
 
 Now, we could add this to our legoHDL scripts, and further extend this script to do much more like take in any arguments. The sky is the limit when developer's are in control of how their scripts are to build HDL code. Let's add this file to my legoHDL scripts.
 
-Here is another simple example build script but this time is written in TCL and uses Vivado. It will create a vivado project, parse the recipe file, add files to the correct file sets, and then passed on any tclargs will either run synthesis or simulation.
+Here is another simple example build script but this time is written in TCL and uses Vivado. It will create a vivado project, parse the recipe file, add files to the correct file sets, and then pass on any tclargs to either run synthesis or implementation.
 
 ``` TCL
 #grab directory name to set for vivado project name
@@ -650,7 +650,7 @@ if {$arc > 0} {
 }
 ```
 
-Open the scripts folder.
+Open the built-in scripts folder.
 
 ```legohdl open -script```
 
@@ -683,13 +683,13 @@ Since we designed this script to take in arguments, we can pass them into the sc
 
 `legohdl build @vivado -tclargs synth`
 
-To run simulation:
+To run implementation:
 
-`legohdl build @vivado -tclargs sim`
+`legohdl build @vivado -tclargs impl`
 
 The `-tclargs` is specific to allowing vivado to pass in arguments to the TCL script. Remember, the `build` command is essentially the alias for the value of `vivado` that we configured.
 
-Nice! We have just tested our design.
+Nice! Build scripts are the key to how a developer is able to customize their workflow to work for them. They can take advantage of everything available in their environment.
 
 We can view our scripts with: `legohdl list -script`
 
@@ -698,7 +698,7 @@ We can view our scripts with: `legohdl list -script`
 
 Up until this point, everything has been local and the block has not yet been officially "released". It has been on version 0.0.0, which is an unreleased state. Now we are ready to release the current code's state as a version.
 
-If we have not made any git commits yet, that is okay. The release command will automatically add and commit altered files. If this is undesirable, you can use the `-strict` flag to only let legoHDL commit the changes it makes to the `Block.lock` file for that specific release.
+If you have not made any git commits yet, that is okay. The release command will automatically add and commit altered files. If this is undesirable, you can use the `-strict` flag to only let legoHDL commit the changes it makes to the `Block.lock` file for that specific release.
 
 ```legohdl release -maj```
 
@@ -711,7 +711,7 @@ _MAJOR.MINOR.PATCH versioning suggestions:_
 -   _minor_: performance enhancements  
 -   _patch/fix_: bug fixing and small code tweaks 
 
-Seeing our block with ```legohdl list``` now highlights common.halfadder as version 1.0.0.
+Seeing our block with ```legohdl list``` now highlights common.halfadder as version 1.0.0, and also that is a "dnld" (downloaded).
 
 ## 6. __Incorporating a Block as a Dependency__
 

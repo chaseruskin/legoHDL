@@ -119,7 +119,7 @@ class Block:
             next_min_version = "v"+str(major)+"."+str(minor)+"."+str(patch+1)
             exit(log.error("Invalid version selected! Next minimum version is: "+next_min_version))
         
-        log.info("Uploading v"+str(major)+"."+str(minor)+"."+str(patch),end=' ')
+        oldVersion = "Uploading v"+str(major)+"."+str(minor)+"."+str(patch)
         #determine next version if not manually set but set by 1 of 3 flags
         if(ver == ''):
             #increment version numbering according to flag
@@ -141,7 +141,7 @@ class Block:
         #update string syntax for new version
         ver = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
             
-        print("->",ver)
+        log.info(oldVersion+" -> "+ver)
         
         if(ver != '' and ver[0] == 'v'):
             self.__metadata['version'] = ver[1:]
