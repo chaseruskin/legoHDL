@@ -122,7 +122,7 @@ use ieee.std_logic_1164.all;
 entity template is
     port(
         Clock     :   IN  std_logic;
-        Reset     :   IN  std_logic;
+        Reset     :   IN  std_logic
 
     );
 end entity;
@@ -183,7 +183,7 @@ begin
 
     --read in inputs and feed into DUT
     inputs : process
-        variable InFile     : text open read_mode is "inputs.txt";
+        file InFile         : text open read_mode is "inputs.txt";
         variable DataLine   : line;
     begin
         while not endfile(InFile) loop
@@ -196,7 +196,7 @@ begin
 
     --read in expected outputs and assert from DUT
     outputs : process
-        variable OutFile    : text open read_mode is "outputs.txt";
+        file OutFile        : text open read_mode is "outputs.txt";
         variable DataLine   : line;
     begin
         while not endfile(OutFile) loop
@@ -546,7 +546,7 @@ We can view our labels with
 
 ``legohdl list -label``
 
-Here's the code for a simple build script file:
+Here's the code for a simple example build script file that is written in python and uses GHDL. It will parse the recipe file, analyze all VHDL files, and run a simulation if a testbench unit is found in the recipe file (indicated by @SIM-TOP label).
 ``` python
 import os
 #example build script demonstrating the easy handling of recipe file
@@ -582,11 +582,17 @@ if(tb_unit != ''):
 
 Now, we could add this to our legoHDL scripts, and further extend this script to do much more like take in any arguments. The sky is the limit when developer's are in control of how their scripts are to build HDL code. Let's add this file to my legoHDL scripts.
 
+Here is another simple example build script but this time is written in TCL and uses Vivado. It will create a vivado project, parse the recipe file, add files to the correct file sets, and then passed on any tclargs will either run synthesis or simulation.
+
+``` TCL
+#Add TCL file
+```
+
 Open the scripts folder.
 
 ```legohdl open -script```
 
-Make a new build script file called `master.py` and copy above code into it.
+Make a new build script file called `master.py` and copy the python build script code above into it.
 
 Now let's tell legoHDL to remember this script:
 
@@ -594,7 +600,11 @@ Now let's tell legoHDL to remember this script:
 
 > __Note:__ The `-lnk` flag will prevent legoHDL from trying to copy the file into the built-in scripts folder. Since it is already in the scripts folder, it is wise to just link it. It would also be wise to use `-lnk` when you would like your script to live elsewhere, allowing you to continue to improve it from its original location.
 
-To run this newly configured script for our halfadder block run this command:
+You can also go ahead and add the TCL build script into the built-in scripts folder and name it something like:
+
+`legohdl config vivado="c:/xilinx/vivado/2019.2/bin/vivado.bat -mode batch -source c:/users/chase/.legohdl/scripts/viv.tcl -nolog -nojou" -script -lnk`
+
+To run the newly configured master script for our halfadder block run this command at the base of the block's directory:
 
 ```legohdl build @master```
 
@@ -602,6 +612,16 @@ The command will not run unless you are inside the directory of the block you wa
 
 > __Note:__ If there is a script's alias being "master", it can be omitted from the build args and will run as default.
 ```legohdl build``` has the same effect as the previous command because they both call the script under master.
+
+To run the TCL build script, if it's name is "viv", run:
+
+`legohdl build @vivado`
+
+Since we designed this script to take in arguments, we can pass them into the script like we wanted. So to do perform synthesis run:
+
+`legohdl build @vivado -tclargs synth`
+
+The `-tclargs` is specific to allowing vivado to pass in arguments to the TCL script. Remember, the `build` command is essentially the alias for the value of `vivado` that we configured.
 
 Nice! We have just tested our design.
 
@@ -688,14 +708,85 @@ to grab the format for instantation and any required signals.
 
 <br/>
 
-## Using Markets
+## __Using Markets__
 
+### __Block Layers__
+
+There are 3 main layers to how a block exists. A block can coexist and usually will within any or all of the 3 layers. The 3 layers are:
+
+1. Downloaded to the local path
+2. Installed to the cache
+3. Released to a market
+
+Blocks to be developed must be downloaded to the local path.
+
+Blocks to be used as dependencies are installed to the cache.
+
+Blocks to be available are released to a market. When running the `release` command, the new released version will be automatically installed to the cache, regardless of market status.
+
+_Some important concepts to understand:_
+
+If a block is downloaded and it has dependencies, legoHDL will search the workspace's available markets to auto-install the dependencies to the cache.
+
+If a block is downloaded and it has a remote repository, legoHDL will git clone the block to the local path.
+
+If a block is downloaded and does not have a remote repository (and therefore does not exist in any market), legoHDL will clone the block's master branch to the local path from the cache.
+
+### __Markets__
+
+A market can be either configured to a remote repository or not. Markets are special git repositories that store the information for a released block. Markets are self-maintained by legoHDL. 
+
+The benefit of a market having a remote repository is that multiple users can use that market and therefore share blocks.
+
+A market contains the Block.lock files for its released blocks. These now act as essentially "pointers" to the actual block and version, indicated by the Block.lock's `version` and `remote`.
+
+### __Developing Related Blocks Together__
+
+As noted, a block will by default use the dependency located within the cache. This allows developing to be consistent so that when it is ready for release, anyone else to download the new released block can also replicate the results and behavior using the other released dependencies.
+
+However, there may instances when multiple blocks must be developed together simultaneously. This can be achieved by setting the `multi-develop` setting to `true` through the command line with `legohdl config true -multi-develop` or by opening up the settings.yml file.
+
+Multi-develop will instead first check the local path for a block's dependencies before checking the cache. This means it will use the downloaded blocks over the installed blocks, if it found it in the local path.
+
+<br/>
+
+## __Block.lock__
+
+Block.lock is a metadata file managed by legoHDL. It contains the important information used by legoHDL and itself acts as the indicator if a folder/project is a block. This section is for increased understanding and does not instruct the developer to do anything with Block.lock files.
+
+Here is a sample Block.lock file:
+
+``` yml
+name: ALU
+library: util
+version: 1.2.0
+summary: Generic arthimetic logic unit
+toplevel: ALU
+bench: ALU_tb
+remote: https://github.com/c-rus/alu.git
+market: SuperMarket
+derives: 
+    - common.fulladder
+    - util.flipflop
+```
+
+Block.lock files are actually YAML-structured. The sections explained:
+
+- _name_: the block's name (can be different than the toplevel entity's name)
+- _library_: the block's library (this is also the VHDL library for this block's source code)
+- _version_: the block's current state's version. If a version is `0.0.0`, then it has not ever been released.
+- _summary_: short description about the block
+- _toplevel_: the toplevel entity name
+- _bench_: the testbench entity that instantiates the toplevel entity
+- _remote_: a git url, if no remote then the value is `null`
+- _market_: the market to where this block will be released to, if no market then the value is `null`
+- _derives_: a list of the block's dependent blocks (TODO- also contains the version number used or states `latest` to use the latest). Note that these names listed are the library name and block name.
 
 <br/>
 
 ## Software Verification Chaining (SWVC)
 
-Take this example workflow. Testbenches are verified by having a software model written in a scripting language (maybe python) that generates an input file and expected outputs file. The user would make a label to get this sw model script added into the recipe, maybe like `BENCH="*.py"`. It would be a shallow label so only the current block's script gets added to the recipe.
+Take this example workflow. Testbenches are verified by having a software model written in a scripting language (maybe python) that generates an input file and expected outputs file. The user would make a label to get this sw model script added into the recipe, maybe like `BENCH=".py"`. It would be a shallow label so only the current block's script gets added to the recipe.
 
 Now imagine the system being designed requires multiple blocks, and they are configured in a sequential order. A common example would be a communications system, where data is passed from one block to the next. We design a top-level block where all lower-level blocks are instantiated and wired in the sequential manner, but now the task of verifying this top-level block becomes cumbersome. Must we rewrite the sw models of each lower-level block into a new script to generate inputs and expected outputs files? What if one lower-level model gets updated? Now the top-level sw model must also be updated. This is problematic.
 

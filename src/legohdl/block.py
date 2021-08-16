@@ -1,4 +1,4 @@
-from genericpath import isdir
+from genericpath import isdir, isfile
 import os, yaml, shutil
 from datetime import date
 import stat
@@ -15,54 +15,46 @@ class Block:
 
     def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False, market=None):
         self.__metadata = dict()
-        self.__lib,self.__name = Block.split(title)
+        #split title into library and block name
+        self.__lib,self.__name = Block.split(title, lower=False)
 
-        self._remote = remote #remote cannot be reconfigured through legohdl after setting
+        self._remote = remote
         self.__market = market
 
         self.__local_path = apt.fs(path)
         if(path != None):
-            #print(path)
             if(self.isValid()):
                 if(not excludeGit):
                     self._repo = git.Repo(self.__local_path)
                 self.loadMeta()
-                self.__name = self.getMeta("name")
             return
-
-        if(path == None):
-            self.__local_path = apt.fs(apt.getLocal()+"/"+self.__lib+"/"+self.__name+'/')
+        elif(path == None):
+            self.__local_path = apt.fs(apt.getLocal()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
 
         #try to see if this directory is indeed a git repo
+        self._repo = None
         try:
             self._repo = git.Repo(self.__local_path)
         except:
-            self._repo = None
+            pass
 
         if(remote != None):
             self.grabGitRemote(remote)
-
+        #is this block already existing?
         if(self.isValid()):
             #load in metadata from YML
             self.loadMeta()
-        elif(new): #create a new project
-            if(self.isLinked() and False):
-                try:
-                    lp = self.__local_path.replace(self.__name, "")
-                    os.makedirs(lp, exist_ok=True)
-                    git.Git(lp).clone(self._remote)
-                    url_name = self._remote[self._remote.rfind('/')+1:self._remote.rfind('.git')]
-                    os.rename(lp+url_name, lp+self.__name)
-                    log.info('Project already exists on remote code base; downloading now...')
-                    return
-                except:
-                    log.warning("could not clone")
-                    pass
-            self.create(remote=remote) #create the repo and directory structure
+        #create a new block
+        elif(new):
+            #create the repo and directory structure
+            self.create(remote=remote) 
         pass
 
-    def getPath(self):
-        return self.__local_path
+    def getPath(self, low=True):
+        if(low):
+            return self.__local_path.lower()
+        else:
+            return self.__local_path
 
     def downloadFromURL(self, rem):
         rem = apt.fs(rem)
@@ -79,16 +71,18 @@ class Block:
         if(len(self._repo.heads) == 0):
             self._repo.git.checkout("-b","master")
 
+    @DeprecationWarning
     def cache(self):
         os.makedirs(apt.WORKSPACE+"cache/"+self.getMeta("library")+"/", exist_ok=True)
         cache_dir = apt.WORKSPACE+"cache/"+self.getMeta("library")+"/"
         git.Git(cache_dir).clone(self._remote)
         pass
 
-    def getTitle(self):
-        return self.getLib()+'.'+self.getName()
+    def getTitle(self, low=True):
+        return self.getLib(low=low)+'.'+self.getName(low=low)
 
     #download a block
+    @DeprecationWarning
     def clone(self, src=None, dst=None):
         local = apt.getLocal()+"/"+self.getLib()+"/"
         #grab library level path (default location)
@@ -116,13 +110,19 @@ class Block:
     def getVersion(self):
         return self.getMeta('version')
 
+    #release the block as a new version
     def release(self, ver='', options=[]):
+        #get current version numbers
         major,minor,patch = self.sepVer(self.getVersion())
+        #ensure the requested version is larger than previous if it was manually set
         if(ver != '' and self.biggerVer(ver,self.getVersion()) == self.getVersion()):
             next_min_version = "v"+str(major)+"."+str(minor)+"."+str(patch+1)
             exit(log.error("Invalid version selected! Next minimum version is: "+next_min_version))
-        print("Uploading v"+str(major)+"."+str(minor)+"."+str(patch),end='')
+        
+        log.info("Uploading v"+str(major)+"."+str(minor)+"."+str(patch),end=' ')
+        #determine next version if not manually set but set by 1 of 3 flags
         if(ver == ''):
+            #increment version numbering according to flag
             if(options.count("maj")):
                 major += 1
                 minor = patch = 0
@@ -131,16 +131,18 @@ class Block:
                 patch = 0
             elif(options.count("fix")):
                 patch += 1
+            #no correct flag was found
             else:
-                return
-            ver = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
+                exit(log.error("No correct flag was identified."))
+        #get version numbering from manual set
         else:
             ver = ver[1:]
-            r_major,r_minor,r_patch = self.sepVer(ver)
-
-            ver = 'v'+str(r_major)+'.'+str(r_minor)+'.'+str(r_patch)
-        print(" -> ",end='')
-        print(ver)
+            major,minor,patch = self.sepVer(ver)
+        #update string syntax for new version
+        ver = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
+            
+        print("->",ver)
+        
         if(ver != '' and ver[0] == 'v'):
             self.__metadata['version'] = ver[1:]
             self.save()
@@ -171,10 +173,11 @@ class Block:
                 #todo : publish every version that DNE on market?
                 self.__market.publish(self.__metadata, options)
             elif(self.getMeta("market") != None):
-                log.warning("Market "+self.getMeta("market")+" is no longer attached to this workspace.")
+                log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
-
-    def legoLockFile(self):
+    
+    #return the writing for an empty marker file
+    def lockFile(self):
         body = """
 name:
 library:
@@ -242,7 +245,8 @@ derives: {}
         self.genRemote()
         self.save()
         pass
-
+    
+    #load the metadata from the Block.lock file
     def loadMeta(self):
         with open(self.metadataPath(), "r") as file:
             self.__metadata = yaml.load(file, Loader=yaml.FullLoader)
@@ -273,10 +277,8 @@ derives: {}
         self.save()
         pass
 
-
+    #create a new file from a template file to an already existing block
     def fillTemplateFile(self, newfile, templateFile):
-        #find the template file to use
-        
         #grab name of file
         filename = os.path.basename(newfile)
         file,_ = os.path.splitext(filename)
@@ -299,28 +301,32 @@ derives: {}
         shutil.copyfile(templateFile, self.__local_path+newfile)
         #reassign file to be the whole path
         newfile = self.__local_path+newfile
+        #generate today's date
         today = date.today().strftime("%B %d, %Y")
-        file_in = open(newfile, "r")
-        lines = []
         #write blank if no author configured
         author = apt.SETTINGS["author"]
         if(author == None):
             author = ''
+
+        #store the file data to be transformed and rewritten
+        lines = []
         #find and replace all proper items
-        for line in file_in.readlines():
-            line = line.replace("template", file)
-            line = line.replace("%DATE%", today)
-            line = line.replace("%AUTHOR%", author)
-            line = line.replace("%PROJECT%", self.getTitle())
-            lines.append(line)
+        with open(newfile, 'r') as file_in:
+            for line in file_in.readlines():
+                line = line.replace("template", file)
+                line = line.replace("%DATE%", today)
+                line = line.replace("%AUTHOR%", author)
+                line = line.replace("%PROJECT%", self.getTitle(low=False))
+                lines.append(line)
             file_in.close()
-        file_out = open(newfile, "w")
         #rewrite file to have new lines
-        for line in lines:
-            file_out.write(line)
-        file_out.close()
+        with open(newfile, 'w') as file_out:
+            for line in lines:
+                file_out.write(line)
+            file_out.close()
         pass
 
+    #create new block using template and try to set up a remote
     def create(self, fresh=True, git_exists=False, remote=None):
         log.info('Initializing new block...')
         if(fresh):
@@ -349,48 +355,61 @@ derives: {}
                 self._repo.git.pull()
 
         #create the marker file
-        open(self.__local_path+apt.MARKER, 'w').write(self.legoLockFile())
+        open(self.__local_path+apt.MARKER, 'w').write(self.lockFile())
 
         #run the commands to generate new project from template
-        #file to find/replace word 'template'
         if(fresh):
+            #replace all file names that contain the word 'template'
             replacements = glob.glob(self.__local_path+"/**/*template*", recursive=True)
-            file_swaps = list()
             for f in replacements:
                 if(os.path.isfile(f)):
-                    file_swaps.append((f,f.replace('template', self.__name)))
+                    os.rename(f, f.replace('template', self.getName(low=False)))
+            #determine the author
             author = apt.SETTINGS["author"]
             if(author == None):
                 author = ''
+            #determie the data
             today = date.today().strftime("%B %d, %Y")
-            for x in file_swaps:
-                file_in = open(x[0], "r")
-                file_out = open(x[1], "w")
-                for line in file_in:
-                    line = line.replace("template", self.__name)
-                    line = line.replace("%DATE%", today)
-                    line = line.replace("%AUTHOR%", author)
-                    line = line.replace("%PROJECT%", self.getTitle())
-                    file_out.write(line) #insert date into template
-                file_in.close()
-                file_out.close()
-                os.remove(x[0])
-        
-        self.loadMeta() #generate fresh metadata fields
-        self.__metadata['name'] = self.__name
-        self.__metadata['library'] = self.__lib
+
+            #go through all files and update with special placeholders
+            allFiles = glob.glob(self.__local_path+"/**/*", recursive=True)
+            for f in allFiles:
+                file_data = []
+                #store and transform lines into file dictionary
+                if(os.path.isfile(f) == False):
+                    continue
+                with open(f, 'r') as read_file:
+                    for line in read_file.readlines():
+                        line = line.replace("template", self.getName(low=False))
+                        line = line.replace("%DATE%", today)
+                        line = line.replace("%AUTHOR%", author)
+                        line = line.replace("%BLOCK%", self.getTitle(low=False))
+                        file_data.append(line)
+                    read_file.close()
+                #write new lines
+                with open(f, 'w') as write_file:
+                    for line in file_data:
+                        write_file.write(line)
+                    write_file.close()
+                pass
+        #generate fresh metadata fields
+        self.loadMeta() 
+        self.__metadata['name'] = self.getName(low=False)
+        self.__metadata['library'] = self.getLib(low=False)
         self.__metadata['version'] = '0.0.0'
         self.identifyTop()
         log.debug(self.getName())
+        #set the remote if not None
         if(remote != None):
             self.setRemote(remote)
-        self.save() #save current progress into yaml
+        #save current progress into yaml
+        self.save() 
+        #add and commit to new git repository
         self._repo.index.add(self._repo.untracked_files)
         self._repo.index.commit("Initializes block")
+        #set it up to track origin
         if(self.grabGitRemote() != None):
             log.info('Generating new remote repository...')
-            # !!! set it up to track
-            #print(str(self._repo.head.reference))
             self._repo.git.push("-u","origin",str(self._repo.head.reference))
         else:
             log.warning('No remote code base attached to local repository')
@@ -417,7 +436,6 @@ derives: {}
                 elif(o.url.endswith(".git")):
                     self._remote = o.url
                     break
-        #print(self.getTitle(),self._remote)
         #make sure to save if it differs
         if("remote" in self.__metadata.keys() and self.getMeta("remote") != self._remote):
             self.__metadata['remote'] = self._remote
@@ -439,32 +457,12 @@ derives: {}
             self._repo.git.push("-u","origin",str(self._repo.head.reference))
         pass
 
+    #pull from remote repository
     def pushRemote(self):
         self._repo.remotes.origin.push(refspec='{}:{}'.format(self._repo.head.reference, self._repo.head.reference))
         self._repo.remotes.origin.push("--tags")
 
-    def getName(self):
-        try:
-            if(self.getMeta("name") == None):
-                return ''
-            return self.getMeta("name")
-        except:
-            return self.__name
-
-    def getLib(self):
-        try:
-            if(self.getMeta("library") == None):
-                return ''
-            return self.getMeta("library")
-        except:
-            return self.__lib
-
-    def getMeta(self, key=None):
-        if(key == None):
-            return self.__metadata
-        else:
-            return self.__metadata[key]
-
+    #push to remote repository if exists
     def pull(self):
         if(self.grabGitRemote() != None):
             log.info("Block already exists in local workspace- pulling from remote...")
@@ -472,23 +470,61 @@ derives: {}
         else:
             log.info("Block already exists in local workspace")
 
-    #return true if the requested project folder is a valid Block
+    #has ability to return as lower case for comparison within legoHDL
+    def getName(self, low=True):
+        if(self.getMeta("name") != None):
+            if(low):
+                return self.getMeta("name").lower()
+            else:
+                return self.getMeta("name")
+        if(low):
+            return self.__name.lower()
+        else:
+            return self.__name
+
+    #has ability to return as lower case for comparison within legoHDL
+    def getLib(self, low=True):
+        if(self.getMeta("library") != None):
+            if(low):
+                return self.getMeta("library").lower()
+            else:
+                return self.getMeta("library")
+        if(low):
+            return self.__lib.lower()
+        else:
+            return self.__lib
+
+    #return the value stored in metadata, else return None if DNE
+    def getMeta(self, key=None):
+        if(key == None):
+            return self.__metadata
+        #check if the key is valid
+        elif(key in self.__metadata.keys()):
+            return self.__metadata[key]
+        else:
+            return None
+
+    #return true if the requested project folder is a valid block
     def isValid(self):
         return os.path.isfile(self.metadataPath())
 
+    #return path to marker file
     def metadataPath(self):
-        return self.__local_path+apt.MARKER
+        return self.getPath()+apt.MARKER
 
+    #print out the metadata for this block
     def show(self):
         with open(self.metadataPath(), 'r') as file:
             for line in file:
                 print(line,sep='',end='')
     
+    #open up the block with configured text-editor
     def load(self):
         cmd = apt.SETTINGS['editor']+" "+self.__local_path
         os.system(cmd)
         pass
-
+    
+    #write the values computed for metadata back to the file
     def save(self):
         #unlock metadata to write to it
         os.chmod(self.metadataPath(), stat.S_IWOTH | stat.S_IWGRP | stat.S_IWUSR | stat.S_IWRITE)
@@ -506,6 +542,7 @@ derives: {}
         os.chmod(self.metadataPath(), stat.S_IROTH | stat.S_IRGRP | stat.S_IREAD | stat.S_IRUSR)
         pass
 
+    #return true if a remote repository is linked to this block
     def isLinked(self):
         return self.grabGitRemote() != None
 
@@ -518,13 +555,13 @@ derives: {}
             log.error('No available version')
             return
 
-        log.debug("version "+ver)
+        log.info("version "+ver)
         
         if(src == None and self._remote != None):
             src = self._remote
         elif(src == None):
             src = self.__local_path
-
+        #clone and checkout specific version tag
         ver = "v"+ver
         git.Git(cache_dir).clone(src,"--branch",ver,"--single-branch")
         self.__local_path = cache_dir+self.getName()+"/"
@@ -533,8 +570,9 @@ derives: {}
         self.loadMeta()
         return
 
+    #quickly return all pre-declaration vhdl lines
     def scanLibHeaders(self, entity):
-        ent = self.grabUnits()[self.getLib()][entity]
+        ent = self.grabUnits()[self.getLib()][entity.lower()]
         filepath = ent.getFile()
 
         #open top-level file and inspect lines for using libraries
@@ -552,6 +590,7 @@ derives: {}
             file.close()
         return lib_headers
 
+    #update the metadata section "derives:" for required blocks
     def updateDerivatives(self, block_list):
         #print("Derives:",block_list)
         update = False
@@ -583,8 +622,9 @@ derives: {}
         else:
             return file_path[dot+1:].lower()
     
+    #split into library.block-name
     @classmethod
-    def split(cls, dep):
+    def split(cls, dep, lower=True):
         if(dep == None):
             return '',''
         dot = dep.find('.')
@@ -596,7 +636,12 @@ derives: {}
         if(dot2 == -1):
             dot2 = len(dep)
         name = dep[dot+1:dot+1+dot2]
-        return lib.lower(),name.lower()
+        #necessary for title comparison
+        if(lower):
+            return lib.lower(),name.lower()
+        #nice for user-end naming conventions
+        else:
+            return lib,name
 
     #auto detect top-level design entity
     def identifyTop(self):
@@ -706,6 +751,7 @@ derives: {}
         print("===END UNIT BOOK===")
         pass
 
+    #color in all units in design book
     def grabUnits(self, toplevel=None, override=False):
         if(hasattr(self, "_unit_bank") and not override):
             return self._unit_bank
@@ -713,7 +759,7 @@ derives: {}
             #reset graph
             Unit.Hierarchy = Graph()
             
-        #get all possible units (units are incomplete (this is good))
+        #get all possible units (units are incomplete (this is intended))
         self._unit_bank = self.grabDesigns(override, "cache","current")
        
         #todo : only start from top-level unit if it exists
@@ -788,8 +834,8 @@ derives: {}
                 f_dir = f.replace(apt.MARKER,"")
                 with open(f, 'r') as file:
                     yml = yaml.load(file, Loader=yaml.FullLoader)
-                L = yml['library']
-                N = yml['name']
+                L = yml['library'].lower()
+                N = yml['name'].lower()
                 #skip self block
                 if(L == self.getLib() and N == self.getName()):
                     continue
@@ -801,12 +847,13 @@ derives: {}
         #print("Cache-Level designs: "+str(self._cache_designs))
         return self._cache_designs
 
+    #all entities or packages found within current project
     def grabCurrentDesigns(self, override=False):
         if(hasattr(self, "_cur_designs") and not override):
             return self._cur_designs
         self._cur_designs = dict()
 
-        L,N = self.split(self.getTitle())
+        L,N = self.split(self.getTitle(low=True))
 
         #create new library dictionary if DNE
         if(L not in self._cur_designs.keys()):
@@ -832,10 +879,11 @@ derives: {}
             pass
         else:
             return '',''
-        L = path_parse[i+1]
-        N = path_parse[i+2].replace("_pkg.vhd", "")
+        L = path_parse[i+1].lower()
+        N = path_parse[i+2].lower().replace("_pkg.vhd", "")
         return L,N
-
+        
+    #print helpful port mappings/declarations of a desired entity
     def ports(self, mapp, lib, pure_entity, entity=None):
         units = self.grabUnits()
         info = ''

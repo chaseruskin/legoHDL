@@ -11,7 +11,7 @@ class Apparatus:
     #path to registry and cachess
     HIDDEN = os.path.expanduser("~/.legohdl/")
 
-    MARKER = "Block.lock"
+    MARKER = ".lego.lock"
 
     TEMPLATE = HIDDEN+"/template/"
 

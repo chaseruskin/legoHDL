@@ -5,12 +5,14 @@
 
 - [-] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace) (does it work when doing it on just a regular block?) (say install block from market and gets requirements installs automatically?)
 
-- [ ] let the % % be used on all files in the template, even READMEs
+- [!] let the % % be used on all files in the template, even READMEs
+- [ ] allow users to touch Block.lock file? (it gets auto-updated anyway when performing things like release) -> 		leaning yes
+
 - [!] implement update/upgrade command (have -all flag to update all installs, otherwise update by block name?) (could occur on refresh command?)
 
 - [ ] add series of prompts to release command before actually doing anything
 
-- [ ] test installing a block, then auto-installs requirements to cache if DNE in cache and if the requirement is found in local path or in market
+- [ ] test installing a block, then auto-installs requirements to cache if DNE in cache and if the requirement is 			found in local path or in market
 
 - [ ] implement additional "help" command documentation
 

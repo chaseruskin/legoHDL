@@ -109,7 +109,7 @@ class Registry:
                         info = '(update)-> '+rem_ver
                     pass
                 ver = '' if (ver == '0.0.0') else ver
-                print('{:<12}'.format(L),'{:<22}'.format(N),'{:<12}'.format(status),'{:<8}'.format(ver),info)
+                print('{:<12}'.format(blk.getLib(low=False)),'{:<22}'.format(blk.getName(low=False)),'{:<12}'.format(status),'{:<8}'.format(ver),info)
         pass
 
     def getMarketLatestVer(self, block):
@@ -199,7 +199,7 @@ class Registry:
             for b in blks:
                 if(b[0] == '.'):
                     continue
-                self._cache_prjs[l][b] = Block(path=path+l+"/"+b+"/")
+                self._cache_prjs[l.lower()][b.lower()] = Block(path=path+l+"/"+b+"/")
         #print(self._cache_prjs)
         return self._cache_prjs
         pass
