@@ -1,12 +1,21 @@
 ## Roadmap to Release v0.1.0
 
-- [ ] implement versioning (folders for each version created on-demand) (installing spec. versions)
+- [!] when installing a version, go through all vhdl code and append the version to the entity name's for that block
+
+- [!] install a level for majors (gets rewritten when a new install comes that fulfills this level)
+	ex: /v0
+		/v1
+		/v2
+	-> allows user to just use halfadder_v1 without long specific version (form of dependency resolution)
+		u0 : entity common.halfadder_v1_0
+		uX : entity common.halfadder_v1_1_0
+	-> referencing an entity without version will refer to 'latest', (the actual full branch kept in install)
 
 - [ ] when installing or downloading a block, auto-install dependencies if found in remote or block is in cache (and required version is not created)
 
 - [ ] when running export/graph command, auto-install dependencies if DNE and found in remote or block is in cache (and required version is not created)
 
-- [!] implement update/upgrade command (have -all flag to update all installs, otherwise update by block name?) (could occur on refresh command?)
+- [ ] implement update/upgrade command (have -all flag to update all installs, otherwise update by block name?) (could occur on refresh command?)
 
 - [ ] implement additional "help" command documentation
 
@@ -22,6 +31,8 @@
 - [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
 - [ ] add ability to search by market
 
+- [ ] investigate whether to use `git checkout tag` then moving files OR continue using `git clone --single-branch` of tag for installation
+
 - [ ] have some way of notifying user that a block is missing from installations when trying to export
 
 - [-] add series of prompts to release command before actually doing anything
@@ -35,6 +46,7 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] implement versioning (folders for each version created on-demand) (installing spec. versions)
 - [x] legohdl will now try to release all versions with valid tag if a Block.lock file exists there to a market, only tries once as a folder will be created for that tag # but may not have a Block.lock for it if invalid
 - [o] test installing a block, then auto-installs requirements to cache if DNE in cache and if the requirement is found in local path or in market -> already covered by a roadmap mission
 - [o] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace) (does it work when doing it on just a regular block?) (say install block from market and gets requirements installs automatically?)
