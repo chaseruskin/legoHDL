@@ -947,14 +947,30 @@ class legoHDL:
         valid = (self.blockPKG != None)
         
         #branching through possible commands
-        if(valid and command == "install"):
-            if(self.blockPKG == None):
-                return
-            log.info(self.blockPKG.getTitle())
+        if(command == "install"):
             ver = None
-            if(len(options)):
+            #ensure version option is valid before using it to install
+            if(len(options) == 1 and Block.validVer(options[0]) == True):
                 ver = options[0]
-            self.install(self.blockPKG.getTitle(), ver)
+            elif(len(options) > 1):
+                exit(log.error("Invalid Flags set for install command."))
+
+            #install version from cache
+            if(self.db.blockExists(package,"cache")):
+                if(ver != None):
+                    log.info("Installing "+ver+" from cache...")
+                    return
+            elif(self.db.blockExists(package,"market")):
+                ver_word = 'latest'
+                if(ver != None):
+                    ver_word = ver
+                log.info("Installing "+ver_word+" from market...")
+                return
+            else:
+                exit(log.error("Block "+package+" does not exists for this workspace."))
+
+            #install block to cache
+            self.install(package, ver)
             pass
         elif(command == "uninstall"):
             self.uninstall(package, options) #TO-DO

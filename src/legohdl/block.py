@@ -111,6 +111,7 @@ class Block:
     def getVersion(self):
         return self.getMeta('version')
 
+    #return highest tagged version for this block's repository
     def getHighestTaggedVersion(self,):
         all_vers = self.getTaggedVersions()
         highest = '0.0.0'
@@ -118,7 +119,6 @@ class Block:
             if(self.biggerVer(highest,v[1:]) == v[1:]):
                 highest = v[1:]
         return highest
-        pass
 
     #release the block as a new version
     def release(self, ver=None, options=[]):
