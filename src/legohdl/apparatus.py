@@ -204,6 +204,36 @@ class Apparatus:
     def getLocal(cls):
         return cls.SETTINGS['workspace'][cls.__active_workspace]['local']
 
+    #return the block file metadata from a specific version tag already includes 'v'
+    #if returned none then it is an invalid legohdl release point
+    @classmethod
+    def getBlockFile(cls, repo, tag, path="./", in_branch=True):
+        #checkout repo to the version tag and dump yaml file
+        repo.git.checkout(tag)
+        #find Block.lock
+        if(os.path.isfile(path+cls.MARKER) == False):
+            #return None if Block.lock DNE at this tag
+            log.warning(tag+" is an invalid block version. Cannot upload "+tag+".")
+            meta = None
+        #Block.lock exists so read its contents
+        else:
+            log.info(tag+" is a valid version not found in this market. Uploading...")
+            with open(path+cls.MARKER, 'r') as f:
+                meta = yaml.load(f, Loader=yaml.FullLoader)
+
+        #revert back to latest release
+        if(in_branch == True):
+            #in a branch so switch back
+            repo.git.switch('-')
+        #in a single branch (cache) so checkout back
+        else:
+            repo.git.checkout('-')
+        #perform additional safety measure that this tag matches the 'version' found in meta
+        if(meta['version'] != tag[1:]):
+            log.error("Close but not close enough")
+            meta = None
+        return meta
+
     #returns workspace-level markets or system-wide markets
     @classmethod
     def getMarkets(cls, workspace_level=True):

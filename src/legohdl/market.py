@@ -59,33 +59,7 @@ class Market:
                     self.url = self._repo.remotes.origin.url
         return self.url
 
-    #return the block file metadata from a specific version tag already includes 'v'
-    def getBlockFile(self, repo, tag, latest_ver):
-        #return current metadata if on current version
-        if(tag[1:] == latest_ver):
-            return None
-        #checkout repo to the version tag and dump yaml file
-        else:
-            #return None if Block.lock DNE at this tag
-            repo.git.checkout(tag)
-            #find Block.lock
-            if(os.path.isfile("./Block.lock") == False):
-                log.warning(tag+" is an invalid block version. Cannot upload "+tag+".")
-                meta = None
-            #Block.lock exists so read its contents
-            else:
-                log.info(tag+" is a valid version not found in this market. Uploading...")
-                with open("./Block.lock", 'r') as f:
-                    meta = yaml.load(f, Loader=yaml.FullLoader)
-                    
-            #revert back to latest release
-            repo.git.switch('-')
-            #perform additional safety measure that this tag matches the 'version' found in meta
-            if(meta['version'] != tag[1:]):
-                log.error("Close but not close enough")
-                return None
-            return meta
-
+    #release a block to this market
     def publish(self, repo, meta, options=[], all_vers=[]):
         if(self.url != None):
             if(len(self._repo.remotes)):
@@ -123,7 +97,7 @@ class Market:
             os.makedirs(fp)
 
             #checkout the block at that tag if this is not the right meta
-            tmp_meta = self.getBlockFile(repo, v, meta['version'])
+            tmp_meta = apt.getBlockFile(repo, v)
             #override tmp_meta with the current metadata on deck
             if(meta['version'] == v[1:]):
                 tmp_meta = copy.deepcopy(meta)

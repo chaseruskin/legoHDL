@@ -601,60 +601,79 @@ derives: {}
     def isLinked(self):
         return self.grabGitRemote() != None
 
+    #assumed to be a valid release point before entering function
+    def copyVersionCache(self, ver):
+        #checkout version
+        self._repo.git.checkout(ver)
+        #log.info(self.getPath())
+        #copy files
+        version_path = self.getPath()+"../"+ver
+        shutil.copytree(self.getPath(), version_path)
+        #delete the git repository for saving space and is not needed
+        shutil.rmtree(version_path+"/.git/", onerror=apt.rmReadOnly)
+        #switch back to latest version in cache
+        self._repo.git.checkout('-')
+        pass
+
+    #enter src arg when installing from remote (git clone), else its an install from cache (copy files)
     def install(self, cache_dir, ver=None, src=None):
         #create cache directory
         cache_dir = apt.fs(cache_dir)
         cache_dir = cache_dir+self.getLib()+"/"+self.getName()+"/"
         os.makedirs(cache_dir, exist_ok=True)
-        
+                
         base_cache_dir = cache_dir
         #log.debug("Cache directory: "+cache_dir)
+        specific_cache_dir = base_cache_dir+self.getName()+"/"
 
-        instl_vers = os.listdir(base_cache_dir)        
-        added_version = False
-        if(self.validVer(ver)):
-            if(ver in self.getTaggedVersions()):
-                if ver in instl_vers:
-                    log.info("Version "+ver+" is already installed.")
-                    return
-                cache_dir = cache_dir+".tmp/"
-                os.makedirs(cache_dir,exist_ok=True)
-                added_version = True
-            else:
-                exit(log.error("Version "+ver+" is not available to install."))
+        base_installed = (src == None and os.path.exists(specific_cache_dir))
 
+        #ensure version is good
         if(ver == None):
             ver = 'v'+self.getVersion()
-    
         if(ver[0] != 'v'):
             ver = 'v'+ver
-        
         if(ver == 'v0.0.0'):
-            log.error('No available version')
+            (log.error("Version "+ver+" is not available to install."))
             return
 
         log.info("Installing block "+self.getTitle(low=False)+" version "+ver+"...")
+        # 1. first download from remote if the base installation DNE
+        if(not base_installed):
+            #clone and checkout specific version tag
+            git.Git(cache_dir).clone(src,"--branch",ver,"--single-branch")
+            url_name = os.listdir(cache_dir)[0]
 
-        #installing from cache if src is None
-        if(src == None):
-            src = self.__local_path
-
-        #clone and checkout specific version tag
-        git.Git(cache_dir).clone(src,"--branch",ver,"--single-branch")
-        url_name = os.listdir(cache_dir)[0]
-
-        if(added_version):
-            shutil.move(cache_dir+url_name, base_cache_dir+ver)
-            shutil.rmtree(cache_dir, onerror=apt.rmReadOnly)
-            self.__local_path = base_cache_dir+ver+"/"
-        else:
-            shutil.move(cache_dir+url_name, base_cache_dir+self.getName())
-            self.__local_path = cache_dir+self.getName()+"/"
-
+            shutil.move(cache_dir+url_name, specific_cache_dir)
+            self.__local_path = specific_cache_dir+"/"
+            base_installed = True
 
         self._repo = git.Repo(self.__local_path)
         self._repo.git.checkout(ver)
         self.loadMeta()
+
+        #2. now perform install from cache
+        instl_vers = os.listdir(base_cache_dir)        
+        if(self.validVer(ver)):
+            #ensure this version is actaully tagged
+            if(ver in self.getTaggedVersions()):
+                #check if version is actually already installed
+                if ver in instl_vers:
+                    log.info("Version "+ver+" is already installed.")
+                    return
+                elif(base_installed):
+                    #copy files and move them to spot
+                    meta = apt.getBlockFile(self._repo, ver, specific_cache_dir, in_branch=False)
+                    print(meta)
+                    if(meta != None):
+                        self.copyVersionCache(ver)
+                        return
+                    else:
+                        log.error("whomp whomp")
+                        return
+            else:
+                log.error("Version "+ver+" is not available to install.")
+                return
         return
 
     #quickly return all pre-declaration vhdl lines
