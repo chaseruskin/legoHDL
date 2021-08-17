@@ -1,5 +1,7 @@
+from genericpath import isdir
 import os,shutil,git
 import logging as log
+import copy
 from .apparatus import Apparatus as apt
 import yaml
 
@@ -57,7 +59,29 @@ class Market:
                     self.url = self._repo.remotes.origin.url
         return self.url
 
-    def publish(self, meta, options=[]):
+    #return the block file metadata from a specific version tag already includes 'v'
+    def getBlockFile(self, repo, tag, latest_ver):
+        #return current metadata if on current version
+        if(tag[1:] == latest_ver):
+            return None
+        #checkout repo to the version tag and dump yaml file
+        else:
+            #return None if Block.lock DNE at this tag
+            repo.git.checkout(tag)
+            #find Block.lock
+            if(os.path.isfile("./Block.lock") == False):
+                log.warning(tag+" is an invalid block version. Cannot upload "+tag+".")
+                meta = None
+            #Block.lock exists so read its contents
+            else:
+                log.info(tag+" is a valid version not found in this market. Uploading...")
+                with open("./Block.lock", 'r') as f:
+                    meta = yaml.load(f, Loader=yaml.FullLoader)
+            #revert back to latest release
+            repo.git.switch('-')
+            return meta
+
+    def publish(self, repo, meta, options=[], all_vers=[]):
         if(self.url != None):
             if(len(self._repo.remotes)):
                 self._repo.git.pull()  
@@ -68,28 +92,56 @@ class Market:
                 else:
                     log.warning("Remote url for market "+self.getName()+" does not exist")
                     self.url = None
-        #switch to new branch
+
         active_branch = self._repo.active_branch
+        #switch to side branch if '-soft' flag raised
         tmp_branch = meta['library']+"."+meta['name']+"-"+meta['version']
         if(self.url != None and options.count("soft")):
             log.info("Creating new branch ["+tmp_branch+"] to release block to: "+self.getName())
             self._repo.git.checkout("-b",tmp_branch)
 
-        #create new directory
-        fp = self._local_path+"/"+meta['library']+"/"+meta['name']+"/"+meta['version']+"/"
-        #save yaml file
-        os.makedirs(fp)
-        with open(fp+apt.MARKER, 'w') as file:
-            for key in apt.META:
-                #pop off front key/val pair of yaml data
-                single_dict = {}
-                single_dict[key] = meta[key]
-                yaml.dump(single_dict, file)
-                pass
+        #locate block's directory within market
+        block_dir = self._local_path+"/"+meta['library']+"/"+meta['name']+"/"
+        os.makedirs(block_dir,exist_ok=True)
+        
+        #grab list of all released versions
+        released_vers = self.getAvailableVersions(meta['library'],meta['name'])
+
+        #print(released_vers)
+        #add all releases that haven't been available here
+        for v in all_vers:
+            #skip versions that already exist
+            if v[1:] in released_vers:
+                continue
+            #create new directory (occurs ONLY ONCE with a new version tag because folder will be made)
+            fp = block_dir+v[1:]+"/"
+            os.makedirs(fp)
+
+            #checkout the block at that tag if this is not the right meta
+            tmp_meta = self.getBlockFile(repo, v, meta['version'])
+            #override tmp_meta with the current metadata on deck
+            if(meta['version'] == v[1:]):
+                tmp_meta = copy.deepcopy(meta)
+            #must be a valid release point to upload block version
+            if(tmp_meta != None):
+                #ensure this yaml file has the correct "remote" and "market"
+                tmp_meta['remote'] = meta['remote']
+                tmp_meta['market'] = meta['market']
+                #save yaml file
+                with open(fp+apt.MARKER, 'w') as file:
+                    for key in apt.META:
+                        #pop off front key/val pair of yaml data
+                        single_dict = {}
+                        single_dict[key] = tmp_meta[key]
+                        yaml.dump(single_dict, file)
+                        pass
+                    pass
+                    file.close()
+                #save changes to repository (only add and stage the file that was made)
+                self._repo.index.add(fp+apt.MARKER)
             pass
-            file.close()
-        #save changes to repository (only add and stage the file that was made)
-        self._repo.index.add(fp+apt.MARKER)
+        
+        #commit all releases
         self._repo.index.commit("Adds "+meta['library']+'.'+meta['name']+" v"+meta['version'])
         #push to remote market repository
         if(self.url != None):
@@ -99,7 +151,18 @@ class Market:
             if(options.count("soft")):
                 self._repo.git.branch("-d",tmp_branch)
         pass
+    
+    #return all available versions for this block as a list ['v*.*.*',]
+    def getAvailableVersions(self, block_lib, block_name):
+        #path DNE, so block is not found in this market
+        if(os.path.isdir(self.getPath()+"/"+block_lib+"/"+block_name+"/") == False):
+            print("Block is not found in this market")
+            return []
+        block_path = self.getPath()+"/"+block_lib+"/"+block_name+"/"
+        #return list
+        return(os.listdir(block_path))
 
+    #return true is configured to a remote repository
     def isRemote(self):
         return len(self._repo.remotes)
 

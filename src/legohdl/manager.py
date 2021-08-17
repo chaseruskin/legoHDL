@@ -231,10 +231,6 @@ class legoHDL:
         shutil.copy(filename, os.path.expanduser("~/.vhdl_ls.toml"))
         pass
 
-    #TO-DO: make std version option checker
-    def validVersion(self, ver):
-        pass
-
     #! === BUILD COMMAND ===
 
     def build(self, script):
@@ -449,11 +445,11 @@ class legoHDL:
         if(len(options) == 0):
                 exit(log.error(err_msg))
             
-        ver = ''
+        ver = None
         if(options[0][0] == 'v'):
             ver = options[0]
         
-        if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == ''):
+        if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == None):
             exit(log.error(err_msg))
         #ensure top has been identified for release
         top_dog,_,_ = block.identifyTopDog(None, None)
@@ -489,8 +485,9 @@ class legoHDL:
         key = choice[:eq]
         val = choice[eq+1:] #write whole value
         if(eq == -1):
-            val = ''
+            val = None
             key = choice
+        #chosen to delete setting from settings.yml
         if(delete):
             log.info("Deleting from setting: "+options[0])
             st = options[0].lower()
@@ -531,6 +528,7 @@ class legoHDL:
             apt.save()
             log.info("Setting saved successfully.")
             return
+        #chosen to config a setting in settings.yml
         if(options[0] == 'active-workspace'):
             if(choice not in apt.SETTINGS['workspace'].keys()):
                 exit(log.error("Workspace not found!"))
@@ -547,7 +545,7 @@ class legoHDL:
             #append to current workspace with -append
 
             #allow for just referencing the market if trying to append to current workspace
-            if(val == '' and options.count("append") or options.count("remove")):
+            if(val == None and options.count("append") or options.count("remove")):
                 pass
             else:
                 #add/change value to all-remote list
@@ -574,7 +572,7 @@ class legoHDL:
             if(not isinstance(apt.SETTINGS[options[0]],dict)):
                 apt.SETTINGS[options[0]] = dict()
             #insertion
-            if(val != ''):
+            if(val != None):
                 #initialize the workspace folders and structure
                 apt.initializeWorkspace(key)
                 #create new workspace profile
@@ -615,6 +613,8 @@ class legoHDL:
             pass
         # BUILD SCRIPT CONFIGURATION
         elif(options[0] == 'script'):
+            if(val == None):
+                val = ''
             #parse into cmd and filepath
             val = val.replace("\"","").replace("\'","")
             parsed = val.split()
@@ -692,15 +692,11 @@ class legoHDL:
             depth = "shallow"
             if(options.count("recursive")):
                 depth = "recursive"
-            if(val == ''): #signal for deletion
-                if(isinstance(apt.SETTINGS[options[0]],dict)):
-                    if(key in apt.SETTINGS[options[0]][depth].keys()):
-                        del apt.SETTINGS[options[0]][depth][key]
             if(not isinstance(apt.SETTINGS[options[0]],dict)):
                 apt.SETTINGS[options[0]] = dict()
                 apt.SETTINGS[options[0]]["shallow"] = dict()
                 apt.SETTINGS[options[0]]["recursive"] = dict()
-            if(val != ''):
+            if(val != None):
                 if(depth == "shallow" and key in apt.SETTINGS[options[0]]["recursive"].keys()):
                     del apt.SETTINGS[options[0]]["recursive"][key]
                 if(depth == "recursive" and key in apt.SETTINGS[options[0]]["shallow"].keys()):

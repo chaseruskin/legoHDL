@@ -1,5 +1,6 @@
 from genericpath import isdir, isfile
 import os, yaml, shutil
+from sys import meta_path
 from datetime import date
 import stat
 import glob, git
@@ -58,15 +59,15 @@ class Block:
 
     def downloadFromURL(self, rem):
         rem = apt.fs(rem)
-        new_path = apt.fs(apt.getLocal()+"/"+self.getLib()+"/")
+        new_path = apt.fs(apt.getLocal()+"/"+self.getLib(low=False)+"/")
         os.makedirs(new_path, exist_ok=True)
         git.Git(new_path).clone(rem)
 
         if(rem.endswith(".git")):
             url_name = rem[rem.rfind('/')+1:rem.rfind('.git')]
-            os.rename(new_path+url_name, new_path+self.getName())
+            os.rename(new_path+url_name, new_path+self.getName(low=False))
         #assign the repo of the newly downloaded block
-        self._repo = git.Repo(new_path+self.getName())
+        self._repo = git.Repo(new_path+self.getName(low=False))
         #if downloaded from cache, make a master branch if no remote  
         if(len(self._repo.heads) == 0):
             self._repo.git.checkout("-b","master")
@@ -110,18 +111,29 @@ class Block:
     def getVersion(self):
         return self.getMeta('version')
 
+    def getHighestTaggedVersion(self,):
+        all_vers = self.getTaggedVersions()
+        highest = '0.0.0'
+        for v in all_vers:
+            if(self.biggerVer(highest,v[1:]) == v[1:]):
+                highest = v[1:]
+        return highest
+        pass
+
     #release the block as a new version
-    def release(self, ver='', options=[]):
-        #get current version numbers
-        major,minor,patch = self.sepVer(self.getVersion())
+    def release(self, ver=None, options=[]):
+        #get current version numbers of latest valid tag
+        highestVer = self.getHighestTaggedVersion()
+        major,minor,patch = self.sepVer(highestVer)
         #ensure the requested version is larger than previous if it was manually set
-        if(ver != '' and self.biggerVer(ver,self.getVersion()) == self.getVersion()):
+        if(ver != None and (self.validVer(ver) == False or self.biggerVer(ver,highestVer) == highestVer)):
             next_min_version = "v"+str(major)+"."+str(minor)+"."+str(patch+1)
-            exit(log.error("Invalid version selected! Next minimum version is: "+next_min_version))
-        
-        oldVerInfo = "Uploading v"+str(major)+"."+str(minor)+"."+str(patch)
+            exit(log.error("Invalid version. Next minimum version is: "+next_min_version))
+        #capture the actual legohdl version to print to console
+        b_major,b_minor,b_patch = self.sepVer(self.getVersion())
+        oldVerInfo = "Uploading v"+str(b_major)+"."+str(b_minor)+"."+str(b_patch)
         #determine next version if not manually set but set by 1 of 3 flags
-        if(ver == ''):
+        if(ver == None):
             #increment version numbering according to flag
             if(options.count("maj")):
                 major += 1
@@ -140,10 +152,19 @@ class Block:
             major,minor,patch = self.sepVer(ver)
         #update string syntax for new version
         ver = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
-            
         log.info(oldVerInfo+" -> "+ver)
         
         if(ver != '' and ver[0] == 'v'):
+            #in order to release to market, we must have a valid git remote url
+            url = self.grabGitRemote()
+            if(url == None):
+                if(self.__market != None):
+                    cont = apt.confirmation("Will not release to market "+self.__market.getName()+" because this block is not tied to a remote. Proceed?")
+                    #user decided that is not OKAY, exiting release
+                    if(cont == False):
+                        exit(log.info("Did not release "+ver))
+            
+            #user decided to proceed with release
             self.__metadata['version'] = ver[1:]
             self.save()
             log.info("Saving...")
@@ -155,56 +176,40 @@ class Block:
                 self._repo.git.add(update=True)
                 self._repo.index.add(self._repo.untracked_files)
             self._repo.index.commit("Release version -> "+self.getVersion())
+
             #create a tag with this version
             self._repo.create_tag(ver)
-            #print list of all tags
-            self.getTaggedVersions()
-            #in order to release to market, we must have a valid git remote url
-            url = self.grabGitRemote()
-            if(url == None):
-                if(self.__market != None):
-                    log.warning("Could not release to market "+self.__market.getName()+" because this block is not tied to a remote.")
-                return
-            #push to remote codebase!! (we have a valid remote url to use)
-            else:
-                self.pushRemote()
 
-            #publish on market/bazaar!
+            #push to remote codebase!! (we have a valid remote url to use)
+            if(url != None):
+                self.pushRemote()
+            #no other actions should happen when no url is exists
+            else:
+                return
+            #publish on market/bazaar! (also publish all versions not found)
             if(self.__market != None):
                 #todo : publish every version that DNE on market?
-                self.__market.publish(self.__metadata, options)
+                self.__market.publish(self._repo, self.__metadata, options, self.getTaggedVersions())
             elif(self.getMeta("market") != None):
                 log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
 
-    def getTaggedVersions(self, ver=None):
+    def getTaggedVersions(self):
         all_tags = self._repo.git.tag(l=True)
-       
+        #split into list
         all_tags = all_tags.split("\n")
-        #remove any non-legohdl tags
         tags = []
+        #only add any tags identified by legohdl
         for t in all_tags:
             if(t.startswith(apt.TAG_ID)):
-                tags.append(t[t.find(apt.TAG_ID)+len(apt.TAG_ID):])
-        print(tags)
+                #trim off identifier
+                t = t[t.find(apt.TAG_ID)+len(apt.TAG_ID):]
+                #ensure it is valid version format
+                if(self.validVer(t)):
+                    tags.append(t)
+        #print(tags)
         #return all tags
-        if(ver == None):
-            return tags
-    
-    #return the writing for an empty marker file
-    def lockFile(self):
-        body = """
-name:
-library:
-version:
-summary:
-toplevel:
-bench:
-remote:
-market:
-derives: {}
-        """
-        return body
+        return tags
 
     @classmethod
     def biggerVer(cls, lver, rver):
@@ -217,10 +222,26 @@ derives: {}
         elif(l1 == r1 and l2 == r2 and l3 <= r3):
             return rver
         return lver
+
+    #return true if can be separated into 3 numeric values
+    @classmethod
+    def validVer(cls, ver):
+        #must have 2 dots and start with 'v'
+        if(ver == None or ver.count(".") != 2 or ver.startswith('v') == False):
+            return False
+        #trim off initial 'v'
+        ver = ver[1:]
+        f_dot = ver.find('.')
+        l_dot = ver.rfind('.')
+        #all sections must only contain digits
+        return (ver[:f_dot].isdecimal() and \
+                ver[f_dot+1:l_dot].isdecimal() and \
+                ver[l_dot+1:].isdecimal())
     
+    #separate the version into 3 numeric values
     @classmethod
     def sepVer(cls, ver):
-        if(ver == ''):
+        if(ver == '' or ver == None):
             return 0,0,0
         if(ver[0] == 'v'):
             ver = ver[1:]
@@ -242,16 +263,31 @@ derives: {}
             r_patch = 0
         return r_major,r_minor,r_patch
 
+    #return the writing for an empty marker file
+    def lockFile(self):
+        body = """
+name:
+library:
+version:
+summary:
+toplevel:
+bench:
+remote:
+market:
+derives: {}
+        """
+        return body
+
     def bindMarket(self, mkt):
         if(mkt != None):
-            log.info("Tying "+mkt+" as the market for "+self.getTitle())
+            log.info("Tying "+mkt+" as the market for "+self.getTitle(low=False))
         self.__metadata['market'] = mkt
         self.save()
         pass
 
     def setRemote(self, rem):
         if(rem != None):
-            log.info("Setting "+rem+"as the remote git url for "+self.getTitle())
+            log.info("Setting "+rem+" as the remote git url for "+self.getTitle(low=False))
             self.grabGitRemote(rem)
         elif(len(self._repo.remotes)):
             self._repo.git.remote("remove","origin")
@@ -464,7 +500,7 @@ derives: {}
             try: #attach to remote code base
                 self._repo.create_remote('origin', remote_url) 
             except: #relink origin to new remote url
-                print(self._repo.remotes.origin.url)
+                log.debug("Relinking to original remote: "+self._repo.remotes.origin.url)
             if(remote_url == None):
                 return
             with self._repo.remotes.origin.config_writer as cw:

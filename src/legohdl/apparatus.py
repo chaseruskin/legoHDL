@@ -167,6 +167,17 @@ class Apparatus:
         os.makedirs(workspace_dir+"cache", exist_ok=True)
         if(not os.path.isfile(workspace_dir+"map.toml")):
             open(workspace_dir+"map.toml", 'w').write("[libraries]\n")
+        
+        #make sure market is a list
+        if(isinstance(cls.SETTINGS['workspace'][name]['market'],list) == False):
+            cls.SETTINGS['workspace'][name]['market'] = []
+        #make sure local is a string 
+        if(isinstance(cls.SETTINGS['workspace'][name]['local'],str) == False):
+            cls.SETTINGS['workspace'][name]['local'] = None
+            if(cls.SETTINGS['active-workspace'] == name):
+                cls.SETTINGS['active-workspace'] = None
+                return
+
         #if no active-workspace then set it as active
         if(not cls.inWorkspace()):
             cls.SETTINGS['active-workspace'] = name
@@ -177,11 +188,11 @@ class Apparatus:
         log.warning(prompt+" [y/n]")
         verify = input().lower()
         while True:
-            verify = input("[y/n]").lower()
             if(verify == 'y'):
                 return True
             elif(verify == 'n'):
                 return False
+            verify = input("[y/n]").lower()
     
     @classmethod
     def save(cls):
@@ -200,9 +211,10 @@ class Apparatus:
         #key: name, val: url
         if(cls.inWorkspace() and workspace_level):
             for name in cls.SETTINGS['workspace'][cls.__active_workspace]['market']:
-                returnee[name] = cls.SETTINGS['market'][name]
+                if(name in cls.SETTINGS['market'].keys()):
+                    returnee[name] = cls.SETTINGS['market'][name]
         elif(cls.inWorkspace()):
-            for name in cls.SETTINGS['market']:
+            for name in cls.SETTINGS['market'].keys():
                 returnee[name] = cls.SETTINGS['market'][name]
         return returnee
 
