@@ -77,8 +77,13 @@ class Market:
                 log.info(tag+" is a valid version not found in this market. Uploading...")
                 with open("./Block.lock", 'r') as f:
                     meta = yaml.load(f, Loader=yaml.FullLoader)
+                    
             #revert back to latest release
             repo.git.switch('-')
+            #perform additional safety measure that this tag matches the 'version' found in meta
+            if(meta['version'] != tag[1:]):
+                log.error("Close but not close enough")
+                return None
             return meta
 
     def publish(self, repo, meta, options=[], all_vers=[]):
