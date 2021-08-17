@@ -31,7 +31,7 @@
 - [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
 - [ ] add ability to search by market
 
-- [ ] investigate whether to use `git checkout tag` then moving files OR continue using `git clone --single-branch` of tag for installation
+- [!] investigate whether to use `git checkout tag` then moving files OR continue using `git clone --single-branch` of tag for installation -> would allow for checking if valid legohdl release point and save space in the long run of having many installations
 
 - [ ] have some way of notifying user that a block is missing from installations when trying to export
 
