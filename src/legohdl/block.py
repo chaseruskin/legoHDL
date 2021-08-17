@@ -1,5 +1,6 @@
 from genericpath import isdir, isfile
 import os, yaml, shutil
+from typing import ChainMap
 from sys import meta_path
 from datetime import date
 import stat
@@ -211,6 +212,7 @@ class Block:
         #return all tags
         return tags
 
+    #returns rhs is equal
     @classmethod
     def biggerVer(cls, lver, rver):
         l1,l2,l3 = cls.sepVer(lver)
@@ -598,25 +600,56 @@ derives: {}
         return self.grabGitRemote() != None
 
     def install(self, cache_dir, ver=None, src=None):
-        #CMD: git clone (rep.git_url) (location) --branch (rep.last_version) --single-branch
-        if(ver == None):
-            ver = self.getVersion()
+        #create cache directory
+        cache_dir = apt.fs(cache_dir)
+        cache_dir = cache_dir+self.getLib()+"/"+self.getName()+"/"
+        os.makedirs(cache_dir, exist_ok=True)
         
-        if(ver == '0.0.0'):
+        base_cache_dir = cache_dir
+        #log.debug("Cache directory: "+cache_dir)
+
+        instl_vers = os.listdir(base_cache_dir)        
+        added_version = False
+        if(self.validVer(ver)):
+            if(ver in self.getTaggedVersions()):
+                if ver in instl_vers:
+                    log.info("Version "+ver+" is already installed.")
+                    return
+                cache_dir = cache_dir+".tmp/"
+                os.makedirs(cache_dir,exist_ok=True)
+                added_version = True
+            else:
+                exit(log.error("Version "+ver+" is not available to install."))
+
+        if(ver == None):
+            ver = 'v'+self.getVersion()
+    
+        if(ver[0] != 'v'):
+            ver = 'v'+ver
+        
+        if(ver == 'v0.0.0'):
             log.error('No available version')
             return
 
         log.info("Installing block "+self.getTitle(low=False)+" version "+ver+"...")
-        
+
+        #installing from cache if src is None
         if(src == None):
             src = self.__local_path
-        #first check if a repository exists in cache for this block
-        print(src)
-        #print(self._repo)
+
         #clone and checkout specific version tag
-        ver = "v"+ver
         git.Git(cache_dir).clone(src,"--branch",ver,"--single-branch")
-        self.__local_path = cache_dir+self.getName()+"/"
+        url_name = os.listdir(cache_dir)[0]
+
+        if(added_version):
+            shutil.move(cache_dir+url_name, base_cache_dir+ver)
+            shutil.rmtree(cache_dir, onerror=apt.rmReadOnly)
+            self.__local_path = base_cache_dir+ver+"/"
+        else:
+            shutil.move(cache_dir+url_name, base_cache_dir+self.getName())
+            self.__local_path = cache_dir+self.getName()+"/"
+
+
         self._repo = git.Repo(self.__local_path)
         self._repo.git.checkout(ver)
         self.loadMeta()

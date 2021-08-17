@@ -102,12 +102,13 @@ class legoHDL:
         l,n = Block.split(title)
         block = None
         cache_path = apt.WORKSPACE+"cache/"
-        lib_path = apt.WORKSPACE+"lib/"+l+"/"
         #does the package already exist in the cache directory?
-        if(ver == None and self.db.blockExists(title, "cache", updt=True)):
-            log.info("The module is already installed.")
-            return
-        elif(self.db.blockExists(title, "local")):
+        if(self.db.blockExists(title, "cache", updt=True)):
+            block = self.db.getBlocks("cache")[l][n]
+            if(ver == None):
+                log.info("The block is already installed.")
+                return
+        elif(self.db.blockExists(title, "local", updt=True)):
             block = self.db.getBlocks("local")[l][n]
         elif(self.db.blockExists(title, "market")):
             block = self.db.getBlocks("market")[l][n]
@@ -138,24 +139,23 @@ class legoHDL:
                         needs_instl = True
             if(needs_instl):
                 self.install(prereq, required_by=required_by)
-        # clone the repo -> cache
               
-        #possibly make directory for cached block
-        print("Installing... ",end='')
-        cache_path = cache_path+block.getLib()+"/"+block.getName()+"/"
-        os.makedirs(cache_path, exist_ok=True)
+        log.info("Installing... ")
         #see what the latest version available is and clone from that version unless specified
-        #print(rep.git_url)#print(rep.last_version)
-
-        #first check if block exists in cache
-        if(self.db.blockExists(title, "cache", updt=True)):
-            block.install(cache_path, ver)
+        isInstalled = self.db.blockExists(title, "cache")
         #now check if block needs to be installed from market
-        elif(self.db.blockExists(title, "market")):
-            block.install(cache_path, None, self.db.getBlocks()[l][n].getMeta("remote"))
-        else:
+        if(self.db.blockExists(title, "cache") == False):
+            block.install(cache_path, block.getVersion(), block.getMeta("remote"))
+            #now update to true because it was just cloned from remote
+            isInstalled = True
+        elif(self.db.blockExists(title, "market") == False):
             log.WARNING("Block "+title+" does not exist for this workspace or its markets.")
-        print("success")
+
+        #now try to install specific version if requested now that the whole branch was cloned from remote
+        if(ver != None and isInstalled):
+            block.install(cache_path, ver)
+
+        log.info("success")
     
         #link it all together through writing paths into "map.toml"
         filename = apt.WORKSPACE+"map.toml"
@@ -165,11 +165,6 @@ class legoHDL:
 
         mapfile = open(filename, 'w')
         inc_paths = list()
-        #generate PKG VHD
-        if(block.getMeta("toplevel") != None):
-            #self.genPKG(block.getTitle())
-            #inc_paths.append("\'"+lib_path+block.getName()+"_pkg.vhd"+"\',\n")
-            pass
 
         for f in block.gatherSources():
             inc_paths.append("\'"+f+"\',\n")
@@ -206,25 +201,30 @@ class legoHDL:
 
     #! === UNINSTALL COMMAND ===
 
-    def uninstall(self, blk, opt=None):
+    def uninstall(self, blk, ver):
         #remove from cache
         l,n = Block.split(blk)
+        base_cache_dir = apt.WORKSPACE+"cache/"+l+"/"+n+"/"
         if(self.db.blockExists(blk, "cache")):
-            cache = self.db.getBlocks("cache")
-            cache_path = cache[l][n].getPath()
-            shutil.rmtree(cache_path, onerror=apt.rmReadOnly)
+            #delete all its block stuff in cache
+            if(ver == None):
+                shutil.rmtree(base_cache_dir, onerror=apt.rmReadOnly)
+            #only delete the specified version
+            elif(os.path.isdir(base_cache_dir+ver+"/")):
+                shutil.rmtree(base_cache_dir+ver+"/", onerror=apt.rmReadOnly)
+            else:
+                exit(log.error("Block "+blk+" version "+ver+" is not installed to the workspace's cache."))
             #if empty dir then do some cleaning
-            if(len(os.listdir(apt.WORKSPACE+"cache/"+l)) == 0):
-                os.rmdir(apt.WORKSPACE+"cache/"+l)
-                pass
-            #remove from lib
-            lib_path = cache_path.replace("cache","lib")
-            lib_path = lib_path[:len(lib_path)-1]+"_pkg.vhd"
-            os.remove(lib_path)
-            #if empty dir then do some cleaning
-            if(len(os.listdir(apt.WORKSPACE+"lib/"+l)) == 0):
-                os.rmdir(apt.WORKSPACE+"lib/"+l)
-                pass
+            clean = True
+            for d in os.listdir(apt.WORKSPACE+"cache/"+l):
+                if(d.startswith('.') == False):
+                    clean = False
+            if(clean):
+                shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/", onerror=apt.rmReadOnly)
+        else:
+            exit(log.error("Block "+blk+" is not installed to the workspace's cache."))
+
+        log.info("Successfully uninstalled block "+blk+".")
 
         #remove from 'map.toml'
         lines = list()
@@ -234,7 +234,7 @@ class legoHDL:
             file.close()
         with open(filename, 'w') as file:
             for lin in lines:
-                if(lin.count(l) and (lin.count("/"+n+"/") or lin.count("/"+n+"_pkg"))):
+                if(lin.count(l) and (lin.count("/"+n+"/"))):
                     continue
                 file.write(lin)
             file.close()
@@ -272,11 +272,11 @@ class legoHDL:
         # if(cmd.rfind("\"") != len(cmd)-1):
         #     cmd = cmd + "\""
         # #add any extra arguments that were found on legohdl command line
-        # for i,arg in enumerate(sys.argv):
-        #     if(i < arg_start):
-        #         continue
-        #     else:
-        #         cmd = cmd + " " + arg
+        for i,arg in enumerate(sys.argv):
+            if(i < arg_start):
+                continue
+            else:
+                cmd = cmd + " " + arg
         log.info(cmd)
         os.system(cmd)
 
@@ -439,13 +439,18 @@ class legoHDL:
             exit(log.error('Block \''+title+'\' does not exist in any linked market for this workspace'))
         
         #2. perform re-install
-        try: #remove cached project already there
-            shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/", onerror=apt.rmReadOnly)
-        except:
-            pass
-        #install to cache and generate PKG VHD 
-        self.install(title, blk.getVersion())
-        print("success")
+        cache_block = None
+        in_cache = self.db.blockExists(blk.getTitle(), "cache")
+        if(in_cache):
+            cache_block = self.db.getBlocks(blk.getTitle(), "cache")[l][n]
+        if(not in_cache or Block.biggerVer(blk.getVersion(), cache_block.getVersion()) == blk.getVersion() and blk.getVersion() != cache_block.getVersion()):
+            try: #remove cached project already there
+                shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/"+n+"/", onerror=apt.rmReadOnly)
+            except:
+                pass
+            #update cache installation if a new version is available
+            self.install(title, None)
+  
         pass
 
     #! === RELEASE COMMAND ===
@@ -474,7 +479,7 @@ class legoHDL:
         if(os.path.isfile(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg")):
             shutil.rmtree(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg", onerror=apt.rmReadOnly)
         #clone new project's progress into cache
-        self.install(block.getTitle(), block.getVersion())
+        self.install(block.getTitle(), None)
         log.info(block.getLib()+"."+block.getName()+" is now available as version "+block.getVersion()+".")
         pass
 
@@ -841,7 +846,7 @@ class legoHDL:
                 if(response.lower() == 'y' or response.lower() == 'n'):
                     break
             if(response.lower() == 'n'):
-                log.info("Module "+block.getTitle()+' not uninstalled.')
+                log.info("Keeping block "+block.getTitle()+' installation.')
                 force = False
         #if there is a remote then the project still lives on, can be "redownloaded"
         log.info("Deleting "+block.getTitle()+" block found here: "+block.getPath())
@@ -853,13 +858,16 @@ class legoHDL:
         #if empty dir then do some cleaning
         slash = block.getPath()[:len(block.getPath())-2].rfind('/')
         root = block.getPath()[:slash+1]
-        if(len(os.listdir(root)) == 0):
-            os.rmdir(root)
+        clean = True
+        for d in os.listdir(root):
+            if(d.startswith('.') == False):
+                clean = False
+        if(clean):
+            shutil.rmtree(root, onerror=apt.rmReadOnly)
         log.info('Deleted '+block.getTitle()+' from local workspace.')
         
         if(force):
-            self.uninstall(block.getTitle())
-            log.info("Uninstalled "+block.getTitle()+" from cache.")
+            self.uninstall(block.getTitle(), None)
         #delete the module remotely?
         pass
 
@@ -984,7 +992,14 @@ class legoHDL:
             self.install(package, ver)
             pass
         elif(command == "uninstall"):
-            self.uninstall(package, options) #TO-DO
+            ver = None
+            #ensure version option is valid before using it to install
+            if(len(options) == 1 and Block.validVer(options[0]) == True):
+                ver = options[0]
+            elif(len(options) > 1):
+                exit(log.error("Invalid Flags set for install command."))
+
+            self.uninstall(package, ver)
             pass
         elif(command == "build" and self.blockCWD.isValid()):
             self.build(value)

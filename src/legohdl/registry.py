@@ -123,7 +123,7 @@ class Registry:
             ver_dir = ver_dir + p + "/"
         #list all version folders
         versions = os.listdir(ver_dir)
-
+        #print(ver_dir)
         for v in versions:
             if(v[0] == '.'):
                 versions.remove(v)
@@ -224,9 +224,15 @@ class Registry:
                     self._remote_prjs[L] = dict()
                 if(N not in self._remote_prjs[L].keys()):
                     self._remote_prjs[L][N] = block
+                else:
+                    #overwrite with highest version available
+                    cur_ver = self._remote_prjs[L][N].getMeta("version")
+                    challenger_ver = block.getMeta("version")
+                    if(Block.biggerVer(cur_ver,challenger_ver) == challenger_ver):
+                        self._remote_prjs[L][N] = block
+
         #print(self._remote_prjs)
         return self._remote_prjs
-        pass
 
     #check if any changes were made to market remotes for current workspace
     def sync(self):
