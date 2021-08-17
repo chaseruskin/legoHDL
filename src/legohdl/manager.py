@@ -48,55 +48,6 @@ class legoHDL:
 
     #! === INSTALL COMMAND ===
 
-    #todo : do not overwrite anything previous in the package file (old versions)
-    def genPKG(self, title):
-        block = None
-        if(self.db.blockExists(title, "cache", updt=True)):
-            cache = self.db.getBlocks("cache")
-            l,n = Block.split(title)
-            block = cache[l][n]
-        else:
-            exit(log.error("The module is not located in the cache"))
-
-        lib_path = apt.WORKSPACE+"lib/"+block.getLib()+"/"
-        os.makedirs(lib_path, exist_ok=True)
-        
-        vhd_pkg = open(lib_path+block.getName()+"_pkg.vhd", 'w')
-
-        pkg_entry = "package "+block.getName()+"_pkg is"
-        pkg_close = "end package;"
-
-        pkg_body_entry = "\n\npackage body "+block.getName()+"_pkg is"
-        pkg_body_close = "\nend package body;"
-
-        pkg_lines = [pkg_entry, pkg_close, pkg_body_entry, pkg_body_close]
-
-        #need to look at toplevel VHD file to transfer correct library uses
-        #search through all library uses and see what are chained dependencies
-        derivatives = block.scanLibHeaders(block.getMeta("toplevel"))
-        #write in all library and uses
-        #print(derivatives)
-        for dep in derivatives:
-            vhd_pkg.write(dep)
-
-        vhd_pkg.write("\n")
-
-        # generate a PKG VHD file -> lib
-        addedCompDec = False
-        for line in pkg_lines:
-            if not addedCompDec and line.startswith("package"):
-                addedCompDec = True
-                comp = block.ports(False, block.getLib(), False)
-                comp_break = comp.split('\n')
-
-                line = line + "\n"
-                for c in comp_break:
-                    line = line + "\t" + c + "\n"
-                pass
-            vhd_pkg.write(line)
-        vhd_pkg.close()
-        pass
-
     #install block to cache, and recursively install dependencies
     def install(self, title, ver=None, required_by=[]):
         l,n = Block.split(title)
