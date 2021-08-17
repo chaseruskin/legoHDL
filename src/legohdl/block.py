@@ -112,7 +112,7 @@ class Block:
         return self.getMeta('version')
 
     #return highest tagged version for this block's repository
-    def getHighestTaggedVersion(self,):
+    def getHighestTaggedVersion(self):
         all_vers = self.getTaggedVersions()
         highest = '0.0.0'
         for v in all_vers:
@@ -602,16 +602,17 @@ derives: {}
         if(ver == None):
             ver = self.getVersion()
         
-        if(ver == 'v0.0.0'):
+        if(ver == '0.0.0'):
             log.error('No available version')
             return
 
-        log.info("version "+ver)
+        log.info("Installing block "+self.getTitle(low=False)+" version "+ver+"...")
         
-        if(src == None and self._remote != None):
-            src = self._remote
-        elif(src == None):
+        if(src == None):
             src = self.__local_path
+        #first check if a repository exists in cache for this block
+        print(src)
+        #print(self._repo)
         #clone and checkout specific version tag
         ver = "v"+ver
         git.Git(cache_dir).clone(src,"--branch",ver,"--single-branch")
@@ -860,8 +861,8 @@ derives: {}
         if(hasattr(self, "_cache_designs") and not override):
             return self._cache_designs
         self._cache_designs = dict()
-        files = (glob.glob(apt.WORKSPACE+"lib/**/*.vhd", recursive=True))
-        files = files + glob.glob(apt.WORKSPACE+"cache/**/*.vhd", recursive=True)
+        #files = (glob.glob(apt.WORKSPACE+"lib/**/*.vhd", recursive=True))
+        files = glob.glob(apt.WORKSPACE+"cache/**/*.vhd", recursive=True)
 
         for f in files:
             L,N = self.grabExternalProject(f)
@@ -918,20 +919,18 @@ derives: {}
     
     #search for the projects attached to the external package
     def grabExternalProject(cls, path):
+        print(path)
         #use its file to find out what block uses it
-        path_parse = apt.fs(path).split('/')
+        path_parse = apt.fs(path.lower()).split('/')
         # if in lib {library}/{block}_pkg.vhd
-        if("lib" in path_parse):
-            i = path_parse.index("lib")
-            pass
         #if in cache {library}/{block}/../.vhd
-        elif("cache" in path_parse):
+        if("cache" in path_parse):
             i = path_parse.index("cache")
             pass
         else:
             return '',''
         L = path_parse[i+1].lower()
-        N = path_parse[i+2].lower().replace("_pkg.vhd", "")
+        N = path_parse[i+2].lower()
         return L,N
         
     #print helpful port mappings/declarations of a desired entity

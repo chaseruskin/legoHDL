@@ -97,13 +97,14 @@ class legoHDL:
         vhd_pkg.close()
         pass
 
-    def install(self, title, ver=None, opt=list(), required_by=[]):
+    #install block to cache, and recursively install dependencies
+    def install(self, title, ver=None, required_by=[]):
         l,n = Block.split(title)
         block = None
         cache_path = apt.WORKSPACE+"cache/"
         lib_path = apt.WORKSPACE+"lib/"+l+"/"
         #does the package already exist in the cache directory?
-        if(self.db.blockExists(title, "cache", updt=True)):
+        if(ver == None and self.db.blockExists(title, "cache", updt=True)):
             log.info("The module is already installed.")
             return
         elif(self.db.blockExists(title, "local")):
@@ -111,7 +112,7 @@ class legoHDL:
         elif(self.db.blockExists(title, "market")):
             block = self.db.getBlocks("market")[l][n]
         else:
-            exit(log.error("The module cannot be found anywhere."))
+            exit(log.error("The block cannot be found anywhere."))
 
         #print(block.getTitle()+" prereqs")
         #append to required_by list used to prevent cyclic recursive nature
@@ -137,14 +138,23 @@ class legoHDL:
                         needs_instl = True
             if(needs_instl):
                 self.install(prereq, required_by=required_by)
-        # clone the repo -> cache      
-        #possibly make directory for cached project
+        # clone the repo -> cache
+              
+        #possibly make directory for cached block
         print("Installing... ",end='')
-        cache_path = cache_path+block.getLib()+"/"
+        cache_path = cache_path+block.getLib()+"/"+block.getName()+"/"
         os.makedirs(cache_path, exist_ok=True)
         #see what the latest version available is and clone from that version unless specified
         #print(rep.git_url)#print(rep.last_version)
-        block.install(cache_path, ver)
+
+        #first check if block exists in cache
+        if(self.db.blockExists(title, "cache", updt=True)):
+            block.install(cache_path, ver)
+        #now check if block needs to be installed from market
+        elif(self.db.blockExists(title, "market")):
+            block.install(cache_path, None, self.db.getBlocks()[l][n].getMeta("remote"))
+        else:
+            log.WARNING("Block "+title+" does not exist for this workspace or its markets.")
         print("success")
     
         #link it all together through writing paths into "map.toml"
@@ -157,8 +167,9 @@ class legoHDL:
         inc_paths = list()
         #generate PKG VHD
         if(block.getMeta("toplevel") != None):
-            self.genPKG(block.getTitle())
-            inc_paths.append("\'"+lib_path+block.getName()+"_pkg.vhd"+"\',\n")
+            #self.genPKG(block.getTitle())
+            #inc_paths.append("\'"+lib_path+block.getName()+"_pkg.vhd"+"\',\n")
+            pass
 
         for f in block.gatherSources():
             inc_paths.append("\'"+f+"\',\n")
@@ -959,13 +970,13 @@ class legoHDL:
             if(self.db.blockExists(package,"cache")):
                 if(ver != None):
                     log.info("Installing "+ver+" from cache...")
-                    return
+                    
             elif(self.db.blockExists(package,"market")):
                 ver_word = 'latest'
                 if(ver != None):
                     ver_word = ver
                 log.info("Installing "+ver_word+" from market...")
-                return
+                
             else:
                 exit(log.error("Block "+package+" does not exists for this workspace."))
 

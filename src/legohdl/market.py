@@ -127,6 +127,8 @@ class Market:
                 #ensure this yaml file has the correct "remote" and "market"
                 tmp_meta['remote'] = meta['remote']
                 tmp_meta['market'] = meta['market']
+                #tmp_meta['library'] = meta['library']
+                #tmp_meta['name'] = meta['name']
                 #save yaml file
                 with open(fp+apt.MARKER, 'w') as file:
                     for key in apt.META:
