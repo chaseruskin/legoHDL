@@ -287,7 +287,7 @@ derives: {}
         self.save()
         pass
 
-    def setRemote(self, rem):
+    def setRemote(self, rem, push=True):
         if(rem != None):
             log.info("Setting "+rem+" as the remote git url for "+self.getTitle(low=False))
             self.grabGitRemote(rem)
@@ -295,7 +295,7 @@ derives: {}
             self._repo.git.remote("remove","origin")
         self.__metadata['remote'] = rem
         self._remote = rem
-        self.genRemote()
+        self.genRemote(push)
         self.save()
         pass
     
@@ -393,7 +393,7 @@ derives: {}
                 os.makedirs(self.__local_path, exist_ok=True)
 
         #clone from existing remote repo
-        if(self.grabGitRemote() != None):
+        if(not fresh and self.grabGitRemote() != None):
             log.info("Cloning project from remote url...")
             self.downloadFromURL(self.grabGitRemote())
         #make a new repo
@@ -450,11 +450,12 @@ derives: {}
         self.__metadata['name'] = self.getName(low=False)
         self.__metadata['library'] = self.getLib(low=False)
         self.__metadata['version'] = '0.0.0'
+        print(self.getMeta("remote"))
         self.identifyTop()
         log.debug(self.getName())
         #set the remote if not None
         if(remote != None):
-            self.setRemote(remote)
+            self.setRemote(remote, push=False)
         #save current progress into yaml
         self.save() 
         #add and commit to new git repository
@@ -496,18 +497,19 @@ derives: {}
         return self._remote
 
     #generate new link to remote if previously unestablished (only for creation)
-    def genRemote(self):
+    def genRemote(self, push):
         if(self.isLinked()):
             remote_url = self.getMeta("remote")
             try: #attach to remote code base
                 self._repo.create_remote('origin', remote_url) 
             except: #relink origin to new remote url
-                log.debug("Relinking to original remote: "+self._repo.remotes.origin.url)
+                log.info("Relinking to original remote: "+self._repo.remotes.origin.url)
             if(remote_url == None):
                 return
             with self._repo.remotes.origin.config_writer as cw:
                 cw.set("url", remote_url)
-            self._repo.git.push("-u","origin",str(self._repo.head.reference))
+            if(push):
+                self._repo.git.push("-u","origin",str(self._repo.head.reference))
         pass
 
     #pull from remote repository
@@ -952,7 +954,7 @@ derives: {}
     
     #search for the projects attached to the external package
     def grabExternalProject(cls, path):
-        print(path)
+        #print(path)
         #use its file to find out what block uses it
         path_parse = apt.fs(path.lower()).split('/')
         # if in lib {library}/{block}_pkg.vhd

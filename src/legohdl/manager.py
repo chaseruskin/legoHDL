@@ -787,7 +787,7 @@ class legoHDL:
             log.info('Block '+block.getName()+' does not exist locally.')
             return
         
-        if(not block.isLinked() and force):
+        if(not block.isLinked() and (force or block.getVersion() == '0.0.0')):
             log.warning('No market is configured for this block, if this module is deleted and uninstalled\n\
             it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'? [y/n]\
             ')
@@ -1167,9 +1167,6 @@ class legoHDL:
             pass
         elif(cmd == "show"):
             printFmt("show","<block>")
-            pass
-        elif(cmd == "summ"):
-            printFmt("summ","[-:\"summary\"]")
             pass
         elif(cmd == "config"):
             printFmt("config","<value>","""[-market [-remove | -append] | -author | -script [-lnk] | -label [-recursive] | -editor |\n\
