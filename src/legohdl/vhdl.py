@@ -92,7 +92,8 @@ class Vhdl:
                     #print(L,U)
                     if(L in design_book.keys()):
                         #print(design_book[L][U])
-                        use_packages.append(design_book[L][U])
+                        if(U in design_book[L].keys()):
+                            use_packages.append(design_book[L][U])
                     pass
                 pass
             elif(code_word == 'port'):
@@ -119,6 +120,8 @@ class Vhdl:
                     for lib in library_declarations:
                         if(entity_name in design_book[lib].keys()):
                             use_packages.append(design_book[lib][entity_name])
+                        elif(entity_name != 'entity' and verbose):
+                            log.warning(lib+"."+entity_name+" not found.")
                 pass
             elif(code_word == 'architecture'):
                 # this is ending an architecture section
@@ -188,10 +191,16 @@ class Vhdl:
                     L,U,E = splitBlock(code_word)
                     #append if the package exists
                     if(L in design_book.keys() and U != unit_name):
-                        use_packages.append(design_book[L][U])
+                        if(U in design_book[L].keys()):
+                            use_packages.append(design_book[L][U])
+                        elif(verbose):
+                            log.warning(L+"."+U+" not found.")
                     #append if the entity exists (three-part unit name (library.package.entity))
-                    if(L in design_book.keys() and E != unit_name and E in design_book[L].keys()):
-                        use_packages.append(design_book[L][E])
+                    if(L in design_book.keys() and E != unit_name):
+                        if(E in design_book[L].keys()):
+                            use_packages.append(design_book[L][E])
+                        elif(E != '' and verbose):
+                            log.warning(L+"."+E+" not found.")
             pass
 
         #print("===UNIT====",cur_lib,unit_name)

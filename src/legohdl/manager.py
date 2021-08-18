@@ -770,7 +770,7 @@ class legoHDL:
         mkt_sync = None
         git_url = None
         #try to find a valid market being used
-        for mkt in self.db.getGalaxy():
+        for mkt in self.db.getMarkets():
             for opt in options:
                 if(mkt.getName() == opt):
                     log.info("Tying market "+mkt+" to this initialized block")
@@ -1033,7 +1033,9 @@ class legoHDL:
         elif(command == "init"):
             self.convert(package, value, options)
         elif(command == "refresh"):
-            self.db.sync()
+            #package value is the market looking to refresh
+            #if package value is null then all markets tied to this workspace refresh by default
+            self.db.sync(value)
         elif(command == "export" and self.blockCWD.isValid()):
             #'' and list() are default to pkg and options
             mod = package

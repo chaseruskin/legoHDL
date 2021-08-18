@@ -19,15 +19,14 @@ class Registry:
         OTHER = 5
         pass
 
-    #TO-DO: fix how to store and use remotes
+    #TO-DO: fix how to store and use remotes [x]
     #things to consider: where to host remote central store (can have multiple)
     #what is a project's remote url when making a new one?
     def __init__(self, mrkts):
-        self.__url = ''
-        self.__galaxy = list() #list of all clusters for current workspace
+        self.__mkts = list() #list of all clusters for current workspace
         if(apt.inWorkspace() and apt.linkedMarket()):
             for rem,val in mrkts.items():
-                self.__galaxy.append(Market(rem,val))
+                self.__mkts.append(Market(rem,val))
         self.__registry_path = apt.HIDDEN+"registry/"
         pass
     
@@ -213,8 +212,8 @@ class Registry:
             return self._remote_prjs
         self._remote_prjs = dict()
         #identify .lock files from each remote set up with this workspace
-        for clst in self.__galaxy:
-            lego_files = glob.glob(self.__registry_path+clst.getName()+"/**/"+apt.MARKER, recursive=True)
+        for mkt in self.getMarkets():
+            lego_files = glob.glob(self.__registry_path+mkt.getName()+"/**/"+apt.MARKER, recursive=True)
             #from each lego file, create a Block object
             #print(lego_files)
             for x in lego_files:
@@ -237,15 +236,19 @@ class Registry:
         return self._remote_prjs
 
     #check if any changes were made to market remotes for current workspace
-    def sync(self):
-        for mrk in self.getGalaxy():
+    def sync(self, mrkt):
+        for mrk in self.getMarkets():
             rep = git.Repo(mrk.getPath())
-            if(mrk.isRemote()):
-                rep.remotes.origin.pull(rep.head.reference)
+            if((mrkt.lower() == mrk.getName().lower() or mrkt == '')):
+                if(mrk.isRemote()):
+                    log.info("Refreshing "+mrk.getName()+"... "+mrk.url)
+                    rep.remotes.origin.pull(rep.head.reference)
+                else:
+                    log.warning("Cannot refresh "+mrk.getName()+" due to no remote.")
         pass
 
-    def getGalaxy(self):
-        return self.__galaxy
+    def getMarkets(self):
+        return self.__mkts
 
     def availableLibs(self):
         return list(self.getBlocks("local","cache","market").keys())

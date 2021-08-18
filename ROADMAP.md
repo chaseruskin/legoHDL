@@ -20,6 +20,8 @@
 - [ ] implement additional "help" command documentation
 
 
+
+
 ### Future Roadmap
 
 - [ ] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
@@ -28,18 +30,19 @@
 
 - [ ] allow ability to open a script by specifying script 'alias' name `legohdl open master -script`
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
+
 - [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
 - [ ] add ability to search by market
 
 - [ ] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos
 
-- [!] investigate whether to use `git checkout tag` then moving files OR continue using `git clone --single-branch` of tag for installation -> would allow for checking if valid legohdl release point and save space in the long run of having many installations
+- [ ] have a way to see what version was used when using a block's 'latest' (no version specified) -> (show a directory?) -> (OR transform the base installation -> leaning yes)
 
 - [ ] graph command but -upstream option (returns all blocks that are effected/use this block)
 
 - [ ] produce error log when trying to make 'new' with a remote repo that isn't empty
 
-- [ ] have some way of notifying user that a block is missing from installations when trying to export
+- [-] have some way of notifying user that a block is missing from installations when trying to export -> is somewhat implemented as a warning in some cases if it has the library available but can't find the unit name
 
 - [-] add series of prompts to release command before actually doing anything
 
@@ -52,6 +55,8 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] implement refresh command -> specify market or specify none to refresh all markets tied to workspace
+- [x] investigate whether to use `git checkout tag` then moving files OR continue using `git clone --single-branch` of tag for installation -> would allow for checking if valid legohdl release point and save space in the long run of having many installations -> moves files option
 - [x] implement versioning (folders for each version created on-demand) (installing spec. versions)
 - [x] legohdl will now try to release all versions with valid tag if a Block.lock file exists there to a market, only tries once as a folder will be created for that tag # but may not have a Block.lock for it if invalid
 - [o] test installing a block, then auto-installs requirements to cache if DNE in cache and if the requirement is found in local path or in market -> already covered by a roadmap mission
