@@ -115,6 +115,10 @@ class Vhdl:
                         if(entity_name in comps):
                             #now add the unit for the entity instance itself
                             use_packages.append(design_book[L][entity_name])
+                    #or if the plain old entity name is indeed with a library
+                    for lib in library_declarations:
+                        if(entity_name in design_book[lib].keys()):
+                            use_packages.append(design_book[lib][entity_name])
                 pass
             elif(code_word == 'architecture'):
                 # this is ending an architecture section

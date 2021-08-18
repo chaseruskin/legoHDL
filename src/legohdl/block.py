@@ -1035,21 +1035,24 @@ derives: {}
         N = path_parse[i+2].lower()
         #if in cache, check what the next folder name is to give clue to what the block name should be
         V = path_parse[i+3].lower()
-        if(V != 'latest'):
-            N = N+"_"+V
+        if(V != N):
+            N = N+"("+V+")"
         return L,N
         
     #print helpful port mappings/declarations of a desired entity
-    def ports(self, mapp, lib, pure_entity, entity=None):
+    def ports(self, mapp, lib, pure_entity, entity=None, ver=None):
         units = self.grabUnits()
-        print(units.values())
         info = ''
         if(entity == None):
             entity = self.getMeta("toplevel")
         if(entity == None):
             return info
-        
-        info = units[self.getLib()][entity].writePortMap(mapp, lib, pure_entity)
+        #tack on version number if given as arg
+        if(ver != None):
+            entity = entity+"_"+ver.replace(".","_")
+
+        if(entity in units[self.getLib()].keys()):
+            info = units[self.getLib()][entity].writePortMap(mapp, lib, pure_entity)
         return info
     pass
 

@@ -96,7 +96,12 @@ class legoHDL:
         isInstalled = self.db.blockExists(title, "cache")
         #now check if block needs to be installed from market
         if(self.db.blockExists(title, "cache") == False):
-            block.install(cache_path, block.getVersion(), block.getMeta("remote"))
+            clone_path = block.getMeta("remote")
+            #must use the local path of the local block if no remote
+            if(clone_path == None):
+                clone_path = block.getPath()
+
+            block.install(cache_path, block.getVersion(), clone_path)
             #now update to true because it was just cloned from remote
             isInstalled = True
         elif(self.db.blockExists(title, "market") == False):
@@ -264,7 +269,8 @@ class legoHDL:
             elif(self.db.blockExists(blk, "cache")):
                 tmp = self.db.getBlocks("cache")[L][N]
             else:
-                log.warning("Cannot locate block "+blk)
+                log.warning("Cannot locate block "+blk+" for label searching")
+                #todo : try to find block in cache? (its a version)
                 continue
 
             if(block.getTitle() == blk):
@@ -1070,13 +1076,19 @@ class legoHDL:
             if(package.count('.') == 2): #if provided an extra identifier, it is the entity in this given project
                 ent_name = package[package.rfind('.')+1:]
                 package = package[:package.rfind('.')]
+            #grab the version number if it was in flags
+            ver = None
+            for o in options:
+                if(Block.validVer(o)):
+                    ver = o
+                    break
 
             inserted_lib = L
             if(self.blockCWD.isValid() and self.blockCWD.getLib() == L):
                 inserted_lib = 'work'
             
             if((self.db.blockExists(package, "local") or self.db.blockExists(package, "cache"))):
-                print(self.db.getBlocks("local","cache")[L][N].ports(mapp,inserted_lib,pure_ent,ent_name))
+                print(self.db.getBlocks("local","cache")[L][N].ports(mapp,inserted_lib,pure_ent,ent_name,ver))
             else:
                 exit(log.error("No block exists in local path or workspace cache."))
         elif(command == "config"):
