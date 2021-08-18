@@ -161,7 +161,7 @@ class Apparatus:
     def initializeWorkspace(cls, name):
         workspace_dir = cls.HIDDEN+"workspaces/"+name+"/"
         if(os.path.isdir(workspace_dir) == False):
-            log.info("Creating workspace directories.")
+            log.info("Creating workspace directories for "+name+"...")
             os.makedirs(workspace_dir, exist_ok=True)
         os.makedirs(workspace_dir+"lib", exist_ok=True)
         os.makedirs(workspace_dir+"cache", exist_ok=True)
@@ -282,12 +282,12 @@ class Apparatus:
     @classmethod
     def merge(cls, place1, place2):
         tmp = copy.deepcopy(place1)
-        for lib,prjs in place1.items(): #go through each current lib
+        for lib in place1.keys(): #go through each current lib
             if lib in place2.keys(): #is this lib already in merging lib?
                 for prj in place2[lib]:
                     tmp[lib][prj] = place2[lib][prj]
         
-        for lib,prjs in place2.items(): #go through all libs not in current lib
+        for lib in place2.keys(): #go through all libs not in current lib
             if not lib in place1.keys():
                 tmp[lib] = dict()
                 for prj in place2[lib]:

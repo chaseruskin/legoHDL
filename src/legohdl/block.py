@@ -283,6 +283,12 @@ derives: {}
             if(key not in self.__metadata.keys()):
                 self.__metadata[key] = None
 
+        #todo : possibly dynamically determine the latest valid release point
+        if(hasattr(self, "_repo")):
+            #print(self.__metadata['name'],self.getHighestTaggedVersion())
+            #self.__metadata['version'] = self.getHighestTaggedVersion()
+            pass
+
         if(self.getMeta('derives') == None):
             self.__metadata['derives'] = dict()
 
@@ -423,7 +429,7 @@ derives: {}
         self.__metadata['name'] = self.getName(low=False)
         self.__metadata['library'] = self.getLib(low=False)
         self.__metadata['version'] = '0.0.0'
-        print(self.getMeta("remote"))
+        #log.info("Remote status: "+self.getMeta("remote"))
         self.identifyTop()
         log.debug(self.getName())
         #set the remote if not None
@@ -439,7 +445,7 @@ derives: {}
             log.info('Generating new remote repository...')
             self._repo.git.push("-u","origin",str(self._repo.head.reference))
         else:
-            log.warning('No remote code base attached to local repository')
+            log.info('No remote code base attached to local repository')
         pass
 
     #dynamically grab the origin url if it has been changed/added by user using git

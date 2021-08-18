@@ -481,7 +481,7 @@ class legoHDL:
                                 return
                         #move forward with workspace removal
                         bad_directory = apt.HIDDEN+"workspaces/"+choice
-                        print(bad_directory)
+                        #print(bad_directory)
                         if(os.path.isdir(bad_directory)):
                             shutil.rmtree(bad_directory, onerror=apt.rmReadOnly)
                             log.info("Deleted workspace directory: "+bad_directory)
@@ -769,7 +769,7 @@ class legoHDL:
         for mkt in self.db.getMarkets():
             for opt in options:
                 if(mkt.getName() == opt):
-                    log.info("Tying market "+mkt+" to this initialized block")
+                    log.info("Tying market "+mkt+" to this initialized block...")
                     mkt_sync = mkt
                     options.remove(opt)
                     break
@@ -780,6 +780,7 @@ class legoHDL:
             if(apt.isValidURL(opt)):
                 git_url = opt
         #print(git_url,mkt_sync)
+        log.warning("No valid market is attached.")
         return git_url,mkt_sync
 
     #! === DEL COMMAND ===
@@ -908,7 +909,7 @@ class legoHDL:
             mrkt_block = self.db.getBlocks("market")[l][n]
             m_ver = mrkt_block.getVersion()
         elif(ver == None):
-            exit(log.error("Block "+title+" cannot be updated from any of the workspace's markets."))
+            exit(log.error(title+" cannot be updated from any of the workspace's markets."))
 
         if((Block.biggerVer(m_ver,c_ver) == m_ver and m_ver != c_ver)):
             log.info("Updating "+title+" installation to v"+m_ver)
@@ -920,7 +921,7 @@ class legoHDL:
             #clone new project's progress into cache
             self.install(title, None)
         else:
-            log.info("Block "+title+" already up-to-date.")
+            log.info(title+" already up-to-date. (v"+c_ver+")")
         pass
 
     #! === PARSING ===
