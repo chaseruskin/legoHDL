@@ -52,18 +52,22 @@ class Block:
             self.create(remote=remote) 
         pass
 
+    #return the block's root path
     def getPath(self, low=True):
         if(low):
             return self.__local_path.lower()
         else:
             return self.__local_path
 
+    #download block from a url (can be from cache or remote)
     def downloadFromURL(self, rem):
         rem = apt.fs(rem)
+        #new path is default to local/library/
         new_path = apt.fs(apt.getLocal()+"/"+self.getLib(low=False)+"/")
         os.makedirs(new_path, exist_ok=True)
+        #clone project
         git.Git(new_path).clone(rem)
-
+        #this is a remote url, so when it clones we must make sure to rename the base folder
         if(rem.endswith(".git")):
             url_name = rem[rem.rfind('/')+1:rem.rfind('.git')]
             os.rename(new_path+url_name, new_path+self.getName(low=False))
@@ -73,42 +77,11 @@ class Block:
         if(len(self._repo.heads) == 0):
             self._repo.git.checkout("-b","master")
 
-    @DeprecationWarning
-    def cache(self):
-        os.makedirs(apt.WORKSPACE+"cache/"+self.getMeta("library")+"/", exist_ok=True)
-        cache_dir = apt.WORKSPACE+"cache/"+self.getMeta("library")+"/"
-        git.Git(cache_dir).clone(self._remote)
-        pass
-
+    #return the full block name (library.name)
     def getTitle(self, low=True):
         return self.getLib(low=low)+'.'+self.getName(low=low)
 
-    #download a block
-    @DeprecationWarning
-    def clone(self, src=None, dst=None):
-        local = apt.getLocal()+"/"+self.getLib()+"/"
-        #grab library level path (default location)
-        n = local.rfind(self.getName())
-        
-        if(src == None):
-            src = self._remote
-        if(dst == None):
-            dst = local[:n]
-    
-        log.debug(dst)
-        os.makedirs(dst, exist_ok=True)
-        self._repo = git.Git(dst).clone(src)
-        self.loadMeta()
-        self._repo = git.Repo(dst+"/"+self.getName())
-
-        #todo : 
-        #clone that correct version from market
-        if(self._market != None):
-            pass
-        #if downloaded from cache, make a master branch if no remote  
-        elif(len(self._repo.heads) == 0):
-            self._repo.git.checkout("-b","master")
-
+    #return the version as only digit string, ex: 1.2.3
     def getVersion(self):
         return self.getMeta('version')
 
