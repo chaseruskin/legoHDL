@@ -1,7 +1,5 @@
 ## Roadmap to Release v0.1.0
 
-- [!] when installing a version, go through all vhdl code and append the version to the entity name's for that block
-
 - [!] install a level for majors (gets rewritten when a new install comes that fulfills this level)
 	ex: /v0
 		/v1
@@ -15,11 +13,9 @@
 
 - [ ] when running export/graph command, auto-install dependencies if DNE and found in remote or block is in cache (and required version is not created)
 
-- [ ] implement update/upgrade command (have -all flag to update all installs, otherwise update by block name?) (could occur on refresh command?)
+- [ ] create a version.log file and keep markets to only one folder per block (not span over folders for every release) -> don't need folder for every release because legohdl uses git-tags to grab release-points
 
 - [ ] implement additional "help" command documentation
-
-
 
 
 ### Future Roadmap
@@ -34,9 +30,11 @@
 - [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
 - [ ] add ability to search by market
 
+- [ ] safety measure on 'version' meta by dynamically setting it every time legohdl is called by looking at highest valid git tag -> prevents user from overwriting it and messing it up
+
 - [ ] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos
 
-- [ ] have a way to see what version was used when using a block's 'latest' (no version specified) -> (show a directory?) -> (OR transform the base installation -> leaning yes)
+- [ ] have a way to see what version was used when using a block's 'latest' (no version specified) -> (show a directory?) -> (OR transform the base installation -> leaning yes) or block's major ver (_v1, _v2, etc.) -> useful to know in case an update ends up breaking the code, allows dev to know what the last working version was
 
 - [ ] graph command but -upstream option (returns all blocks that are effected/use this block)
 
@@ -48,6 +46,8 @@
 
 - [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive
 
+- [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
+
 - [ ] '-all' option on graph/export to grab all project-level code
 
 - [ ] add cool logging
@@ -55,6 +55,8 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] when installing a version, go through all vhdl code and append the version to the entity name's for that block
+- [x] implement update/upgrade command
 - [x] implement refresh command -> specify market or specify none to refresh all markets tied to workspace
 - [x] investigate whether to use `git checkout tag` then moving files OR continue using `git clone --single-branch` of tag for installation -> would allow for checking if valid legohdl release point and save space in the long run of having many installations -> moves files option
 - [x] implement versioning (folders for each version created on-demand) (installing spec. versions)

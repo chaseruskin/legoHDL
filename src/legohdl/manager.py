@@ -430,13 +430,9 @@ class legoHDL:
         _,block_order = self.formGraph(block, top_dog)
         block.updateDerivatives(block_order)
         block.release(ver, options)
-        #remove from cache's master branch to be reinstalled
-        base_installation = apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName()+"/"+block.getName()+"/"
-        if(os.path.isdir(base_installation)):
-            shutil.rmtree(base_installation, onerror=apt.rmReadOnly)
+        
+        self.update(block.getTitle(low=False), block.getVersion())
 
-        #clone new project's progress into cache
-        self.install(block.getTitle(), None)
         log.info(block.getLib()+"."+block.getName()+" is now available as version "+block.getVersion()+".")
         pass
 
@@ -899,6 +895,34 @@ class legoHDL:
             log.info("No scripts added!")
         pass
 
+    #! === UPDATE COMMAND ===
+
+    def update(self, title, ver=None):
+        l,n = Block.split(title)
+        #check if market version is bigger than the installed version
+        cache_block = self.db.getBlocks("cache")[l][n]
+
+        c_ver = cache_block.getVersion()
+        m_ver = ver
+        if(self.db.blockExists(title, "market")):
+            mrkt_block = self.db.getBlocks("market")[l][n]
+            m_ver = mrkt_block.getVersion()
+        elif(ver == None):
+            exit(log.error("Block "+title+" cannot be updated from any of the workspace's markets."))
+
+        if((Block.biggerVer(m_ver,c_ver) == m_ver and m_ver != c_ver)):
+            log.info("Updating "+title+" installation to v"+m_ver)
+            #remove from cache's master branch to be reinstalled
+            base_installation = apt.WORKSPACE+"cache/"+l+"/"+n+"/"+n+"/"
+            if(os.path.isdir(base_installation)):
+                shutil.rmtree(base_installation, onerror=apt.rmReadOnly)
+
+            #clone new project's progress into cache
+            self.install(title, None)
+        else:
+            log.info("Block "+title+" already up-to-date.")
+        pass
+
     #! === PARSING ===
 
     def parse(self, cmd, pkg, opt):
@@ -1067,6 +1091,10 @@ class legoHDL:
             #print available versions
             listVers = options.count("version")
             self.db.getBlocks("local","cache","market")[L][N].show(listVers)
+            pass
+        elif(command == "update" and self.db.blockExists(package,"cache")):
+            #perform install over remote url
+            self.update(package)
             pass
         elif(command == "port"):
             mapp = pure_ent = False

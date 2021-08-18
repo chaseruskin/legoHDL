@@ -185,7 +185,7 @@ class Block:
         #return all tags
         return tags
 
-    #returns rhs is equal
+    #returns rhs if equal
     @classmethod
     def biggerVer(cls, lver, rver):
         l1,l2,l3 = cls.sepVer(lver)
