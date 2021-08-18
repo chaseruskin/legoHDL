@@ -169,6 +169,7 @@ class legoHDL:
         if(self.db.blockExists(blk, "cache")):
             #delete all its block stuff in cache
             if(ver == None):
+                #todo : issue confirmation with list of all versions that will be uninstalled
                 shutil.rmtree(base_cache_dir, onerror=apt.rmReadOnly)
             #only delete the specified version
             elif(os.path.isdir(base_cache_dir+ver+"/")):
