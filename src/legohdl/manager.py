@@ -53,16 +53,18 @@ class legoHDL:
         l,n = Block.split(title)
         block = None
         cache_path = apt.WORKSPACE+"cache/"
+        verify_url = False
         #does the package already exist in the cache directory?
         if(self.db.blockExists(title, "cache", updt=True)):
             block = self.db.getBlocks("cache")[l][n]
             if(ver == None):
                 log.info("The block is already installed.")
                 return
-        elif(self.db.blockExists(title, "local", updt=True)):
-            block = self.db.getBlocks("local")[l][n]
         elif(self.db.blockExists(title, "market")):
             block = self.db.getBlocks("market")[l][n]
+        elif(self.db.blockExists(title, "local", updt=True)):
+            block = self.db.getBlocks("local")[l][n]
+            verify_url = True
         else:
             exit(log.error("The block cannot be found anywhere."))
 
@@ -96,6 +98,9 @@ class legoHDL:
         isInstalled = self.db.blockExists(title, "cache")
         #now check if block needs to be installed from market
         if(self.db.blockExists(title, "cache") == False):
+            if(verify_url):
+                if(apt.isValidURL(block.getMeta("remote")) == False):
+                    exit(log.error("Invalid remote to install from."))
             clone_path = block.getMeta("remote")
             #must use the local path of the local block if no remote
             if(clone_path == None):
@@ -104,8 +109,8 @@ class legoHDL:
             block.install(cache_path, block.getVersion(), clone_path)
             #now update to true because it was just cloned from remote
             isInstalled = True
-        elif(self.db.blockExists(title, "market") == False):
-            log.WARNING("Block "+title+" does not exist for this workspace or its markets.")
+        elif(self.db.blockExists(title, "market") == False and self.db.blockExists(title, "cache") == False):
+            log.warning(title+" does not exist for this workspace or its markets.")
 
         #now try to install specific version if requested now that the whole branch was cloned from remote
         if(ver != None and isInstalled):
@@ -901,9 +906,11 @@ class legoHDL:
     def update(self, title, ver=None):
         l,n = Block.split(title)
         #check if market version is bigger than the installed version
-        cache_block = self.db.getBlocks("cache")[l][n]
+        c_ver = '0.0.0'
+        if(self.db.blockExists(title, "cache")):
+            cache_block = self.db.getBlocks("cache")[l][n]
+            c_ver = cache_block.getVersion()
 
-        c_ver = cache_block.getVersion()
         m_ver = ver
         if(self.db.blockExists(title, "market")):
             mrkt_block = self.db.getBlocks("market")[l][n]
@@ -956,19 +963,19 @@ class legoHDL:
             elif(len(options) > 1):
                 exit(log.error("Invalid Flags set for install command."))
 
-            #install version from cache
-            if(self.db.blockExists(package,"cache")):
-                if(ver != None):
-                    log.info("Installing "+ver+" from cache...")
+            # #install version from cache
+            # if(self.db.blockExists(package,"cache")):
+            #     if(ver != None):
+            #         log.info("Installing "+ver+" from cache...")
                     
-            elif(self.db.blockExists(package,"market")):
-                ver_word = 'latest'
-                if(ver != None):
-                    ver_word = ver
-                log.info("Installing "+ver_word+" from market...")
+            # elif(self.db.blockExists(package,"market")):
+            #     ver_word = 'latest'
+            #     if(ver != None):
+            #         ver_word = ver
+            #     log.info("Installing "+ver_word+" from market...")
                 
-            else:
-                exit(log.error("Block "+package+" does not exists for this workspace."))
+            # else:
+            #     exit(log.error("Block "+package+" does not exists for this workspace."))
 
             #install block to cache
             self.install(package, ver)

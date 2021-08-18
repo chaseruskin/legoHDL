@@ -60,16 +60,21 @@ class Market:
         return self.url
 
     #release a block to this market
-    def publish(self, repo, meta, options=[], all_vers=[]):
+    def publish(self, meta, options=[], all_vers=[]):
+        #file kept in markets to remember all valid release points
+        log_file = "version.log"
+
         if(self.url != None):
+            #refresh remote
             if(len(self._repo.remotes)):
+                log.info("Refreshing "+self.getName()+"... "+self.url)
                 self._repo.git.pull()  
             #create remote origin
             else:
                 if(apt.isValidURL(self.url)):
                     self._repo.git.remote("add","origin",self.url)
                 else:
-                    log.warning("Remote url for market "+self.getName()+" does not exist")
+                    log.warning("Remote does not exist for market "+self.getName())
                     self.url = None
 
         active_branch = self._repo.active_branch
@@ -82,45 +87,41 @@ class Market:
         #locate block's directory within market
         block_dir = self._local_path+"/"+meta['library']+"/"+meta['name']+"/"
         os.makedirs(block_dir,exist_ok=True)
-        
-        #grab list of all released versions
-        released_vers = self.getAvailableVersions(meta['library'],meta['name'])
-
-        #print(released_vers)
-        #add all releases that haven't been available here
-        for v in all_vers:
-            #skip versions that already exist
-            if v[1:] in released_vers:
+        #read in all loggin info about valid release points
+        file_data = []
+        if(os.path.exists(block_dir+log_file)):
+            with open(block_dir+log_file,'r') as f:
+                file_data = f.readlines()
+                pass
+        #insert any versions not found in file_data to also be valid release points to version.log
+        for old_ver in all_vers:
+            #skip our current version
+            if(old_ver[1:] == meta['version']):
                 continue
-            #create new directory (occurs ONLY ONCE with a new version tag because folder will be made)
-            fp = block_dir+v[1:]+"/"
-            os.makedirs(fp)
+            if(old_ver+"\n" not in file_data):
+                file_data.append(old_ver+"\n")
 
-            #checkout the block at that tag if this is not the right meta
-            tmp_meta = apt.getBlockFile(repo, v)
-            #override tmp_meta with the current metadata on deck
-            if(meta['version'] == v[1:]):
-                tmp_meta = copy.deepcopy(meta)
-            #must be a valid release point to upload block version
-            if(tmp_meta != None):
-                #ensure this yaml file has the correct "remote" and "market"
-                tmp_meta['remote'] = meta['remote']
-                tmp_meta['market'] = meta['market']
-                #tmp_meta['library'] = meta['library']
-                #tmp_meta['name'] = meta['name']
-                #save yaml file
-                with open(fp+apt.MARKER, 'w') as file:
-                    for key in apt.META:
-                        #pop off front key/val pair of yaml data
-                        single_dict = {}
-                        single_dict[key] = tmp_meta[key]
-                        yaml.dump(single_dict, file)
-                        pass
-                    pass
-                    file.close()
-                #save changes to repository (only add and stage the file that was made)
-                self._repo.index.add(fp+apt.MARKER)
+        #insert this version as a new valid release point to version.log
+        with open(block_dir+log_file,'w') as f:
+            f.write('v'+meta['version']+"\n")
+            for line in file_data:
+                f.write(line)
             pass
+
+        #save yaml file
+        with open(block_dir+apt.MARKER, 'w') as file:
+            for key in apt.META:
+                #pop off front key/val pair of yaml data
+                single_dict = {}
+                single_dict[key] = meta[key]
+                yaml.dump(single_dict, file)
+                pass
+            pass
+            file.close()
+        #save changes to repository (only add and stage the file that was made)
+        self._repo.index.add(block_dir+apt.MARKER)
+        self._repo.index.add(block_dir+log_file)
+        pass
         
         #commit all releases
         self._repo.index.commit("Adds "+meta['library']+'.'+meta['name']+" v"+meta['version'])
@@ -132,16 +133,6 @@ class Market:
             if(options.count("soft")):
                 self._repo.git.branch("-d",tmp_branch)
         pass
-    
-    #return all available versions for this block as a list ['v*.*.*',]
-    def getAvailableVersions(self, block_lib, block_name):
-        #path DNE, so block is not found in this market
-        if(os.path.isdir(self.getPath()+"/"+block_lib+"/"+block_name+"/") == False):
-            print("Block is not found in this market")
-            return []
-        block_path = self.getPath()+"/"+block_lib+"/"+block_name+"/"
-        #return list
-        return(os.listdir(block_path))
 
     #return true is configured to a remote repository
     def isRemote(self):
@@ -153,3 +144,42 @@ class Market:
     def __str__(self):
         return f"{self._name}, {self.url}"
     pass
+
+#legacy code for publish function that would add all unreleased release points,
+# function took in all_vers=[]
+#(
+        # #add all releases that haven't been available here
+        # for v in all_vers:
+        #     #skip versions that already exist
+        #     if v[1:] in released_vers:
+        #         continue
+        #     #create new directory (occurs ONLY ONCE with a new version tag because folder will be made)
+        #     fp = block_dir+v[1:]+"/"
+        #     os.makedirs(fp)
+
+        #     #checkout the block at that tag if this is not the right meta
+        #     tmp_meta = apt.getBlockFile(repo, v)
+        #     #override tmp_meta with the current metadata on deck
+        #     if(meta['version'] == v[1:]):
+        #         tmp_meta = copy.deepcopy(meta)
+        #     #must be a valid release point to upload block version
+        #     if(tmp_meta != None):
+        #         #ensure this yaml file has the correct "remote" and "market"
+        #         tmp_meta['remote'] = meta['remote']
+        #         tmp_meta['market'] = meta['market']
+        #         #tmp_meta['library'] = meta['library']
+        #         #tmp_meta['name'] = meta['name']
+        #         #save yaml file
+        #         with open(fp+apt.MARKER, 'w') as file:
+        #             for key in apt.META:
+        #                 #pop off front key/val pair of yaml data
+        #                 single_dict = {}
+        #                 single_dict[key] = tmp_meta[key]
+        #                 yaml.dump(single_dict, file)
+        #                 pass
+        #             pass
+        #             file.close()
+        #         #save changes to repository (only add and stage the file that was made)
+        #         self._repo.index.add(fp+apt.MARKER)
+        #     pass
+#   )

@@ -96,6 +96,13 @@ class Block:
 
     #release the block as a new version
     def release(self, ver=None, options=[]):
+        #dynamically link on release
+        if(self.grabGitRemote() != None and hasattr(self,"_repo")):
+            if(apt.isValidURL(self.grabGitRemote())):
+                self.setRemote(self.grabGitRemote())
+            else:
+                log.warning("Invalid remote "+self.grabGitRemote()+" will be removed from Block.lock")
+                self._remote = None
         #get current version numbers of latest valid tag
         highestVer = self.getHighestTaggedVersion()
         major,minor,patch = self.sepVer(highestVer)
@@ -105,7 +112,7 @@ class Block:
             exit(log.error("Invalid version. Next minimum version is: "+next_min_version))
         #capture the actual legohdl version to print to console
         b_major,b_minor,b_patch = self.sepVer(self.getVersion())
-        oldVerInfo = "Uploading v"+str(b_major)+"."+str(b_minor)+"."+str(b_patch)
+        oldVerInfo = "Releasing v"+str(b_major)+"."+str(b_minor)+"."+str(b_patch)
         #determine next version if not manually set but set by 1 of 3 flags
         if(ver == None):
             #increment version numbering according to flag
@@ -133,7 +140,7 @@ class Block:
             url = self.grabGitRemote()
             if(url == None):
                 if(self.__market != None):
-                    cont = apt.confirmation("Will not release to market "+self.__market.getName()+" because this block is not tied to a remote. Proceed?")
+                    cont = apt.confirmation("legohdl will not release to market "+self.__market.getName()+" because this block is not tied to a remote. Proceed anyway?")
                     #user decided that is not OKAY, exiting release
                     if(cont == False):
                         exit(log.info("Did not release "+ver))
@@ -163,10 +170,37 @@ class Block:
             #publish on market/bazaar! (also publish all versions not found)
             if(self.__market != None):
                 #todo : publish every version that DNE on market?
-                self.__market.publish(self._repo, self.__metadata, options, self.getTaggedVersions())
+                self.__market.publish(self.__metadata, options, self.sortVersions(self.getTaggedVersions()))
             elif(self.getMeta("market") != None):
                 log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
+    
+    #merge sort (1/2) - returns a list highest -> lowest
+    def sortVersions(self, unsorted_vers):
+        #split list
+        midpoint = int(len(unsorted_vers)/2)
+        l1 = unsorted_vers[:midpoint]
+        r1 = unsorted_vers[midpoint:]
+        #recursive call to continually split list
+        if(len(unsorted_vers) > 1):
+            return self.mergeSort(self.sortVersions(l1), self.sortVersions(r1))
+        else:
+            return unsorted_vers
+        pass
+
+    #merge sort (2/2) - begin merging lists
+    def mergeSort(self, l1, r1):
+        sorting = []
+        while len(l1) and len(r1):
+            if(Block.biggerVer(l1[0],r1[0]) == r1[0]):
+                sorting.append(r1.pop(0))
+            else:
+                sorting.append(l1.pop(0))
+        if(len(l1)):
+            sorting = sorting + l1
+        if(len(r1)):
+            sorting = sorting + r1
+        return sorting
 
     def getTaggedVersions(self):
         all_tags = self._repo.git.tag(l=True)
@@ -198,7 +232,7 @@ class Block:
             return rver
         return lver
 
-    #return true if can be separated into 3 numeric values
+    #return true if can be separated into 3 numeric values and starts with 'v'
     @classmethod
     def validVer(cls, ver):
         #must have 2 dots and start with 'v'
@@ -295,17 +329,25 @@ derives: {}
         if('remote' in self.__metadata.keys()):
             #upon every boot up, try to grab the remote from this git repo if it exists
             self.grabGitRemote()
+            #set it if it was set by constructor
             if(self._remote != None):
                 self.__metadata['remote'] = self._remote
+            #else set it based on the read-in value
             else:
                 self._remote = self.__metadata['remote']
+            
         if('market' in self.__metadata.keys()):
             #did an actual market object already get passed in?
             if(self.__market != None):
                 self.__metadata['market'] = self.__market.getName()
             #see if the market is bound to your workspace
-            elif(self.getMeta("market") != None and self.getMeta("market") in apt.getMarkets().keys()):
-                self.__market = Market(self.__metadata['market'], apt.SETTINGS['market'][self.__metadata['market']])
+            elif(self.getMeta("market") != None):
+                if(self.getMeta("market") in apt.getMarkets().keys()):
+                    self.__market = Market(self.__metadata['market'], apt.SETTINGS['market'][self.__metadata['market']])
+                else:
+                    log.warning("Removing invalid market "+self.__metadata['market']+" from Block.lock. Make sure it is added to the workspace markets.")
+                    self.__metadata['market'] = None
+                    self.__market = None
         self.save()
         pass
 
@@ -482,9 +524,10 @@ derives: {}
             try: #attach to remote code base
                 self._repo.create_remote('origin', remote_url) 
             except: #relink origin to new remote url
-                log.info("Relinking to original remote: "+self._repo.remotes.origin.url)
+                pass
             if(remote_url == None):
                 return
+            log.info("Writing "+remote_url+" as remote origin...")
             with self._repo.remotes.origin.config_writer as cw:
                 cw.set("url", remote_url)
             if(push):
@@ -553,13 +596,14 @@ derives: {}
                 for line in file:
                     print(line,sep='',end='')
         else:
-            #todo : sort versions from high to low
-            for x in self.getTaggedVersions():
+            ver_sorted = self.sortVersions(self.getTaggedVersions())
+            #todo : also * the installed versions
+            #todo : show 'x' amount at a time? then use 'f' and 'b' to paginate
+            for x in ver_sorted:
                 print(x,end='\t')
                 if(x[1:] == self.getMeta("version")):
                     print("*",end='')
                 print()
-            #print(self.getTaggedVersions())
     
     #open up the block with configured text-editor
     def load(self):
@@ -598,10 +642,13 @@ derives: {}
         #checkout version
         self._repo.git.checkout(apt.TAG_ID+ver)
         #log.info(self.getPath())
+        #log.info(folder)
+        
         #copy files
         version_path = self.getPath()+"../"+folder+"/"
         base_path = self.getPath()
         shutil.copytree(self.getPath(), version_path)
+        #log.info(version_path)
         #delete the git repository for saving space and is not needed
         shutil.rmtree(version_path+"/.git/", onerror=apt.rmReadOnly)
         #temp set local path to be inside version
@@ -663,23 +710,28 @@ derives: {}
         log.info("Installing block "+self.getTitle(low=False)+" version "+ver+"...")
         # 1. first download from remote if the base installation DNE
         if(not base_installed):
+            #print("cache dir",cache_dir)
+            #print(src)
             #clone and checkout specific version tag
             git.Git(cache_dir).clone(src,"--branch",apt.TAG_ID+ver,"--single-branch")
-            url_name = os.listdir(cache_dir)[0]
-
+            #url name is the only folder here that's not a valid version
+            for folder in os.listdir(cache_dir):
+                if(self.validVer(folder) == False):
+                    url_name = folder
+            #print(url_name)
             shutil.move(cache_dir+url_name, specific_cache_dir)
             self.__local_path = specific_cache_dir+"/"
             base_installed = True
 
         self._repo = git.Repo(self.__local_path)
-        self._repo.git.checkout(apt.TAG_ID+ver)
-        self.loadMeta()
 
         #2. now perform install from cache
         instl_vers = os.listdir(base_cache_dir)        
         if(self.validVer(ver)):
             #ensure this version is actaully tagged
             if(ver in self.getTaggedVersions()):
+                self._repo.git.checkout(apt.TAG_ID+ver)
+                self.loadMeta()
                 #check if version is actually already installed
                 if ver in instl_vers:
                     log.info("Version "+ver+" is already installed.")
