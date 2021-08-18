@@ -100,44 +100,19 @@ class Registry:
                     status = 'instl' 
                     ver = self.getProjectsCache()[L][N].getMeta("version")
                 elif(self.blockExists(blk.getTitle(), "market")):
-                    ver = self.getMarketLatestVer(self.getBlocks("market")[L][N])
+                    ver = self.getBlocks("market")[L][N].getMeta("version")
                 else:
                     continue
 
                 if(self.blockExists(blk.getTitle(), "market")):
-                    #does this version have a later update available? check its marker files
-                    rem_ver = self.getMarketLatestVer(self.getBlocks("market")[L][N])
-                    
+                    rem_ver = self.getBlocks("market")[L][N].getMeta("version")
+                    #indicate update if the market has a higher version
                     if(Block.biggerVer(ver,rem_ver) == rem_ver and rem_ver != ver):
                         info = '(update)-> '+rem_ver
                     pass
                 ver = '' if (ver == '0.0.0') else ver
                 print('{:<12}'.format(blk.getLib(low=False)),'{:<22}'.format(blk.getName(low=False)),'{:<12}'.format(status),'{:<8}'.format(ver),info)
         pass
-
-    def getMarketLatestVer(self, block):
-        pathway = apt.fs(block.getPath()).split('/')
-        #remove any additional path that is a specific version
-        if(block.getVersion() in pathway):
-            pathway.remove(block.getVersion())
-        ver_dir = ''
-        for p in pathway:
-            ver_dir = ver_dir + p + "/"
-        #list all version folders
-        versions = os.listdir(ver_dir)
-        #print(ver_dir)
-        for v in versions:
-            if(v[0] == '.'):
-                versions.remove(v)
-        if(len(versions) == 0):
-            return '0.0.0'
-        latest = versions[0]
-        #determine biggest version
-        for v in versions:
-            if(v[0] != '.' and Block.biggerVer(latest,v) == v):
-                latest = v
-
-        return latest
 
     def parseURL(self, url, website):
         i =  url.find(website)
