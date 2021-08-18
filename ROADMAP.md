@@ -31,7 +31,13 @@
 - [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
 - [ ] add ability to search by market
 
+- [ ] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos
+
 - [!] investigate whether to use `git checkout tag` then moving files OR continue using `git clone --single-branch` of tag for installation -> would allow for checking if valid legohdl release point and save space in the long run of having many installations
+
+- [ ] graph command but -upstream option (returns all blocks that are effected/use this block)
+
+- [ ] produce error log when trying to make 'new' with a remote repo that isn't empty
 
 - [ ] have some way of notifying user that a block is missing from installations when trying to export
 

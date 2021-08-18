@@ -24,7 +24,7 @@ class Apparatus:
     META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
     
     #this is preppended to the tag to make it unique for legoHDL
-    TAG_ID = ''        
+    TAG_ID = 'legohdl-'        
 
     __active_workspace = None
 
@@ -209,15 +209,15 @@ class Apparatus:
     @classmethod
     def getBlockFile(cls, repo, tag, path="./", in_branch=True):
         #checkout repo to the version tag and dump yaml file
-        repo.git.checkout(tag)
+        repo.git.checkout(cls.TAG_ID+tag)
         #find Block.lock
         if(os.path.isfile(path+cls.MARKER) == False):
             #return None if Block.lock DNE at this tag
-            log.warning(tag+" is an invalid block version. Cannot upload "+tag+".")
+            log.warning("Version "+tag+" does not contain a Block.lock file. Invalid version.")
             meta = None
         #Block.lock exists so read its contents
         else:
-            log.info(tag+" is a valid version not found in this market. Uploading...")
+            log.info("Identified valid version "+tag)
             with open(path+cls.MARKER, 'r') as f:
                 meta = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -230,7 +230,7 @@ class Apparatus:
             repo.git.checkout('-')
         #perform additional safety measure that this tag matches the 'version' found in meta
         if(meta['version'] != tag[1:]):
-            log.error("Close but not close enough")
+            log.error("Block.lock file version does not match for: "+tag+". Invalid version.")
             meta = None
         return meta
 

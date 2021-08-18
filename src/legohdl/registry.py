@@ -200,7 +200,9 @@ class Registry:
             for b in blks:
                 if(b[0] == '.'):
                     continue
-                self._cache_prjs[l.lower()][b.lower()] = Block(path=path+l+"/"+b+"/"+b+"/")
+                #only exists if master branch lives within the block folder
+                if(os.path.exists(path+l+"/"+b+"/"+b+"/")):
+                    self._cache_prjs[l.lower()][b.lower()] = Block(path=path+l+"/"+b+"/"+b+"/")
         #print(self._cache_prjs)
         return self._cache_prjs
         pass

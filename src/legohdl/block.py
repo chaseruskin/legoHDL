@@ -179,7 +179,7 @@ class Block:
             self._repo.index.commit("Release version -> "+self.getVersion())
 
             #create a tag with this version
-            self._repo.create_tag(ver)
+            self._repo.create_tag(apt.TAG_ID+ver)
 
             #push to remote codebase!! (we have a valid remote url to use)
             if(url != None):
@@ -568,10 +568,19 @@ derives: {}
         return self.getPath()+apt.MARKER
 
     #print out the metadata for this block
-    def show(self):
-        with open(self.metadataPath(), 'r') as file:
-            for line in file:
-                print(line,sep='',end='')
+    def show(self, listVers=False):
+        if(listVers == False):
+            with open(self.metadataPath(), 'r') as file:
+                for line in file:
+                    print(line,sep='',end='')
+        else:
+            #todo : sort versions from high to low
+            for x in self.getTaggedVersions():
+                print(x,end='\t')
+                if(x[1:] == self.getMeta("version")):
+                    print("*",end='')
+                print()
+            #print(self.getTaggedVersions())
     
     #open up the block with configured text-editor
     def load(self):
@@ -602,17 +611,18 @@ derives: {}
         return self.grabGitRemote() != None
 
     #assumed to be a valid release point before entering function
-    def copyVersionCache(self, ver):
+    def copyVersionCache(self, ver, folder):
         #checkout version
-        self._repo.git.checkout(ver)
+        self._repo.git.checkout(apt.TAG_ID+ver)
         #log.info(self.getPath())
         #copy files
-        version_path = self.getPath()+"../"+ver
+        version_path = self.getPath()+"../"+folder
         shutil.copytree(self.getPath(), version_path)
         #delete the git repository for saving space and is not needed
         shutil.rmtree(version_path+"/.git/", onerror=apt.rmReadOnly)
         #switch back to latest version in cache
-        self._repo.git.checkout('-')
+        if(ver[1:] != self.getMeta("version")):
+            self._repo.git.checkout('-')
         pass
 
     #enter src arg when installing from remote (git clone), else its an install from cache (copy files)
@@ -641,7 +651,7 @@ derives: {}
         # 1. first download from remote if the base installation DNE
         if(not base_installed):
             #clone and checkout specific version tag
-            git.Git(cache_dir).clone(src,"--branch",ver,"--single-branch")
+            git.Git(cache_dir).clone(src,"--branch",apt.TAG_ID+ver,"--single-branch")
             url_name = os.listdir(cache_dir)[0]
 
             shutil.move(cache_dir+url_name, specific_cache_dir)
@@ -649,7 +659,7 @@ derives: {}
             base_installed = True
 
         self._repo = git.Repo(self.__local_path)
-        self._repo.git.checkout(ver)
+        self._repo.git.checkout(apt.TAG_ID+ver)
         self.loadMeta()
 
         #2. now perform install from cache
@@ -663,10 +673,14 @@ derives: {}
                     return
                 elif(base_installed):
                     #copy files and move them to spot
-                    meta = apt.getBlockFile(self._repo, ver, specific_cache_dir, in_branch=False)
-                    print(meta)
+                    if(ver[1:] == self.getMeta("version")):
+                        meta = self.getMeta()
+                    else:
+                        meta = apt.getBlockFile(self._repo, ver, specific_cache_dir, in_branch=False)
+                    
                     if(meta != None):
-                        self.copyVersionCache(ver)
+                        #install to its version number
+                        self.copyVersionCache(ver, ver)
                         return
                     else:
                         log.error("whomp whomp")

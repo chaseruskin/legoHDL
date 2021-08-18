@@ -424,11 +424,11 @@ class legoHDL:
         _,block_order = self.formGraph(block, top_dog)
         block.updateDerivatives(block_order)
         block.release(ver, options)
-        #remove from cache and library to be reinstalled
-        if(os.path.isdir(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName())):
-            shutil.rmtree(apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName(), onerror=apt.rmReadOnly)
-        if(os.path.isfile(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg")):
-            shutil.rmtree(apt.WORKSPACE+"lib/"+block.getLib()+"/"+block.getName()+"_pkg", onerror=apt.rmReadOnly)
+        #remove from cache's master branch to be reinstalled
+        base_installation = apt.WORKSPACE+"cache/"+block.getLib()+"/"+block.getName()+"/"+block.getName()+"/"
+        if(os.path.isdir(base_installation)):
+            shutil.rmtree(base_installation, onerror=apt.rmReadOnly)
+
         #clone new project's progress into cache
         self.install(block.getTitle(), None)
         log.info(block.getLib()+"."+block.getName()+" is now available as version "+block.getVersion()+".")
@@ -1056,7 +1056,9 @@ class legoHDL:
             (self.db.blockExists(package, "local") or \
                 self.db.blockExists(package, "cache") or \
                 self.db.blockExists(package, "market"))):
-            self.db.getBlocks("local","cache","market")[L][N].show()
+            #print available versions
+            listVers = options.count("version")
+            self.db.getBlocks("local","cache","market")[L][N].show(listVers)
             pass
         elif(command == "port"):
             mapp = pure_ent = False
