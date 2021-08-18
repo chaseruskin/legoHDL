@@ -589,7 +589,7 @@ derives: {}
         pass
     
     #write the values computed for metadata back to the file
-    def save(self):
+    def save(self, meta=None):
         #unlock metadata to write to it (NOT USED)
         #os.chmod(self.metadataPath(), stat.S_IWOTH | stat.S_IWGRP | stat.S_IWUSR | stat.S_IWRITE)
         #write back YAML values with respect to order
@@ -597,7 +597,10 @@ derives: {}
             for key in apt.META:
                 #pop off front key/val pair of yaml data
                 single_dict = {}
-                single_dict[key] = self.getMeta(key)
+                if(meta == None):
+                    single_dict[key] = self.getMeta(key)
+                else:
+                    single_dict[key] = meta[key]
                 yaml.dump(single_dict, file)
                 pass
             pass
@@ -611,15 +614,46 @@ derives: {}
         return self.grabGitRemote() != None
 
     #assumed to be a valid release point before entering function
+    #will copy new folder to cache from base install and update the entities within the block
     def copyVersionCache(self, ver, folder):
         #checkout version
         self._repo.git.checkout(apt.TAG_ID+ver)
         #log.info(self.getPath())
         #copy files
-        version_path = self.getPath()+"../"+folder
+        version_path = self.getPath()+"../"+folder+"/"
+        base_path = self.getPath()
         shutil.copytree(self.getPath(), version_path)
         #delete the git repository for saving space and is not needed
         shutil.rmtree(version_path+"/.git/", onerror=apt.rmReadOnly)
+        #temp set local path to be inside version
+        self.__local_path = version_path
+        #now get project sources, rename the entities and packages
+        prj_srcs = self.grabCurrentDesigns(override=True)
+        #create the string version of the version
+        str_ver = "_"+ver.replace(".","_")
+        for lib in prj_srcs.values():
+            old_names = lib.keys()
+            name_pairs = []
+            #generate list of tuple pairs of (old name, new name)
+            for n in old_names:
+                name_pairs.append((n, n+str_ver))
+            #go through each unit file to update unit names in VHDL files
+            for unit in lib.values():
+                unit.getVHD().setUnitName(name_pairs)
+
+        #update the metadata file here to reflect changes
+        with open(self.getPath()+apt.MARKER, 'r') as f:
+            ver_meta = yaml.load(f, Loader=yaml.FullLoader)
+        if(ver_meta['toplevel'] != None):
+            ver_meta['toplevel'] = ver_meta['toplevel']+str_ver
+        if(ver_meta['bench'] != None):
+            ver_meta['bench'] = ver_meta['bench']+str_ver
+        #save metadata adjustments
+        self.save(meta=ver_meta)
+
+        #change local path back to base install
+        self.__local_path = base_path
+
         #switch back to latest version in cache
         if(ver[1:] != self.getMeta("version")):
             self._repo.git.checkout('-')
@@ -999,11 +1033,16 @@ derives: {}
             return '',''
         L = path_parse[i+1].lower()
         N = path_parse[i+2].lower()
+        #if in cache, check what the next folder name is to give clue to what the block name should be
+        V = path_parse[i+3].lower()
+        if(V != 'latest'):
+            N = N+"_"+V
         return L,N
         
     #print helpful port mappings/declarations of a desired entity
     def ports(self, mapp, lib, pure_entity, entity=None):
         units = self.grabUnits()
+        print(units.values())
         info = ''
         if(entity == None):
             entity = self.getMeta("toplevel")

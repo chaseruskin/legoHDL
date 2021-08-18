@@ -398,6 +398,27 @@ class Vhdl:
                     declaration_txt = declaration_txt + line
         #print(declaration_txt)
         return declaration_txt
+
+    def setUnitName(self, name_pairs):
+        #do major find and replace
+        file_data = []
+        #various characters that could be next to the unit name
+        endpoints = [' ', '.', '\n', '\t', '--',]
+        #open file to manipulate lines
+        with open(self._file_path, 'r') as f:
+            for line in f.readlines():
+                #test every combination of endpoint pairs to find/replace unit name
+                for n in name_pairs:
+                    for ep in endpoints:
+                        for ep2 in endpoints:
+                            line = line.lower().replace(ep+n[0]+ep2, ep+n[1]+ep2)
+                file_data.append(line)
+            f.close()
+        #write back new transformed data
+        with open(self._file_path, 'w') as f:
+            for line in file_data:
+                f.write(line)
+        pass
     
     #turn a vhdl file in to a string of words
     def generateCodeStream(self, keep_case, keep_term, *extra_parsers):
