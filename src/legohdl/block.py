@@ -396,7 +396,7 @@ derives: []
                 line = line.replace("template", file)
                 line = line.replace("%DATE%", today)
                 line = line.replace("%AUTHOR%", author)
-                line = line.replace("%PROJECT%", self.getTitle(low=False))
+                line = line.replace("%BLOCK%", self.getTitle(low=False))
                 lines.append(line)
             file_in.close()
         #rewrite file to have new lines
@@ -654,10 +654,7 @@ derives: []
     #will copy new folder to cache from base install and update the entities within the block
     def copyVersionCache(self, ver, folder):
         #checkout version
-        self._repo.git.checkout(apt.TAG_ID+ver)
-        #log.info(self.getPath())
-        #log.info(folder)
-        
+        self._repo.git.checkout(apt.TAG_ID+ver)  
         #copy files
         version_path = self.getPath()+"../"+folder+"/"
         base_path = self.getPath()
@@ -696,7 +693,6 @@ derives: []
 
         #switch back to latest version in cache
         if(ver[1:] != self.getMeta("version")):
-            print("checking back out")
             self._repo.git.checkout('-')
         pass
 
@@ -767,13 +763,10 @@ derives: []
                 #now that we have a valid version and the meta is good, try to install to major ver
                 #get "major" value
                 maj = ver[:ver.find('.')]
-                print(maj)
-                #does this path already exist?
                 maj_path = cache_dir+maj+"/"
-                print(maj_path)
                 #make new path if does not exist
                 if(os.path.isdir(maj_path) == False):
-                    print("needs new major point")
+                    log.info("Installing block "+self.getTitle(low=False)+" version "+maj+"...")
                     self.copyVersionCache(ver=ver, folder=maj)
                 #check the version that is living in this folder
                 else:
@@ -782,6 +775,7 @@ derives: []
                         f.close()
                         pass
                     if(self.biggerVer(maj_meta['version'],meta['version']) == meta['version']):
+                        log.info("Updating block "+self.getTitle(low=False)+" version "+maj+"...")
                         #remove old king
                         shutil.rmtree(maj_path, onerror=apt.rmReadOnly)
                         #replace with new king for this major version

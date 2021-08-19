@@ -4,12 +4,9 @@
 
 - [ ] test auto-install of dependencies (if a dependency has (v1.0.0), then break it off in install command and pass in the version as arg and use block name thats left from break)
 
-- [ ] when running export/graph command, auto-install dependencies if DNE and found in remote or block is in cache (and required version is not created)
 
 
 
-
-- [-] solve cache recursive label issue take off version cast of name and then write off labels found at this version, track what labels have already been added and overwrite them with the highest version used if applicable
 
 - [ ] perform git pull on release? -> leaning no
 
@@ -34,9 +31,11 @@ example: `legohdl release -fix -"Fixes clock synchronization bug"`
 
 - [ ] safety measure on 'version' meta by dynamically setting it every time legohdl is called by looking at highest valid git tag -> prevents user from overwriting it and messing it up
 
-- [ ] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos
+- [?] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos
 
 - [ ] have a way to see what version was used when using a block's 'latest' (no version specified) -> (show a directory?) -> (OR transform the base installation -> leaning yes) or block's major ver (_v1, _v2, etc.) -> useful to know in case an update ends up breaking the code, allows dev to know what the last working version was
+
+- [?] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
 
 - [ ] graph command but -upstream option (returns all blocks that are effected/use this block)
 
@@ -57,6 +56,7 @@ example: `legohdl release -fix -"Fixes clock synchronization bug"`
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] solve cache recursive label issue take off version cast of name and then write off labels found at this version, 
 - [x] install a level for majors (gets rewritten when a new install comes that fulfills this level)
 	ex: /v0
 		/v1
@@ -66,6 +66,7 @@ __Completed__
 		uX : entity common.halfadder_v1_1_0
 	-> referencing an entity without version will refer to 'latest', (the actual full branch kept in install)
 - [x] auto install "major" vers (v0, v1, etc..) when an install occurs within its respective bin and check the meta 'version' to see if it needs to be overridden by new larger version
+- [o] when running export/graph command, auto-install dependencies if DNE and found in remote or block is in cache (and required version is not created) -> not implemented, think python/pip, user must install the package before using it! (can't just magically install right on run-time)
 - [x] create a version.log file and keep markets to only one folder per block (not span over folders for every release) -> don't need folder for every release because legohdl uses git-tags to grab release-points
 - [x] rewrite labels to must include * to fully say its glob style
 - [x] when installing a version, go through all vhdl code and append the version to the entity name's for that block

@@ -54,46 +54,51 @@ class legoHDL:
         block = None
         cache_path = apt.WORKSPACE+"cache/"
         verify_url = False
+        already_installed = False
         #does the package already exist in the cache directory?
         if(self.db.blockExists(title, "cache", updt=True)):
             block = self.db.getBlocks("cache")[l][n]
-            if(ver == None):
-                log.info("The block is already installed.")
-                return
+            if(ver == None or ver == "v"+block.getVersion()):
+                log.info(title+" is already installed.")
+                already_installed = True
         elif(self.db.blockExists(title, "market")):
             block = self.db.getBlocks("market")[l][n]
         elif(self.db.blockExists(title, "local", updt=True)):
             block = self.db.getBlocks("local")[l][n]
             verify_url = True
         else:
-            exit(log.error("The block cannot be found anywhere."))
+            exit(log.error(title+" cannot be found anywhere."))
 
-        #print(block.getTitle()+" prereqs")
         #append to required_by list used to prevent cyclic recursive nature
         required_by.append(block.getTitle())
-        #see if all cache designs are available by looking at block's derives list
-        #? make download section have precedence over cache section?
+        #see if all cache blocks are available by looking at block's derives list
         for prereq in block.getMeta("derives"):
-            L,N = block.split(prereq)
             if(prereq == block.getTitle() or prereq in required_by):
                 continue
+            #split prereq into library, name, and version
+            v_index = prereq.find("(v")
+            verreq = prereq[v_index+1:len(prereq)-1]
+            prereq = prereq[:v_index]
+            L,N = block.split(prereq)
 
-            tmp_blk = Block(prereq)
-            cache_designs = block.grabCacheDesigns(override=True)
             needs_instl = False
-            if(L not in cache_designs.keys()):
+            if(self.db.blockExists(prereq, "cache", updt=True) == False):
                 #needs to install
-                print("Requires",prereq)
-                self.install(prereq, required_by=required_by)
+                log.info("Requires "+prereq)
+                #auto install dependency to cache if not found in cache
                 needs_instl = True
             else:
-                for U in tmp_blk.grabCurrentDesigns(override=True)[L].keys():
-                    if U not in cache_designs[L].keys():
-                        needs_instl = True
+                cache_blk = self.db.getBlocks("cache")[L][N]
+                #auto install dependency to cache if version is not found in cache
+                vers = os.listdir(cache_blk.getPath()+"../")
+                if verreq not in vers:
+                    needs_instl = True
             if(needs_instl):
-                self.install(prereq, required_by=required_by)
+                self.install(prereq, ver=verreq, required_by=required_by)
               
-        log.info("Installing... ")
+        #no work needed to be done on this block if already installed (version found in cache)
+        if(already_installed):
+            return
         #see what the latest version available is and clone from that version unless specified
         isInstalled = self.db.blockExists(title, "cache")
         #now check if block needs to be installed from market
@@ -116,7 +121,7 @@ class legoHDL:
         if(ver != None and isInstalled):
             block.install(cache_path, ver)
 
-        log.info("success")
+        #log.info("success")
     
         #link it all together through writing paths into "map.toml"
         filename = apt.WORKSPACE+"map.toml"
