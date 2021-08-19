@@ -283,7 +283,7 @@ toplevel:
 bench:
 remote:
 market:
-derives: {}
+derives: []
         """
         return body
 
@@ -664,7 +664,7 @@ derives: {}
         #now get project sources, rename the entities and packages
         prj_srcs = self.grabCurrentDesigns(override=True)
         #create the string version of the version
-        str_ver = "_"+ver.replace(".","_")
+        str_ver = "_"+folder.replace(".","_")
         for lib in prj_srcs.values():
             old_names = lib.keys()
             name_pairs = []
@@ -732,36 +732,57 @@ derives: {}
             base_installed = True
 
         self._repo = git.Repo(self.__local_path)
+        self.loadMeta()
 
         #2. now perform install from cache
         instl_vers = os.listdir(base_cache_dir)        
         if(self.validVer(ver)):
-            #ensure this version is actaully tagged
+            #ensure this version is actually tagged
             if(ver in self.getTaggedVersions()):
                 self._repo.git.checkout(apt.TAG_ID+ver)
-                self.loadMeta()
                 #check if version is actually already installed
                 if ver in instl_vers:
                     log.info("Version "+ver+" is already installed.")
                     return
-                elif(base_installed):
-                    #copy files and move them to spot
-                    if(ver[1:] == self.getMeta("version")):
-                        meta = self.getMeta()
-                    else:
-                        meta = apt.getBlockFile(self._repo, ver, specific_cache_dir, in_branch=False)
-                    
-                    if(meta != None):
-                        #install to its version number
-                        self.copyVersionCache(ver, ver)
-                        return
-                    else:
-                        log.error("whomp whomp")
-                        return
+                #copy files and move them to correct spot
+                if(ver[1:] == self.getMeta("version")):
+                    meta = self.getMeta()
+                else:
+                    meta = apt.getBlockFile(self._repo, ver, specific_cache_dir, in_branch=False)
+                
+                if(meta != None):
+                    #install to its version number
+                    self.copyVersionCache(ver=ver, folder=ver)
+                else:
+                    log.error("whomp whomp")
+                    return
+
+                #now that we have a valid version and the meta is good, try to install to major ver
+                #get "major" value
+                maj = ver[:ver.find('.')]
+                print(maj)
+                #does this path already exist?
+                maj_path = cache_dir+maj+"/"
+                print(maj_path)
+                #make new path if does not exist
+                if(os.path.isdir(maj_path) == False):
+                    print("needs new major point")
+                    self.copyVersionCache(ver=ver, folder=maj)
+                #check the version that is living in this folder
+                else:
+                    with open(maj_path+apt.MARKER,'r') as f:
+                        maj_meta = yaml.load(f, Loader=yaml.FullLoader)
+                        f.close()
+                        pass
+                    if(self.biggerVer(maj_meta['version'],meta['version']) == meta['version']):
+                        print("overtaking king")
+                        shutil.rmtree(maj_path, onerror=apt.rmReadOnly)
+                        print(meta['version'])
+                        self.copyVersionCache(ver="v"+meta['version'], folder=maj)
+                    pass
             else:
                 log.error("Version "+ver+" is not available to install.")
-                return
-        return
+        pass
 
     #quickly return all pre-declaration vhdl lines
     def scanLibHeaders(self, entity):

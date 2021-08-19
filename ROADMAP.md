@@ -26,6 +26,8 @@
 
 - [ ] implement additional "help" command documentation
 
+- [ ] allow user to add a comment to release -> goes to git commit and also goes to version.log file
+example: `legohdl release -fix -"Fixes clock synchronization bug"`
 
 ### Future Roadmap
 
