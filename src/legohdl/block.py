@@ -719,10 +719,13 @@ derives: []
             return
 
         log.info("Installing block "+self.getTitle(low=False)+" version "+ver+"...")
-        # 1. first download from remote if the base installation DNE
-        if(not base_installed):
+        # 1. first download from remote if the base installation DNE or tag DNE
+        if(not base_installed or (ver not in self.getTaggedVersions())):
             #print("cache dir",cache_dir)
             #print(src)
+            #remove old branch folder if exists
+            if(os.path.exists(specific_cache_dir)):
+                shutil.rmtree(specific_cache_dir, onerror=apt.rmReadOnly)
             #clone and checkout specific version tag
             git.Git(cache_dir).clone(src,"--branch",apt.TAG_ID+ver,"--single-branch")
             #url name is the only folder here that's not a valid version

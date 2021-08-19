@@ -1,14 +1,9 @@
 ## Roadmap to Release v0.1.0
 
-- [ ] when installing or downloading a block, auto-install dependencies if found in remote or block is in cache (and required version is not created)
-
-- [ ] test auto-install of dependencies (if a dependency has (v1.0.0), then break it off in install command and pass in the version as arg and use block name thats left from break)
 
 
 
-
-
-- [ ] perform git pull on release? -> leaning no
+- [ ] perform git pull on release command before releasing? -> leaning no
 
 - [ ] implement additional "help" command documentation
 
@@ -56,6 +51,8 @@ example: `legohdl release -fix -"Fixes clock synchronization bug"`
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] when installing or downloading a block, auto-install dependencies if found in remote or block is in cache (and required version is not created)
+- [x] test auto-install of dependencies (if a dependency has (v1.0.0), then break it off in install command and pass in the version as arg and use block name thats left from break)
 - [x] solve cache recursive label issue take off version cast of name and then write off labels found at this version, 
 - [x] install a level for majors (gets rewritten when a new install comes that fulfills this level)
 	ex: /v0
