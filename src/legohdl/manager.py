@@ -1118,7 +1118,7 @@ class legoHDL:
             #grab the version number if it was in flags
             ver = None
             for o in options:
-                if(Block.validVer(o)):
+                if(Block.validVer(o) or Block.validVer(o, maj_place=True)):
                     ver = o
                     break
 

@@ -234,14 +234,20 @@ class Block:
 
     #return true if can be separated into 3 numeric values and starts with 'v'
     @classmethod
-    def validVer(cls, ver):
+    def validVer(cls, ver, maj_place=False):
         #must have 2 dots and start with 'v'
-        if(ver == None or ver.count(".") != 2 or ver.startswith('v') == False):
+        if(not maj_place and (ver == None or ver.count(".") != 2 or ver.startswith('v') == False)):
+            return False
+        #must have 0 dots and start with 'v' when only evaluating major value
+        elif(maj_place and (ver == None or ver.count(".") != 0 or ver.startswith("v") == False)):
             return False
         #trim off initial 'v'
         ver = ver[1:]
         f_dot = ver.find('.')
         l_dot = ver.rfind('.')
+        #the significant value (major) must be a digit
+        if(maj_place):
+            return ver.isdecimal()
         #all sections must only contain digits
         return (ver[:f_dot].isdecimal() and \
                 ver[f_dot+1:l_dot].isdecimal() and \
@@ -690,6 +696,7 @@ derives: []
 
         #switch back to latest version in cache
         if(ver[1:] != self.getMeta("version")):
+            print("checking back out")
             self._repo.git.checkout('-')
         pass
 
@@ -775,9 +782,9 @@ derives: []
                         f.close()
                         pass
                     if(self.biggerVer(maj_meta['version'],meta['version']) == meta['version']):
-                        print("overtaking king")
+                        #remove old king
                         shutil.rmtree(maj_path, onerror=apt.rmReadOnly)
-                        print(meta['version'])
+                        #replace with new king for this major version
                         self.copyVersionCache(ver="v"+meta['version'], folder=maj)
                     pass
             else:
@@ -1084,7 +1091,6 @@ derives: []
         #print(path)
         #use its file to find out what block uses it
         path_parse = apt.fs(path.lower()).split('/')
-        # if in lib {library}/{block}_pkg.vhd
         #if in cache {library}/{block}/../.vhd
         if("cache" in path_parse):
             i = path_parse.index("cache")
@@ -1095,8 +1101,20 @@ derives: []
         N = path_parse[i+2].lower()
         #if in cache, check what the next folder name is to give clue to what the block name should be
         V = path_parse[i+3].lower()
-        if(V != N):
-            N = N+"("+V+")"
+        last_p = ''
+        if(V != N or True):
+            path_to_block_file = ''
+            for p in path_parse:
+                path_to_block_file = path_to_block_file + p + '/'
+                if(p == V and p != N):
+                    break
+                if(p == V and last_p == V):
+                    break
+                last_p = p
+            #open and read what the version number is
+            with open(path_to_block_file+apt.MARKER, 'r') as f:
+                meta = yaml.load(f, Loader=yaml.FullLoader)
+            N = N+"(v"+meta['version']+")"
         return L,N
         
     #print helpful port mappings/declarations of a desired entity

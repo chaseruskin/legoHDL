@@ -1,16 +1,5 @@
 ## Roadmap to Release v0.1.0
 
-- [!] install a level for majors (gets rewritten when a new install comes that fulfills this level)
-	ex: /v0
-		/v1
-		/v2
-	-> allows user to just use halfadder_v1 without long specific version (form of dependency resolution)
-		u0 : entity common.halfadder_v1_0
-		uX : entity common.halfadder_v1_1_0
-	-> referencing an entity without version will refer to 'latest', (the actual full branch kept in install)
-- [!] auto install "major" vers (v0, v1, etc..) when an install occurs within its respective bin and check the meta 'version' to see if it needs to be overridden by new larger version
-
-
 - [ ] when installing or downloading a block, auto-install dependencies if found in remote or block is in cache (and required version is not created)
 
 - [ ] test auto-install of dependencies (if a dependency has (v1.0.0), then break it off in install command and pass in the version as arg and use block name thats left from break)
@@ -66,6 +55,15 @@ example: `legohdl release -fix -"Fixes clock synchronization bug"`
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] install a level for majors (gets rewritten when a new install comes that fulfills this level)
+	ex: /v0
+		/v1
+		/v2
+	-> allows user to just use halfadder_v1 without long specific version (form of dependency resolution)
+		u0 : entity common.halfadder_v1
+		uX : entity common.halfadder_v1_1_0
+	-> referencing an entity without version will refer to 'latest', (the actual full branch kept in install)
+- [x] auto install "major" vers (v0, v1, etc..) when an install occurs within its respective bin and check the meta 'version' to see if it needs to be overridden by new larger version
 - [x] create a version.log file and keep markets to only one folder per block (not span over folders for every release) -> don't need folder for every release because legohdl uses git-tags to grab release-points
 - [x] rewrite labels to must include * to fully say its glob style
 - [x] when installing a version, go through all vhdl code and append the version to the entity name's for that block
