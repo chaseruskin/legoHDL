@@ -542,10 +542,10 @@ derives: {}
     #push to remote repository if exists
     def pull(self):
         if(self.grabGitRemote() != None):
-            log.info("Block already exists in local workspace- pulling from remote...")
+            log.info(self.getTitle()+" already exists in local path; pulling from remote...")
             self._repo.remotes.origin.pull()
         else:
-            log.info("Block already exists in local workspace")
+            log.info(self.getTitle()+" already exists in local path")
 
     #has ability to return as lower case for comparison within legoHDL
     def getName(self, low=True):
@@ -596,18 +596,26 @@ derives: {}
                 for line in file:
                     print(line,sep='',end='')
         else:
-            ver_sorted = self.sortVersions(self.getTaggedVersions())
-            #todo : also * the installed versions
-            #todo : show 'x' amount at a time? then use 'f' and 'b' to paginate
-            for x in ver_sorted:
-                print(x,end='\t')
-                if(x[1:] == self.getMeta("version")):
-                    print("*",end='')
-                print()
+            #a file exists if in market called version.log
+            if(hasattr(self, "_repo") == False):
+                with open(self.getPath()+apt.VER_LOG, 'r') as file:
+                    for line in file.readlines():
+                        print(line,end='')
+            else:
+                ver_sorted = self.sortVersions(self.getTaggedVersions())
+                #todo : also * the installed versions
+                #soln : grab list dir of all valid versions in cache, and match them with '*'
+                #todo : show 'x' amount at a time? then use 'f' and 'b' to paginate
+                for x in ver_sorted:
+                    print(x,end='\t')
+                    if(x[1:] == self.getMeta("version")):
+                        print("*",end='')
+                    print()
     
     #open up the block with configured text-editor
     def load(self):
-        cmd = apt.SETTINGS['editor']+" "+self.__local_path
+        log.info("Opening "+self.getTitle()+" at... "+self.getPath())
+        cmd = apt.SETTINGS['editor']+" "+self.getPath()
         os.system(cmd)
         pass
     
@@ -792,10 +800,10 @@ derives: {}
             self.save()
         pass
 
-    def gatherSources(self, ext=[".vhd"]):
+    def gatherSources(self, ext=apt.SRC_CODE):
         srcs = []
         for e in ext:
-            srcs = srcs + glob.glob(self.__local_path+"/**/*"+e, recursive=True)
+            srcs = srcs + glob.glob(self.getPath()+"/**/"+e, recursive=True)
         #print(srcs)
         return srcs
     

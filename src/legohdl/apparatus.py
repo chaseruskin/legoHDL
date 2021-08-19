@@ -24,7 +24,11 @@ class Apparatus:
     META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
     
     #this is preppended to the tag to make it unique for legoHDL
-    TAG_ID = 'legohdl-'        
+    TAG_ID = 'legohdl-'    
+    #file kept in markets to remember all valid release points
+    VER_LOG = "version.log"    
+    #types of accepted HDL files to parse and interpret
+    SRC_CODE = ["*.vhd","*.vhdl"]
 
     __active_workspace = None
 

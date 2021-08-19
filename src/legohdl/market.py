@@ -61,9 +61,6 @@ class Market:
 
     #release a block to this market
     def publish(self, meta, options=[], all_vers=[]):
-        #file kept in markets to remember all valid release points
-        log_file = "version.log"
-
         if(self.url != None):
             #refresh remote
             if(len(self._repo.remotes)):
@@ -89,8 +86,8 @@ class Market:
         os.makedirs(block_dir,exist_ok=True)
         #read in all loggin info about valid release points
         file_data = []
-        if(os.path.exists(block_dir+log_file)):
-            with open(block_dir+log_file,'r') as f:
+        if(os.path.exists(block_dir+apt.VER_LOG)):
+            with open(block_dir+apt.VER_LOG,'r') as f:
                 file_data = f.readlines()
                 pass
         #insert any versions not found in file_data to also be valid release points to version.log
@@ -102,7 +99,7 @@ class Market:
                 file_data.append(old_ver+"\n")
 
         #insert this version as a new valid release point to version.log
-        with open(block_dir+log_file,'w') as f:
+        with open(block_dir+apt.VER_LOG,'w') as f:
             f.write('v'+meta['version']+"\n")
             for line in file_data:
                 f.write(line)
@@ -120,7 +117,7 @@ class Market:
             file.close()
         #save changes to repository (only add and stage the file that was made)
         self._repo.index.add(block_dir+apt.MARKER)
-        self._repo.index.add(block_dir+log_file)
+        self._repo.index.add(block_dir+apt.VER_LOG)
         pass
         
         #commit all releases
