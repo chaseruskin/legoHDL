@@ -9,7 +9,7 @@
 
 
 
-- [ ] solve cache recursive label issue take off version cast of name and then write off labels found at this version, track what labels have already been added and overwrite them with the highest version used if applicable
+- [-] solve cache recursive label issue take off version cast of name and then write off labels found at this version, track what labels have already been added and overwrite them with the highest version used if applicable
 
 - [ ] perform git pull on release? -> leaning no
 
@@ -29,6 +29,8 @@ example: `legohdl release -fix -"Fixes clock synchronization bug"`
 
 - [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
 - [ ] add ability to search by market
+
+- [ ] allow option to print a .log file on export so a record of graph can be kept?
 
 - [ ] safety measure on 'version' meta by dynamically setting it every time legohdl is called by looking at highest valid git tag -> prevents user from overwriting it and messing it up
 

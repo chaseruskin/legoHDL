@@ -267,23 +267,36 @@ class legoHDL:
         #add labels in order from lowest-projects to top-level project
         labels = []
         for blk in block_order:
-            L,N = Block.split(blk)
+            L,N = Block.split(blk, vhdl=False)
+            cached_ver = None
+            #cast off version 
+            v_index = N.rfind("(v")
+            if(v_index > -1 and N.rfind(")")):
+                cached_ver = N[v_index+1:len(N)-1]
+                N = N[:v_index]
+            #reassemble block name
+            blk = L+'.'+N
             #assign tmp block to the current block
             if(block.getTitle() == blk):
                 tmp = block
+            #assign tmp block to block in downloads if multi-develop enabled and version is none
+            elif(cached_ver == None and self.db.blockExists(blk, "local") and apt.SETTINGS['multi-develop']):
+                tmp = self.db.getBlocks("local")[L][N]
             #assign tmp block to the cache block
             elif(self.db.blockExists(blk, "cache")):
                 tmp = self.db.getBlocks("cache")[L][N]
             else:
                 log.warning("Cannot locate block "+blk+" for label searching")
-                #todo : try to find block in cache? (its a version)
                 continue
 
-            if(block.getTitle() == blk):
-                tmp = block
+            #using the version that was latched onto the name, alter cache path setting?
+            if(cached_ver != None):
+                base_cache_path = os.path.dirname(tmp.getPath()[:len(tmp.getPath())-1])
+                cached_ver = base_cache_path+"/"+cached_ver+"/"
+                pass
             #add any recursive labels
             for label,ext in apt.SETTINGS['label']['recursive'].items():
-                files = tmp.gatherSources(ext=[ext])
+                files = tmp.gatherSources(ext=[ext], path=cached_ver)
                 for f in files:
                     labels.append("@"+label+" "+apt.fs(f))
             #add any project-level labels

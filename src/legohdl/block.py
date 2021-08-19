@@ -828,10 +828,12 @@ derives: []
             self.save()
         pass
 
-    def gatherSources(self, ext=apt.SRC_CODE):
+    def gatherSources(self, ext=apt.SRC_CODE, path=None):
         srcs = []
+        if(path == None):
+            path = self.getPath()
         for e in ext:
-            srcs = srcs + glob.glob(self.getPath()+"/**/"+e, recursive=True)
+            srcs = srcs + glob.glob(path+"/**/"+e, recursive=True)
         #print(srcs)
         return srcs
     
@@ -845,7 +847,7 @@ derives: []
     
     #split into library.block-name
     @classmethod
-    def split(cls, dep, lower=True):
+    def split(cls, dep, lower=True, vhdl=True):
         if(dep == None):
             return '',''
         dot = dep.find('.')
@@ -856,7 +858,12 @@ derives: []
             dot2 = dep[dot+1:].find(';')
         if(dot2 == -1):
             dot2 = len(dep)
-        name = dep[dot+1:dot+1+dot2]
+        #return in vhdl-style way if in VHDL
+        if(vhdl):
+            name = dep[dot+1:dot+1+dot2]
+        #return if trying to separate a block title
+        else:
+            name = dep[dot+1:]
         #necessary for title comparison
         if(lower):
             return lib.lower(),name.lower()
