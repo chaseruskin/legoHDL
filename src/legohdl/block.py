@@ -1,9 +1,6 @@
 from genericpath import isdir, isfile
 import os, yaml, shutil
-from typing import ChainMap
-from sys import meta_path
 from datetime import date
-import stat
 import glob, git
 import logging as log
 from .market import Market
@@ -1050,6 +1047,24 @@ derives: []
         file.close()
         return designs
 
+    def skimVerilog(self, designs, filepath, L, N):
+        with open(filepath, 'r') as file:
+            for line in file.readlines():
+                words = line.split()
+                #skip if its a blank line
+                if(len(words) == 0): 
+                    continue
+                #create new library dictionary if DNE
+                if(L not in designs.keys()):
+                    designs[L] = dict()
+                #add entity units
+                if(words[0].lower() == "module"):
+                    mod_name = words[1].replace("(","").replace(")","").replace(";","")
+                    #keep case sensitivity in unit constructor
+                    designs[L][mod_name.lower()] = Unit(filepath,Unit.Type.ENTITY,L,N,mod_name)
+        file.close()
+        return designs
+
     #return dictionary of entities with their respective files as values
     #all possible entities or packages to be used in current project
     def grabCacheDesigns(self, override=False):
@@ -1105,11 +1120,15 @@ derives: []
         #create new library dictionary if DNE
         if(L not in self._cur_designs.keys()):
             self._cur_designs[L] = dict()
-
-        files = self.gatherSources()
+        #locate vhdl sources
+        files = self.gatherSources(apt.VHDL_CODE)
         for f in files:
             self._cur_designs = self.skimVHDL(self._cur_designs, f, L, N)
-        #log.debug("Project-Level Designs: "+str(self._cur_designs))
+        #locate verilog sources
+        files = self.gatherSources(apt.VERILOG_CODE)
+        for f in files:
+            self._cur_designs = self.skimVerilog(self._cur_designs, f, L, N)
+        log.debug("Project-Level Designs: "+str(self._cur_designs))
         return self._cur_designs
     
     #search for the projects attached to the external package

@@ -1,5 +1,6 @@
 from enum import Enum
 from .vhdl import Vhdl
+from .verilog import Verilog
 from .graph import Graph
 from .apparatus import Apparatus as apt
 
@@ -21,16 +22,17 @@ class Unit:
         self._filepath = filepath
 
         if(filepath.lower().endswith(".vhd") or filepath.lower().endswith(".vhdl")):
-            self._language = self.VHDL
+            self._language = self.Language.VHDL
+            self._lang = Vhdl(filepath)
         elif(filepath.lower().endswith(".v") or filepath.lower().endswith(".sv")):
-            self._language = self.VERILOG
+            self._language = self.Language.VERILOG
+            self._lang = Verilog(filepath)
 
         self._dtype = dtype
         self._lib = lib
         self._block = block
         self._unit = unitName
         self._isTB = True
-        self._vhdl = Vhdl(filepath)
         self._checked = False
         pass
     pass
@@ -45,7 +47,7 @@ class Unit:
     def isChecked(self):
         return self._checked
 
-    def writePortMap(self,mapping,lib,pureEntity):
+    def writePortMap(self, mapping, lib, pureEntity):
         report = '\n'
         if(self.isPKG()):
             return ''
@@ -62,7 +64,7 @@ class Unit:
         return report
 
     def getVHD(self):
-        return self._vhdl
+        return self._lang
 
     def isPKG(self):
         return (self._dtype == self.Type.PACKAGE)
@@ -76,11 +78,14 @@ class Unit:
     def getLib(self):
         return self._lib
 
-    def getName(self):
-        return self._unit
+    def getName(self, low=True):
+        if(low):
+            return self._unit.lower()
+        else:
+            return self._unit
 
     def getFull(self):
-        return self._lib+"."+self._unit
+        return self.getLib()+"."+self.getName(low=True)
 
     def unsetTB(self):
         self._isTB = False
@@ -91,6 +96,7 @@ class Unit:
     #add a unit as a requirement for itself
     def addRequirement(self, u):
         #add new edge
+        print(self.getFull())
         self.Hierarchy.addEdge(self.getFull(), u.getFull())
         self._requirements = self.getRequirements() + [u]
         pass

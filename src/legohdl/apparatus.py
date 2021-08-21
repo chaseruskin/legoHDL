@@ -27,8 +27,11 @@ class Apparatus:
     TAG_ID = 'legohdl-'    
     #file kept in markets to remember all valid release points
     VER_LOG = "version.log"
+
     #types of accepted HDL files to parse and interpret
-    SRC_CODE = ["*.vhd","*.vhdl"]
+    VHDL_CODE = ["*.vhd","*.vhdl"]
+    VERILOG_CODE = ["*.v"]
+    SRC_CODE = VHDL_CODE + VERILOG_CODE
 
     __active_workspace = None
 
