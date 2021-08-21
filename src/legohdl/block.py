@@ -750,10 +750,11 @@ derives: []
             #clone and checkout specific version tag
             git.Git(cache_dir).clone(src,"--branch",apt.TAG_ID+ver,"--single-branch")
             #url name is the only folder here that's not a valid version
+            src = src.lower().replace(".git","")
             for folder in os.listdir(cache_dir):
-                if(self.validVer(folder) == False):
+                if(src.endswith(folder.lower())):
                     url_name = folder
-            #print(url_name)
+
             shutil.move(cache_dir+url_name, specific_cache_dir)
             self.__local_path = specific_cache_dir+"/"
             base_installed = True

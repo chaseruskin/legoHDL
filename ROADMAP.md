@@ -2,24 +2,22 @@
 
 - [ ] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
 
-- [ ] use argparser package to create better CLI
+- [ ] use argparser package to create better CLI?
 
-- [ ] perform git pull on release command before releasing? -> leaning no
+- [ ] perform git pull on release command before releasing? -> leaning no -> don't think its needed
 
 - [ ] implement additional "help" command documentation
 
 - [ ] auto upload (on release) a changelog file to market as well if found in the block?
 
-- [ ] allow user to add a comment to release -> goes to git commit and also goes to version.log file
-example: `legohdl release "Fixes clock sync bug" -fix`
+- [!] add prompt to uninstall command, will notify user of all uninstallations and then ask to proceed
 
 ### Future Roadmap
 
 
-
 - [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock)
 
-- [ ] allow ability to open a script by specifying script 'alias' name `legohdl open master -script`
+- [x] allow ability to open a script by specifying script 'alias' name `legohdl open master -script`
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
 
 - [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
@@ -45,6 +43,8 @@ example: `legohdl release "Fixes clock sync bug" -fix`
 
 - [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive
 
+
+
 - [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
 
 - [ ] '-all' option on graph/export to grab all project-level code
@@ -54,6 +54,8 @@ example: `legohdl release "Fixes clock sync bug" -fix`
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] allow user to add a comment to release -> goes to git commit and also goes to version.log file
+example: `legohdl release "Fixes clock sync bug" -fix`
 - [x] when installing or downloading a block, auto-install dependencies if found in remote or block is in cache (and required version is not created)
 - [x] test auto-install of dependencies (if a dependency has (v1.0.0), then break it off in install command and pass in the version as arg and use block name thats left from break)
 - [x] solve cache recursive label issue take off version cast of name and then write off labels found at this version, 

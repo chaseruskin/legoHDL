@@ -946,6 +946,9 @@ class legoHDL:
             if(os.path.isdir(base_installation)):
                 shutil.rmtree(base_installation, onerror=apt.rmReadOnly)
 
+            #also update locally if exists
+            if(self.db.blockExists(title,"local")):
+                self.download(title)
             #clone new project's progress into cache
             self.install(title, None)
         else:
