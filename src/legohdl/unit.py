@@ -13,8 +13,18 @@ class Unit:
         PACKAGE = 2
         pass
 
+    class Language(Enum):
+        VHDL = 1,
+        VERILOG = 2
+
     def __init__(self, filepath, dtype, lib, block, unitName):
         self._filepath = filepath
+
+        if(filepath.lower().endswith(".vhd") or filepath.lower().endswith(".vhdl")):
+            self._language = self.VHDL
+        elif(filepath.lower().endswith(".v") or filepath.lower().endswith(".sv")):
+            self._language = self.VERILOG
+
         self._dtype = dtype
         self._lib = lib
         self._block = block
@@ -94,7 +104,7 @@ class Unit:
 
     def __repr__(self):
         report = f'''
-{self._lib}.{self._block}.{self._unit} | {self._filepath} | {self._dtype}
+{self._lib}.{self._block}.{self._unit} | {self._filepath} | {self._dtype} | {self._language}
 requires:\n'''
         for dep in self.getRequirements():
             report = report + '-'+dep.getLib()+'.'+dep.getBlock()+'.'+dep.getName()+"\n"
