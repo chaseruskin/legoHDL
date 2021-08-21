@@ -139,6 +139,7 @@ end architecture;
 > __Note__: Any where the word 'template' appears, it will be replaced by the name of the created block. %AUTHOR% will be replaced by the configured author setting, %DATE% will be replaced by the day's date, and %BLOCK% will be replaced by the block's library and name.
 
 Here is an example VHDL template testbench file:
+
 ``` vhdl
 ----------------------------------------
 --  Project: %BLOCK%
