@@ -599,7 +599,9 @@ derives: []
     #print out the metadata for this block
     def show(self, listVers=False, ver=None):
         cache_path = apt.HIDDEN+"workspaces/"+apt.SETTINGS['active-workspace']+"/cache/"+self.getLib()+"/"+self.getName()+"/"
-        install_vers = os.listdir(cache_path)
+        install_vers = []
+        if(os.path.isdir(cache_path)):
+            install_vers = os.listdir(cache_path)
         #print out the downloaded block's metadata (found in local path)
         if(listVers == False and ver == None):
             with open(self.metadataPath(), 'r') as file:
