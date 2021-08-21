@@ -4,10 +4,11 @@
 
 - [ ] use argparser package to create better CLI
 
-
 - [ ] perform git pull on release command before releasing? -> leaning no
 
 - [ ] implement additional "help" command documentation
+
+- [ ] auto upload (on release) a changelog file to market as well if found in the block?
 
 - [ ] allow user to add a comment to release -> goes to git commit and also goes to version.log file
 example: `legohdl release "Fixes clock sync bug" -fix`

@@ -436,7 +436,7 @@ class legoHDL:
 
     #! === RELEASE COMMAND ===
 
-    def upload(self, block, options=None):
+    def upload(self, block, msg=None, options=None):
         err_msg = "Flag the next version for release with one of the following args:\n"\
                     "\t[-v0.0.0 | -maj | -min | -fix]"
         if(len(options) == 0):
@@ -453,7 +453,7 @@ class legoHDL:
         #update block requirements
         _,block_order = self.formGraph(block, top_dog)
         block.updateDerivatives(block_order)
-        block.release(ver, options)
+        block.release(msg, ver, options)
         
         self.update(block.getTitle(low=False), block.getVersion())
 
@@ -538,7 +538,7 @@ class legoHDL:
             #append to current workspace with -append
 
             #allow for just referencing the market if trying to append to current workspace
-            if(val == None and options.count("append") or options.count("remove")):
+            if(val == None and options.count("add") or options.count("remove")):
                 pass
             else:
                 #add/change value to all-remote list
@@ -554,7 +554,7 @@ class legoHDL:
                     val = None
                 apt.SETTINGS['market'][key] = val
             # add to active workspace markets
-            if(options.count("append") and key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']): 
+            if(options.count("add") and key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']): 
                 apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market'].append(key)
             # remove from active workspace markets
             elif(options.count("remove") and key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
@@ -873,13 +873,15 @@ class legoHDL:
 
     def listMarkets(self):
         if(isinstance(apt.SETTINGS['market'],dict)):
-            print('{:<16}'.format("Market"),'{:<40}'.format("URL"),'{:<12}'.format("Connected"))
-            print("-"*16+" "+"-"*40+" "+"-"*12+" ")
+            print('{:<16}'.format("Market"),'{:<50}'.format("URL"),'{:<12}'.format("Available"))
+            print("-"*16+" "+"-"*50+" "+"-"*12)
             for key,val in apt.SETTINGS['market'].items():
                 rec = 'no'
                 if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
                     rec = 'yes'
-                print('{:<16}'.format(key),'{:<40}'.format(val),'{:<12}'.format(rec))
+                if(val == None):
+                    val = 'local'
+                print('{:<16}'.format(key),'{:<50}'.format(val),'{:<12}'.format(rec))
                 pass
         else:
             log.info("No markets added!")
@@ -1024,9 +1026,9 @@ class legoHDL:
                 return
             #option to create a new block
             startup = False
-            if(options.count("o")):
+            if(options.count("open")):
                 startup = True
-                options.remove("o")
+                options.remove("open")
 
             git_url,mkt_sync = self.validateMarketAndURL(options)
             self.blockPKG = Block(title=package, new=True, market=mkt_sync, remote=git_url)
@@ -1037,10 +1039,10 @@ class legoHDL:
         elif(command == "release" and self.blockCWD.isValid()):
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
-            self.upload(self.blockCWD, options=options)
-            if(len(options) == 2 and options.count('d')):
-                self.cleanup(self.blockCWD, False)
-            pass
+            if(value == ''):
+                value = None
+            self.upload(self.blockCWD, value, options=options)
+
         #a visual aide to help a developer see what package's are at the ready to use
         elif(command == 'graph' and self.blockCWD.isValid()):
             top = package
@@ -1055,7 +1057,7 @@ class legoHDL:
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
             self.download(package)
-            if('o' in options):
+            if('open' in options):
                 self.db.getBlocks("local", updt=True)[L][N].load()
             pass
         elif(command == 'del'):
@@ -1100,24 +1102,48 @@ class legoHDL:
         elif(command == "open"):
             if(apt.SETTINGS['editor'] == None):
                 exit(log.error("No text-editor configured!"))
-
+            #open template
             if(options.count("template")):
+                log.info("Opening block template folder at... "+apt.TEMPLATE)
                 os.system(apt.SETTINGS['editor']+" \""+apt.TEMPLATE+"\"")
+            #open scripts
             elif(options.count("script")):
-                os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/scripts\"")
+                #want to open the specified script?
+                script_path = apt.HIDDEN+"scripts"
+                #maybe open up the script file directly if given a value
+                if(value in apt.SETTINGS['script']):
+                    for pt in apt.SETTINGS['script'][value].split()[1:]:
+                        #find first case a arg is a path
+                        pt = pt.replace("\"",'').replace("\'",'')
+                        if(os.path.isfile(pt)):
+                            script_path = pt
+                            log.info("Opening script "+value+" at... "+script_path)
+                            break
+                    else:
+                        log.info("Opening built-in script folder at... "+script_path)
+                else:
+                        log.info("Opening built-in script folder at... "+script_path)
+
+                os.system(apt.SETTINGS['editor']+" "+script_path)
+            #open settings
             elif(options.count("settings")):
+                log.info("Opening settings YAML file at... "+apt.HIDDEN+"settings.yml")
                 os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/settings.yml\"")
+            #open block
             elif(valid):
                 self.blockPKG.load()
             else:
-                exit(log.error("No module "+package+" exists in your workspace."))
+                exit(log.error("No block "+package+" exists in your workspace."))
         elif(command == "show" and 
             (self.db.blockExists(package, "local") or \
                 self.db.blockExists(package, "cache") or \
                 self.db.blockExists(package, "market"))):
+            ver = None
+            if(len(options) == 1 and Block.validVer(options[0]) == True):
+                ver = options[0]
             #print available versions
             listVers = options.count("version")
-            self.db.getBlocks("local","cache","market")[L][N].show(listVers)
+            self.db.getBlocks("local","cache","market")[L][N].show(listVers, ver)
             pass
         elif(command == "update" and self.db.blockExists(package,"cache")):
             #perform install over remote url
@@ -1128,7 +1154,7 @@ class legoHDL:
             ent_name = None
             if(len(options) and 'map' in options):
                 mapp = True
-            if(len(options) and 'inst' in options):
+            if(len(options) and 'instance' in options):
                 pure_ent = True
             if(package.count('.') == 2): #if provided an extra identifier, it is the entity in this given project
                 ent_name = package[package.rfind('.')+1:]
@@ -1157,26 +1183,28 @@ class legoHDL:
             print('USAGE: \
             \n\tlegohdl <command> [block] [flags]\
             \n')
-            print("COMMANDS:")
+            print("COMMANDS:\n")
             def formatHelp(cmd, des):
                 print('  ','{:<12}'.format(cmd),des)
                 pass
+            print("Development")
             formatHelp("init","initialize the current folder into a valid block format")
             formatHelp("new","create a templated empty block into workspace")
             formatHelp("open","opens the downloaded block with the configured text-editor")
-            formatHelp("release","release a new version of the current Block")
+            formatHelp("port","print ports list of specified entity")
+            formatHelp("graph","visualize dependency graph for reference")
+            formatHelp("export","generate a recipe file from labels")
+            formatHelp("build","run a custom configured script")
+            formatHelp("release","release a new version of the current block")
+            formatHelp("del","deletes a configured setting or a block from local workspace")
+            print()
+            print("Management")
             formatHelp("list","print list of all blocks available")
+            formatHelp("refresh","sync local markets with their remotes")
             formatHelp("install","grab block from its market for dependency use")
             formatHelp("uninstall","remove block from cache")
             formatHelp("download","grab block from its market for development")
             formatHelp("update","update installed block to be to the latest version")
-            print()
-            formatHelp("graph","visualize dependency graph for reference")
-            formatHelp("export","generate a recipe file to build the block")
-            formatHelp("build","run a custom configured script")
-            formatHelp("del","deletes a block from local workspace or a configured setting")
-            formatHelp("refresh","sync local markets with their remotes")
-            formatHelp("port","print ports list of specified entity")
             formatHelp("show","read further detail about a specified block")
             formatHelp("config","set package manager settings")
             print("\nType \'legohdl help <command>\' to read more on entered command.")
@@ -1187,37 +1215,127 @@ class legoHDL:
     #! === HELP COMMAND ===
 
     def commandHelp(self, cmd):
+
         def printFmt(cmd,val,options=''):
             print("USAGE:")
             print("\tlegohdl "+cmd+" "+val+" "+options)
             pass
+
+        def rollover(txt,limit=60):
+            cur_line = 0
+            print("\nDESCRIPTION:")
+            for word in txt.split():
+                cur_line = cur_line + len(word) + 1
+                if(cur_line > limit):
+                    cur_line = len(word) + 1
+                    print()
+                print(word,end=' ')
+            print()
+            print("\nARGUMENTS:")
+            pass
+
         if(cmd == ''):
             return
         elif(cmd == "init"):
-            printFmt("init", "<block>","[-remote | -market | -summary]")
+            printFmt("init", "<block/value>","[-remote | -market | -summary]")
+            rollover("""
+If no flags are raised, transform the working directory into a valid block. This will
+create a git repository if not available, and create the Block.lock file. If there is a
+raised flag, then the block's flag will be altered with the <value>.
+            """)
+            print('{:<16}'.format("<block/value>"),"if no flags, transform current directory into a valid block")
+            print()
+            print('{:<16}'.format("-remote"),"provide a valid git URL as <value> to set for this block")
+            print('{:<16}'.format("-market"),"provide a market name as <value> available from the workspace")
+            print('{:<16}'.format("-summary"),"provide a string as <value> to set for this block's summary")
             pass
         elif(cmd == "new"):
-            printFmt("new","<block>","[-o -<remote-url> -<market-name>")
+            printFmt("new","<block>","[-open -<remote> -<market>]")
+            rollover("""
+Create a new block into the base of the workspace's local path. The block's default 
+created path is <workspace-path>/<block-library>/<block-name>. The template folder 
+will be copied and a git repository will be created. 
+            """)
+            print('{:<16}'.format("-open"),"open the new block upon creation")
+            print('{:<16}'.format("-<remote>"),"provide a blank git URL to be configured")
+            print('{:<16}'.format("-<market>"),"provide a market name that's available in this workspace")
             pass
         elif(cmd == "open"):
-            printFmt("open","<block>","[-template -script -settings]")
+            printFmt("open","[<block/script>]","[-template -script -settings]")
+            rollover("""
+Open a variety of legohdl folders/files. With no flags raised, the block will be opened if
+it is found in the workspace's local path. If the script flag is raised with no <script>,
+it will open the built-in script folder. If a valid <script> is specified with the script 
+flag raised, it will directly open its file.
+            """)
+            print('{:<16}'.format("<block/script>"),"open the downloaded block or the script")
+            print('{:<16}'.format(""),"file if the `-script` flag is raised")
+            print()
+            print('{:<16}'.format("-template"),"open the template folder")
+            print('{:<16}'.format("-script"),"open the built-in script folder if no script specified")
+            print('{:<16}'.format("-settings"),"open the settings YAML file")
             pass
         elif(cmd == "release"):
-            printFmt("release","\b","[[-v0.0.0 | -maj | -min | -fix] -d -strict -soft]")
-            print("\n   -strict -> won't add any uncommitted changes along with release")
-            print("\n   -soft -> will push a side branch to the linked market")
+            printFmt("release","[<message>]","[[-v0.0.0 | -maj | -min | -fix] -strict -soft]")
+            rollover("""
+Creates a valid legohdl release point to be used in other designs. This will auto-detect 
+the toplevel unit, testbench unit, and determine the exact version dependencies required. 
+It will then stage, commit, and tag any changes. If the block has a valid remote, it will 
+push to the remote. If the block has a valid market, the Block.lock file will be updated there.
+            """)
+            print('{:<16}'.format("<message>"),"the message for the release point's tagged commit")
+            print()
+            print('{:<16}'.format("-v0.0.0"),"manual setting for the next version (replace 0's)")
+            print('{:<16}'.format("-maj"),"bump version to next major ^.0.0")
+            print('{:<16}'.format("-min"),"bump version to next minor -.^.0")
+            print('{:<16}'.format("-fix"),"bump version to next patch -.-.^")
+            print('{:<16}'.format("-strict"),"won't add any unstaged changes into the release")
+            print('{:<16}'.format("-soft"),"push a side branch to the linked market for merge")
             pass
         elif(cmd == "list"):
-            printFmt("list","[search]","[-alpha -local -script -label -market -workspace]")
+            printFmt("list","[[<search>]","[-alpha]] [-script | -label | -market | -workspace]")
+            rollover("""
+Provide a formatted view for a variety of groups. The default is to list the active
+workspace's blocks. When listing blocks, you can also search by providing a partial block 
+title  as <search> and alphabetically organize results with the alpha flag. Raising script, 
+label, market, or workspace, will print their respective group found within the settings.
+            """)
+            print('{:<16}'.format("<search>"),"partial or full block title to be searched")
+            print()
+            print('{:<16}'.format("-alpha"),"alphabetically organize blocks")
+            print('{:<16}'.format("-script"),"view scripts as name, command, path")
+            print('{:<16}'.format("-label"),"view labels as label, extension, recursive")
+            print('{:<16}'.format("-market"),"view markets as market, url, linked to workspace")
+            print('{:<16}'.format("-workspace"),"view workspaces as workspace, active, path, markets")
             pass
         elif(cmd == "install"):
             printFmt("install","<block>","[-v0.0.0]")
+            rollover("""
+Clones the block's main branch to the cache. If the main branch is already found in the cache,
+it will not clone/pull from the remote repository (see "update" command). Checkouts and copies 
+the version (default is latest if unspecified) to have its own location in the cache. The 
+entities of the install version are appeneded with its appropiate version (_v0_0_0). Each 
+version install may also update the location for its major value (_v0) if its the highest yet. 
+            """)
+            print('{:<16}'.format("-v0.0.0"),"specify what version to install (replace 0's)")
             pass
         elif(cmd == "uninstall"):
-            printFmt("uninstall","<block>")
+            printFmt("uninstall","<block>","[-v0.0.0]")
+            rollover("""
+Removes installed versions from the cache. If no version is specified, then ALL versions will be
+removed as well as the cloned main branch. Specifying a version will only remove that one, if its
+been installed.
+            """)
+            print('{:<16}'.format("-v0.0.0"),"specify what version to uninstall (replace 0's)")
             pass
         elif(cmd == "download"):
-            printFmt("download","<block>","[-v0.0.0 -o]")
+            printFmt("download","<block>","[-open]")
+            rollover("""
+Grab a block from either its remote url (found via market) or from the cache. The block will
+be downloaded to <workspace-path>/<block-library>/<block-name>. If the block is not installed to
+the cache, it will also install the latest version to the cache.
+            """)
+            print('{:<16}'.format("-open"),"open the block upon download to be developed")
             pass
         elif(cmd == "update"):
             printFmt("update","<block>")
@@ -1234,19 +1352,20 @@ class legoHDL:
             printFmt("del","<block/value>","[-uninstall | -market | -script | -label | -workspace]")
             pass
         elif(cmd == "port"):
-            printFmt("port","<block>","[-map -inst]")
+            printFmt("port","<block>","[-map -instance]")
             pass
         elif(cmd == "show"):
-            printFmt("show","<block>")
+            printFmt("show","<block>","[-version | -v0.0.0]")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","""[-market [-remove | -append] | -author | -script [-lnk] | -label [-recursive] | -editor |\n\
+            printFmt("config","<value>","""[-market [-add | -remove] | -author | -script [-link] | -label [-recursive] | -editor |\n\
                     \t\t-workspace [-<market-name> ...] | -active-workspace]\
             """)
             print("\n   Setting [-script], [-label], [-workspace], [-market] requires <value> to be <key>=\"<value>\"")
-            print("   Using -append or -remove does not require the <value> to be <key>\"<value\"")
+            print("   Using -add or -remove does not require the <value> to be <key>\"<value\"")
             print("   legohdl config lab=\"~/develop/hdl/\" -workspace") 
             pass
+        print()
         exit()
         pass
     pass

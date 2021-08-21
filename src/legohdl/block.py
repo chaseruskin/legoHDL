@@ -95,7 +95,7 @@ class Block:
         return highest
 
     #release the block as a new version
-    def release(self, ver=None, options=[]):
+    def release(self, msg=None, ver=None, options=[]):
         #dynamically link on release
         if(self.grabGitRemote() != None and hasattr(self,"_repo")):
             if(apt.isValidURL(self.grabGitRemote())):
@@ -156,7 +156,11 @@ class Block:
             else:   
                 self._repo.git.add(update=True)
                 self._repo.index.add(self._repo.untracked_files)
-            self._repo.index.commit("Release version -> "+self.getVersion())
+            #default message
+            if(msg == None):
+                msg = "Releases version -> "+self.getVersion()
+            #commit new changes with message
+            self._repo.index.commit(msg)
 
             #create a tag with this version
             self._repo.create_tag(apt.TAG_ID+ver)
@@ -596,11 +600,23 @@ derives: []
         return self.getPath()+apt.MARKER
 
     #print out the metadata for this block
-    def show(self, listVers=False):
-        if(listVers == False):
+    def show(self, listVers=False, ver=None):
+        cache_path = apt.HIDDEN+"workspaces/"+apt.SETTINGS['active-workspace']+"/cache/"+self.getLib()+"/"+self.getName()+"/"
+        install_vers = os.listdir(cache_path)
+        #print out the downloaded block's metadata (found in local path)
+        if(listVers == False and ver == None):
             with open(self.metadataPath(), 'r') as file:
                 for line in file:
                     print(line,sep='',end='')
+        #print out specific metadata file if installed in cache
+        elif(ver != None):
+            if(ver in install_vers):
+                with open(cache_path+ver+"/"+apt.MARKER, 'r') as file:
+                    for line in file:
+                        print(line,sep='',end='')
+            else:
+                exit(log.error("The flagged version is not installed to the cache"))
+        #list all versions available for this block
         else:
             #a file exists if in market called version.log
             if(hasattr(self, "_repo") == False):
@@ -615,6 +631,11 @@ derives: []
                 for x in ver_sorted:
                     print(x,end='\t')
                     if(x[1:] == self.getMeta("version")):
+                        print("*",end='')
+                        print()
+                        continue
+                    #notify user of the installs in cache
+                    if(x in install_vers):
                         print("*",end='')
                     print()
     
@@ -720,7 +741,7 @@ derives: []
 
         log.info("Installing block "+self.getTitle(low=False)+" version "+ver+"...")
         # 1. first download from remote if the base installation DNE or tag DNE
-        if(not base_installed or (ver not in self.getTaggedVersions())):
+        if(not base_installed):
             #print("cache dir",cache_dir)
             #print(src)
             #remove old branch folder if exists

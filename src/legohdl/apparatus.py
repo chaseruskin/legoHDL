@@ -14,7 +14,7 @@ class Apparatus:
 
     MARKER = "Block.lock"
 
-    TEMPLATE = HIDDEN+"/template/"
+    TEMPLATE = HIDDEN+"template/"
 
     WORKSPACE = HIDDEN
 
@@ -26,7 +26,7 @@ class Apparatus:
     #this is preppended to the tag to make it unique for legoHDL
     TAG_ID = 'legohdl-'    
     #file kept in markets to remember all valid release points
-    VER_LOG = "version.log"    
+    VER_LOG = "version.log"
     #types of accepted HDL files to parse and interpret
     SRC_CODE = ["*.vhd","*.vhdl"]
 
