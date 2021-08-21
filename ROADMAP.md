@@ -1,6 +1,8 @@
 ## Roadmap to Release v0.1.0
 
+- [ ] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
 
+- [ ] use argparser package to create better CLI
 
 
 - [ ] perform git pull on release command before releasing? -> leaning no
@@ -8,11 +10,11 @@
 - [ ] implement additional "help" command documentation
 
 - [ ] allow user to add a comment to release -> goes to git commit and also goes to version.log file
-example: `legohdl release -fix -"Fixes clock synchronization bug"`
+example: `legohdl release "Fixes clock sync bug" -fix`
 
 ### Future Roadmap
 
-- [ ] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
+
 
 - [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock)
 
