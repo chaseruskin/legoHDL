@@ -105,7 +105,8 @@ class legoHDL:
         if(self.db.blockExists(title, "cache") == False):
             if(verify_url):
                 if(apt.isValidURL(block.getMeta("remote")) == False):
-                    exit(log.error("Invalid remote to install from."))
+                    log.warning("No remote to install from.")
+
             clone_path = block.getMeta("remote")
             #must use the local path of the local block if no remote
             if(clone_path == None):
@@ -311,13 +312,11 @@ class legoHDL:
                     for f in files:
                         labels.append("@"+label+" "+apt.fs(f))
 
-        #register what files the top levels originate from
-        topfile_tb = None
+        #register what files the top levels originate from (transform variables in unit objects)
         if(tb != None):
-            topfile_tb = block.grabCurrentDesigns()[block.getLib()][tb].getFile()
-        topfile_top = None
+            tb = block.grabCurrentDesigns()[block.getLib()][tb]
         if(top != None):
-            topfile_top = block.grabCurrentDesigns()[block.getLib()][top].getFile()
+            top = block.grabCurrentDesigns()[block.getLib()][top]
 
         for l in labels:
             output.write(l+"\n")
@@ -329,9 +328,19 @@ class legoHDL:
 
         #write current test dir where all testbench files are
         if(tb != None):
-            output.write("@SIM-TOP "+tb+" "+topfile_tb+"\n")
+            line = '@'
+            if(tb.getLanguageType() == Unit.Language.VHDL):
+                line = line+"VHDL"
+            elif(tb.getLanguageType() == Unit.Language.VERILOG):
+                line = line+"VERI"
+            output.write(line+"-SIM-TOP "+tb.getName(low=False)+" "+tb.getFile()+"\n")
         if(top != None):
-            output.write("@SRC-TOP "+top+" "+topfile_top+"\n")
+            line = '@'
+            if(top.getLanguageType() == Unit.Language.VHDL):
+                line = line+"VHDL"
+            elif(top.getLanguageType() == Unit.Language.VERILOG):
+                line = line+"VERI"
+            output.write(line+"-SRC-TOP "+top.getName(low=False)+" "+top.getFile()+"\n")
             
         output.close()
         #update the derives section to give details into what blocks are required for this one
@@ -374,16 +383,20 @@ class legoHDL:
     def compileList(self, block, unit_order):
         recipe_list = []
         for u in unit_order:
-            line = ''
+            line = '@'
+            if(u.getLanguageType() == Unit.Language.VHDL):
+                line = line+"VHDL"
+            elif(u.getLanguageType() == Unit.Language.VERILOG):
+                line = line+"VERI"
             #this unit comes from an external block so it is a library file
             if(u.getLib() != block.getLib() or u.getBlock() != block.getName()):
-                line = '@LIB '+u.getLib()+' '
+                line = line+'-LIB '+u.getLib()+' '
             #this unit is a simulation file
             elif(u.isTB()):
-                line = '@SIM '
+                line = line+'-SIM '
             #this unit is a source file
             else:
-                line = '@SRC '
+                line = line+'-SRC '
             #append file onto line
             line = line + u.getFile()
             #add to recipe list

@@ -9,7 +9,7 @@ class Verilog(Language):
             log.info(self._file_path)
         #keep case sensitivity
         c_stream = self.generateCodeStream(True,True,*self._std_parsers,"#")
-        print(c_stream)
+        #print(c_stream)
         module_name = None
         in_ports = in_params = in_module = False
         parenth_count = 0

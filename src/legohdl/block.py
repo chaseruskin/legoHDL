@@ -689,7 +689,9 @@ derives: []
         #create the string version of the version
         str_ver = "_"+folder.replace(".","_")
         for lib in prj_srcs.values():
-            old_names = lib.keys()
+            old_names = []
+            for u in lib.values():
+                old_names.append(u.getName(low=False))
             name_pairs = []
             #generate list of tuple pairs of (old name, new name)
             for n in old_names:
@@ -753,6 +755,9 @@ derives: []
             for folder in os.listdir(cache_dir):
                 if(src.endswith(folder.lower())):
                     url_name = folder
+                    break
+            else:
+                url_name = self.getName()
 
             shutil.move(cache_dir+url_name, specific_cache_dir)
             self.__local_path = specific_cache_dir+"/"

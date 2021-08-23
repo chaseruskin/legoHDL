@@ -1,8 +1,8 @@
 ## Roadmap to Release v0.1.0
 
-- [ ] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
+- [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
 
-- [ ] update default labels
+- [ ] implement behavior to change module name's when installing a specific version for verilog files
 
 - [ ] use argparser package to create better CLI?
 
@@ -56,6 +56,7 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] update default labels to include verilog
 - [x] allow user to add a comment to release -> goes to git commit and also goes to version.log file
 example: `legohdl release "Fixes clock sync bug" -fix`
 - [x] when installing or downloading a block, auto-install dependencies if found in remote or block is in cache (and required version is not created)

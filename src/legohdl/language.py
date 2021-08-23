@@ -43,6 +43,7 @@ class Language(ABC):
         #various characters that could be next to the unit name
         endpoints = [' ', '.', '\n', '\t', '--', '//']
         #open file to manipulate lines
+        print(name_pairs)
         with open(self._file_path, 'r') as f:
             for line in f.readlines():
                 #must we have an exact match? yes in verilog
