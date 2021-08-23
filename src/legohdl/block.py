@@ -895,12 +895,13 @@ derives: []
             return self._top
         units = self.grabUnits()
         top_contenders = list(units[self.getLib()].keys())
-        #log.debug(top_contenders)
         self._top = None
         for name,unit in list(units[self.getLib()].items()):
+            #print(top_contenders)
             #if the entity is value under this key, it is lower-level
-            if(unit.isTB() or unit.isPKG()):
-                top_contenders.remove(name)
+            if(unit.isTB() or unit.isPKG()):  
+                if(name in top_contenders):
+                    top_contenders.remove(name)
                 continue
                 
             for dep in unit.getRequirements():
@@ -1007,7 +1008,7 @@ derives: []
             
         #get all possible units (units are incomplete (this is intended))
         self._unit_bank = self.grabDesigns(override, "cache","current")
-       
+        #self.printUnits()
         #todo : only start from top-level unit if it exists
         #gather all project-level units
         project_level_units = self.grabDesigns(False, "current")[self.getLib()]
@@ -1061,7 +1062,16 @@ derives: []
                     designs[L] = dict()
                 #add entity units
                 if(words[0].lower() == "module"):
-                    mod_name = words[1].replace("(","").replace(")","").replace(";","")
+                    ports_start = words[1].find("(")
+                    params_start = words[1].find("#")
+                    if(params_start > -1 and params_start < ports_start):
+                        ports_start = params_start
+                    #cut off at the beginning of a ports list
+                    if(ports_start > -1):
+                        mod_name = words[1][:ports_start]
+                    else:
+                        mod_name = words[1]
+                    mod_name = mod_name.replace(";","")
                     #keep case sensitivity in unit constructor
                     designs[L][mod_name.lower()] = Unit(filepath,Unit.Type.ENTITY,L,N,mod_name)
         file.close()

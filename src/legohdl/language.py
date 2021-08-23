@@ -1,12 +1,18 @@
 from abc import ABC, abstractmethod
 from .apparatus import Apparatus as apt
-import sys
+import sys,os
 
 class Language(ABC):
 
     def __init__(self, fpath):
         self._file_path = apt.fs(fpath)
         self._std_parsers = "(",")",":",";"
+        _,ext = os.path.splitext(fpath)
+        #determine which comments to ignore in generating code stream
+        if("*"+ext in apt.VERILOG_CODE):
+            self._comments = "//"
+        elif("*"+ext in apt.VHDL_CODE):
+            self._comments = "--"
         pass
 
     @abstractmethod
@@ -107,7 +113,8 @@ class Language(ABC):
         with open(self._file_path, 'r') as file:
             for line in file.readlines():
                 #drop rest of line if comment is started
-                comment_start = line.find('--')
+                #todo : make so verilog gets support for its comments
+                comment_start = line.find(self._comments)
                 if(comment_start == 0):
                     continue
                 elif(comment_start > -1):

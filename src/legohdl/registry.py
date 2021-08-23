@@ -60,6 +60,7 @@ class Registry:
         #only show blocks that are installed
         elif(options.count("install")):
             reg = self.getBlocks("cache")
+        #select from all blocks
         else:
             reg = self.getBlocks("local","cache","market")
         #alpha sort
