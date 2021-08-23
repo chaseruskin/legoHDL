@@ -1,37 +1,40 @@
 ## Roadmap to Release v0.1.0
 
-- [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
+- [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
+
+- [!] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
+
+- [!] auto upload (on release) a changelog file to market as well if found in the block? -> leaning yes. will look for CHANGELOG.md, if a changelog exists then open code-editor to write new addition updates? -> yes
+
+- [!] add prompt to uninstall command, will notify user of all uninstallations and then ask to proceed
 
 - [x] implement behavior to change module name's when installing a specific version for verilog files
 
-- [ ] use argparser package to create better CLI?
+- [ ] use argparse package to create better CLI?
 
 - [ ] perform git pull on release command before releasing? -> leaning no -> don't think its needed
 
 - [ ] implement additional "help" command documentation
 
-- [ ] auto upload (on release) a changelog file to market as well if found in the block?
-
-- [!] add prompt to uninstall command, will notify user of all uninstallations and then ask to proceed
 
 ### Future Roadmap
-
 
 - [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock)
 
 - [x] allow ability to open a script by specifying script 'alias' name `legohdl open master -script`
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
 
-- [ ] add -instl, -dnld, -mrkt as flags for list command (not mutually exclusive flags)
+- [ ] add -install (implemented), -download, -market as flags for list command (not mutually exclusive flags)
+
 - [ ] add ability to search by market
 
 - [ ] allow option to print a .log file on export so a record of graph can be kept?
 
-- [ ] safety measure on 'version' meta by dynamically setting it every time legohdl is called by looking at highest valid git tag -> prevents user from overwriting it and messing it up
+- [ ] safety measure on 'version' meta by dynamically setting it every time legohdl is called by looking at highest valid git tag -> prevents user from overwriting it and messing it up -> solution is to store that `version.log` file no matter if a market is tied to the block.
 
 - [?] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos
 
-- [ ] have a way to see what version was used when using a block's 'latest' (no version specified) -> (show a directory?) -> (OR transform the base installation -> leaning yes) or block's major ver (_v1, _v2, etc.) -> useful to know in case an update ends up breaking the code, allows dev to know what the last working version was
+- [x] have a way to see what version was used when using a block's 'latest' (no version specified) -> (show a directory?) -> (OR transform the base installation -> leaning yes) or block's major ver (_v1, _v2, etc.) -> useful to know in case an update ends up breaking the code, allows dev to know what the last working version was
 
 - [?] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
 
@@ -44,8 +47,6 @@
 - [-] add series of prompts to release command before actually doing anything
 
 - [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive
-
-
 
 - [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
 

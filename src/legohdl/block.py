@@ -759,7 +759,8 @@ derives: []
                     url_name = folder
                     break
             else:
-                url_name = self.getName()
+                cut_slash = self.getPath()[:len(self.getPath())-1]
+                url_name = cut_slash[cut_slash.rfind('/'):]
 
             shutil.move(cache_dir+url_name, specific_cache_dir)
             self.__local_path = specific_cache_dir+"/"
