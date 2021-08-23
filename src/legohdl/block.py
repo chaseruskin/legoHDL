@@ -689,16 +689,18 @@ derives: []
         #create the string version of the version
         str_ver = "_"+folder.replace(".","_")
         for lib in prj_srcs.values():
-            old_names = []
-            for u in lib.values():
-                old_names.append(u.getName(low=False))
-            name_pairs = []
             #generate list of tuple pairs of (old name, new name)
-            for n in old_names:
-                name_pairs.append((n, n+str_ver))
+            name_pairs = {'VHDL' : [], 'VERILOG' : []}
+            for u in lib.values():
+                n = u.getName(low=False)
+                if(u.getLanguageType() == Unit.Language.VHDL):
+                    name_pairs['VHDL'].append((n, n+str_ver))
+                elif(u.getLanguageType() == Unit.Language.VERILOG):
+                    name_pairs['VERILOG'].append((n, n+str_ver))
+
             #go through each unit file to update unit names in VHDL files
-            for unit in lib.values():
-                unit.getLang().setUnitName(name_pairs)
+            for u in lib.values():
+                u.getLang().setUnitName(name_pairs)
 
         #update the metadata file here to reflect changes
         with open(self.getPath()+apt.MARKER, 'r') as f:
@@ -925,13 +927,12 @@ derives: []
         if(len(top_contenders) == 1):
             self._top = units[self.getLib()][top_contenders[0]]
 
-            log.info("DETECTED TOP-LEVEL ENTITY: "+self._top.getName())
+            log.info("DETECTED TOP-LEVEL ENTITY: "+self._top.getName(low=False))
             self.identifyBench(self._top.getName(), save=True)
             #break up into src_dir and file name
             #add to metadata, ensure to push meta data if results differ from previously loaded
-            if(self._top.getName() != self.getMeta("toplevel")):
-                log.debug("TOPLEVEL: "+self._top.getName())
-                self.__metadata['toplevel'] = self._top.getName()
+            if(self._top.getName(low=False) != self.getMeta("toplevel")):
+                self.__metadata['toplevel'] = self._top.getName(low=False)
                 self.save()
 
         return self._top
@@ -961,17 +962,20 @@ derives: []
                 validTop = input("Enter a valid toplevel testbench: ").lower()
             #assign the testbench entered by the user
             self._bench = units[self.getLib()][validTop]
-
+        #print what the detected testbench is
         if(self._bench != None):
             log.info("DETECTED TOP-LEVEL BENCH: "+self._bench.getName())
-            if(save and self.getMeta("bench") != self._bench.getName()):
-                self.__metadata['bench'] = self._bench.getName()
-                self.save()
-            #return the entity
-            return self._bench 
         else:
             log.warning("No testbench detected.")
-            return None
+        #update the metadata is saving
+        if(save):
+            if(self._bench == None):
+                self.__metadata['bench'] = self._bench
+            else:
+                self.__metadata['bench'] = self._bench.getName(low=False)
+            self.save()
+        #return the entity
+        return self._bench
 
     #determine what unit is utmost highest, whether it be a testbench (if applicable) or entity
     def identifyTopDog(self, top, tb):

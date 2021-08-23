@@ -7,12 +7,15 @@ class Language(ABC):
     def __init__(self, fpath):
         self._file_path = apt.fs(fpath)
         self._std_parsers = "(",")",":",";"
-        _,ext = os.path.splitext(fpath)
+        _,self._ext = os.path.splitext(fpath)
+        #create as all lower case
+        if(self._ext != None):
+            self._ext = self._ext.lower()
         #determine which comments to ignore in generating code stream
-        if("*"+ext in apt.VERILOG_CODE):
+        if("*"+self._ext in apt.VERILOG_CODE):
             self._comments = "//"
             self._multi_comment = ("/*","*/")
-        elif("*"+ext in apt.VHDL_CODE):
+        elif("*"+self._ext in apt.VHDL_CODE):
             self._comments = "--"
             self._multi_comment = None
         pass
@@ -37,23 +40,40 @@ class Language(ABC):
         pass
 
     #find all unit names within the source file and replace accordingly
-    def setUnitName(self, name_pairs, case_sense=False):
+    def setUnitName(self, name_pairs):
+        if("*"+self._ext in apt.VHDL_CODE):
+            case_sense = False
+        elif("*"+self._ext in apt.VERILOG_CODE):
+            case_sense = True
         #do major find and replace
         file_data = []
-        #various characters that could be next to the unit name
-        endpoints = [' ', '.', '\n', '\t', '--', '//']
         #open file to manipulate lines
-        print(name_pairs)
+        #print(name_pairs)
         with open(self._file_path, 'r') as f:
             for line in f.readlines():
                 #must we have an exact match? yes in verilog
                 if(not case_sense):
                     line = line.lower()
-                #test every combination of endpoint pairs to find/replace unit name
-                for n in name_pairs:
-                    for ep in endpoints:
-                        for ep2 in endpoints:
-                                line = line.replace(ep+n[0]+ep2, ep+n[1]+ep2)
+                #try to locate every name pair
+                for key,pairs in name_pairs.items():
+                    for n in pairs:
+                        name_to_locate = n[0]
+                        #this is a vhdl entity we are looking for
+                        if(key == 'VHDL'):
+                            pass
+                        #this is a verilog module we are looking for
+                        elif(key == 'VERILOG'):
+                            if(not case_sense):
+                                name_to_locate = name_to_locate.lower()
+                            pass
+
+                        #ensure it only replaces once
+                        cont = j= 0
+                        while j != -1:
+                            j = line[cont:].find(name_to_locate)
+                            if(j > -1):
+                                line = line[:cont] + line[cont:].replace(name_to_locate,n[1])
+                            cont = j+len(n[1])
 
                 file_data.append(line)
             f.close()

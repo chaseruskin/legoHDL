@@ -2,7 +2,7 @@
 
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
 
-- [ ] implement behavior to change module name's when installing a specific version for verilog files
+- [x] implement behavior to change module name's when installing a specific version for verilog files
 
 - [ ] use argparser package to create better CLI?
 
