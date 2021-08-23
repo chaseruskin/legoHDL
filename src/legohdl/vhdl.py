@@ -51,7 +51,7 @@ class Vhdl(Language):
                     design_book[cur_lib][unit_name].addRequirement(u)
                 #only enter recursion if the unit has not already been completed ("checked")
                 if(not design_book[u.getLib()][u.getName()].isChecked()):
-                    u.getVHD().decipher(design_book,u.getLib(), verbose)
+                    u.getLang().decipher(design_book,u.getLib(), verbose)
             uses = []
             return uses
         #print("###")

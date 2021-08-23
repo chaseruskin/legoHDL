@@ -696,7 +696,7 @@ derives: []
                 name_pairs.append((n, n+str_ver))
             #go through each unit file to update unit names in VHDL files
             for unit in lib.values():
-                unit.getVHD().setUnitName(name_pairs)
+                unit.getLang().setUnitName(name_pairs)
 
         #update the metadata file here to reflect changes
         with open(self.getPath()+apt.MARKER, 'r') as f:
@@ -895,9 +895,9 @@ derives: []
             return self._top
         units = self.grabUnits()
         top_contenders = list(units[self.getLib()].keys())
+
         self._top = None
         for name,unit in list(units[self.getLib()].items()):
-            #print(top_contenders)
             #if the entity is value under this key, it is lower-level
             if(unit.isTB() or unit.isPKG()):  
                 if(name in top_contenders):
@@ -905,8 +905,8 @@ derives: []
                 continue
                 
             for dep in unit.getRequirements():
-                if(dep._unit in top_contenders):
-                    top_contenders.remove(dep._unit)
+                if(dep.getName() in top_contenders):
+                    top_contenders.remove(dep.getName())
 
         if(len(top_contenders) == 0):
             log.error("No top level detected.")
@@ -1015,7 +1015,7 @@ derives: []
         for unit in project_level_units.values():
             #start with top-level unit and complete all required units in unit bank
             if(unit.getName() == toplevel or toplevel == None):
-                self._unit_bank = unit.getVHD().decipher(self._unit_bank, self.getLib(), override)
+                self._unit_bank = unit.getLang().decipher(self._unit_bank, self.getLib(), override)
         #self.printUnits()
         return self._unit_bank
 
@@ -1030,7 +1030,8 @@ derives: []
             pass
         return design_book
 
-    #return an updated dictionary object with any blank units found in the file
+    #todo : use generateCodeStream
+    #return an updated dictionary object with any blank units found in the file (vhdl-style)
     def skimVHDL(self, designs, filepath, L, N):
         with open(filepath, 'r') as file:
             for line in file.readlines():
@@ -1050,6 +1051,8 @@ derives: []
         file.close()
         return designs
 
+    #todo: use generateCodeStream
+    #return an updated dictionary object with any blank units found in the file (verilog-style)
     def skimVerilog(self, designs, filepath, L, N):
         with open(filepath, 'r') as file:
             for line in file.readlines():
@@ -1061,19 +1064,21 @@ derives: []
                 if(L not in designs.keys()):
                     designs[L] = dict()
                 #add entity units
-                if(words[0].lower() == "module"):
-                    ports_start = words[1].find("(")
-                    params_start = words[1].find("#")
-                    if(params_start > -1 and params_start < ports_start):
-                        ports_start = params_start
-                    #cut off at the beginning of a ports list
-                    if(ports_start > -1):
-                        mod_name = words[1][:ports_start]
-                    else:
-                        mod_name = words[1]
-                    mod_name = mod_name.replace(";","")
-                    #keep case sensitivity in unit constructor
-                    designs[L][mod_name.lower()] = Unit(filepath,Unit.Type.ENTITY,L,N,mod_name)
+                for i in range(len(words)):
+                    #find the module keyword, the next name
+                    if(words[i].lower() == "module"):
+                        ports_start = words[i+1].find("(")
+                        params_start = words[i+1].find("#")
+                        if(params_start > -1 and params_start < ports_start):
+                            ports_start = params_start
+                        #cut off at the beginning of a ports list
+                        if(ports_start > -1):
+                            mod_name = words[i+1][:ports_start]
+                        else:
+                            mod_name = words[i+1]
+                        mod_name = mod_name.replace(";","")
+                        #keep case sensitivity in unit constructor
+                        designs[L][mod_name.lower()] = Unit(filepath,Unit.Type.ENTITY,L,N,mod_name)
         file.close()
         return designs
 

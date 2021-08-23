@@ -53,17 +53,20 @@ class Unit:
             return ''
         else:
             if(not pureEntity or mapping):
-                report =  report + self.getVHD().writeComponentDeclaration() + "\n"
+                report =  report + self.getLang().writeComponentDeclaration() + "\n"
             if(mapping or pureEntity):
-                report = report + "\n" + self.getVHD().writeComponentSignals() + "\n"
+                report = report + "\n" + self.getLang().writeComponentSignals() + "\n"
                 if(mapping):
-                    report = report + self.getVHD().writeComponentMapping(False, lib) + "\n"
+                    report = report + self.getLang().writeComponentMapping(False, lib) + "\n"
                 if(pureEntity):
-                    report = report + self.getVHD().writeComponentMapping(pureEntity, lib) + "\n"
+                    report = report + self.getLang().writeComponentMapping(pureEntity, lib) + "\n"
                 pass
         return report
 
-    def getVHD(self):
+    def getLanguageType(self):
+        return self._language
+
+    def getLang(self):
         return self._lang
 
     def isPKG(self):
@@ -96,7 +99,7 @@ class Unit:
     #add a unit as a requirement for itself
     def addRequirement(self, u):
         #add new edge
-        print(self.getFull())
+        #print(self.getFull())
         self.Hierarchy.addEdge(self.getFull(), u.getFull())
         self._requirements = self.getRequirements() + [u]
         pass

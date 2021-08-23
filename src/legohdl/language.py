@@ -11,8 +11,10 @@ class Language(ABC):
         #determine which comments to ignore in generating code stream
         if("*"+ext in apt.VERILOG_CODE):
             self._comments = "//"
+            self._multi_comment = ("/*","*/")
         elif("*"+ext in apt.VHDL_CODE):
             self._comments = "--"
+            self._multi_comment = None
         pass
 
     @abstractmethod
@@ -109,16 +111,42 @@ class Language(ABC):
                         break
                 #print(chopped)
             return chopped
+        in_comments = False
         #read the vhdl file to break into words
         with open(self._file_path, 'r') as file:
             for line in file.readlines():
                 #drop rest of line if comment is started
-                #todo : make so verilog gets support for its comments
                 comment_start = line.find(self._comments)
                 if(comment_start == 0):
                     continue
                 elif(comment_start > -1):
                     line = line[:comment_start]
+                
+                #handle multi-line comment sections
+                if(self._multi_comment != None and not in_comments):
+                    multi_comment_start = line.find(self._multi_comment[0])
+                    
+                    in_comments = (multi_comment_start > -1)
+                    if(in_comments):
+                        #does the comment section end on the same line it stated?
+                        multi_comment_end = line.find(self._multi_comment[1])
+                        past_extras = line[multi_comment_end+len(self._multi_comment[1]):]
+                        #trim to the start of the comments
+                        line = line[:multi_comment_start]
+                        if(multi_comment_end > -1):
+                            #append the stuff past the comments
+                            line = line + past_extras
+                            in_comments = False
+                #inside multi-line comment block
+                if(in_comments):
+                    multi_comment_end = line.find(self._multi_comment[1])
+                    in_comments = (multi_comment_end < 0)
+                    #skip if still in multi-comment block
+                    if(in_comments):
+                        continue
+                    else:
+                        #produce the line past the comments
+                        line = line[multi_comment_end+len(self._multi_comment[1]):]
 
                 next_line = line.split()
                 #iterate through each word in the line
