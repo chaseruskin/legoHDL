@@ -2,6 +2,8 @@
 
 - [ ] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
 
+- [ ] update default labels
+
 - [ ] use argparser package to create better CLI?
 
 - [ ] perform git pull on release command before releasing? -> leaning no -> don't think its needed
