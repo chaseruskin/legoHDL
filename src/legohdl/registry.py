@@ -57,6 +57,9 @@ class Registry:
         #todo : fix for adding more flags to see various block levels
         if(options.count("local") or not apt.linkedMarket()):
             reg = self.getBlocks("local","cache")
+        #only show blocks that are installed
+        elif(options.count("install")):
+            reg = self.getBlocks("cache")
         else:
             reg = self.getBlocks("local","cache","market")
         #alpha sort
