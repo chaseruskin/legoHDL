@@ -71,14 +71,37 @@ class Verilog(Language):
 
     #generate string of component's signal declarations to be interfaced with the port
     def writeComponentSignals(self):
+        print("writing signals")
+        return ''
         pass
 
     #write out the mapping instance of an entity (can be pure instance using 'entity' keyword also)
     def writeComponentMapping(self, pureEntity=False, lib=''):
+        c_stream = self.generateCodeStream(True,True,*self._std_parsers,'#')
+
+        signals = []
+        module_name = None
+        #1. gather the inputs and outputs
+        for i in range(len(c_stream)):
+        # look for 'input' and 'output' keyword, then look for comma
+            if(c_stream[i] == 'module'):
+                in_ports = True
+                module_name = c_stream[i+1]
+            #entering ports section
+            elif(in_ports):
+
+                if(c_stream[i] == '#'):
+                    in_params = True
+
+        
+        r = module_name+" uX"
+        return r
         pass
 
     #write out the entity but as a component
     def writeComponentDeclaration(self):
+        print("NOT USED")
+        return ''
         pass
 
 
