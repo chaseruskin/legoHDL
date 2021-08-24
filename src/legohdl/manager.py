@@ -645,7 +645,7 @@ class legoHDL:
             _,ext = os.path.splitext(filepath)
 
             #skip link option- copy file and rename it same as name 
-            if(options.count("lnk") == 0 and val != ''):   
+            if(options.count("link") == 0 and val != ''):   
                 dst = apt.HIDDEN+"scripts/"+key+ext
                 #try to copy and catch exception if its the same file
                 try:
