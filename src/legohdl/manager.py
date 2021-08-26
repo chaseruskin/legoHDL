@@ -633,7 +633,7 @@ class legoHDL:
             for pt in parsed:
                 if(pt == cmd):
                     continue
-                if(os.path.isfile(pt)):
+                if(os.path.isfile(os.path.expanduser(pt))):
                     filepath = os.path.realpath(os.path.expanduser(pt)).replace("\\", "/")
                     #reinsert nice formatted path into the list of args
                     file_index = parsed.index(pt)
