@@ -6,6 +6,7 @@
 
 - [ ] implement additional "help" command documentation
 
+- [ ] add run command to peform both 'export' and 'build'
 
 ### Future Roadmap
 
