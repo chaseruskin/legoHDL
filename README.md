@@ -22,9 +22,7 @@ Documentation can be found [here](https://legohdl.notion.site/legohdl/legoHDL-f7
 The project is currently under development, and the roadmap gives a glimpse into what is being developed, with new things always being added. The overall roadmap to an initial release:
 
 1. Finish implementing verilog support (printing instantiations, ability to have a -vhdl or -verilog flag to convert code into the proper instantiations)
-2. Changelog feature
-3. Prompts to notify what will be uninstalled before uninstalling
-4. Update documentation to correctly reflect the newest changes (new default labels) and further explain concepts behind legohdl design.
+2. Update documentation to correctly reflect the newest changes (new default labels) and further explain concepts behind legohdl design.
 
 ### __Trying it out__
 Being under development, some things are out-of-date in the documentation as new features are added. If you still want to try some things out, you currently can:
