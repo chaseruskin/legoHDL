@@ -56,7 +56,7 @@ class Block:
             return self.__local_path.lower()
         else:
             return self.__local_path
-            
+
     @DeprecationWarning
     def copyVersionLog(self):
         ver_log_path = apt.HIDDEN+"registry/"+self.getMeta('market')+"/"+self.getLib()+"/"+self.getName()+"/"+apt.VER_LOG
@@ -66,9 +66,6 @@ class Block:
 
     #download block from a url (can be from cache or remote)
     def downloadFromURL(self, rem):
-        #also snag the versions.log file
-        #self.copyVersionLog()
-
         rem = apt.fs(rem)
         #new path is default to local/library/
         new_path = apt.fs(apt.getLocal()+"/"+self.getLib(low=False)+"/")

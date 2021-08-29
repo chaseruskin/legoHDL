@@ -10,12 +10,13 @@
 
 ### Future Roadmap
 
+- [ ] make market names case insensitive (duplicate names will clash on folder namespace within registry/)
+
 - [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock)
 
-- [x] allow ability to open a script by specifying script 'alias' name `legohdl open master -script`
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
 
-- [x] add -install (implemented), -download (implemented), -market as flags for list command (not mutually exclusive flags)
+- [ ] add ability to see what market a block belongs too on list command
 
 - [ ] add ability to search by market
 
@@ -41,6 +42,8 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] add -install (implemented), -download (implemented) to list command
+- [x] allow ability to open a script by specifying script 'alias' name `legohdl open master -script`
 - [x] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos -> the unique ID handles if existing repos already have version tags
 - [x] add series of prompts to release command before actually doing anything
 - [x] have a way to see what version was used when using a block's 'latest' (no version specified) -> (show a directory?) -> (OR transform the base installation -> leaning yes) or block's major ver (_v1, _v2, etc.) -> useful to know in case an update ends up breaking the code, allows dev to know what the last working version was
