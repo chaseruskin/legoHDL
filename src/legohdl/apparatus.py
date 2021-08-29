@@ -179,7 +179,8 @@ class Apparatus:
         
         #if(not os.path.isfile(workspace_dir+"map.toml")):
             #open(workspace_dir+"map.toml", 'w').write("[libraries]\n")
-        
+        if(name not in cls.SETTINGS['workspace'].keys()):
+            cls.SETTINGS['workspace'][name] = {'local' : None, 'market' : None}
         #make sure market is a list
         if(isinstance(cls.SETTINGS['workspace'][name]['market'],list) == False):
             cls.SETTINGS['workspace'][name]['market'] = []

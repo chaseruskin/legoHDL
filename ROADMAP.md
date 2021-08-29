@@ -1,4 +1,4 @@
-## Roadmap to Release v0.1.0
+## Roadmap to Release v1.0.0
 
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
@@ -15,26 +15,19 @@
 - [x] allow ability to open a script by specifying script 'alias' name `legohdl open master -script`
 - [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
 
-- [ ] add -install (implemented), -download, -market as flags for list command (not mutually exclusive flags)
+- [x] add -install (implemented), -download (implemented), -market as flags for list command (not mutually exclusive flags)
 
 - [ ] add ability to search by market
 
 - [ ] allow option to print a .log file on export so a record of graph can be kept?
 
-
-- [?] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos
-
-- [x] have a way to see what version was used when using a block's 'latest' (no version specified) -> (show a directory?) -> (OR transform the base installation -> leaning yes) or block's major ver (_v1, _v2, etc.) -> useful to know in case an update ends up breaking the code, allows dev to know what the last working version was
-
 - [?] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
 
 - [ ] graph command but -upstream option (returns all blocks that are effected/use this block)
 
-- [ ] produce error log when trying to make 'new' with a remote repo that isn't empty
+- [ ] produce log.warning when trying to make 'new' with a remote repo that isn't empty (doesnt link remote)
 
 - [-] have some way of notifying user that a block is missing from installations when trying to export -> is somewhat implemented as a warning in some cases if it has the library available but can't find the unit name
-
-- [-] add series of prompts to release command before actually doing anything
 
 - [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive
 - [ ] use argparse package to create better CLI?
@@ -48,6 +41,9 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos -> the unique ID handles if existing repos already have version tags
+- [x] add series of prompts to release command before actually doing anything
+- [x] have a way to see what version was used when using a block's 'latest' (no version specified) -> (show a directory?) -> (OR transform the base installation -> leaning yes) or block's major ver (_v1, _v2, etc.) -> useful to know in case an update ends up breaking the code, allows dev to know what the last working version was
 - [x] bypass -soft option if the market does not have a remote (there is no point to make a branch)
 - [x] adds hidden folder "version" 
 - [x] safety measure on 'version' meta by dynamically setting it every time legohdl is called by looking at highest valid git tag -> prevents user from overwriting it and messing it up -> solution is to store that `version.log` file no matter if a market is tied to the block.

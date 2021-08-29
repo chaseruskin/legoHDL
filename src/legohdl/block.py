@@ -359,7 +359,7 @@ derives: []
                 f.close()
             return avail_vers
         else:
-            return ['v0.0.0']
+            return ['v'+self.getHighestTaggedVersion()]
     
     #load the metadata from the Block.lock file
     def loadMeta(self):

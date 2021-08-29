@@ -53,18 +53,30 @@ class Registry:
             search_blk = search_for[i_dot+1:]
 
         reg = None
+        # market_search = []
     
-        #todo : fix for adding more flags to see various block levels
-        if(options.count("local") or not apt.linkedMarket()):
-            reg = self.getBlocks("local","cache")
+        #adding more flags to see various block levels
+        if(options.count("download")):
+            reg = self.getBlocks("local")
         #only show blocks that are installed
         elif(options.count("install")):
             reg = self.getBlocks("cache")
         #select from all blocks
         else:
             reg = self.getBlocks("local","cache","market")
+
+        #search blocks available by market
+        # if(apt.linkedMarket()):
+        #     for opt in options:
+        #         if(opt in apt.getMarkets()):
+        #             market_search.append(opt)
+        #         pass
+        #     if(len(market_search)):
+        #         reg = self.getBlocks("market")
+        #     else:
+        #         log.info("No blocks exist in the given market.")
+        
         #alpha sort
-       
         if(options.count('alpha')):
             lib_list = list()
             name_dict = dict()
@@ -97,6 +109,10 @@ class Registry:
                 ver = ''
                 info = ''
                 L,N = Block.split(blk.getTitle())
+                #only display the blocks listed in the targeted market
+                # if(len(market_search) and self.getBlocks("market")[L][N].getMeta("market") not in market_search):
+                #     continue
+
                 if(self.blockExists(blk.getTitle(), "local")):
                     status = 'dnld'
                     ver = self.getProjectsLocal()[L][N].getMeta("version")

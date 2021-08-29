@@ -486,6 +486,7 @@ class legoHDL:
         #download from market
         elif(self.db.blockExists(title, "market")):
             blk = self.db.getBlocks("market")[l][n]
+            log.info("Downloading "+blk.getTitle()+" from "+blk.getMeta('market')+' with '+blk.getMeta('remote')+"...")
             #use the remote git url to download/clone the block
             blk.downloadFromURL(blk.getMeta("remote"))
         #download from the cache
@@ -494,6 +495,7 @@ class legoHDL:
             dwnld_path = blk.getPath()
             if(blk.grabGitRemote() != None):
                 dwnld_path = blk.grabGitRemote()
+            log.info("Downloading "+blk.getTitle()+" from cache with "+dwnld_path+"...")
             #use the cache directory to download/clone the block
             blk.downloadFromURL(dwnld_path)
             #now return the block if wanting to open it with -o option
@@ -652,19 +654,14 @@ class legoHDL:
                 apt.initializeWorkspace(key)
                 #create new workspace profile
                 for lp in apt.SETTINGS[options[0]].values():
-                    if(lp['local'].lower() == apt.fs(val).lower()):
-                        exit(log.error("Workspace already exists with this path."))
-                if(key not in apt.SETTINGS[options[0]]):
-                    apt.SETTINGS[options[0]][key] = dict()
-                    apt.SETTINGS[options[0]][key]['market'] = list()
-                    apt.SETTINGS[options[0]][key]['local'] = None
+                    if(lp['local'] != None and lp['local'].lower() == apt.fs(val).lower()):
+                        exit(log.error("A workspace already exists with this path."))
                 #now insert value
                 apt.SETTINGS[options[0]][key]['local'] = apt.fs(val)
                 #will make new directories if needed when setting local path
                 if(not os.path.isdir(apt.SETTINGS[options[0]][key]['local'])):
-                    log.info("Making new directory "+apt.SETTINGS[options[0]][key]['local'])
+                    log.info("Making new local directory... "+apt.SETTINGS[options[0]][key]['local'])
                     os.makedirs(apt.fs(val), exist_ok=True)
-
                 #otherwise that directory already exists, are there any blocks already there?
                 else:
                     #go through all the found blocks and see if any are "released"
@@ -674,7 +671,7 @@ class legoHDL:
                             apt.WORKSPACE = apt.HIDDEN+"workspaces/"+key+"/"
                             if(Block.biggerVer(blk.getVersion(),'0.0.0') != '0.0.0'):
                                 #install to cache
-                                log.info("Found "+blk.getTitle()+" already a released block.")
+                                log.info("Found "+blk.getTitle()+" as an already a released block.")
                                 self.install(blk.getTitle())
                         pass
                     pass
