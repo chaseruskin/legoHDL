@@ -358,15 +358,15 @@ derives: []
 
     def getAvailableVers(self):
         avail_vers = []
-        path = apt.WORKSPACE+"versions/"+self.getLib()+"/"+self.getName()+"/"+apt.VER_LOG
-        if(os.path.exists(path)):
-            with open(path,'r') as f:
-                for v in f.readlines():
-                    avail_vers.append(v.strip())
-                f.close()
-            return avail_vers
-        else:
-            return ['v'+self.getHighestTaggedVersion()]
+        # path = apt.WORKSPACE+"versions/"+self.getLib()+"/"+self.getName()+"/"+apt.VER_LOG
+        # if(os.path.exists(path)):
+        #     with open(path,'r') as f:
+        #         for v in f.readlines():
+        #             avail_vers.append(v.strip())
+        #         f.close()
+        #     return avail_vers
+        # else:
+        return ['v'+self.getHighestTaggedVersion()]
     
     #load the metadata from the Block.lock file
     def loadMeta(self):

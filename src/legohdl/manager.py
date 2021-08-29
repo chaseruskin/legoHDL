@@ -538,8 +538,9 @@ class legoHDL:
         _,block_order = self.formGraph(block, top_dog)
         block.updateDerivatives(block_order)
         block.release(msg, ver, options)
-        
-        self.update(block.getTitle(low=False), block.getVersion())
+        #don't look to market when updating if the block does not link to market anymore
+        bypassMrkt = (block.getMeta('market') in apt.getMarkets())
+        self.update(block.getTitle(low=False), block.getVersion(), bypassMrkt=bypassMrkt)
 
         log.info(block.getLib()+"."+block.getName()+" is now available as version "+block.getVersion()+".")
         pass
@@ -999,7 +1000,7 @@ class legoHDL:
 
     #! === UPDATE COMMAND ===
 
-    def update(self, title, ver=None):
+    def update(self, title, ver=None, bypassMrkt=False):
         l,n = Block.split(title)
         #check if market version is bigger than the installed version
         c_ver = '0.0.0'
@@ -1008,12 +1009,12 @@ class legoHDL:
             c_ver = cache_block.getVersion()
 
         m_ver = ver
-        if(self.db.blockExists(title, "market")):
+        if(not bypassMrkt and self.db.blockExists(title, "market")):
             mrkt_block = self.db.getBlocks("market")[l][n]
             m_ver = mrkt_block.getVersion()
         elif(ver == None):
             exit(log.error(title+" cannot be updated from any of the workspace's markets."))
-
+        
         if((Block.biggerVer(m_ver,c_ver) == m_ver and m_ver != c_ver)):
             log.info("Updating "+title+" installation to v"+m_ver)
             #remove from cache's master branch to be reinstalled
