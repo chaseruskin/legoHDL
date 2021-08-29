@@ -107,7 +107,7 @@ class legoHDL:
         #see what the latest version available is and clone from that version unless specified
         isInstalled = self.db.blockExists(title, "cache")
         #now check if block needs to be installed from market
-        if(self.db.blockExists(title, "cache") == False):
+        if(not isInstalled):
             if(verify_url):
                 if(apt.isValidURL(block.getMeta("remote")) == False):
                     log.warning("No remote to install from.")
@@ -549,10 +549,6 @@ class legoHDL:
     def setSetting(self, options, choice, delete=False):
         if(len(options) == 0):
             log.error("No setting was flagged to as an option")
-            return
-
-        if(options[0] == 'gl-token' or options[0] == 'gh-token'):
-            self.db.encrypt(choice, options[0])
             return
         
         if(choice == 'null'):
