@@ -94,16 +94,22 @@ class Block:
 
     def waitOnChangelog(self):
         change_file = self.getPath()+apt.CHANGELOG
-        subprocess.Popen([apt.SETTINGS['editor'],self.getPath()+apt.CHANGELOG])
-        resp = input("Enter 'k' when done writing CHANGELOG.md to proceed...")
-        while resp.lower() != 'k':
-            resp = input()
+        #check that a changelog exists for this block
+        if(os.path.exists(change_file)):
+            with open(change_file, 'r+') as f:
+                data = f.read()
+                f.seek(0)
+                f.write("## v"+self.getVersion()+'\n\n'+data)
+                f.close()
+            subprocess.Popen([apt.SETTINGS['editor'],change_file])
+            resp = input("Enter 'k' when done writing CHANGELOG.md to proceed...")
+            while resp.lower() != 'k':
+                resp = input()
         return
     
 
     #release the block as a new version
     def release(self, msg=None, ver=None, options=[]):
-        self.waitOnChangelog()
         #dynamically link on release
         if(self.grabGitRemote() != None and hasattr(self,"_repo")):
             if(apt.isValidURL(self.grabGitRemote())):
@@ -156,10 +162,15 @@ class Block:
             #user decided to proceed with release
             self.__metadata['version'] = ver[1:]
             self.save()
+            #try to allow user to edit changelog before proceeding
+            self.waitOnChangelog()
+
             log.info("Saving...")
             #add only changes made to Block.lock file
             if(options.count('strict')):
                 self._repo.index.add(apt.MARKER)
+                if(os.path.exists(self.getPath()+apt.CHANGELOG)):
+                    self._repo.index.add(apt.CHANGELOG)
             #add all untracked changes to be included in the release commit
             else:   
                 self._repo.git.add(update=True)
