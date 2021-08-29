@@ -895,8 +895,8 @@ class legoHDL:
 it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         
             if(not confirmed):
-                log.info("Keeping block "+block.getTitle()+' installation.')
-                force = False
+                exit(log.info("Did not remove nor uninstall "+block.getTitle()+'.'))
+
         #if there is a remote then the project still lives on, can be "redownloaded"
         log.info("Deleting "+block.getTitle()+" block found here: "+block.getPath())
         try:
