@@ -634,6 +634,7 @@ derives: []
                     #notify user of the installs in cache
                     if(x in install_vers):
                         print("*",end='')
+                        #notify that it is a parent version
                         parent_ver = x[:x.find('.')]
                         if(parent_ver in install_vers and parent_ver not in maj_vers):
                             print("\t"+parent_ver,end='')

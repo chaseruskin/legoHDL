@@ -1210,7 +1210,7 @@ class legoHDL:
                 self.db.blockExists(package, "cache") or \
                 self.db.blockExists(package, "market"))):
             ver = None
-            if(len(options) == 1 and Block.validVer(options[0]) == True):
+            if(len(options) == 1 and (Block.validVer(options[0]) == True or Block.validVer(options[0], maj_place=True))):
                 ver = options[0]
             #print available versions
             listVers = options.count("version")
