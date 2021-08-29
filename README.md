@@ -29,3 +29,5 @@ Being under development, some things are out-of-date in the documentation as new
 1. clone this repository
 2. run `pip install .` from within the repository's root directory
 3. have fun! See the documentation website for further info on getting started.
+
+Once the roadmap is complete for v1.0.0, users will be able to install legoHDL directly through pip from PYPI.
