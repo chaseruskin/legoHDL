@@ -891,15 +891,10 @@ class legoHDL:
             return
         
         if(not block.isLinked() and (force or block.getVersion() == '0.0.0')):
-            log.warning('No market is configured for this block, if this module is deleted and uninstalled\n\
-            it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'? [y/n]\
-            ')
-            response = ''
-            while(True):
-                response = input()
-                if(response.lower() == 'y' or response.lower() == 'n'):
-                    break
-            if(response.lower() == 'n'):
+            confirmed = apt.confirmation('No market is configured for '+block.getTitle()+', if it\'s deleted and uninstalled \
+it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
+        
+            if(not confirmed):
                 log.info("Keeping block "+block.getTitle()+' installation.')
                 force = False
         #if there is a remote then the project still lives on, can be "redownloaded"
