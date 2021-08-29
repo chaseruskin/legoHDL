@@ -162,6 +162,16 @@ class Block:
             #create a tag with this version
             self._repo.create_tag(apt.TAG_ID+ver)
 
+            sorted_versions = self.sortVersions(self.getTaggedVersions())
+
+            #create a version.log file
+            ver_path = apt.WORKSPACE+"versions/"+self.getLib()+"/"+self.getName()+"/"
+            os.makedirs(ver_path, exist_ok=True)
+            with open(ver_path+apt.VER_LOG,'w') as f:
+                for v in sorted_versions:
+                    f.write(v+"\n")
+                f.close()
+
             #push to remote codebase!! (we have a valid remote url to use)
             if(url != None):
                 self.pushRemote()
@@ -172,7 +182,7 @@ class Block:
             if(self.__market != None):
                 #todo : publish every version that DNE on market?
                 changelog_txt = self.getChangeLog(self.getPath())
-                self.__market.publish(self.__metadata, options, self.sortVersions(self.getTaggedVersions()), changelog_txt)
+                self.__market.publish(self.__metadata, options, sorted_versions, changelog_txt)
             elif(self.getMeta("market") != None):
                 log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
@@ -295,6 +305,9 @@ derives: []
         """
         return body
 
+    def isLocal(self):
+        return self.getPath().lower().count(apt.fs(apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['local']).lower())
+
     def bindMarket(self, mkt):
         if(mkt != None):
             log.info("Tying "+mkt+" as the market for "+self.getTitle(low=False))
@@ -313,6 +326,18 @@ derives: []
         self.genRemote(push)
         self.save()
         pass
+
+    def getAvailableVers(self):
+        avail_vers = []
+        path = apt.WORKSPACE+"versions/"+self.getLib()+"/"+self.getName()+"/"+apt.VER_LOG
+        if(os.path.exists(path)):
+            with open(path,'r') as f:
+                for v in f.readlines():
+                    avail_vers.append(v.strip())
+                f.close()
+            return avail_vers
+        else:
+            return ['v0.0.0']
     
     #load the metadata from the Block.lock file
     def loadMeta(self):
@@ -324,12 +349,14 @@ derives: []
         for key in apt.META:
             if(key not in self.__metadata.keys()):
                 self.__metadata[key] = None
+        
+        #check if this block is a local block
+        if(self.isLocal()):
+            #grab list of available versions
+            avail_vers = self.getAvailableVers()       
+            #dynamically determine the latest valid release point
+            self.__metadata['version'] = avail_vers[0][1:]
 
-        #todo : possibly dynamically determine the latest valid release point
-        if(hasattr(self, "_repo")):
-            #print(self.__metadata['name'],self.getHighestTaggedVersion())
-            #self.__metadata['version'] = self.getHighestTaggedVersion()
-            pass
 
         if(self.getMeta('derives') == None):
             self.__metadata['derives'] = dict()

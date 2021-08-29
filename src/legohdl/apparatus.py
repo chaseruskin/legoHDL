@@ -172,7 +172,9 @@ class Apparatus:
         if(os.path.isdir(workspace_dir) == False):
             log.info("Creating workspace directories for "+name+"...")
             os.makedirs(workspace_dir, exist_ok=True)
+        #store the list of available versions for each block
         os.makedirs(workspace_dir+"versions", exist_ok=True)
+        #store the code's state of each version for each block
         os.makedirs(workspace_dir+"cache", exist_ok=True)
         
         #if(not os.path.isfile(workspace_dir+"map.toml")):

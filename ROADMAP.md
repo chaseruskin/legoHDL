@@ -6,9 +6,6 @@
 
 - [ ] implement additional "help" command documentation
 
-- [ ]
-
-- [!] safety measure on 'version' meta by dynamically setting it every time legohdl is called by looking at highest valid git tag -> prevents user from overwriting it and messing it up -> solution is to store that `version.log` file no matter if a market is tied to the block.
 
 ### Future Roadmap
 
@@ -22,7 +19,6 @@
 - [ ] add ability to search by market
 
 - [ ] allow option to print a .log file on export so a record of graph can be kept?
-
 
 
 - [?] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos
@@ -51,6 +47,9 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] bypass -soft option if the market does not have a remote (there is no point to make a branch)
+- [x] adds hidden folder "version" 
+- [x] safety measure on 'version' meta by dynamically setting it every time legohdl is called by looking at highest valid git tag -> prevents user from overwriting it and messing it up -> solution is to store that `version.log` file no matter if a market is tied to the block.
 - [x] auto upload (on release) a changelog file to market as well if found in the block? -> leaning yes. will look for CHANGELOG.md, if a changelog exists then open code-editor to write new addition updates? -> yes -> will upload and display changelog if found at root of block directory and use flag '-changelog' with show command
 - [x] uninstall a whole entire major version from cache
 - [x] add prompt to uninstall command, will notify user of all uninstallations and then ask to proceed
