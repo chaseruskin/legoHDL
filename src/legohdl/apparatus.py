@@ -175,8 +175,8 @@ class Apparatus:
         os.makedirs(workspace_dir+"versions", exist_ok=True)
         os.makedirs(workspace_dir+"cache", exist_ok=True)
         
-        if(not os.path.isfile(workspace_dir+"map.toml")):
-            open(workspace_dir+"map.toml", 'w').write("[libraries]\n")
+        #if(not os.path.isfile(workspace_dir+"map.toml")):
+            #open(workspace_dir+"map.toml", 'w').write("[libraries]\n")
         
         #make sure market is a list
         if(isinstance(cls.SETTINGS['workspace'][name]['market'],list) == False):
