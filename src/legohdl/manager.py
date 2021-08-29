@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from genericpath import isfile
 import os, sys, shutil
+from re import M
+import yaml
 from .block import Block
 from .__version__ import __version__
 from .registry import Registry
@@ -58,7 +60,10 @@ class legoHDL:
         #does the package already exist in the cache directory?
         if(self.db.blockExists(title, "cache", updt=True)):
             block = self.db.getBlocks("cache")[l][n]
-            if(ver == None or ver == "v"+block.getVersion()):
+            #list all versions available in cache
+            vers_instl = os.listdir(cache_path+l+"/"+n+"/")
+            #its already installed if its in cache with no specific version or the version folder exists
+            if(ver == None or ver in vers_instl):
                 log.info(title+" is already installed.")
                 already_installed = True
         elif(self.db.blockExists(title, "market")):
@@ -173,13 +178,63 @@ class legoHDL:
         l,n = Block.split(blk)
         base_cache_dir = apt.WORKSPACE+"cache/"+l+"/"+n+"/"
         if(self.db.blockExists(blk, "cache")):
+            vers_instl = os.listdir(base_cache_dir)
+            
             #delete all its block stuff in cache
             if(ver == None):
-                #todo : issue confirmation with list of all versions that will be uninstalled
-                shutil.rmtree(base_cache_dir, onerror=apt.rmReadOnly)
+                prmpt = 'Are you sure you want to uninstall the following?\n'
+                #print all folders that will be deleted
+                for v in vers_instl:
+                    if(Block.validVer(v) or Block.validVer(v, maj_place=True)):
+                        prmpt = prmpt + base_cache_dir+v+"\n"
+                #ask for confirmation to delete installations
+                confirm = apt.confirmation(prmpt)
+                if(confirm):
+                    shutil.rmtree(base_cache_dir, onerror=apt.rmReadOnly)
+                else:
+                    exit(log.info("Did not uninstall block "+blk+"."))
             #only delete the specified version
             elif(os.path.isdir(base_cache_dir+ver+"/")):
-                shutil.rmtree(base_cache_dir+ver+"/", onerror=apt.rmReadOnly)
+                tmp_blk = self.db.getBlocks("cache")[l][n]
+                remaining_vers = tmp_blk.sortVersions(tmp_blk.getTaggedVersions())
+                prmpt = 'Are you sure you want to uninstall the following?\n'
+                prmpt = prmpt + base_cache_dir+ver+"\n"
+
+                parent_ver = ver[:ver.find('.')]
+                #open the project and see what version is being used
+                if(os.path.isdir(base_cache_dir+parent_ver+"/")):
+                    parent_meta = dict()
+                    with open(base_cache_dir+parent_ver+"/"+apt.MARKER, 'r') as tmp_f:
+                        parent_meta = yaml.load(tmp_f, Loader=yaml.FullLoader)
+                        tmp_f.close()
+                    #will have to try to revert down a version if its being used in parent version
+                    rm_parent = (parent_meta['version'] == ver[1:])
+
+                    if(rm_parent):
+                        prmpt = prmpt + base_cache_dir+parent_ver+"\n"
+    
+                        
+                        #grab the highest version found that left from installed
+                        remaining_vers.remove(ver)
+                        next_best_ver = None
+                        for v in remaining_vers:
+                            if(v[:v.find('.')] == parent_ver and v in vers_instl):
+                                next_best_ver = v
+                        print(remaining_vers)
+                        print(next_best_ver)
+
+                confirm = apt.confirmation(prmpt)
+                
+                if(confirm):
+                    shutil.rmtree(base_cache_dir+ver+"/", onerror=apt.rmReadOnly)
+                    #todo: also update the parent version to a new level or delete it
+                    if(rm_parent):
+                        shutil.rmtree(base_cache_dir+parent_ver+"/", onerror=apt.rmReadOnly)
+                    #if found, update parent version to next best available level
+                    if(next_best_ver != None):
+                        tmp_blk.install(apt.WORKSPACE+"cache/", next_best_ver, )
+                else:
+                    exit(log.info("Did not uninstall block "+blk+"."))
             else:
                 exit(log.error("Block "+blk+" version "+ver+" is not installed to the workspace's cache."))
             #if empty dir then do some cleaning

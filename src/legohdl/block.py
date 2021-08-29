@@ -627,15 +627,22 @@ derives: []
                 #todo : also * the installed versions
                 #soln : grab list dir of all valid versions in cache, and match them with '*'
                 #todo : show 'x' amount at a time? then use 'f' and 'b' to paginate
+                #track what major versions have been identified
+                maj_vers = []
                 for x in ver_sorted:
                     print(x,end='\t')
-                    if(x[1:] == self.getMeta("version")):
-                        print("*",end='')
-                        print()
-                        continue
                     #notify user of the installs in cache
                     if(x in install_vers):
                         print("*",end='')
+                        parent_ver = x[:x.find('.')]
+                        if(parent_ver in install_vers and parent_ver not in maj_vers):
+                            print("\t"+parent_ver,end='')
+                        maj_vers.append(parent_ver)
+                        
+                    #this is the current version
+                    if(x[1:] == self.getMeta("version")):
+                        print("\tlatest",end='')
+
                     print()
     
     #open up the block with configured text-editor
@@ -775,22 +782,22 @@ derives: []
             #ensure this version is actually tagged
             if(ver in self.getTaggedVersions()):
                 self._repo.git.checkout(apt.TAG_ID+ver)
-                #check if version is actually already installed
-                if ver in instl_vers:
-                    log.info("Version "+ver+" is already installed.")
-                    return
                 #copy files and move them to correct spot
                 if(ver[1:] == self.getMeta("version")):
                     meta = self.getMeta()
                 else:
                     meta = apt.getBlockFile(self._repo, ver, specific_cache_dir, in_branch=False)
                 
-                if(meta != None):
-                    #install to its version number
-                    self.copyVersionCache(ver=ver, folder=ver)
-                else:
-                    log.error("whomp whomp")
-                    return
+                #check if version is actually already installed
+                if ver in instl_vers:
+                    log.info("Version "+ver+" is already installed.")
+                else:  
+                    if(meta != None):
+                        #install to its version number
+                        self.copyVersionCache(ver=ver, folder=ver)
+                    else:
+                        log.error("whomp whomp")
+                        return
 
                 #now that we have a valid version and the meta is good, try to install to major ver
                 #get "major" value

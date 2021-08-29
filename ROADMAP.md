@@ -8,12 +8,6 @@
 
 - [!] add prompt to uninstall command, will notify user of all uninstallations and then ask to proceed
 
-- [x] implement behavior to change module name's when installing a specific version for verilog files
-
-- [ ] use argparse package to create better CLI?
-
-- [ ] perform git pull on release command before releasing? -> leaning no -> don't think its needed
-
 - [ ] implement additional "help" command documentation
 
 
@@ -29,6 +23,8 @@
 - [ ] add ability to search by market
 
 - [ ] allow option to print a .log file on export so a record of graph can be kept?
+
+- [ ] use argparse package to create better CLI?
 
 - [ ] safety measure on 'version' meta by dynamically setting it every time legohdl is called by looking at highest valid git tag -> prevents user from overwriting it and messing it up -> solution is to store that `version.log` file no matter if a market is tied to the block.
 
@@ -57,6 +53,7 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] implement behavior to change module name's when installing a specific version for verilog files
 - [x] update default labels to include verilog
 - [x] allow user to add a comment to release -> goes to git commit and also goes to version.log file
 example: `legohdl release "Fixes clock sync bug" -fix`
@@ -76,6 +73,7 @@ example: `legohdl release "Fixes clock sync bug" -fix`
 - [x] create a version.log file and keep markets to only one folder per block (not span over folders for every release) -> don't need folder for every release because legohdl uses git-tags to grab release-points
 - [x] rewrite labels to must include * to fully say its glob style
 - [x] when installing a version, go through all vhdl code and append the version to the entity name's for that block
+- [o] perform git pull on release command before releasing? -> leaning no -> don't think its needed
 - [x] implement update/upgrade command
 - [x] implement refresh command -> specify market or specify none to refresh all markets tied to workspace
 - [x] investigate whether to use `git checkout tag` then moving files OR continue using `git clone --single-branch` of tag for installation -> would allow for checking if valid legohdl release point and save space in the long run of having many installations -> moves files option
