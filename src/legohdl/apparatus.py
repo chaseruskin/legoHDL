@@ -14,6 +14,8 @@ class Apparatus:
 
     MARKER = "Block.lock"
 
+    CHANGELOG = "CHANGELOG.md"
+
     TEMPLATE = HIDDEN+"template/"
 
     WORKSPACE = HIDDEN
@@ -170,8 +172,9 @@ class Apparatus:
         if(os.path.isdir(workspace_dir) == False):
             log.info("Creating workspace directories for "+name+"...")
             os.makedirs(workspace_dir, exist_ok=True)
-        os.makedirs(workspace_dir+"lib", exist_ok=True)
+        os.makedirs(workspace_dir+"versions", exist_ok=True)
         os.makedirs(workspace_dir+"cache", exist_ok=True)
+        
         if(not os.path.isfile(workspace_dir+"map.toml")):
             open(workspace_dir+"map.toml", 'w').write("[libraries]\n")
         

@@ -1224,11 +1224,12 @@ class legoHDL:
                 self.db.blockExists(package, "cache") or \
                 self.db.blockExists(package, "market"))):
             ver = None
+            changelog = options.count('changelog')
             if(len(options) == 1 and (Block.validVer(options[0]) == True or Block.validVer(options[0], maj_place=True))):
                 ver = options[0]
             #print available versions
             listVers = options.count("version")
-            self.db.getBlocks("local","cache","market")[L][N].show(listVers, ver)
+            self.db.getBlocks("local","cache","market")[L][N].show(listVers, ver, changelog)
             pass
         elif(command == "update" and self.db.blockExists(package,"cache")):
             #perform install over remote url

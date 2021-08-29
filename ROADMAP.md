@@ -4,12 +4,11 @@
 
 - [!] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
 
-- [!] auto upload (on release) a changelog file to market as well if found in the block? -> leaning yes. will look for CHANGELOG.md, if a changelog exists then open code-editor to write new addition updates? -> yes
-
-- [ ] uninstall a whole entire major version from cache
-
 - [ ] implement additional "help" command documentation
 
+- [ ]
+
+- [!] safety measure on 'version' meta by dynamically setting it every time legohdl is called by looking at highest valid git tag -> prevents user from overwriting it and messing it up -> solution is to store that `version.log` file no matter if a market is tied to the block.
 
 ### Future Roadmap
 
@@ -24,9 +23,7 @@
 
 - [ ] allow option to print a .log file on export so a record of graph can be kept?
 
-- [ ] use argparse package to create better CLI?
 
-- [ ] safety measure on 'version' meta by dynamically setting it every time legohdl is called by looking at highest valid git tag -> prevents user from overwriting it and messing it up -> solution is to store that `version.log` file no matter if a market is tied to the block.
 
 - [?] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos
 
@@ -43,6 +40,7 @@
 - [-] add series of prompts to release command before actually doing anything
 
 - [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive
+- [ ] use argparse package to create better CLI?
 
 - [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
 
@@ -53,6 +51,8 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] auto upload (on release) a changelog file to market as well if found in the block? -> leaning yes. will look for CHANGELOG.md, if a changelog exists then open code-editor to write new addition updates? -> yes -> will upload and display changelog if found at root of block directory and use flag '-changelog' with show command
+- [x] uninstall a whole entire major version from cache
 - [x] add prompt to uninstall command, will notify user of all uninstallations and then ask to proceed
 - [x] uninstalling a leading version will then try to replace the parent version with a new leading version if already available in the cache
 - [x] implement behavior to change module name's when installing a specific version for verilog files

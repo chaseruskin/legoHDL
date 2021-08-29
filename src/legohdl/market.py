@@ -60,7 +60,7 @@ class Market:
         return self.url
 
     #release a block to this market
-    def publish(self, meta, options=[], all_vers=[]):
+    def publish(self, meta, options=[], all_vers=[], changelog=None):
         if(self.url != None):
             #refresh remote
             if(len(self._repo.remotes)):
@@ -103,7 +103,16 @@ class Market:
             f.write('v'+meta['version']+"\n")
             for line in file_data:
                 f.write(line)
+            f.close()
             pass
+
+        #save changelog 
+        if(changelog != None):
+            with open(block_dir+apt.CHANGELOG,'w') as f:
+                for line in changelog:
+                    f.write(line)
+                f.close()
+                pass
 
         #save yaml file
         with open(block_dir+apt.MARKER, 'w') as file:

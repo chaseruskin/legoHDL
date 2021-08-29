@@ -171,7 +171,8 @@ class Block:
             #publish on market/bazaar! (also publish all versions not found)
             if(self.__market != None):
                 #todo : publish every version that DNE on market?
-                self.__market.publish(self.__metadata, options, self.sortVersions(self.getTaggedVersions()))
+                changelog_txt = self.getChangeLog(self.getPath())
+                self.__market.publish(self.__metadata, options, self.sortVersions(self.getTaggedVersions()), changelog_txt)
             elif(self.getMeta("market") != None):
                 log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
@@ -596,10 +597,29 @@ derives: []
     def metadataPath(self):
         return self.getPath()+apt.MARKER
 
+    def getChangeLog(self, path):
+        path = path+"/"+apt.CHANGELOG
+        if(os.path.isfile(path)):
+                with open(path,'r') as f:
+                    return f.readlines()
+                    f.close()
+        else:
+            return None
+
     #print out the metadata for this block
-    def show(self, listVers=False, ver=None):
+    def show(self, listVers=False, ver=None, dispChange=False):
         cache_path = apt.HIDDEN+"workspaces/"+apt.SETTINGS['active-workspace']+"/cache/"+self.getLib()+"/"+self.getName()+"/"
         install_vers = []
+        if(dispChange):
+            changelog_txt = self.getChangeLog(self.getPath())
+            if(changelog_txt != None):
+                for l in changelog_txt:
+                    print(l,end='')
+                print()
+            else:
+
+                exit(log.error("No CHANGELOG.md file exists for "+self.getTitle()+". Add one in the next release."))
+            return
         if(os.path.isdir(cache_path)):
             install_vers = os.listdir(cache_path)
         #print out the downloaded block's metadata (found in local path)
