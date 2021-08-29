@@ -2,6 +2,7 @@ from genericpath import isdir, isfile
 import os, yaml, shutil
 from datetime import date
 import glob, git
+import subprocess
 import logging as log
 from .market import Market
 from .apparatus import Apparatus as apt
@@ -91,8 +92,18 @@ class Block:
                 highest = v[1:]
         return highest
 
+    def waitOnChangelog(self):
+        change_file = self.getPath()+apt.CHANGELOG
+        subprocess.Popen([apt.SETTINGS['editor'],self.getPath()+apt.CHANGELOG])
+        resp = input("Enter 'k' when done writing CHANGELOG.md to proceed...")
+        while resp.lower() != 'k':
+            resp = input()
+        return
+    
+
     #release the block as a new version
     def release(self, msg=None, ver=None, options=[]):
+        self.waitOnChangelog()
         #dynamically link on release
         if(self.grabGitRemote() != None and hasattr(self,"_repo")):
             if(apt.isValidURL(self.grabGitRemote())):
