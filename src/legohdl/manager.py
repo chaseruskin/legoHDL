@@ -186,7 +186,7 @@ class legoHDL:
                 #print all folders that will be deleted
                 for v in vers_instl:
                     if(Block.validVer(v) or Block.validVer(v, maj_place=True)):
-                        prmpt = prmpt + base_cache_dir+v+"\n"
+                        prmpt = prmpt + base_cache_dir+v+"/\n"
                 #ask for confirmation to delete installations
                 confirm = apt.confirmation(prmpt)
                 if(confirm):
@@ -200,7 +200,7 @@ class legoHDL:
                 tmp_blk = self.db.getBlocks("cache")[l][n]
                 remaining_vers = tmp_blk.sortVersions(tmp_blk.getTaggedVersions())
                 prmpt = 'Are you sure you want to uninstall the following?\n'
-                prmpt = prmpt + base_cache_dir+ver+"\n"
+                prmpt = prmpt + base_cache_dir+ver+"/\n"
                 
                 #determine this version's parent
                 parent_ver = ver[:ver.find('.')]
