@@ -195,12 +195,26 @@ class legoHDL:
                     exit(log.info("Did not uninstall block "+blk+"."))
             #only delete the specified version
             elif(os.path.isdir(base_cache_dir+ver+"/")):
+                #track what versions will no longer be available
+                rm_vers = []
                 tmp_blk = self.db.getBlocks("cache")[l][n]
                 remaining_vers = tmp_blk.sortVersions(tmp_blk.getTaggedVersions())
                 prmpt = 'Are you sure you want to uninstall the following?\n'
                 prmpt = prmpt + base_cache_dir+ver+"\n"
-
+                
+                #determine this version's parent
                 parent_ver = ver[:ver.find('.')]
+                #removing an entire parent version space
+                if(ver.find('.') == -1):
+                    parent_ver = ver
+                    for v in vers_instl:
+                        if(v[:v.find('.')] == parent_ver):
+                            rm_vers.append(v)
+                            prmpt = prmpt + base_cache_dir+v+"\n"
+                
+                rm_vers.append(ver)
+
+                next_best_ver = None
                 #open the project and see what version is being used
                 if(os.path.isdir(base_cache_dir+parent_ver+"/")):
                     parent_meta = dict()
@@ -210,15 +224,14 @@ class legoHDL:
                     #will have to try to revert down a version if its being used in parent version
                     rm_parent = (parent_meta['version'] == ver[1:])
 
-                    if(rm_parent):
+                    if(rm_parent and parent_ver != ver):
                         prmpt = prmpt + base_cache_dir+parent_ver+"\n"
     
-                        
                         #grab the highest version found that left from installed
                         remaining_vers.remove(ver)
-                        next_best_ver = None
+                        
                         for v in remaining_vers:
-                            if(v[:v.find('.')] == parent_ver and v in vers_instl):
+                            if(v[:v.find('.')] == parent_ver and v in vers_instl and v not in rm_vers):
                                 next_best_ver = v
                         print(remaining_vers)
                         print(next_best_ver)
@@ -226,13 +239,14 @@ class legoHDL:
                 confirm = apt.confirmation(prmpt)
                 
                 if(confirm):
-                    shutil.rmtree(base_cache_dir+ver+"/", onerror=apt.rmReadOnly)
+                    for v in rm_vers:
+                        shutil.rmtree(base_cache_dir+v+"/", onerror=apt.rmReadOnly)
                     #todo: also update the parent version to a new level or delete it
                     if(rm_parent):
                         shutil.rmtree(base_cache_dir+parent_ver+"/", onerror=apt.rmReadOnly)
                     #if found, update parent version to next best available level
                     if(next_best_ver != None):
-                        tmp_blk.install(apt.WORKSPACE+"cache/", next_best_ver, )
+                        tmp_blk.install(apt.WORKSPACE+"cache/", next_best_ver)
                 else:
                     exit(log.info("Did not uninstall block "+blk+"."))
             else:
@@ -1075,7 +1089,7 @@ class legoHDL:
         elif(command == "uninstall"):
             ver = None
             #ensure version option is valid before using it to install
-            if(len(options) == 1 and Block.validVer(options[0]) == True):
+            if(len(options) == 1 and (Block.validVer(options[0]) or Block.validVer(options[0], maj_place=True))):
                 ver = options[0]
             elif(len(options) > 1):
                 exit(log.error("Invalid Flags set for install command."))

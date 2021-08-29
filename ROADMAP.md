@@ -6,7 +6,7 @@
 
 - [!] auto upload (on release) a changelog file to market as well if found in the block? -> leaning yes. will look for CHANGELOG.md, if a changelog exists then open code-editor to write new addition updates? -> yes
 
-- [!] add prompt to uninstall command, will notify user of all uninstallations and then ask to proceed
+- [ ] uninstall a whole entire major version from cache
 
 - [ ] implement additional "help" command documentation
 
@@ -53,6 +53,8 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] add prompt to uninstall command, will notify user of all uninstallations and then ask to proceed
+- [x] uninstalling a leading version will then try to replace the parent version with a new leading version if already available in the cache
 - [x] implement behavior to change module name's when installing a specific version for verilog files
 - [x] update default labels to include verilog
 - [x] allow user to add a comment to release -> goes to git commit and also goes to version.log file
