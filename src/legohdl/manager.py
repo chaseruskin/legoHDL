@@ -1178,19 +1178,19 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 exit(log.error("No text-editor configured!"))
             #open template
             if(options.count("template")):
-                log.info("Opening block template folder at... "+apt.TEMPLATE)
+                log.info("Opening block template folder at... "+apt.fs(apt.TEMPLATE))
                 os.system(apt.SETTINGS['editor']+" \""+apt.TEMPLATE+"\"")
             #open scripts
             elif(options.count("script")):
                 #want to open the specified script?
-                script_path = apt.HIDDEN+"scripts"
+                script_path = apt.fs(apt.HIDDEN+"scripts")
                 #maybe open up the script file directly if given a value
                 if(value in apt.SETTINGS['script']):
                     for pt in apt.SETTINGS['script'][value].split()[1:]:
                         #find first case a arg is a path
                         pt = pt.replace("\"",'').replace("\'",'')
                         if(os.path.isfile(pt)):
-                            script_path = pt
+                            script_path = apt.fs(pt)
                             log.info("Opening script "+value+" at... "+script_path)
                             break
                     else:
