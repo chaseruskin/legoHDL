@@ -8,6 +8,8 @@
 
 - [ ] add run command to peform both 'export' and 'build'
 
+- [ ] move unique tag id to end like 'v1.0.0-legohdl' (currently is 'legohdl-v1.0.0')
+
 ### Future Roadmap
 
 - [ ] make market names case insensitive (duplicate names will clash on folder namespace within registry/)
