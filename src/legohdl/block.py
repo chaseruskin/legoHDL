@@ -74,7 +74,11 @@ class Block:
         #this is a remote url, so when it clones we must make sure to rename the base folder
         if(rem.endswith(".git")):
             url_name = rem[rem.rfind('/')+1:rem.rfind('.git')]
-            os.rename(new_path+url_name, new_path+self.getName(low=False))
+            try:
+                os.rename(new_path+url_name, new_path+self.getName(low=False))
+            except FileExistsError:
+                shutil.rmtree(new_path+self.getName(low=False), onerror=apt.rmReadOnly)
+                os.rename(new_path+url_name, new_path+self.getName(low=False))
         #assign the repo of the newly downloaded block
         self._repo = git.Repo(new_path+self.getName(low=False))
         #if downloaded from cache, make a master branch if no remote  
