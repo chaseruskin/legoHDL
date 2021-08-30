@@ -2,7 +2,6 @@ from genericpath import isdir, isfile
 import os, yaml, shutil
 from datetime import date
 import glob, git
-import subprocess
 import logging as log
 from .market import Market
 from .apparatus import Apparatus as apt
@@ -108,7 +107,8 @@ class Block:
                 f.seek(0)
                 f.write("## v"+self.getVersion()+'\n\n'+data)
                 f.close()
-            subprocess.Popen([apt.SETTINGS['editor'],change_file])
+            print(change_file)
+            os.system(apt.SETTINGS['editor']+" "+change_file)
             resp = input("Enter 'k' when done writing CHANGELOG.md to proceed...")
             while resp.lower() != 'k':
                 resp = input()
