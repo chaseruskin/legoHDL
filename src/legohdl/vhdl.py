@@ -113,7 +113,7 @@ class Vhdl(Language):
                             #now add the unit for the entity instance itself
                             use_packages.append(design_book[L][entity_name])
                     #or if the plain old entity name is indeed with a library
-                    for lib in library_declarations:
+                    for lib in design_book.keys():
                         if(entity_name in design_book[lib].keys()):
                             use_packages.append(design_book[lib][entity_name])
                 pass

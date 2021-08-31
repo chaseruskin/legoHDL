@@ -1,30 +1,32 @@
 ## Roadmap to Release v1.0.0
 
-- [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
-
-- [!] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
-
-- [ ] implement additional "help" command documentation
-
-- [ ] add run command to peform both 'export' and 'build'
-
-- [ ] move unique tag id to end like 'v1.0.0-legohdl' (currently is 'legohdl-v1.0.0')
-
-### Future Roadmap
+- [ ] add run command to peform both 'export' and then 'build'
 
 - [ ] make market names case insensitive (duplicate names will clash on folder namespace within registry/)
 
+- [ ] move unique tag id to end like 'v1.0.0-legohdl' (currently is 'legohdl-v1.0.0')
+
+- [ ] vhdl component declarations avoid library usage calls ? -> investigate
+
+- [ ] implement additional "help" command documentation
+
+- [?] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
+
+- [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
+
+- [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
+
+### Future Roadmap
+
 - [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock)
 
-- [ ] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
+- [-] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
 
 - [ ] add ability to see what market a block belongs too on list command
 
 - [ ] add ability to search by market
 
 - [ ] allow option to print a .log file on export so a record of graph can be kept?
-
-- [?] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
 
 - [ ] graph command but -upstream option (returns all blocks that are effected/use this block)
 
