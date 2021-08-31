@@ -82,7 +82,7 @@ class Market:
             self._repo.git.checkout("-b",tmp_branch)
 
         #locate block's directory within market
-        block_dir = self._local_path+"/"+meta['library']+"/"+meta['name']+"/"
+        block_dir = apt.fs(self._local_path+"/"+meta['library']+"/"+meta['name']+"/")
         os.makedirs(block_dir,exist_ok=True)
         #read in all loggin info about valid release points
         file_data = []
@@ -124,9 +124,13 @@ class Market:
                 pass
             pass
             file.close()
+            
         #save changes to repository (only add and stage the file that was made)
-        self._repo.index.add(block_dir+apt.MARKER)
-        self._repo.index.add(block_dir+apt.VER_LOG)
+        rel_git_path = meta['library']+'/'+meta['name']+'/'
+        self._repo.index.add(rel_git_path+apt.MARKER)
+        self._repo.index.add(rel_git_path+apt.VER_LOG)
+        if(changelog != None):
+            self._repo.index.add(rel_git_path+apt.CHANGELOG)
         pass
         
         #commit all releases
