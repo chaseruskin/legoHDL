@@ -25,14 +25,15 @@ class Apparatus:
 
     META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
     
-    #this is preppended to the tag to make it unique for legoHDL
-    TAG_ID = 'legohdl-'    
+    #this is appended to the tag to make it unique for legoHDL
+    TAG_ID = '-legohdl'    
     #file kept in markets to remember all valid release points
     VER_LOG = "version.log"
 
     #types of accepted HDL files to parse and interpret
     VHDL_CODE = ["*.vhd","*.vhdl"]
-    VERILOG_CODE = ["*.v"]
+    VERILOG_CODE = ["*.v","*.sv"]
+    
     SRC_CODE = VHDL_CODE + VERILOG_CODE
 
     __active_workspace = None
@@ -222,7 +223,7 @@ class Apparatus:
     @classmethod
     def getBlockFile(cls, repo, tag, path="./", in_branch=True):
         #checkout repo to the version tag and dump yaml file
-        repo.git.checkout(cls.TAG_ID+tag)
+        repo.git.checkout(tag+cls.TAG_ID)
         #find Block.lock
         if(os.path.isfile(path+cls.MARKER) == False):
             #return None if Block.lock DNE at this tag

@@ -4,7 +4,10 @@
 
 - [ ] make market names case insensitive (duplicate names will clash on folder namespace within registry/)
 
-- [ ] move unique tag id to end like 'v1.0.0-legohdl' (currently is 'legohdl-v1.0.0')
+- [ ] change how to use version flag? (windows has issue using '.') allow flag to be 'v1.0.0' or 'v1_0_0'
+- [ ] change how to call build script? (windows has issue using '@') '@' -> '&' `legohdl build &ghdl`
+
+- [x] move unique tag id to end like 'v1.0.0-legohdl' (currently is 'legohdl-v1.0.0')
 
 - [ ] vhdl component declarations avoid library usage calls ? -> investigate
 

@@ -193,7 +193,7 @@ class Block:
             self._repo.index.commit(msg)
 
             #create a tag with this version
-            self._repo.create_tag(apt.TAG_ID+ver)
+            self._repo.create_tag(ver+apt.TAG_ID)
 
             sorted_versions = self.sortVersions(self.getTaggedVersions())
 
@@ -254,9 +254,9 @@ class Block:
         tags = []
         #only add any tags identified by legohdl
         for t in all_tags:
-            if(t.startswith(apt.TAG_ID)):
+            if(t.endswith(apt.TAG_ID)):
                 #trim off identifier
-                t = t[t.find(apt.TAG_ID)+len(apt.TAG_ID):]
+                t = t[:t.find(apt.TAG_ID)]
                 #ensure it is valid version format
                 if(self.validVer(t)):
                     tags.append(t)
@@ -762,7 +762,7 @@ derives: []
     #will copy new folder to cache from base install and update the entities within the block
     def copyVersionCache(self, ver, folder):
         #checkout version
-        self._repo.git.checkout(apt.TAG_ID+ver)  
+        self._repo.git.checkout(ver+apt.TAG_ID)  
         #copy files
         version_path = self.getPath()+"../"+folder+"/"
         base_path = self.getPath()
@@ -839,7 +839,7 @@ derives: []
             if(os.path.exists(specific_cache_dir)):
                 shutil.rmtree(specific_cache_dir, onerror=apt.rmReadOnly)
             #clone and checkout specific version tag
-            git.Git(cache_dir).clone(src,"--branch",apt.TAG_ID+ver,"--single-branch")
+            git.Git(cache_dir).clone(src,"--branch",ver+apt.TAG_ID,"--single-branch")
             #url name is the only folder here that's not a valid version
             src = src.lower().replace(".git","")
             for folder in os.listdir(cache_dir):
@@ -858,11 +858,11 @@ derives: []
         self.loadMeta()
 
         #2. now perform install from cache
-        instl_vers = os.listdir(base_cache_dir)        
+        instl_vers = os.listdir(base_cache_dir)       
         if(self.validVer(ver)):
             #ensure this version is actually tagged
             if(ver in self.getTaggedVersions()):
-                self._repo.git.checkout(apt.TAG_ID+ver)
+                self._repo.git.checkout(ver+apt.TAG_ID)
                 #copy files and move them to correct spot
                 if(ver[1:] == self.getMeta("version")):
                     meta = self.getMeta()
