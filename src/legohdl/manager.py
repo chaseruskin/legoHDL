@@ -1388,7 +1388,7 @@ the cache, it will also install the latest version to the cache.
             printFmt("export","[toplevel]","[-testbench]")
             pass
         elif(cmd == "build"):
-            printFmt("build","[@<script>]","[...]")
+            printFmt("build","[+<script>]","[...]")
             print("\n   [...] is all additional arguments and will be passed directly into the called script")
             print("   If no script name is specified, it will default to looking for script \"master\"")
             pass
