@@ -127,48 +127,6 @@ class legoHDL:
         if(ver != None and isInstalled):
             block.install(cache_path, ver)
 
-        #log.info("success")
-    
-        #link it all together through writing paths into "map.toml"
-        # filename = apt.WORKSPACE+"map.toml"
-        # mapfile = open(filename, 'r')
-        # cur_lines = mapfile.readlines()
-        # mapfile.close()
-
-        # mapfile = open(filename, 'w')
-        # inc_paths = list()
-
-        # for f in block.gatherSources():
-        #     inc_paths.append("\'"+f+"\',\n")
-        # inc = False
-        # found_lib = False
-        # if(len(cur_lines) <= 1):
-        #     cur_lines.clear()
-        #     mapfile.write("[libraries]\n")
-
-        # for line in cur_lines:
-        #     if(line.count(block.getLib()+".files") > 0): #include into already established library section
-        #         inc = True
-        #         found_lib = True
-        #     elif(inc and not line.count("]") > 0):
-        #         if(line in inc_paths):
-        #             inc_paths.remove(line)   
-        #     elif(inc and line.count("]") > 0): # end of section
-        #         for p in inc_paths: #append rest of inc_paths
-        #             mapfile.write(p)
-        #         inc = False
-        #     mapfile.write(line)
-
-        # if(len(cur_lines) == 0 or not found_lib):
-        #     #create new library section
-        #     mapfile.write(block.getLib()+".files = [\n")
-        #     for p in inc_paths:
-        #         mapfile.write(p)
-        #     mapfile.write("]\n")
-
-        # mapfile.close()
-        # #update current map.toml as well
-        # shutil.copy(filename, os.path.expanduser("~/.vhdl_ls.toml"))
         pass
 
     #! === UNINSTALL COMMAND ===
@@ -263,20 +221,6 @@ class legoHDL:
 
         log.info("Successfully uninstalled block "+blk+".")
 
-        #remove from 'map.toml'
-        # lines = list()
-        # filename = apt.WORKSPACE+"map.toml"
-        # with open(filename, 'r') as file:
-        #     lines = file.readlines()
-        #     file.close()
-        # with open(filename, 'w') as file:
-        #     for lin in lines:
-        #         if(lin.count(l) and (lin.count("/"+n+"/"))):
-        #             continue
-        #         file.write(lin)
-        #     file.close()
-        # #update current map.toml as well
-        # shutil.copy(filename, os.path.expanduser("~/.vhdl_ls.toml"))
         pass
 
     #! === BUILD COMMAND ===
@@ -606,10 +550,7 @@ class legoHDL:
         if(options[0] == 'active-workspace'):
             if(choice not in apt.SETTINGS['workspace'].keys()):
                 exit(log.error("Workspace not found!"))
-            else:
-                #copy the map.toml for this workspace into user root for VHDL_LS
-                #shutil.copy(apt.HIDDEN+"workspaces/"+choice+"/map.toml", os.path.expanduser("~/.vhdl_ls.toml"))
-                pass
+
         #invalid option flag
         if(not options[0] in apt.SETTINGS.keys()):
             exit(log.error("No setting exists under that flag"))
