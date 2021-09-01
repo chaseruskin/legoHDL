@@ -282,14 +282,17 @@ class legoHDL:
     #! === BUILD COMMAND ===
 
     def build(self, script):
+        script_identifier = "+"
         arg_start = 3
+        
         if(not isinstance(apt.SETTINGS['script'],dict)): #no scripts exist
             exit(log.error("No scripts are configured!"))
-        elif(len(script) and script[0] == "@"):
-            if(script[1:] in apt.SETTINGS['script'].keys()): #is it a name?
-                cmd = apt.SETTINGS['script'][script[1:]]
+        elif(len(script) and script.startswith(script_identifier)):
+            stripped_name = script[len(script_identifier):]
+            if(stripped_name in apt.SETTINGS['script'].keys()): #is it a name?
+                cmd = apt.SETTINGS['script'][stripped_name]
             else:
-                exit(log.error("Script name not found!"))
+                exit(log.error("Build script "+stripped_name+" not found!"))
         elif("master" in apt.SETTINGS['script'].keys()): #try to resort to default
             cmd = apt.SETTINGS['script']['master']
             arg_start = 2
@@ -297,18 +300,12 @@ class legoHDL:
             cmd = apt.SETTINGS['script'][list(apt.SETTINGS['script'].keys())[0]]
             arg_start = 2
         else:
-            exit(log.error("No scripts are configured!"))
+            exit(log.error("No master script is configured!"))
 
         #remove quotes from command
         cmd = cmd.replace("\'","")
         cmd = cmd.replace("\"","")
-        #add surround quotes to the command/alias
-        # cmd = cmd.replace("\'","\"")
-        # if(cmd.find("\"") != 0):
-        #     cmd = "\"" + cmd
-        # if(cmd.rfind("\"") != len(cmd)-1):
-        #     cmd = cmd + "\""
-        # #add any extra arguments that were found on legohdl command line
+
         for i,arg in enumerate(sys.argv):
             if(i < arg_start):
                 continue
@@ -527,8 +524,11 @@ class legoHDL:
                 exit(log.error(err_msg))
             
         ver = None
-        if(options[0][0] == 'v'):
-            ver = options[0]
+        #find the manually entered version number
+        for opt in options:
+            if(Block.validVer(opt)):
+                ver = Block.stdVer(opt)
+                break
         
         if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == None):
             exit(log.error(err_msg))
@@ -860,6 +860,9 @@ class legoHDL:
         block = Block(title=title, path=cwdb1, remote=git_url, market=mrkt_sync)
         log.info("Creating "+apt.MARKER+" file...")
         block.create(fresh=False, git_exists=git_exists)
+
+        if(startup):
+            block.load()
         pass
 
     def validateMarketAndURL(self, options):
@@ -1054,7 +1057,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             ver = None
             #ensure version option is valid before using it to install
             if(len(options) == 1 and Block.validVer(options[0]) == True):
-                ver = options[0]
+                ver = Block.stdVer(options[0])
             elif(len(options) > 1):
                 exit(log.error("Invalid Flags set for install command."))
 
@@ -1079,7 +1082,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             ver = None
             #ensure version option is valid before using it to install
             if(len(options) == 1 and (Block.validVer(options[0]) or Block.validVer(options[0], maj_place=True))):
-                ver = options[0]
+                ver = Block.stdVer(options[0])
             elif(len(options) > 1):
                 exit(log.error("Invalid Flags set for install command."))
 
@@ -1215,7 +1218,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             ver = None
             changelog = options.count('changelog')
             if(len(options) == 1 and (Block.validVer(options[0]) == True or Block.validVer(options[0], maj_place=True))):
-                ver = options[0]
+                ver = Block.stdVer(options[0])
             #print available versions
             listVers = options.count("version")
             self.db.getBlocks("local","cache","market")[L][N].show(listVers, ver, changelog)
@@ -1238,7 +1241,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             ver = None
             for o in options:
                 if(Block.validVer(o) or Block.validVer(o, maj_place=True)):
-                    ver = o
+                    ver = Block.stdVer(o)
                     break
 
             inserted_lib = L

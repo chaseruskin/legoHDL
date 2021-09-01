@@ -117,7 +117,6 @@ class Block:
             while resp.lower() != 'k':
                 resp = input()
         return
-    
 
     #release the block as a new version
     def release(self, msg=None, ver=None, options=[]):
@@ -264,6 +263,10 @@ class Block:
         #return all tags
         return tags
 
+    @classmethod
+    def stdVer(cls, ver):
+        return ver.replace("_",".")
+
     #returns rhs if equal
     @classmethod
     def biggerVer(cls, lver, rver):
@@ -280,6 +283,7 @@ class Block:
     #return true if can be separated into 3 numeric values and starts with 'v'
     @classmethod
     def validVer(cls, ver, maj_place=False):
+        ver = cls.stdVer(ver)
         #must have 2 dots and start with 'v'
         if(not maj_place and (ver == None or ver.count(".") != 2 or ver.startswith('v') == False)):
             return False
@@ -301,6 +305,7 @@ class Block:
     #separate the version into 3 numeric values
     @classmethod
     def sepVer(cls, ver):
+        ver = cls.stdVer(ver)
         if(ver == '' or ver == None):
             return 0,0,0
         if(ver[0] == 'v'):

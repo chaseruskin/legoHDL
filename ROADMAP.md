@@ -4,8 +4,7 @@
 
 - [ ] make market names case insensitive (duplicate names will clash on folder namespace within registry/)
 
-- [ ] change how to use version flag? (windows has issue using '.') allow flag to be 'v1.0.0' or 'v1_0_0'
-- [ ] change how to call build script? (windows has issue using '@') '@' -> '&' `legohdl build &ghdl`
+- [ ] stop using version.log file for cache projects
 
 - [x] move unique tag id to end like 'v1.0.0-legohdl' (currently is 'legohdl-v1.0.0')
 
@@ -49,6 +48,8 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] change how to use version flag? (windows has issue using '.') allow flag to be 'v1.0.0' or 'v1_0_0'
+- [x] change how to call build script? (windows has issue using '@') '@' -> '+' `legohdl build +ghdl`
 - [x] add -install (implemented), -download (implemented) to list command
 - [x] allow ability to open a script by specifying script 'alias' name `legohdl open master -script`
 - [x] assess tradeoff: delete any git version tags that aren't valid but were identified? -> only really concerned with using existing repos -> the unique ID handles if existing repos already have version tags
