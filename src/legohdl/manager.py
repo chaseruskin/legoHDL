@@ -1352,7 +1352,7 @@ label, market, or workspace, will print their respective group found within the 
             print('{:<16}'.format("-workspace"),"view workspaces as workspace, active, path, markets")
             pass
         elif(cmd == "install"):
-            printFmt("install","<block>","[-v0.0.0]")
+            printFmt("install","[<block>","[-v0.0.0]] | [-requirements]")
             rollover("""
 Clones the block's main branch to the cache. If the main branch is already found in the cache,
 it will not clone/pull from the remote repository (see "update" command). Checkouts and copies 
@@ -1361,6 +1361,7 @@ entities of the install version are appeneded with its appropiate version (_v0_0
 version install may also update the location for its major value (_v0) if its the highest yet. 
             """)
             print('{:<16}'.format("-v0.0.0"),"specify what version to install (replace 0's)")
+            print('{:<16}'.format('-requirements'),'reads the "derives" list and installs all dependent blocks')
             pass
         elif(cmd == "uninstall"):
             printFmt("uninstall","<block>","[-v0.0.0]")
