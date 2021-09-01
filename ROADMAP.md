@@ -2,6 +2,8 @@
 
 - [ ] add run command to peform both 'export' and then 'build'
 
+- [ ] add ability to see what market a block belongs too on list command
+
 - [ ] vhdl component declarations avoid library usage calls ? -> investigate
 
 - [ ] implement additional "help" command documentation
@@ -14,11 +16,13 @@
 
 ### Future Roadmap
 
+- [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
+
+- [ ] add a 'categories' section to a block.lock? (multiple keywords to help identify the block)
+
 - [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock)
 
 - [-] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
-
-- [ ] add ability to see what market a block belongs too on list command
 
 - [ ] add ability to search by market
 
@@ -32,8 +36,6 @@
 
 - [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive
 - [ ] use argparse package to create better CLI?
-
-- [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
 
 - [ ] '-all' option on graph/export to grab all project-level code
 
