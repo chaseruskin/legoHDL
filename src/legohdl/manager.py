@@ -185,7 +185,7 @@ class legoHDL:
                 prmpt = 'Are you sure you want to uninstall the following?\n'
                 #print all folders that will be deleted
                 for v in vers_instl:
-                    if(Block.validVer(v) or Block.validVer(v, maj_place=True)):
+                    if(Block.validVer(v) or Block.validVer(v, maj_place=True) or v.lower() == n):
                         prmpt = prmpt + base_cache_dir+v+"/\n"
                 #ask for confirmation to delete installations
                 confirm = apt.confirmation(prmpt)
@@ -1221,7 +1221,14 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 ver = Block.stdVer(options[0])
             #print available versions
             listVers = options.count("version")
-            self.db.getBlocks("local","cache","market")[L][N].show(listVers, ver, changelog)
+
+            if(self.db.blockExists(package, "cache") == True):
+                self.db.getBlocks("cache")[L][N].show(listVers, ver, changelog)
+            elif(self.db.blockExists(package, "local") == True):
+                self.db.getBlocks("local")[L][N].show(listVers, ver, changelog)
+            elif(self.db.blockExists(package, "market") == True):
+                self.db.getBlocks("market")[L][N].show(listVers, ver, changelog)
+
             pass
         elif(command == "update" and self.db.blockExists(package,"cache")):
             #perform install over remote url

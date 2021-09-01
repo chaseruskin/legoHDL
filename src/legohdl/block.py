@@ -56,13 +56,6 @@ class Block:
         else:
             return self.__local_path
 
-    @DeprecationWarning
-    def copyVersionLog(self):
-        ver_log_path = apt.HIDDEN+"registry/"+self.getMeta('market')+"/"+self.getLib()+"/"+self.getName()+"/"+apt.VER_LOG
-        local_ver_log_path = apt.HIDDEN+"workspaces/"+apt.SETTINGS['active-workspace']+'/'+self.getLib()+'/'+self.getName()+'/'+apt.VER_LOG
-        if(os.path.exists(ver_log_path) and not os.path.exists(local_ver_log_path)):
-            shutil.copyfile(ver_log_path, local_ver_log_path)
-
     #download block from a url (can be from cache or remote)
     def downloadFromURL(self, rem):
         rem = apt.fs(rem)
@@ -343,6 +336,9 @@ derives: []
         """
         return body
 
+    def isMarket(self):
+        return self.getPath().lower().count(apt.fs(apt.HIDDEN+"registry/").lower())
+
     def isLocal(self):
         return self.getPath().lower().count(apt.fs(apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['local']).lower())
 
@@ -366,15 +362,6 @@ derives: []
         pass
 
     def getAvailableVers(self):
-        avail_vers = []
-        # path = apt.WORKSPACE+"versions/"+self.getLib()+"/"+self.getName()+"/"+apt.VER_LOG
-        # if(os.path.exists(path)):
-        #     with open(path,'r') as f:
-        #         for v in f.readlines():
-        #             avail_vers.append(v.strip())
-        #         f.close()
-        #     return avail_vers
-        # else:
         return ['v'+self.getHighestTaggedVersion()]
     
     #load the metadata from the Block.lock file
@@ -703,10 +690,11 @@ derives: []
         #list all versions available for this block
         else:
             #a file exists if in market called version.log
-            if(hasattr(self, "_repo") == False):
+            if(self.isMarket()):
                 with open(self.getPath()+apt.VER_LOG, 'r') as file:
                     for line in file.readlines():
-                        print(line,end='')
+                        v = line.split()[0]
+                        print(v)
             else:
                 ver_sorted = self.sortVersions(self.getTaggedVersions())
                 #todo : also * the installed versions

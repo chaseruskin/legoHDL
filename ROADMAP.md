@@ -4,9 +4,7 @@
 
 - [ ] make market names case insensitive (duplicate names will clash on folder namespace within registry/)
 
-- [ ] stop using version.log file for cache projects
-
-- [x] move unique tag id to end like 'v1.0.0-legohdl' (currently is 'legohdl-v1.0.0')
+- [ ] CI-inspired command option: `legohdl install -requirements` -> will read the 'derives' list and install each one (is set up for recursion)
 
 - [ ] vhdl component declarations avoid library usage calls ? -> investigate
 
@@ -48,6 +46,9 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] fixes show versions when block exists in market but not in cache
+- [x] move unique tag id to end like 'v1.0.0-legohdl' (currently is 'legohdl-v1.0.0')
+- [o] stop using version.log file for cache projects
 - [x] change how to use version flag? (windows has issue using '.') allow flag to be 'v1.0.0' or 'v1_0_0'
 - [x] change how to call build script? (windows has issue using '@') '@' -> '+' `legohdl build +ghdl`
 - [x] add -install (implemented), -download (implemented) to list command

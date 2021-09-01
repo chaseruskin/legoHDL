@@ -99,12 +99,8 @@ class Market:
                 file_data.append(old_ver+"\n")
 
         #insert this version as a new valid release point to version.log
-        with open(block_dir+apt.VER_LOG,'w') as f:
-            f.write('v'+meta['version']+"\n")
-            for line in file_data:
-                f.write(line)
-            f.close()
-            pass
+        ver_path = apt.WORKSPACE+"versions/"+meta['library']+"/"+meta['name']+"/"+apt.VER_LOG
+        shutil.copyfile(ver_path,block_dir+apt.VER_LOG)
 
         #save changelog 
         if(changelog != None):

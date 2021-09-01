@@ -259,7 +259,7 @@ class Registry:
             folder = self.getProjectsLocal(updt)
         elif(place == "cache"):
             folder = self.getProjectsCache(updt)
-        elif(place == "market"): #TO-DO-> get projects from remote
+        elif(place == "market"):
             folder = self.getProjectsMarket(updt)
         return (l in folder.keys() and (n in folder[l].keys() or n == '*'))
         pass
