@@ -33,7 +33,7 @@ class Apparatus:
     #types of accepted HDL files to parse and interpret
     VHDL_CODE = ["*.vhd","*.vhdl"]
     VERILOG_CODE = ["*.v","*.sv"]
-    
+
     SRC_CODE = VHDL_CODE + VERILOG_CODE
 
     __active_workspace = None
@@ -88,6 +88,7 @@ class Apparatus:
         cls.generateDefault(bool,"multi-develop")
         
         cls.dynamicWorkspace()
+        cls.dynamicMarkets()
 
         #determine current workspace currently being used
         cls.__active_workspace = cls.SETTINGS['active-workspace']
@@ -108,6 +109,35 @@ class Apparatus:
         #ensure no dead scripts are populated in 'script' section of settings
         cls.dynamicScripts()
         pass
+
+    #automatically set market names to lower-case, and prompt user to settle duplicate keys
+    @classmethod
+    def dynamicMarkets(cls):
+        true_case = {}
+        tmp_dict = {}
+        for mrkt in cls.SETTINGS['market'].keys():
+            lower_mrkt = mrkt.lower()
+            if(lower_mrkt in tmp_dict.keys()):
+                log.warning("Duplicate market names have been detected; which one do you want to keep?")
+                print('1)',true_case[lower_mrkt],':',tmp_dict[lower_mrkt])
+                print('2)',mrkt,':',cls.SETTINGS['market'][mrkt])
+                resp = None
+
+                while True:
+                    resp = input()
+                    opt_1 = resp == '1' or resp == true_case[lower_mrkt]
+                    opt_2 = resp == '2' or resp == mrkt
+                    if(opt_2):
+                        tmp_dict[lower_mrkt] = cls.SETTINGS['market'][mrkt]
+                    if(opt_1 or opt_2):
+                        shutil.rmtree(cls.HIDDEN+"registry/"+lower_mrkt,onerror=cls.rmReadOnly)
+                        break
+            else:   
+                tmp_dict[lower_mrkt] = cls.SETTINGS['market'][mrkt]
+
+            true_case[lower_mrkt] = mrkt
+        
+        cls.SETTINGS['market'] = tmp_dict
     
     #automatically create local paths for workspaces or delete hidden folders
     @classmethod
@@ -255,11 +285,14 @@ class Apparatus:
         #key: name, val: url
         if(cls.inWorkspace() and workspace_level):
             for name in cls.SETTINGS['workspace'][cls.__active_workspace]['market']:
-                if(name in cls.SETTINGS['market'].keys()):
-                    returnee[name] = cls.SETTINGS['market'][name]
+                if(name.lower() in cls.SETTINGS['market'].keys()):
+                    returnee[name.lower()] = cls.SETTINGS['market'][name.lower()]
+            cls.SETTINGS['workspace'][cls.__active_workspace]['market'] = list(returnee.keys())
+            cls.save()
         elif(cls.inWorkspace()):
             for name in cls.SETTINGS['market'].keys():
-                returnee[name] = cls.SETTINGS['market'][name]
+                returnee[name.lower()] = cls.SETTINGS['market'][name.lower()]
+
         return returnee
 
     @classmethod

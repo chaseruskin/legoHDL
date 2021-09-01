@@ -535,6 +535,8 @@ class legoHDL:
                             shutil.rmtree(bad_directory, onerror=apt.rmReadOnly)
                             log.info("Deleted workspace directory: "+bad_directory)
                     elif(st == 'market'):
+                        #case insensitive
+                        key = key.lower()
                         Market(key,val).delete()
                         #remove from all workspace configurations
                         for nm in apt.SETTINGS['workspace'].keys():
@@ -563,6 +565,7 @@ class legoHDL:
             if(val == None and options.count("add") or options.count("remove")):
                 pass
             else:
+                key = key.lower()
                 #add/change value to all-remote list
                 mkt = Market(key,val) #create market object!  
                 if(val == ''):
@@ -570,6 +573,9 @@ class legoHDL:
                 #only create remote in the list
                 if(key in apt.SETTINGS['market'].keys()):
                     #market name already exists
+                    confirm = apt.confirmation("You are about to reconfigure the already existing market "+key+". Are you sure you want to do this?")
+                    if(not confirm):
+                        exit(log.info("Setting not saved."))
                     val = mkt.setRemote(val) 
                 #set to null if the tried remote DNE
                 if(not mkt.isRemote()):

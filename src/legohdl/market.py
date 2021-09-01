@@ -10,27 +10,29 @@ class Market:
     def __init__(self, name, url):
         self._name = name
         self.url = url
-        self._local_path = apt.HIDDEN+"registry/"+self._name
+        self._local_path = apt.HIDDEN+"registry/"+self.getName()
         #is there not a git repository here? if so, need to init
         if(not os.path.isdir(self._local_path+"/.git")):
             valid_remote = False
+            #validate if the url is good to connect
             if(url != None):
                 valid_remote = apt.isValidURL(url)
                 url_name = url[url.rfind('/')+1:url.rfind('.git')]
+
             if(valid_remote):
                 git.Git(apt.HIDDEN+"registry/").clone(url)
-                log.info("Found and linked remote repository to "+self._name)
+                log.info("Found and linked remote repository to "+self.getName())
             else:
                 git.Repo.init(self._local_path)
-                log.warning("No remote repository configured for "+self._name)
-                url_name = self._name
+                log.warning("No remote repository configured for "+self.getName())
+                url_name = self.getName()
             os.rename(apt.HIDDEN+"registry/"+url_name, self._local_path)
             
         self._repo = git.Repo(self._local_path)
         pass
 
     def getName(self):
-        return self._name
+        return self._name.lower()
 
     def delete(self):
          if(os.path.exists(self._local_path)):
@@ -44,10 +46,10 @@ class Market:
             #is this a valid remote path? if it is and we have no origin, make it linked!
             if(not self.isRemote() and valid_remote):
                 self._repo.create_remote('origin', self.url)
-                log.info("Creating link for "+self._name+" to "+self.url+"...")
+                log.info("Creating link for "+self.getName()+" to "+self.url+"...")
             elif(self.isRemote() and valid_remote):
             #is this a valid remote path? do we already have one? if we already have a remote path, delete folder
-                log.info("Swapping link for "+self._name+" to "+self.url+"...")
+                log.info("Swapping link for "+self.getName()+" to "+self.url+"...")
                 if(os.path.exists(self._local_path)):
                     shutil.rmtree(self._local_path, onerror=apt.rmReadOnly)
                 git.Git(apt.HIDDEN+"registry/").clone(url) #and clone from new valid remote path
@@ -148,7 +150,7 @@ class Market:
         return self._local_path
 
     def __str__(self):
-        return f"{self._name}, {self.url}"
+        return f"{self.getName()}, {self.url}"
     pass
 
 #legacy code for publish function that would add all unreleased release points,

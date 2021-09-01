@@ -152,64 +152,65 @@ class Block:
         ver = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
         log.info(oldVerInfo+" -> "+ver)
         
-        if(ver != '' and ver[0] == 'v'):
-            #in order to release to market, we must have a valid git remote url
-            url = self.grabGitRemote()
-            if(url == None):
-                if(self.__market != None):
-                    cont = apt.confirmation("legohdl will not release to market "+self.__market.getName()+" because this block is not tied to a remote. Proceed anyway?")
-                    #user decided that is not OKAY, exiting release
-                    if(cont == False):
-                        exit(log.info("Did not release "+ver))
-            
-            #user decided to proceed with release
-            self.__metadata['version'] = ver[1:]
-            self.save()
-            #try to allow user to edit changelog before proceeding
-            self.waitOnChangelog()
-
-            log.info("Saving...")
-            #add only changes made to Block.lock file
-            if(options.count('strict')):
-                self._repo.index.add(apt.MARKER)
-                if(os.path.exists(self.getPath()+apt.CHANGELOG)):
-                    self._repo.index.add(apt.CHANGELOG)
-            #add all untracked changes to be included in the release commit
-            else:   
-                self._repo.git.add(update=True)
-                self._repo.index.add(self._repo.untracked_files)
-            #default message
-            if(msg == None):
-                msg = "Releases version -> "+self.getVersion()
-            #commit new changes with message
-            self._repo.index.commit(msg)
-
-            #create a tag with this version
-            self._repo.create_tag(ver+apt.TAG_ID)
-
-            sorted_versions = self.sortVersions(self.getTaggedVersions())
-
-            #create a version.log file
-            ver_path = apt.WORKSPACE+"versions/"+self.getLib()+"/"+self.getName()+"/"
-            os.makedirs(ver_path, exist_ok=True)
-            with open(ver_path+apt.VER_LOG,'w') as f:
-                for v in sorted_versions:
-                    f.write(v+"\n")
-                f.close()
-
-            #push to remote codebase!! (we have a valid remote url to use)
-            if(url != None):
-                self.pushRemote()
-            #no other actions should happen when no url is exists
-            else:
-                return
-            #publish on market/bazaar! (also publish all versions not found)
+        if(ver == '' or ver[0] != 'v'):
+            return
+        #in order to release to market, we must have a valid git remote url
+        url = self.grabGitRemote()
+        if(url == None):
             if(self.__market != None):
-                #todo : publish every version that DNE on market?
-                changelog_txt = self.getChangeLog(self.getPath())
-                self.__market.publish(self.__metadata, options, sorted_versions, changelog_txt)
-            elif(self.getMeta("market") != None):
-                log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
+                cont = apt.confirmation("legohdl will not release to market "+self.__market.getName()+" because this block is not tied to a remote. Proceed anyway?")
+                #user decided that is not OKAY, exiting release
+                if(cont == False):
+                    exit(log.info("Did not release "+ver))
+        
+        #user decided to proceed with release
+        self.__metadata['version'] = ver[1:]
+        self.save()
+        #try to allow user to edit changelog before proceeding
+        self.waitOnChangelog()
+
+        log.info("Saving...")
+        #add only changes made to Block.lock file
+        if(options.count('strict')):
+            self._repo.index.add(apt.MARKER)
+            if(os.path.exists(self.getPath()+apt.CHANGELOG)):
+                self._repo.index.add(apt.CHANGELOG)
+        #add all untracked changes to be included in the release commit
+        else:   
+            self._repo.git.add(update=True)
+            self._repo.index.add(self._repo.untracked_files)
+        #default message
+        if(msg == None):
+            msg = "Releases version -> "+self.getVersion()
+        #commit new changes with message
+        self._repo.index.commit(msg)
+
+        #create a tag with this version
+        self._repo.create_tag(ver+apt.TAG_ID)
+
+        sorted_versions = self.sortVersions(self.getTaggedVersions())
+
+        #create a version.log file
+        ver_path = apt.WORKSPACE+"versions/"+self.getLib()+"/"+self.getName()+"/"
+        os.makedirs(ver_path, exist_ok=True)
+        with open(ver_path+apt.VER_LOG,'w') as f:
+            for v in sorted_versions:
+                f.write(v+"\n")
+            f.close()
+
+        #push to remote codebase!! (we have a valid remote url to use)
+        if(url != None):
+            self.pushRemote()
+        #no other actions should happen when no url is exists
+        else:
+            return
+        #publish on market/bazaar! (also publish all versions not found)
+        if(self.__market != None):
+            #todo : publish every version that DNE on market?
+            changelog_txt = self.getChangeLog(self.getPath())
+            self.__market.publish(self.__metadata, options, sorted_versions, changelog_txt)
+        elif(self.getMeta("market") != None):
+            log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
     
     #merge sort (1/2) - returns a list highest -> lowest
@@ -405,9 +406,9 @@ derives: []
                 if(self.getMeta("market") in apt.getMarkets().keys()):
                     self.__market = Market(self.__metadata['market'], apt.SETTINGS['market'][self.__metadata['market']])
                 else:
-                    log.warning("Removing invalid market "+self.__metadata['market']+" from Block.lock. Make sure it is added to the workspace markets.")
+                    log.warning("Market "+self.__metadata['market']+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
                     self.__metadata['market'] = None
-                    self.__market = None
+                    self.__market = self.__metadata['market']
         self.save()
         pass
 
