@@ -52,7 +52,7 @@ class legoHDL:
 
     #install block to cache, and recursively install dependencies
     def install(self, title, ver=None, required_by=[]):
-        l,n = Block.split(title)
+        l,n = Block.split(title, vhdl=False)
         block = None
         cache_path = apt.WORKSPACE+"cache/"
         verify_url = False
@@ -63,8 +63,11 @@ class legoHDL:
             #list all versions available in cache
             vers_instl = os.listdir(cache_path+l+"/"+n+"/")
             #its already installed if its in cache with no specific version or the version folder exists
-            if(ver == None or ver in vers_instl):
+            if(ver == None):
                 log.info(title+" is already installed.")
+                already_installed = True
+            elif(ver in vers_instl):
+                log.info(title+"("+ver+") is already installed.")
                 already_installed = True
         elif(self.db.blockExists(title, "market")):
             block = self.db.getBlocks("market")[l][n]
@@ -75,16 +78,13 @@ class legoHDL:
             exit(log.error(title+" cannot be found anywhere."))
 
         #append to required_by list used to prevent cyclic recursive nature
-        required_by.append(block.getTitle())
+        required_by.append(block.getTitle()+'('+block.getVersion()+')')
         #see if all cache blocks are available by looking at block's derives list
         for prereq in block.getMeta("derives"):
             if(prereq == block.getTitle() or prereq in required_by):
                 continue
             #split prereq into library, name, and version
-            v_index = prereq.find("(v")
-            verreq = prereq[v_index+1:len(prereq)-1]
-            prereq = prereq[:v_index]
-            L,N = block.split(prereq)
+            L,N,verreq = block.splitDetachVer(prereq)
 
             needs_instl = False
             if(self.db.blockExists(prereq, "cache", updt=True) == False):
@@ -99,7 +99,7 @@ class legoHDL:
                 if verreq not in vers:
                     needs_instl = True
             if(needs_instl):
-                self.install(prereq, ver=verreq, required_by=required_by)
+                self.install(L+'.'+N, ver=verreq, required_by=required_by)
               
         #no work needed to be done on this block if already installed (version found in cache)
         if(already_installed):
@@ -1059,7 +1059,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             if(len(options) == 1 and Block.validVer(options[0]) == True):
                 ver = Block.stdVer(options[0])
             elif(len(options) > 1):
-                exit(log.error("Invalid Flags set for install command."))
+                exit(log.error("Invalid flags set for install command."))
 
             # #install version from cache
             # if(self.db.blockExists(package,"cache")):
@@ -1075,8 +1075,19 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             # else:
             #     exit(log.error("Block "+package+" does not exists for this workspace."))
 
-            #install block to cache
-            self.install(package, ver)
+            if(options.count('requirements')):
+                if(self.blockCWD.isValid()):
+                    log.info("Installing requirements...")
+                else:
+                    exit(log.error("Invalid block directory!"))
+                #read the derives list of this block
+                requirements = self.blockCWD.getMeta('derives')
+                for req in requirements:
+                    L,N,V = Block.splitDetachVer(req)
+                    self.install(L+'.'+N, V)
+            else:
+                #install block to cache
+                self.install(package, ver)
             pass
         elif(command == "uninstall"):
             ver = None

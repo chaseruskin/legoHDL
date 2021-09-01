@@ -951,6 +951,16 @@ derives: []
             return ''
         else:
             return file_path[dot+1:].lower()
+
+    #return l,n,v from a string found in derives list
+    @classmethod
+    def splitDetachVer(cls, dep):
+        #split prereq into library, name, and version
+        v_index = dep.find("(v")
+        verreq = dep[v_index+1:len(dep)-1]
+        prereq = dep[:v_index]
+        L,N = cls.split(prereq, vhdl=False)
+        return L,N,cls.stdVer(verreq)
     
     #split into library.block-name
     @classmethod
