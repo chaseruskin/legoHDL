@@ -69,11 +69,11 @@ class legoHDL:
             elif(ver in vers_instl):
                 log.info(title+"("+ver+") is already installed.")
                 already_installed = True
-        elif(self.db.blockExists(title, "market")):
-            block = self.db.getBlocks("market")[l][n]
         elif(self.db.blockExists(title, "local", updt=True)):
             block = self.db.getBlocks("local")[l][n]
             verify_url = True
+        elif(self.db.blockExists(title, "market")):
+            block = self.db.getBlocks("market")[l][n]
         else:
             exit(log.error(title+" cannot be found anywhere."))
 
@@ -416,7 +416,7 @@ class legoHDL:
     #! === DOWNLOAD COMMAND ===
 
     #will also install project into cache and have respective pkg in lib
-    def download(self, title):
+    def download(self, title, reinstall=True):
         l,n = Block.split(title)
         #1. download
         #update local block if it has a remote
@@ -444,6 +444,8 @@ class legoHDL:
         else:
             exit(log.error('Block \''+title+'\' does not exist in any linked market for this workspace'))
         
+        if(not reinstall):
+            return
         #2. perform re-install
         cache_block = None
         in_cache = self.db.blockExists(blk.getTitle(), "cache")
@@ -454,6 +456,7 @@ class legoHDL:
                 shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/"+n+"/", onerror=apt.rmReadOnly)
             except:
                 pass
+            print("here")
             #update cache installation if a new version is available
             self.install(title, None)
   
@@ -483,7 +486,7 @@ class legoHDL:
         block.updateDerivatives(block_order)
         block.release(msg, ver, options)
         #don't look to market when updating if the block does not link to market anymore
-        bypassMrkt = (block.getMeta('market') in apt.getMarkets())
+        bypassMrkt = (block.getMeta('market') not in apt.getMarkets())
         self.update(block.getTitle(low=False), block.getVersion(), bypassMrkt=bypassMrkt)
 
         log.info(block.getLib()+"."+block.getName()+" is now available as version "+block.getVersion()+".")
@@ -964,14 +967,17 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             log.info("Updating "+title+" installation to v"+m_ver)
             #remove from cache's master branch to be reinstalled
             base_installation = apt.WORKSPACE+"cache/"+l+"/"+n+"/"+n+"/"
+            
             if(os.path.isdir(base_installation)):
                 shutil.rmtree(base_installation, onerror=apt.rmReadOnly)
+            
+            #clone new project's progress into cache
+            self.install(title, None)
 
             #also update locally if exists
             if(self.db.blockExists(title,"local")):
-                self.download(title)
-            #clone new project's progress into cache
-            self.install(title, None)
+                self.download(title, reinstall=False)
+            
         else:
             log.info(title+" already up-to-date. (v"+c_ver+")")
         pass
