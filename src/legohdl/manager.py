@@ -543,8 +543,11 @@ class legoHDL:
                         Market(key,val).delete()
                         #remove from all workspace configurations
                         for nm in apt.SETTINGS['workspace'].keys():
-                            if(key in apt.SETTINGS['workspace'][nm]['market']):
-                                apt.SETTINGS['workspace'][nm]['market'].remove(key)
+                            #traverse through all markets listed for this workspace
+                            for mrkt_nm in apt.SETTINGS['workspace'][nm]['market']:
+                                #remove any matches to this newly deleted workspace
+                                if(key == mrkt_nm.lower()):
+                                    apt.SETTINGS['workspace'][nm]['market'].remove(mrkt_nm)
                             pass
                     del apt.SETTINGS[st][choice]
 
