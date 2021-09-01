@@ -31,3 +31,6 @@ Being under development, some things are out-of-date in the documentation as new
 3. have fun! See the documentation website for further info on getting started.
 
 Once the roadmap is complete for v1.0.0, users will be able to install legoHDL directly through pip from PYPI.
+
+### __Getting scripts__
+Some basic, ready-to-use backend scripts are available at https://github.com/legoHDL/scripts. Use them, be inspired by them, or ignore them.
