@@ -282,8 +282,6 @@ class legoHDL:
 
         #add labels in order from lowest-projects to top-level project
         labels = []
-        #track what labels have already been defined by the same block
-        latest_defined = dict()
         for blk in block_order:
             spec_path = None
             #break into library, name, version
@@ -307,26 +305,15 @@ class legoHDL:
 
             #using the version that was latched onto the name, alter cache path setting?
             if(V != None):
-                print(tmp.getPath())
                 base_cache_path = os.path.dirname(tmp.getPath()[:len(tmp.getPath())-1])
                 spec_path = base_cache_path+"/"+V+"/"
                 pass
-            #create new element if DNE
-            if(blk not in latest_defined.keys()):
-                latest_defined[blk] = ['0.0.0', []]
-            #update latest defined if a bigger version has appeared
-            overwrite = Block.biggerVer(latest_defined[blk][0], tmp.getVersion()) == tmp.getVersion()
-                
-            latest_defined[blk] = [tmp.getVersion(), latest_defined[blk][1]]
-                
 
             #add any recursive labels
             for label,ext in apt.SETTINGS['label']['recursive'].items():
                 files = tmp.gatherSources(ext=[ext], path=spec_path)
                 for f in files:
-                    basename = os.path.basename(f)
                     labels.append("@"+label+" "+apt.fs(f))
-                    latest_defined[blk][1].append(basename)
             #add any project-level labels
             if(block.getTitle() == blk):
                 for label,ext in apt.SETTINGS['label']['shallow'].items():
@@ -334,7 +321,6 @@ class legoHDL:
                     for f in files:
                         labels.append("@"+label+" "+apt.fs(f))
 
-        print(latest_defined)
         #register what files the top levels originate from (transform variables in unit objects)
         if(tb != None):
             tb = block.grabCurrentDesigns()[block.getLib()][tb]
