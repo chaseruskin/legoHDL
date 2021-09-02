@@ -282,21 +282,19 @@ class legoHDL:
 
         #add labels in order from lowest-projects to top-level project
         labels = []
+        #track what labels have already been defined by the same block
+        latest_defined = dict()
         for blk in block_order:
-            L,N = Block.split(blk, vhdl=False)
-            cached_ver = None
-            #cast off version 
-            v_index = N.rfind("(v")
-            if(v_index > -1 and N.rfind(")")):
-                cached_ver = N[v_index+1:len(N)-1]
-                N = N[:v_index]
-            #reassemble block name
+            spec_path = None
+            #break into library, name, version
+            L,N,V = Block.splitDetachVer(blk)
+            #reassemble block title
             blk = L+'.'+N
             #assign tmp block to the current block
             if(block.getTitle() == blk):
                 tmp = block
             #assign tmp block to block in downloads if multi-develop enabled and version is none
-            elif(cached_ver == None and self.db.blockExists(blk, "local") and apt.SETTINGS['multi-develop']):
+            elif(V == None and self.db.blockExists(blk, "local") and apt.SETTINGS['multi-develop']):
                 tmp = self.db.getBlocks("local")[L][N]
             #assign tmp block to the cache block
             elif(self.db.blockExists(blk, "cache")):
@@ -305,16 +303,30 @@ class legoHDL:
                 log.warning("Cannot locate block "+blk+" for label searching")
                 continue
 
+            spec_path = tmp.getPath()
+
             #using the version that was latched onto the name, alter cache path setting?
-            if(cached_ver != None):
+            if(V != None):
+                print(tmp.getPath())
                 base_cache_path = os.path.dirname(tmp.getPath()[:len(tmp.getPath())-1])
-                cached_ver = base_cache_path+"/"+cached_ver+"/"
+                spec_path = base_cache_path+"/"+V+"/"
                 pass
+            #create new element if DNE
+            if(blk not in latest_defined.keys()):
+                latest_defined[blk] = ['0.0.0', []]
+            #update latest defined if a bigger version has appeared
+            overwrite = Block.biggerVer(latest_defined[blk][0], tmp.getVersion()) == tmp.getVersion()
+                
+            latest_defined[blk] = [tmp.getVersion(), latest_defined[blk][1]]
+                
+
             #add any recursive labels
             for label,ext in apt.SETTINGS['label']['recursive'].items():
-                files = tmp.gatherSources(ext=[ext], path=cached_ver)
+                files = tmp.gatherSources(ext=[ext], path=spec_path)
                 for f in files:
+                    basename = os.path.basename(f)
                     labels.append("@"+label+" "+apt.fs(f))
+                    latest_defined[blk][1].append(basename)
             #add any project-level labels
             if(block.getTitle() == blk):
                 for label,ext in apt.SETTINGS['label']['shallow'].items():
@@ -322,6 +334,7 @@ class legoHDL:
                     for f in files:
                         labels.append("@"+label+" "+apt.fs(f))
 
+        print(latest_defined)
         #register what files the top levels originate from (transform variables in unit objects)
         if(tb != None):
             tb = block.grabCurrentDesigns()[block.getLib()][tb]
@@ -331,9 +344,6 @@ class legoHDL:
         for l in labels:
             output.write(l+"\n")
         for f in file_order:
-            #skip files if the file is a toplevel
-            #if((topfile_tb != None and f.endswith(topfile_tb)) or (topfile_top != None and f.endswith(topfile_top))):
-            #    continue
             output.write(f+"\n")
 
         #write current test dir where all testbench files are
@@ -355,7 +365,7 @@ class legoHDL:
         output.close()
         #update the derives section to give details into what blocks are required for this one
         block.updateDerivatives(block_order)
-        print("success")
+        log.info("success")
         pass
 
     def formGraph(self, block, top):

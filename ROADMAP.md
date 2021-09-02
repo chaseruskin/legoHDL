@@ -37,6 +37,8 @@
 
 - [ ] '-all' option on graph/export to grab all project-level code
 
+- [ ] '-no-clean' option on export ?
+
 - [ ] add cool logging
 
 - [ ] investiage if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design)
