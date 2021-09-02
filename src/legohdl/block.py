@@ -715,7 +715,7 @@ derives: []
                         maj_vers.append(parent_ver)
                         
                     #this is the current version
-                    if(x[1:] == self.getMeta("version")):
+                    if(x[1:] == self.getMeta("version") and not self.isLocal()):
                         print("\tlatest",end='')
 
                     print()
