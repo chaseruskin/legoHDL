@@ -99,15 +99,15 @@ class Registry:
             reg = sortion #assign the sorted dictionary to reg
             pass
 
-        print('{:<12}'.format("Library"),'{:<22}'.format("Block"),'{:<12}'.format("Status"),'{:<10}'.format("Version"))
-        print("-"*12+" "+"-"*22+" "+"-"*12+" "+"-"*8)
+        print('{:<12}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<8}'.format("Version"),'{:<16}'.format("Market"))
+        print("-"*12+" "+"-"*20+" "+"-"*8+" "+"-"*8+" "+"-"*16)
         for lib,prjs in reg.items():
             for name,blk in prjs.items():
                 if(not (lib.startswith(search_lib) and name.startswith(search_blk))):
                     continue
                 status = '-'
                 ver = ''
-                info = ''
+                info = None
                 L,N = Block.split(blk.getTitle())
                 #only display the blocks listed in the targeted market
                 # if(len(market_search) and self.getBlocks("market")[L][N].getMeta("market") not in market_search):
@@ -116,22 +116,29 @@ class Registry:
                 if(self.blockExists(blk.getTitle(), "local")):
                     status = 'dnld'
                     ver = self.getProjectsLocal()[L][N].getMeta("version")
+                    info = self.getProjectsLocal()[L][N].getMeta("market")
                 elif(self.blockExists(blk.getTitle(), "cache")):
                     status = 'instl' 
                     ver = self.getProjectsCache()[L][N].getMeta("version")
+                    info = self.getProjectsLocal()[L][N].getMeta("market")
                 elif(self.blockExists(blk.getTitle(), "market")):
                     ver = self.getBlocks("market")[L][N].getMeta("version")
                 else:
                     continue
 
-                if(self.blockExists(blk.getTitle(), "market")):
+                if(self.blockExists(blk.getTitle(), "market") and info != None):
                     rem_ver = self.getBlocks("market")[L][N].getMeta("version")
+                    
                     #indicate update if the market has a higher version
                     if(Block.biggerVer(ver,rem_ver) == rem_ver and rem_ver != ver):
                         info = '(update)-> '+rem_ver
                     pass
+                else:
+                    info = ''
+                    
+                info = info.lower()
                 ver = '' if (ver == '0.0.0') else ver
-                print('{:<12}'.format(blk.getLib(low=False)),'{:<22}'.format(blk.getName(low=False)),'{:<12}'.format(status),'{:<8}'.format(ver),info)
+                print('{:<12}'.format(blk.getLib(low=False)),'{:<20}'.format(blk.getName(low=False)),'{:<8}'.format(status),'{:<8}'.format(ver),info)
         pass
 
     def parseURL(self, url, website):
