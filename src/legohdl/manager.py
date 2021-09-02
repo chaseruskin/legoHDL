@@ -1274,8 +1274,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
 
     def commandHelp(self, cmd):
 
-        def printFmt(cmd,val,options=''):
-            print("USAGE:")
+        def printFmt(cmd,val,options='',quiet=False):
+            if(not quiet):
+                print("USAGE:")
             print("\tlegohdl "+cmd+" "+val+" "+options)
             pass
 
@@ -1340,6 +1341,7 @@ Creates a valid legohdl release point to be used in other designs. This will aut
 the toplevel unit, testbench unit, and determine the exact version dependencies required. 
 It will then stage, commit, and tag any changes. If the block has a valid remote, it will 
 push to the remote. If the block has a valid market, the Block.lock file will be updated there.
+If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.
             """)
             print('{:<16}'.format("<message>"),"the message for the release point's tagged commit")
             print()
@@ -1373,7 +1375,8 @@ Clones the block's main branch to the cache. If the main branch is already found
 it will not clone/pull from the remote repository (see "update" command). Checkouts and copies 
 the version (default is latest if unspecified) to have its own location in the cache. The 
 entities of the install version are appeneded with its appropiate version (_v0_0_0). Each 
-version install may also update the location for its major value (_v0) if its the highest yet. 
+version install may also update the location for its major value (_v0) if its the highest yet.
+If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.
             """)
             print('{:<16}'.format("-v0.0.0"),"specify what version to install (replace 0's)")
             print('{:<16}'.format('-requirements'),'reads the "derives" list and installs all dependent blocks')
@@ -1382,8 +1385,9 @@ version install may also update the location for its major value (_v0) if its th
             printFmt("uninstall","<block>","[-v0.0.0]")
             rollover("""
 Removes installed versions from the cache. If no version is specified, then ALL versions will be
-removed as well as the cloned main branch. Specifying a version will only remove that one, if its
-been installed.
+removed as well as the cached main branch. Specifying a version will only remove that one, if its
+been installed. Can also remove by major version value (ex: -v1). If the -v0.0.0 flag is not 
+properly working, -v0_0_0 is also valid.
             """)
             print('{:<16}'.format("-v0.0.0"),"specify what version to uninstall (replace 0's)")
             pass
@@ -1405,6 +1409,14 @@ the user to select one if multiple exist. If no script name is specified, it wil
 the script named 'master'. If only 1 script is configured, it will default to that script regardless of name.
             """)
             print('{:<16}'.format("..."),"arguments to be passed to the called script")
+        elif(cmd == "graph"):
+            printFmt("graph","[toplevel]","[-testbench]")
+            rollover("""
+Create the dependency tree for the current design. This command is used as an aide and will not
+alter the Block.lock file. The toplevel and testbench will be auto-detected and ask
+the user to select one if multiple exist. It helps the user gain a better picture of how the design
+will be ultimately combined.
+            """)
         elif(cmd == "update"):
             printFmt("update","<block>")
             pass
@@ -1424,18 +1436,32 @@ the script named 'master'. If only 1 script is configured, it will default to th
             printFmt("del","<block/value>","[-uninstall | -market | -script | -label | -workspace]")
             pass
         elif(cmd == "port"):
-            printFmt("port","<block>","[-map -instance]")
+            printFmt("port","<block>[.<entity>]","[-map -instance]")
+            rollover("""
+Print component information needed by an upper-level design to instantiate an entity. The output is
+designed to be copied and pasted into a source file with little-to-no modification. A specific
+entity can be requested by appending it to its block name.
+            """)
+            print('{:<16}'.format("-map"),"additionally display IO signals and component instantation")
+            print('{:<16}'.format("-instance"),"additionally display IO signals and direct entity instantation")
             pass
         elif(cmd == "show"):
             printFmt("show","<block>","[-version | -v0.0.0]")
+            rollover("""
+Print detailed information (Block.lock) about a block. Can also print a specific
+version's information if it is intstalled to the cache. Can also show by major version 
+value (ex: -v1). If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.            
+            """)
+            print('{:<16}'.format("-version"),"List the available versions and which ones are installed.")
+            print('{:<16}'.format("-v0.0.0"),"Show this specific version or constrain the version list to this version")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","""[-market [-add | -remove] | -author | -script [-link] | -label [-recursive] | -editor |\n\
-                    \t\t-workspace [-<market-name> ...] | -active-workspace]\
+            printFmt("config","<value>","(-market (-add | -remove) | -active-workspace | -author | -editor)")
+            print()
+            printFmt("config","<key>="+'"<value>"',"(-script [-link] | -label [-recursive] | -workspace | -market [-add | -remove])",quiet=True)
+            rollover("""
+Configure settings for legoHDL.
             """)
-            print("\n   Setting [-script], [-label], [-workspace], [-market] requires <value> to be <key>=\"<value>\"")
-            print("   Using -add or -remove does not require the <value> to be <key>\"<value\"")
-            print("   legohdl config lab=\"~/develop/hdl/\" -workspace") 
             pass
         print()
         exit()

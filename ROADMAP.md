@@ -12,6 +12,8 @@
 
 ### Future Roadmap
 
+- [ ] design question: remove 'run' command and instead have a positional argument for build command? '-e'
+
 - [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
 
 - [ ] add a 'categories' section to a block.lock? (multiple keywords to help identify the block)
