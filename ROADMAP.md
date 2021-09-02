@@ -1,7 +1,5 @@
 ## Roadmap to Release v1.0.0
 
-- [ ] add run command to peform both 'export' and then 'build'
-
 - [ ] vhdl component declarations avoid library usage calls ? -> investigate
 
 - [ ] implement additional "help" command documentation
@@ -44,8 +42,9 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] add run command to peform both 'export' and then 'build'
 - [x] add ability to see what market a block belongs too on list command
- [x] allow user to specify a certain constraint on showing the versions available in "show" command
+- [x] allow user to specify a certain constraint on showing the versions available in "show" command
 - [x] use isLocal() when printing versions and none are in cache
 - [x] make market names case insensitive (duplicate names will clash on folder namespace within registry/)
 - [x] CI-inspired command option: `legohdl install -requirements` -> will read the 'derives' list and install each one (is set up for recursion)

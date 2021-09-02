@@ -1143,6 +1143,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 tb = options[0]
             self.export(self.blockCWD, mod, tb)
             pass
+        elif(command == "run" and self.blockCWD.isValid()):
+            self.export(self.blockCWD)
+            self.build(value)
         elif(command == "open"):
             if(apt.SETTINGS['editor'] == None):
                 exit(log.error("No text-editor configured!"))
@@ -1248,7 +1251,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             formatHelp("port","print ports list of specified entity")
             formatHelp("graph","visualize dependency graph for reference")
             formatHelp("export","generate a recipe file from labels")
-            formatHelp("build","run a custom configured script")
+            formatHelp("build","execute a custom configured script")
+            formatHelp("run","export and build in a single step")
             formatHelp("release","release a new version of the current block")
             formatHelp("del","deletes a configured setting or a block from local workspace")
             print()
@@ -1392,6 +1396,15 @@ the cache, it will also install the latest version to the cache.
             """)
             print('{:<16}'.format("-open"),"open the block upon download to be developed")
             pass
+        elif(cmd == "run"):
+            printFmt("run","[+<script-name>]","[...]")
+            rollover("""
+Generate a recipe file through 'export' and then build the design with a custom configured script
+through 'build' all in this command. The toplevel and testbench will be auto-detected and ask
+the user to select one if multiple exist. If no script name is specified, it will default look for
+the script named 'master'. If only 1 script is configured, it will default to that script regardless of name.
+            """)
+            print('{:<16}'.format("..."),"arguments to be passed to the called script")
         elif(cmd == "update"):
             printFmt("update","<block>")
             pass
@@ -1399,9 +1412,13 @@ the cache, it will also install the latest version to the cache.
             printFmt("export","[toplevel]","[-testbench]")
             pass
         elif(cmd == "build"):
-            printFmt("build","[+<script>]","[...]")
-            print("\n   [...] is all additional arguments and will be passed directly into the called script")
-            print("   If no script name is specified, it will default to looking for script \"master\"")
+            printFmt("build","[+<script-name>]","[...]")
+            rollover("""
+Build the design with a custom configured script. The toplevel and testbench will be auto-detected and ask
+the user to select one if multiple exist. If no script name is specified, it will default look for
+the script named 'master'. If only 1 script is configured, it will default to that script regardless of name.
+            """)
+            print('{:<16}'.format("..."),"arguments to be passed to the called script")
             pass
         elif(cmd == "del"):
             printFmt("del","<block/value>","[-uninstall | -market | -script | -label | -workspace]")
