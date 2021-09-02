@@ -1,7 +1,5 @@
 ## Roadmap to Release v1.0.0
 
-- [ ] vhdl component declarations avoid library usage calls ? -> investigate
-
 - [ ] implement additional "help" command documentation
 
 - [?] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
@@ -41,9 +39,12 @@
 
 - [ ] add cool logging
 
+- [ ] investiage if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design)
+
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] vhdl component declarations avoid library usage calls ? -> investigate (believed to be true as of now)
 - [x] add run command to peform both 'export' and then 'build'
 - [x] add ability to see what market a block belongs too on list command
 - [x] allow user to specify a certain constraint on showing the versions available in "show" command

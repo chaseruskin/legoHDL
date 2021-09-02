@@ -260,7 +260,7 @@ class legoHDL:
 
     #! === EXPORT/GRAPH COMMAND ===
 
-    def export(self, block, top=None, tb=None):
+    def export(self, block, top=None):
         log.info("Exporting...")
         log.info("Block's path: "+block.getPath())
         build_dir = block.getPath()+"build/"
@@ -272,7 +272,7 @@ class legoHDL:
 
         log.info("Finding toplevel design...")
 
-        top_dog,top,tb = block.identifyTopDog(top, tb)
+        top_dog,top,tb = block.identifyTopDog(top, None)
         
         output = open(build_dir+"recipe", 'w')    
 
@@ -1090,12 +1090,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         #a visual aide to help a developer see what package's are at the ready to use
         elif(command == 'graph' and self.blockCWD.isValid()):
             top = package
-            tb = None
             if(top == ''):
                 top = None
-            if(len(options)):
-                tb = options[0]
-            top_dog,_,_ = self.blockCWD.identifyTopDog(top, tb)
+            top_dog,_,_ = self.blockCWD.identifyTopDog(top, None)
             #generate dependency tree
             self.formGraph(self.blockCWD, top_dog)
         elif(command == "download"):
@@ -1135,13 +1132,10 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             self.db.sync(value)
         elif(command == "export" and self.blockCWD.isValid()):
             #'' and list() are default to pkg and options
-            mod = package
-            tb = None
-            if(mod == ''):
-                mod = None
-            if(len(options) > 0):
-                tb = options[0]
-            self.export(self.blockCWD, mod, tb)
+            top = package
+            if(top == ''):
+                top = None
+            self.export(self.blockCWD, top)
             pass
         elif(command == "run" and self.blockCWD.isValid()):
             self.export(self.blockCWD)
@@ -1296,13 +1290,15 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         if(cmd == ''):
             return
         elif(cmd == "init"):
-            printFmt("init", "<block/value>","[-remote | -market | -summary]")
+            printFmt("init", "<block>")
+            printFmt("init","<value>","(-remote | -market | -summary)",quiet=True)
             rollover("""
 If no flags are raised, transform the working directory into a valid block. This will
 create a git repository if not available, and create the Block.lock file. If there is a
 raised flag, then the block's flag will be altered with the <value>.
             """)
-            print('{:<16}'.format("<block/value>"),"if no flags, transform current directory into a valid block")
+            print('{:<16}'.format("<block>"),"the block's title to be initialized from the current folder")
+            print('{:<16}'.format("<value>"),"value to be given to current block based on the flag raised")
             print()
             print('{:<16}'.format("-remote"),"provide a valid git URL as <value> to set for this block")
             print('{:<16}'.format("-market"),"provide a market name as <value> available from the workspace")
@@ -1313,29 +1309,35 @@ raised flag, then the block's flag will be altered with the <value>.
             rollover("""
 Create a new block into the base of the workspace's local path. The block's default 
 created path is <workspace-path>/<block-library>/<block-name>. The template folder 
-will be copied and a git repository will be created. 
+will be copied and a git repository will be created. If providing a remote git URL, make sure
+it is an empty repository. If you have a nonempty repository, checkout the 'init' command. If
+providing a market name, make sure the market is listed under the current workspace.
             """)
+            print('{:<16}'.format("<block>"),"the block's title to be created")
+            print()
             print('{:<16}'.format("-open"),"open the new block upon creation")
             print('{:<16}'.format("-<remote>"),"provide a blank git URL to be configured")
             print('{:<16}'.format("-<market>"),"provide a market name that's available in this workspace")
             pass
         elif(cmd == "open"):
-            printFmt("open","[<block/script>]","[-template -script -settings]")
+            printFmt("open","<block>")
+            printFmt("open","[<script-name>] -script",quiet=True)
+            printFmt("open","(-template | -settings)",quiet=True)
             rollover("""
 Open a variety of legohdl folders/files. With no flags raised, the block will be opened if
 it is found in the workspace's local path. If the script flag is raised with no <script>,
 it will open the built-in script folder. If a valid <script> is specified with the script 
 flag raised, it will directly open its file.
             """)
-            print('{:<16}'.format("<block/script>"),"open the downloaded block or the script")
-            print('{:<16}'.format(""),"file if the `-script` flag is raised")
+            print('{:<16}'.format("<block>"),"the block's title to be opened by the text-editor")
+            print('{:<16}'.format("<script-name>"),"script's name found in legohdl settings")
             print()
             print('{:<16}'.format("-template"),"open the template folder")
             print('{:<16}'.format("-script"),"open the built-in script folder if no script specified")
             print('{:<16}'.format("-settings"),"open the settings YAML file")
             pass
         elif(cmd == "release"):
-            printFmt("release","[<message>]","[[-v0.0.0 | -maj | -min | -fix] -strict -soft]")
+            printFmt("release","[<message>]","(-v0.0.0 | -maj | -min | -fix) [-strict -soft]")
             rollover("""
 Creates a valid legohdl release point to be used in other designs. This will auto-detect 
 the toplevel unit, testbench unit, and determine the exact version dependencies required. 
@@ -1372,12 +1374,14 @@ label, market, or workspace, will print their respective group found within the 
             printFmt("install","[<block>","[-v0.0.0]] | [-requirements]")
             rollover("""
 Clones the block's main branch to the cache. If the main branch is already found in the cache,
-it will not clone/pull from the remote repository (see "update" command). Checkouts and copies 
+it will not clone/pull from the remote repository (see 'update' command). Checkouts and copies 
 the version (default is latest if unspecified) to have its own location in the cache. The 
 entities of the install version are appeneded with its appropiate version (_v0_0_0). Each 
 version install may also update the location for its major value (_v0) if its the highest yet.
 If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.
             """)
+            print('{:<16}'.format("<block>"),"the block's title to be installed to cache")
+            print()
             print('{:<16}'.format("-v0.0.0"),"specify what version to install (replace 0's)")
             print('{:<16}'.format('-requirements'),'reads the "derives" list and installs all dependent blocks')
             pass
@@ -1389,6 +1393,8 @@ removed as well as the cached main branch. Specifying a version will only remove
 been installed. Can also remove by major version value (ex: -v1). If the -v0.0.0 flag is not 
 properly working, -v0_0_0 is also valid.
             """)
+            print('{:<16}'.format("<block>"),"the block's title to be uninstalled from cache")
+            print()
             print('{:<16}'.format("-v0.0.0"),"specify what version to uninstall (replace 0's)")
             pass
         elif(cmd == "download"):
@@ -1398,7 +1404,9 @@ Grab a block from either its remote url (found via market) or from the cache. Th
 be downloaded to <workspace-path>/<block-library>/<block-name>. If the block is not installed to
 the cache, it will also install the latest version to the cache.
             """)
-            print('{:<16}'.format("-open"),"open the block upon download to be developed")
+            print('{:<16}'.format("<block>"),"the block's title to be downloaded to the local path")
+            print()
+            print('{:<16}'.format("-open"),"open the block after download for development")
             pass
         elif(cmd == "run"):
             printFmt("run","[+<script-name>]","[...]")
@@ -1408,20 +1416,36 @@ through 'build' all in this command. The toplevel and testbench will be auto-det
 the user to select one if multiple exist. If no script name is specified, it will default look for
 the script named 'master'. If only 1 script is configured, it will default to that script regardless of name.
             """)
+            print('{:<16}'.format("+<script-name>"),"the script name given by the user to legohdl")
+            print()
             print('{:<16}'.format("..."),"arguments to be passed to the called script")
         elif(cmd == "graph"):
-            printFmt("graph","[toplevel]","[-testbench]")
+            printFmt("graph","[<toplevel>]")
             rollover("""
 Create the dependency tree for the current design. This command is used as an aide and will not
 alter the Block.lock file. The toplevel and testbench will be auto-detected and ask
 the user to select one if multiple exist. It helps the user gain a better picture of how the design
-will be ultimately combined.
+will be ultimately combined. If the toplevel is not a testbench, legohdl will attempt to find its
+respective testbench and add it to the graph.
             """)
+            print('{:<16}'.format("<toplevel>"),"explicitly set the toplevel entity/module")
         elif(cmd == "update"):
             printFmt("update","<block>")
+            rollover("""
+Update an installed block to have the latest version available. In order for a block to be updated
+it must be installed.
+            """)
             pass
         elif(cmd == "export"):
-            printFmt("export","[toplevel]","[-testbench]")
+            printFmt("export","[<toplevel>]")
+            rollover("""
+Create the dependency tree for the current design and generate the recipe file. The recipe is stored
+into a clean directory called 'build' on every export. It will update the Block.lock files with the
+current dependencies being used to export the design. The toplevel and testbench will be auto-detected and ask
+the user to select one if multiple exist. If the toplevel is not a testbench, legohdl will attempt to find its
+respective testbench and add it to the graph.
+            """)
+            print('{:<16}'.format("<toplevel>"),"explicitly set the toplevel entity/module")
             pass
         elif(cmd == "build"):
             printFmt("build","[+<script-name>]","[...]")
@@ -1430,11 +1454,28 @@ Build the design with a custom configured script. The toplevel and testbench wil
 the user to select one if multiple exist. If no script name is specified, it will default look for
 the script named 'master'. If only 1 script is configured, it will default to that script regardless of name.
             """)
+            print('{:<16}'.format("+<script-name>"),"the script name given by the user to legohdl")
+            print()
             print('{:<16}'.format("..."),"arguments to be passed to the called script")
             pass
         elif(cmd == "del"):
-            printFmt("del","<block/value>","[-uninstall | -market | -script | -label | -workspace]")
-            pass
+            printFmt("del","<block>","[-uninstall]")
+            printFmt("del","<value>","(-market | -script | -label | -workspace)",quiet=True)
+            rollover("""
+Delete a block from the local path, typically used after releasing a new version and development
+is complete. If deleting a workspace, the local path will be preserved but all legohdl settings and structure
+regarding the workspace will be forgotten. If deleting a market, it will be no longer available
+for any workspaces. If deleting a script or label, the set values will be removed. A script
+will not be deleted from its path.
+            """)
+            print('{:<16}'.format("<block>"),"the block's title to remove from local path")
+            print('{:<16}'.format("<value>"),"a previously defined legohdl setting value")
+            print()
+            print('{:<16}'.format("-uninstall"),"fully uninstall the block from cache")
+            print('{:<16}'.format("-market"),"delete the market from all workspaces and settings")
+            print('{:<16}'.format("-script"),"forget the script")
+            print('{:<16}'.format("-label"),"forget the label")
+            print('{:<16}'.format("-workspace"),"keeps local path, but remove from settings")
         elif(cmd == "port"):
             printFmt("port","<block>[.<entity>]","[-map -instance]")
             rollover("""
@@ -1442,6 +1483,9 @@ Print component information needed by an upper-level design to instantiate an en
 designed to be copied and pasted into a source file with little-to-no modification. A specific
 entity can be requested by appending it to its block name.
             """)
+            print('{:<16}'.format("<block>"),"the block's title telling where to get the entity")
+            print('{:<16}'.format("<entity>"),"explicitly indicate what entity to display")
+            print()
             print('{:<16}'.format("-map"),"additionally display IO signals and component instantation")
             print('{:<16}'.format("-instance"),"additionally display IO signals and direct entity instantation")
             pass
@@ -1452,12 +1496,13 @@ Print detailed information (Block.lock) about a block. Can also print a specific
 version's information if it is intstalled to the cache. Can also show by major version 
 value (ex: -v1). If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.            
             """)
+            print('{:<16}'.format("<block>"),"the block's title to show metdata about")
+            print()
             print('{:<16}'.format("-version"),"List the available versions and which ones are installed.")
             print('{:<16}'.format("-v0.0.0"),"Show this specific version or constrain the version list to this version")
             pass
         elif(cmd == "config"):
             printFmt("config","<value>","(-market (-add | -remove) | -active-workspace | -author | -editor)")
-            print()
             printFmt("config","<key>="+'"<value>"',"(-script [-link] | -label [-recursive] | -workspace | -market [-add | -remove])",quiet=True)
             rollover("""
 Configure settings for legoHDL.
