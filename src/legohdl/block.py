@@ -663,6 +663,7 @@ derives: []
     def show(self, listVers=False, ver=None, dispChange=False):
         cache_path = apt.HIDDEN+"workspaces/"+apt.SETTINGS['active-workspace']+"/cache/"+self.getLib()+"/"+self.getName()+"/"
         install_vers = []
+        #display the changelog if available
         if(dispChange):
             changelog_txt = self.getChangeLog(self.getPath())
             if(changelog_txt != None):
@@ -673,15 +674,17 @@ derives: []
 
                 exit(log.error("No CHANGELOG.md file exists for "+self.getTitle()+". Add one in the next release."))
             return
+        #grab all installed versions in the cache
         if(os.path.isdir(cache_path)):
             install_vers = os.listdir(cache_path)
-        #print out the downloaded block's metadata (found in local path)
+
+        #print out the block's current metadata (found in local path)
         if(listVers == False and ver == None):
             with open(self.metadataPath(), 'r') as file:
                 for line in file:
                     print(line,sep='',end='')
-        #print out specific metadata file if installed in cache
-        elif(ver != None):
+        #print out specific metadata about version if installed in cache
+        elif(listVers == False and ver != None):
             if(ver in install_vers):
                 with open(cache_path+ver+"/"+apt.MARKER, 'r') as file:
                     for line in file:
@@ -704,6 +707,9 @@ derives: []
                 #track what major versions have been identified
                 maj_vers = []
                 for x in ver_sorted:
+                    #constrain the list to what the user inputted
+                    if(ver != None and x.startswith(ver) == False):
+                        continue
                     print(x,end='\t')
                     #notify user of the installs in cache
                     if(x in install_vers):

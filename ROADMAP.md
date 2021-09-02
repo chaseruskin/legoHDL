@@ -32,6 +32,8 @@
 
 - [ ] produce log.warning when trying to make 'new' with a remote repo that isn't empty (doesnt link remote)
 
+- [ ] improve show -version with constraining to specific version range
+
 - [-] have some way of notifying user that a block is missing from installations when trying to export -> is somewhat implemented as a warning in some cases if it has the library available but can't find the unit name
 
 - [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive
@@ -44,6 +46,8 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+ [x] allow user to specify a certain constraint on showing the versions available in "show" command
+- [x] use isLocal() when printing versions and none are in cache
 - [x] make market names case insensitive (duplicate names will clash on folder namespace within registry/)
 - [x] CI-inspired command option: `legohdl install -requirements` -> will read the 'derives' list and install each one (is set up for recursion)
 - [x] fixes show versions when block exists in market but not in cache

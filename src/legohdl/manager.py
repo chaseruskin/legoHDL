@@ -1184,8 +1184,10 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 self.db.blockExists(package, "market"))):
             ver = None
             changelog = options.count('changelog')
-            if(len(options) == 1 and (Block.validVer(options[0]) == True or Block.validVer(options[0], maj_place=True))):
-                ver = Block.stdVer(options[0])
+            for opt in options:
+                if(Block.validVer(opt) == True or Block.validVer(opt, maj_place=True)):
+                    ver = Block.stdVer(opt)
+                    break
             #print available versions
             listVers = options.count("version")
 
