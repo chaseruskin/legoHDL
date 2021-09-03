@@ -2,9 +2,6 @@
 
 - [ ] implement additional "help" command documentation
 
-- [ ] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
-See commit d54020e707979 about the work started. Eventually will make it a setting for users to enable/disable duplicate recursive labels. If disabled, then the file found in the highest used version will be written to recipe file with its respective label.
-
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
@@ -47,6 +44,9 @@ See commit d54020e707979 about the work started. Eventually will make it a setti
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] better formatting and organization for writing settings.yml file
+- [x] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
+See commit d54020e707979 about the work started. Eventually will make it a setting for users to enable/disable duplicate recursive labels. If disabled, then the file found in the highest used version will be written to recipe file with its respective label.
 - [x] vhdl component declarations avoid library usage calls ? -> investigate (believed to be true as of now)
 - [x] add run command to peform both 'export' and then 'build'
 - [x] add ability to see what market a block belongs too on list command

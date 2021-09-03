@@ -349,7 +349,7 @@ class legoHDL:
                         latest_defined[blk][1][basename] = lbl
                         pass
         #determine if to write all recursive labels or not
-        if(apt.SETTINGS['label']['duplicate-recursive']):
+        if(not apt.SETTINGS['duplicate-recursive']):
             labels = []
             for blk in latest_defined.keys():
                 for lbl in latest_defined[blk][1].values():

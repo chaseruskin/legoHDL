@@ -20,8 +20,11 @@ class Apparatus:
 
     WORKSPACE = HIDDEN
 
-    OPTIONS = ['active-workspace', 'multi-develop', 'author', 'template', \
-               'editor', 'label', 'market', 'script', 'workspace', 'duplicate-recursive']
+    OPTIONS = ['author', 'editor', 'template', 'multi-develop',\
+               'duplicate-recursive', 'label',\
+               'script',\
+               'active-workspace', 'workspace',\
+               'market']
 
     META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
     
@@ -249,7 +252,25 @@ class Apparatus:
     @classmethod
     def save(cls):
         with open(cls.HIDDEN+"settings.yml", "w") as file:
-            yaml.dump(cls.SETTINGS, file)
+            for key in cls.OPTIONS:
+                #pop off front key/val pair of yaml data
+                single_dict = {}
+                single_dict[key] = cls.SETTINGS[key]
+
+                if(key == 'author'):
+                    file.write("#general configurations\n")
+                elif(key == 'duplicate-recursive'):
+                    file.write("#label configurations\n")
+                elif(key == 'script'):
+                    file.write("#script configurations\n")
+                elif(key == 'active-workspace'):
+                    file.write("#workspace configurations\n")
+                elif(key == 'market'):
+                    file.write("#market configurations\n")
+                
+                yaml.dump(single_dict, file)
+                pass
+            pass
         pass
 
     @classmethod
