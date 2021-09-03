@@ -6,8 +6,6 @@
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
 
-- [ ] fix writing `work.` for entity map if the entity is actually not in project-level code
-
 ### Future Roadmap
 
 - [ ] design question: remove 'run' command and instead have a positional argument for build command? '-e'
@@ -43,6 +41,7 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] fix writing `work.` for entity map if the entity is actually not in project-level code. `work` will only be the printed library when the command is called with a block directory, else itll be the standard library associated with that entity.
 - [x] process to initialize an existing project ("git clone or pull it"), ("run legohdl init `<block.title>`")
 - [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock) -> prints warning and removes remote if remote is not bare on 'new' command
 - [x] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available

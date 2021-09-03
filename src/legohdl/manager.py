@@ -1259,7 +1259,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                     break
 
             inserted_lib = L
-            if(self.blockCWD.isValid() and self.blockCWD.getLib() == L):
+            if(self.blockCWD.isValid() and self.blockCWD.getLib() == L and self.blockCWD.getName() == N):
                 inserted_lib = 'work'
             
             if((self.db.blockExists(package, "local") or self.db.blockExists(package, "cache"))):
