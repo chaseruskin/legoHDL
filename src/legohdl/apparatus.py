@@ -21,7 +21,7 @@ class Apparatus:
     WORKSPACE = HIDDEN
 
     OPTIONS = ['active-workspace', 'multi-develop', 'author', 'template', \
-               'editor', 'label', 'market', 'script', 'workspace']
+               'editor', 'label', 'market', 'script', 'workspace', 'duplicate-recursive']
 
     META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
     
@@ -82,10 +82,18 @@ class Apparatus:
         for opt in cls.OPTIONS:
             if(opt not in cls.SETTINGS.keys()):
                 cls.SETTINGS[opt] = None
+            #make sure label section is set up correctly
+            if(opt == 'label'):
+                if(cls.SETTINGS[opt] == None):
+                    cls.SETTINGS[opt] = dict()
+                if('recursive' not in cls.SETTINGS[opt].keys()):
+                    cls.SETTINGS[opt]['recursive'] = {}
+                if('shallow' not in cls.SETTINGS[opt].keys()):
+                    cls.SETTINGS[opt]['shallow'] = {}
 
         #ensure all pieces of settings are correct
         cls.generateDefault(dict,"market","script","workspace")
-        cls.generateDefault(bool,"multi-develop")
+        cls.generateDefault(bool,"multi-develop","duplicate-recursive")
         
         cls.dynamicWorkspace()
         cls.dynamicMarkets()

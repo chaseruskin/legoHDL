@@ -2,7 +2,8 @@
 
 - [ ] implement additional "help" command documentation
 
-- [?] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
+- [ ] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
+See commit d54020e707979 about the work started. Eventually will make it a setting for users to enable/disable duplicate recursive labels. If disabled, then the file found in the highest used version will be written to recipe file with its respective label.
 
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 

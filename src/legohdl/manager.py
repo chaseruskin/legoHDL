@@ -282,6 +282,8 @@ class legoHDL:
 
         #add labels in order from lowest-projects to top-level project
         labels = []
+        #track what labels have already been defined by the same block
+        latest_defined = dict()
         for blk in block_order:
             spec_path = None
             #break into library, name, version
@@ -305,22 +307,54 @@ class legoHDL:
 
             #using the version that was latched onto the name, alter cache path setting?
             if(V != None):
+                print(tmp.getPath())
                 base_cache_path = os.path.dirname(tmp.getPath()[:len(tmp.getPath())-1])
                 spec_path = base_cache_path+"/"+V+"/"
                 pass
+            #create new element if DNE
+            if(blk not in latest_defined.keys()):
+                latest_defined[blk] = ['0.0.0', dict()]
+            #update latest defined if a bigger version has appeared
+            overwrite = False
+            #determine the current version being processed
+            if(V == None):
+                V = tmp.getVersion()
+            #will overwrite the label values for this block if its a higher version
+            if(Block.biggerVer(latest_defined[blk][0], V) == V):
+                overwrite = True
+                latest_defined[blk][0] = V
 
             #add any recursive labels
             for label,ext in apt.SETTINGS['label']['recursive'].items():
                 files = tmp.gatherSources(ext=[ext], path=spec_path)
                 for f in files:
-                    labels.append("@"+label+" "+apt.fs(f))
+                    lbl = "@"+label+" "+apt.fs(f)
+                    #is used when duplicate-recursive-labels is enabled
+                    labels.append(lbl)
+                    #is used when duplicate-recursive-labels is disabled
+                    if(overwrite):
+                        basename = os.path.basename(f).lower()
+                        latest_defined[blk][1][basename] = lbl
+                    pass
             #add any project-level labels
             if(block.getTitle() == blk):
                 for label,ext in apt.SETTINGS['label']['shallow'].items():
                     files = block.gatherSources(ext=[ext])
                     for f in files:
-                        labels.append("@"+label+" "+apt.fs(f))
-
+                        lbl = "@"+label+" "+apt.fs(f)
+                        #is used when duplicate-recursive-labels is enabled
+                        labels.append(lbl)
+                        #is used when duplicate-recursive-labels is disabled
+                        basename = os.path.basename(f).lower()
+                        latest_defined[blk][1][basename] = lbl
+                        pass
+        #determine if to write all recursive labels or not
+        if(apt.SETTINGS['label']['duplicate-recursive']):
+            labels = []
+            for blk in latest_defined.keys():
+                for lbl in latest_defined[blk][1].values():
+                    labels.append(lbl)
+        
         #register what files the top levels originate from (transform variables in unit objects)
         if(tb != None):
             tb = block.grabCurrentDesigns()[block.getLib()][tb]
@@ -550,6 +584,7 @@ class legoHDL:
             apt.save()
             log.info("Setting saved successfully.")
             return
+
         #chosen to config a setting in settings.yml
         if(options[0] == 'active-workspace'):
             if(choice not in apt.SETTINGS['workspace'].keys()):
@@ -691,7 +726,7 @@ class legoHDL:
                 except:
                     pass
             pass
-        elif(options[0] == 'multi-develop'):
+        elif(options[0] == 'multi-develop' or options[0] == 'duplicate-recursive'):
             if(choice == '1' or choice.lower() == 'true'):
                 choice = True
             elif(choice == '0' or choice.lower() == 'false'):
