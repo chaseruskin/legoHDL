@@ -61,8 +61,8 @@ class Verilog(Language):
                     if(u.getLanguageType() == u.Language.VHDL):
                         ignore_case = True
                         m_name = m_name.lower()
-                    print(m_name)
-                    print(u.getName(False))
+                    #print(m_name)
+                    #print(u.getName(False))
                     if(m_name == u.getName(low=ignore_case)):
                         #add if not already added to the requirements for this module
                         if(u not in design_book[cur_lib][module_name.lower()].getRequirements()):

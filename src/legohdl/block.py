@@ -1224,9 +1224,8 @@ derives: []
         if(hasattr(self, "_cache_designs") and not override):
             return self._cache_designs
         self._cache_designs = dict()
-        #files = (glob.glob(apt.WORKSPACE+"lib/**/*.vhd", recursive=True))
-        files = glob.glob(apt.WORKSPACE+"cache/**/*.vhd", recursive=True)
-
+        #locate VHDL cache files
+        files = self.gatherSources(apt.VHDL_CODE, apt.WORKSPACE+"cache/")
         for f in files:
             L,N = self.grabExternalProject(f)
             #do not add the cache files of the current level project
@@ -1234,6 +1233,16 @@ derives: []
                 continue
             #print(f)
             self._cache_designs = self.skimVHDL(self._cache_designs, f, L, N)
+        
+        #locate verilog cache files
+        files = self.gatherSources(apt.VERILOG_CODE, apt.WORKSPACE+"cache/")
+        for f in files:
+            L,N = self.grabExternalProject(f)
+            #do not add the cache files of the current level project
+            if(L == self.getLib() and N == self.getName()):
+                continue
+            #print(f)
+            self._cache_designs = self.skimVerilog(self._cache_designs, f, L, N)
 
         #print("Cache-Level designs: "+str(self._cache_designs))
 
@@ -1254,11 +1263,14 @@ derives: []
                 #skip self block
                 if(L == self.getLib() and N == self.getName()):
                     continue
-                #3. open each found vhdl file and insert units into cache design
-                vhd_files = glob.glob(f_dir+"**/*.vhd", recursive=True)
+                #3. open each found source file and insert units into cache design
+                vhd_files = self.gatherSources(apt.VHDL_CODE, path=f_dir)
                 for v in vhd_files:
-                    #print(v)
                     self._cache_designs = self.skimVHDL(self._cache_designs, v, L, N)
+                
+                verilog_files = self.gatherSources(apt.VERILOG_CODE, path=f_dir)
+                for v in verilog_files:
+                    self._cache_designs = self.skimVerilog(self._cache_designs, v, L, N)
         #print("Cache-Level designs: "+str(self._cache_designs))
         return self._cache_designs
 
