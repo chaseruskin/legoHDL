@@ -6,17 +6,16 @@
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
 
+- [ ] fix writing `work.` for entity map if the entity is actually not in project-level code
+
 ### Future Roadmap
 
 - [ ] design question: remove 'run' command and instead have a positional argument for build command? '-e'
 
 - [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
 
-- [ ] add a 'categories' section to a block.lock? (multiple keywords to help identify the block)
-
-- [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock)
-
-- [-] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
+- [ ] add a 'categories' section to a Block.lock? (multiple keywords to help identify the block)
+		OR in more general, allow users to add new fields to the Block.lock file? (will be ignored by legohdl)
 
 - [ ] add ability to search by market
 
@@ -44,6 +43,8 @@
 - [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock) -> prints warning and removes remote if remote is not bare on 'new' command
+- [x] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
 - [x] better formatting and organization for writing settings.yml file
 - [x] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
 See commit d54020e707979 about the work started. Eventually will make it a setting for users to enable/disable duplicate recursive labels. If disabled, then the file found in the highest used version will be written to recipe file with its respective label.
