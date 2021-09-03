@@ -787,16 +787,33 @@ derives: []
         prj_srcs = self.grabCurrentDesigns(override=True)
         #create the string version of the version
         str_ver = "_"+folder.replace(".","_")
+        pair_orders = dict()
         for lib in prj_srcs.values():
             #generate list of tuple pairs of (old name, new name)
             name_pairs = {'VHDL' : [], 'VERILOG' : []}
             for u in lib.values():
                 n = u.getName(low=False)
                 if(u.getLanguageType() == Unit.Language.VHDL):
-                    name_pairs['VHDL'].append((n, n+str_ver))
+                    #TO-DO
+                    for np in name_pairs['VHDL']:
+                        pass
+                    for i in range(len(name_pairs['VHDL'])):
+                        if(len(name_pairs) == 0 or len(name_pairs['VHDL'][i][0]) < len(n)):
+                            name_pairs['VHDL'].insert(i, (n, n+str_ver))
+                            break
+                    else:
+                        name_pairs['VHDL'].append((n, n+str_ver))
+                    #name_pairs['VHDL'].append((n, n+str_ver))
                 elif(u.getLanguageType() == Unit.Language.VERILOG):
-                    name_pairs['VERILOG'].append((n, n+str_ver))
-
+                    for i in range(len(name_pairs['VERILOG'])):
+                        if(len(name_pairs) == 0 or len(name_pairs['VERILOG'][i][0]) < len(n)):
+                            name_pairs['VERILOG'].insert(i, (n, n+str_ver))
+                            break
+                    else:
+                        name_pairs['VERILOG'].append((n, n+str_ver))
+                    #name_pairs['VERILOG'].append((n, n+str_ver))
+            #start with longest names first
+            print(name_pairs)
             #go through each unit file to update unit names in VHDL files
             for u in lib.values():
                 u.getLang().setUnitName(name_pairs)

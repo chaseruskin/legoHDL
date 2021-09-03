@@ -9,7 +9,13 @@ class Verilog(Language):
             log.info(self._file_path)
         #keep case sensitivity
         c_stream = self.generateCodeStream(True,True,*self._std_parsers,"#")
-        #print(c_stream)
+        print(c_stream)
+        #store a list of all available module names
+        all_available_modules = []
+        for g in design_book.values():
+            for u in g.values():
+                all_available_modules.append(u)
+
         module_name = None
         in_ports = in_params = in_module = False
         parenth_count = 0
@@ -48,22 +54,24 @@ class Verilog(Language):
             #inside the module "architecture"
             elif(in_module):
                 #check with every possible unit if its an instance
-                for g in design_book.values():
-                    for u in g.values():
-                        m_name = c_stream[i]
-                        #if the unit is from vhdl, ignore case-sensitivity
-                        if(u.getLanguageType() == u.Language.VHDL):
-                            m_name = c_stream[i].lower()
-
-                        if(m_name == u.getName(low=False)):
-                            #add if not already added to the requirements for this module
-                            if(u not in design_book[cur_lib][module_name.lower()].getRequirements()):
-                                design_book[cur_lib][module_name.lower()].addRequirement(u)
-                                pass
-                            #only enter recursion if the unit has not already been completed ("checked")
-                            if(not design_book[u.getLib()][u.getName()].isChecked()):
-                                u.getLang().decipher(design_book, u.getLib(), verbose)
-                                pass
+                for u in all_available_modules:
+                    ignore_case = False
+                    m_name = c_stream[i]
+                    #if the unit is from vhdl, ignore case-sensitivity
+                    if(u.getLanguageType() == u.Language.VHDL):
+                        ignore_case = True
+                        m_name = m_name.lower()
+                    print(m_name)
+                    print(u.getName(False))
+                    if(m_name == u.getName(low=ignore_case)):
+                        #add if not already added to the requirements for this module
+                        if(u not in design_book[cur_lib][module_name.lower()].getRequirements()):
+                            design_book[cur_lib][module_name.lower()].addRequirement(u)
+                            pass
+                        #only enter recursion if the unit has not already been completed ("checked")
+                        if(not design_book[u.getLib()][u.getName()].isChecked()):
+                            u.getLang().decipher(design_book, u.getLib(), verbose)
+                            pass
                 pass
             pass
 

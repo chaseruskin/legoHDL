@@ -1,5 +1,8 @@
 ## Roadmap to Release v1.0.0
 
+- [!] fix how to rename entities within modules
+- [!] better verilog to verilog external instanation recognition
+
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
@@ -15,18 +18,15 @@
 
 - [ ] add ability to search by market
 
-- [ ] allow option to print a .log file on export so a record of graph can be kept?
+- [ ] allow option to print a .log file on export so a record of graph can be kept? This alludes to having a -quiet flag (silences output) and then a -log flag to reroute output away from console.
 
 - [ ] graph command but -upstream option (returns all blocks that are effected/use this block)
 
-- [ ] produce log.warning when trying to make 'new' with a remote repo that isn't empty (doesnt link remote)
-
-- [ ] improve show -version with constraining to specific version range
+- [-] improve show -version with constraining to specific version range -> is somewhat implemented as users can constrain using -v0.0.0 flag with -v0 option as well
 
 - [-] have some way of notifying user that a block is missing from installations when trying to export -> is somewhat implemented as a warning in some cases if it has the library available but can't find the unit name
 
-- [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive
-- [ ] use argparse package to create better CLI?
+- [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive --open, -o (argparse?)
 
 - [ ] '-all' option on graph/export to grab all project-level code
 
@@ -36,11 +36,12 @@
 
 - [ ] investiage if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design)
 
-- [-] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 
 __Completed__
+- [x] produce log.warning() when trying to make 'new' with a remote repo that isn't empty (doesnt link remote)
 - [x] implement additional "help" command documentation
 - [x] fix writing `work.` for entity map if the entity is actually not in project-level code. `work` will only be the printed library when the command is called with a block directory, else itll be the standard library associated with that entity.
+- [x] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 - [x] process to initialize an existing project ("git clone or pull it"), ("run legohdl init `<block.title>`")
 - [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock) -> prints warning and removes remote if remote is not bare on 'new' command
 - [x] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available

@@ -1130,7 +1130,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
 
         #a visual aide to help a developer see what package's are at the ready to use
         elif(command == 'graph' and self.blockCWD.isValid()):
-            top = package
+            top = package.lower()
             if(top == ''):
                 top = None
             top_dog,_,_ = self.blockCWD.identifyTopDog(top, None)
@@ -1173,7 +1173,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             self.db.sync(value)
         elif(command == "export" and self.blockCWD.isValid()):
             #'' and list() are default to pkg and options
-            top = package
+            top = package.lower()
             if(top == ''):
                 top = None
             self.export(self.blockCWD, top)

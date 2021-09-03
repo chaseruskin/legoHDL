@@ -350,6 +350,7 @@ class Apparatus:
             return None
         path = os.path.expanduser(path)
         path = path.replace('\\','/')
+        path = path.replace('//','/')
         dot = path.rfind('.')
         last_slash = path.rfind('/')
         if(last_slash > dot and path[len(path)-1] != '/'):

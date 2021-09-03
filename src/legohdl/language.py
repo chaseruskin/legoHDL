@@ -51,12 +51,14 @@ class Language(ABC):
         #print(name_pairs)
         with open(self._file_path, 'r') as f:
             for line in f.readlines():
+                #TO-DO
                 #must we have an exact match? yes in verilog
                 if(not case_sense):
                     line = line.lower()
                 #try to locate every name pair
                 for key,pairs in name_pairs.items():
                     for n in pairs:
+                        #find the biggest matching name
                         name_to_locate = n[0]
                         #this is a vhdl entity we are looking for
                         if(key == 'VHDL'):
@@ -68,7 +70,7 @@ class Language(ABC):
                             pass
 
                         #ensure it only replaces once
-                        cont = j= 0
+                        cont = j = 0
                         while j != -1:
                             j = line[cont:].find(name_to_locate)
                             if(j > -1):
