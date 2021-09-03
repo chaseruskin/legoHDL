@@ -8,6 +8,7 @@ from .__version__ import __version__
 from .registry import Registry
 from .apparatus import Apparatus as apt
 from .market import Market
+import git
 import logging as log
 from .unit import Unit
 
@@ -766,12 +767,11 @@ class legoHDL:
 
     #! === INIT COMMAND ===
     
-    #TO-DO: implement
     def convert(self, title, value, options=[]):
         #must look through tags of already established repo
         l,n = Block.split(title)
         if((l == '' or n == '') and len(options) == 0):
-            exit(log.error("Must provide a library.block"))
+            exit(log.error("Must provide a block title <library>.<block-name>"))
         cwd = apt.fs(os.getcwd())
 
         #make sure this path is witin our workspace's path before making it a block
@@ -826,7 +826,10 @@ class legoHDL:
         if(last_slash == len(cwd)-1):
             last_slash = cwd[:cwd.rfind('/')].rfind('/')
 
+        if(apt.fs(apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['local']).lower().count(apt.fs(cwd).lower())):
+            exit(log.error("Cannot initialize a block at the root of the workspace's local path."))
         cwdb1 = cwd[:last_slash]+"/"+n+"/"
+
         if(git_url == None):
             os.rename(cwd, cwdb1)
         else:
@@ -839,6 +842,12 @@ class legoHDL:
             log.info("Initializing git repository...")
             git_exists = False
             pass
+
+        if(git_exists):
+            repo = git.Repo(cwdb1)
+            #a remote already exists
+            if(len(repo.remotes)):
+                git_url = repo.remotes[0].url
         
         #create marker file
         block = Block(title=title, path=cwdb1, remote=git_url, market=mrkt_sync)

@@ -57,7 +57,12 @@ class Block:
             return self.__local_path
 
     #download block from a url (can be from cache or remote)
-    def downloadFromURL(self, rem):
+    def downloadFromURL(self, rem, in_place=False):
+        if(in_place):
+            self._repo = git.Repo(self.getPath())
+            self.pull()
+            return
+
         rem = apt.fs(rem)
         #new path is default to local/library/
         new_path = apt.fs(apt.getLocal()+"/"+self.getLib(low=False)+"/")
@@ -476,7 +481,7 @@ derives: []
         #clone from existing remote repo
         if(not fresh and self.grabGitRemote() != None):
             log.info("Cloning project from remote url...")
-            self.downloadFromURL(self.grabGitRemote())
+            self.downloadFromURL(self.grabGitRemote(), in_place=True)
         #make a new repo
         elif(not git_exists):
             self._repo = git.Repo.init(self.__local_path)
@@ -601,7 +606,7 @@ derives: []
                 self._repo.git.push("-u","origin",str(self._repo.head.reference))
         pass
 
-    #pull from remote repository
+    #push to remote repository
     def pushRemote(self):
         self._repo.remotes.origin.push(refspec='{}:{}'.format(self._repo.head.reference, self._repo.head.reference))
         self._repo.remotes.origin.push("--tags")
