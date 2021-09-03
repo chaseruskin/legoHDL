@@ -865,18 +865,19 @@ class legoHDL:
         for mkt in self.db.getMarkets():
             for opt in options:
                 if(mkt.getName() == opt):
-                    log.info("Tying market "+mkt+" to this initialized block...")
+                    log.info("Tying market "+mkt.getName()+" to this initialized block...")
                     mkt_sync = mkt
                     options.remove(opt)
                     break
             if(mkt_sync != None):
                 break
+        else:
+            log.warning("No valid market is attached.")
         #now try to find a valid git url
         for opt in options:
             if(apt.isValidURL(opt)):
                 git_url = opt
-        #print(git_url,mkt_sync)
-        log.warning("No valid market is attached.")
+            
         return git_url,mkt_sync
 
     #! === DEL COMMAND ===
@@ -1330,16 +1331,20 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         if(cmd == ''):
             return
         elif(cmd == "init"):
-            printFmt("init", "<block>")
+            printFmt("init", "<block>","[-<market> -<remote>]")
             printFmt("init","<value>","(-remote | -market | -summary)",quiet=True)
             rollover("""
 If no flags are raised, transform the working directory into a valid block. This will
-create a git repository if not available, and create the Block.lock file. If there is a
-raised flag, then the block's flag will be altered with the <value>.
+create a git repository if not available, and create the Block.lock file. If there is a git
+repository and it is linked to a remote, the remote will also automatically be configured within the
+Block.lock file. If there is a supported raised flag for <value>, then the block's respective field
+will be altered with the <value>. 
             """)
             print('{:<16}'.format("<block>"),"the block's title to be initialized from the current folder")
             print('{:<16}'.format("<value>"),"value to be given to current block based on the flag raised")
             print()
+            print('{:<16}'.format("-<remote>"),"an empty git url to set for this block")
+            print('{:<16}'.format("-<market>"),"tie a market available from the workspace to this block")
             print('{:<16}'.format("-remote"),"provide a valid git URL as <value> to set for this block")
             print('{:<16}'.format("-market"),"provide a market name as <value> available from the workspace")
             print('{:<16}'.format("-summary"),"provide a string as <value> to set for this block's summary")

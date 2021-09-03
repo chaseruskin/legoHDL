@@ -118,9 +118,9 @@ class Registry:
                     ver = self.getProjectsLocal()[L][N].getMeta("version")
                     info = self.getProjectsLocal()[L][N].getMeta("market")
                 elif(self.blockExists(blk.getTitle(), "cache")):
-                    status = 'instl' 
+                    status = 'instl'
                     ver = self.getProjectsCache()[L][N].getMeta("version")
-                    info = self.getProjectsLocal()[L][N].getMeta("market")
+                    info = self.getProjectsCache()[L][N].getMeta("market")
                 elif(self.blockExists(blk.getTitle(), "market")):
                     ver = self.getBlocks("market")[L][N].getMeta("version")
                 else:
