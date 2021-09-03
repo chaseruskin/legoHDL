@@ -89,9 +89,11 @@ class Apparatus:
             if(opt == 'label'):
                 if(cls.SETTINGS[opt] == None):
                     cls.SETTINGS[opt] = dict()
-                if('recursive' not in cls.SETTINGS[opt].keys()):
+                if('recursive' not in cls.SETTINGS[opt].keys() or \
+                    isinstance(cls.SETTINGS[opt]['recursive'], dict) == False):
                     cls.SETTINGS[opt]['recursive'] = {}
-                if('shallow' not in cls.SETTINGS[opt].keys()):
+                if('shallow' not in cls.SETTINGS[opt].keys() or \
+                    isinstance(cls.SETTINGS[opt]['shallow'], dict) == False):
                     cls.SETTINGS[opt]['shallow'] = {}
 
         #ensure all pieces of settings are correct
