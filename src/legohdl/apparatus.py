@@ -21,7 +21,7 @@ class Apparatus:
     WORKSPACE = HIDDEN
 
     OPTIONS = ['author', 'editor', 'template', 'multi-develop',\
-               'duplicate-recursive', 'label',\
+               'overlap-recursive', 'label',\
                'script',\
                'active-workspace', 'workspace',\
                'market']
@@ -98,7 +98,7 @@ class Apparatus:
 
         #ensure all pieces of settings are correct
         cls.generateDefault(dict,"market","script","workspace")
-        cls.generateDefault(bool,"multi-develop","duplicate-recursive")
+        cls.generateDefault(bool,"multi-develop","overlap-recursive")
         
         cls.dynamicWorkspace()
         cls.dynamicMarkets()
@@ -261,7 +261,7 @@ class Apparatus:
 
                 if(key == 'author'):
                     file.write("#general configurations\n")
-                elif(key == 'duplicate-recursive'):
+                elif(key == 'overlap-recursive'):
                     file.write("#label configurations\n")
                 elif(key == 'script'):
                     file.write("#script configurations\n")

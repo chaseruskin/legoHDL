@@ -350,7 +350,7 @@ class legoHDL:
                         latest_defined[blk][1][basename] = lbl
                         pass
         #determine if to write all recursive labels or not
-        if(not apt.SETTINGS['duplicate-recursive']):
+        if(not apt.SETTINGS['overlap-recursive']):
             labels = []
             for blk in latest_defined.keys():
                 for lbl in latest_defined[blk][1].values():
@@ -1273,7 +1273,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             #list all of command details
             self.commandHelp(package)
             print('USAGE: \
-            \n\tlegohdl <command> [block] [flags]\
+            \n\tlegohdl <command> [argument] [flags]\
             \n')
             print("COMMANDS:\n")
             def formatHelp(cmd, des):
@@ -1332,7 +1332,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             return
         elif(cmd == "init"):
             printFmt("init", "<block>","[-<market> -<remote>]")
-            printFmt("init","<value>","(-remote | -market | -summary)",quiet=True)
+            printFmt("init","<value>","(-market | -remote | -summary)",quiet=True)
             rollover("""
 If no flags are raised, transform the working directory into a valid block. This will
 create a git repository if not available, and create the Block.lock file. If there is a git
@@ -1343,10 +1343,10 @@ will be altered with the <value>.
             print('{:<16}'.format("<block>"),"the block's title to be initialized from the current folder")
             print('{:<16}'.format("<value>"),"value to be given to current block based on the flag raised")
             print()
-            print('{:<16}'.format("-<remote>"),"an empty git url to set for this block")
             print('{:<16}'.format("-<market>"),"tie a market available from the workspace to this block")
-            print('{:<16}'.format("-remote"),"provide a valid git URL as <value> to set for this block")
+            print('{:<16}'.format("-<remote>"),"an empty git url to set for this block")
             print('{:<16}'.format("-market"),"provide a market name as <value> available from the workspace")
+            print('{:<16}'.format("-remote"),"provide a valid git URL as <value> to set for this block")
             print('{:<16}'.format("-summary"),"provide a string as <value> to set for this block's summary")
             pass
         elif(cmd == "new"):
@@ -1416,7 +1416,7 @@ label, market, or workspace, will print their respective group found within the 
             print('{:<16}'.format("-workspace"),"view workspaces as workspace, active, path, markets")
             pass
         elif(cmd == "install"):
-            printFmt("install","[<block>","[-v0.0.0]] | [-requirements]")
+            printFmt("install","((<block>","[-v0.0.0]) | -requirements)")
             rollover("""
 Clones the block's main branch to the cache. If the main branch is already found in the cache,
 it will not clone/pull from the remote repository (see 'update' command). Checkouts and copies 
@@ -1478,8 +1478,9 @@ respective testbench and add it to the graph.
             printFmt("update","<block>")
             rollover("""
 Update an installed block to have the latest version available. In order for a block to be updated
-it must be installed.
+it must be installed. All previous version installations will be unaffected.
             """)
+            printFmt("<block>","the cached block to have its tracking master branch updated")
             pass
         elif(cmd == "export"):
             printFmt("export","[<toplevel>]")
@@ -1547,11 +1548,33 @@ value (ex: -v1). If the -v0.0.0 flag is not properly working, -v0_0_0 is also va
             print('{:<16}'.format("-v0.0.0"),"Show this specific version or constrain the version list to this version")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","(-market (-add | -remove) | -active-workspace | -author | -editor)")
+            printFmt("config","<value>","(-market (-add | -remove) | -active-workspace | -author | -editor | -template | -multi-develop | -overlap-recursive)")
             printFmt("config","<key>="+'"<value>"',"(-script [-link] | -label [-recursive] | -workspace | -market [-add | -remove])",quiet=True)
             rollover("""
-Configure settings for legoHDL.
+Configure settings for legoHDL. This is the command-line alternative to opening 
+the settings.yml file for visual editing. If only a market name is given as <value>, then it will
+be used as a reference to either -add or -remove the market from the current workspace. If raising
+-template, it requests the path to a folder to create new blocks from. If the <value> is empty, it will
+reference the built-in template folder. Valid <value> for -multi-develop and -overlap-recursive flags are either
+'true', 'false', 1, or 0.
             """)
+            print('{:<16}'.format("<value>"),"respective to the raised flag")
+            print('{:<16}'.format("<key>"),"an identifier/name respective to the raised flag")
+            print()
+            print('{:<16}'.format("-market"),"indicate the key or value to be a market")
+            print('{:<16}'.format("-add"),"add the market to the active workspace")
+            print('{:<16}'.format("-remove"),"remove the market from the active workspace")
+            print('{:<16}'.format("-active-workspace"),"the current workspace")
+            print('{:<16}'.format("-author"),"the user's preferred name")
+            print('{:<16}'.format("-editor"),"a text-editor to open various folders and files")
+            print('{:<16}'.format("-template"),"indicate where the template folder is found")
+            print('{:<16}'.format("-multi-develop"),"prioritize using downloaded blocks over installed blocks")
+            print('{:<16}'.format("-overlap-recursive"),"include all found labels regardless of possible duplication")
+            print('{:<16}'.format("-script"),"indicate the key/value to be a script name and the command")
+            print('{:<16}'.format("-link"),"reference the script from its original location")
+            print('{:<16}'.format("-label"),"indicate the key/value to be a label and glob-pattern")
+            print('{:<16}'.format("-recursive"),"categorize this label to be searched for in all dependencies")
+            print('{:<16}'.format("-workspace"),"provide a workspace name and a local path for key/value")
             pass
         print()
         exit()
