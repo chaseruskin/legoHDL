@@ -9,7 +9,7 @@ class Verilog(Language):
             log.info(self._file_path)
         #keep case sensitivity
         c_stream = self.generateCodeStream(True,True,*self._std_parsers,"#")
-        print(c_stream)
+        #print(c_stream)
         #store a list of all available module names
         all_available_modules = []
         for g in design_book.values():
