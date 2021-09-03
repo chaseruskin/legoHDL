@@ -1,6 +1,6 @@
 ## Roadmap to Release v1.0.0
 
-- [!] better verilog to verilog external instanation recognition
+- [x] better verilog to verilog external instanation recognition
 
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
