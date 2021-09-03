@@ -45,43 +45,65 @@ class Language(ABC):
             case_sense = False
         elif("*"+self._ext in apt.VERILOG_CODE):
             case_sense = True
+
+        all_pairs = []
+        all_langs = []
+        for key,pairs in name_pairs.items():
+                for n in pairs:
+                    all_pairs.append(n)
+                    all_langs.append(key)
+
         #do major find and replace
-        file_data = []
+  
         #open file to manipulate lines
-        #print(name_pairs)
         with open(self._file_path, 'r') as f:
-            for line in f.readlines():
-                #TO-DO
-                #must we have an exact match? yes in verilog
-                if(not case_sense):
-                    line = line.lower()
-                #try to locate every name pair
-                for key,pairs in name_pairs.items():
-                    for n in pairs:
-                        #find the biggest matching name
-                        name_to_locate = n[0]
-                        #this is a vhdl entity we are looking for
-                        if(key == 'VHDL'):
-                            pass
-                        #this is a verilog module we are looking for
-                        elif(key == 'VERILOG'):
-                            if(not case_sense):
-                                name_to_locate = name_to_locate.lower()
-                            pass
+            content = f.readlines()
+            #must we have an exact match? yes if verilog
+            #else convert to all lower case if not caring
+            if(not case_sense):
+                tmp_content = []
+                for c in content: 
+                    tmp_content.append(c.lower())
+                content = tmp_content
 
-                        #ensure it only replaces once
-                        cont = j = 0
-                        while j != -1:
-                            j = line[cont:].find(name_to_locate)
-                            if(j > -1):
-                                line = line[:cont] + line[cont:].replace(name_to_locate,n[1])
-                            cont = j+len(n[1])
+            #try to locate every name pair
+            for i in range(len(all_pairs)):
+                file_data = []
+                n = all_pairs[i]
+                #find the biggest matching name
+                name_to_locate = n[0]
+                for line in content:
+                    #this is a verilog module we are looking for
+                    if(all_langs[i] == 'VERILOG'):
+                        #if we are inside a VHDL file we don't care
+                        if(not case_sense):
+                            name_to_locate = name_to_locate.lower()
+                        pass
 
-                file_data.append(line)
+                    #ensure it only replaces once
+                    cont = j = 0
+                    while j != -1:
+                        j = line[cont:].find(name_to_locate)
+                        if(j > -1):
+                            line = line[:cont] + line[cont:].replace(name_to_locate,n[1])
+                        cont = j+len(n[1])
+                    
+                    #check if remaining name pairs if n is a subset of any other name pairs
+                    for j in range(i+1, len(all_pairs)):
+                        m = all_pairs[j]
+                        if(m[0].count(name_to_locate) and not m[0].count(n[1])):
+                            #update with new thing to look for
+                            all_pairs[j] = (m[0].replace(name_to_locate,n[1]), m[1])
+
+                    file_data.append(line)
+                    pass
+                content = file_data
+                pass
+
             f.close()
         #write back new transformed data
         with open(self._file_path, 'w') as f:
-            for line in file_data:
+            for line in content:
                 f.write(line)
         pass
     

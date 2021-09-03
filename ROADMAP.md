@@ -1,6 +1,5 @@
 ## Roadmap to Release v1.0.0
 
-- [!] fix how to rename entities within modules
 - [!] better verilog to verilog external instanation recognition
 
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
@@ -38,6 +37,7 @@
 
 
 __Completed__
+- [x] fix how to rename entities within modules
 - [x] produce log.warning() when trying to make 'new' with a remote repo that isn't empty (doesnt link remote)
 - [x] implement additional "help" command documentation
 - [x] fix writing `work.` for entity map if the entity is actually not in project-level code. `work` will only be the printed library when the command is called with a block directory, else itll be the standard library associated with that entity.
