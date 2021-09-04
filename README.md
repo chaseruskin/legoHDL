@@ -6,6 +6,7 @@
 _lego_**HDL** is a simple, powerful, and flexible HDL package manager and development tool used through the command-line interface. It provides full package management capabilities as one would expect from premiere software package managers like Cargo, APT, PIP, and RubyGems and incorporates special functionality specific to HDL designing to rapidly improve development workflow.
 
 Supports Linux, macOS, and Windows.
+Supports VHDL and Verilog/SystemVerilog with mixed language support.
 
 <br />
 
