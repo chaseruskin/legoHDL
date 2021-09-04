@@ -1060,21 +1060,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 ver = Block.stdVer(options[0])
             elif(len(options) > 1):
                 exit(log.error("Invalid flags set for install command."))
-
-            # #install version from cache
-            # if(self.db.blockExists(package,"cache")):
-            #     if(ver != None):
-            #         log.info("Installing "+ver+" from cache...")
-                    
-            # elif(self.db.blockExists(package,"market")):
-            #     ver_word = 'latest'
-            #     if(ver != None):
-            #         ver_word = ver
-            #     log.info("Installing "+ver_word+" from market...")
-                
-            # else:
-            #     exit(log.error("Block "+package+" does not exists for this workspace."))
-
+            #install directly from Block.lock 'derives' list
             if(options.count('requirements')):
                 if(self.blockCWD.isValid()):
                     log.info("Installing requirements...")
