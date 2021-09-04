@@ -51,6 +51,8 @@ class Apparatus:
 
     @classmethod
     def initialize(cls):
+        ask_for_setup = (os.path.exists(cls.HIDDEN) == False)
+        
         os.makedirs(cls.HIDDEN, exist_ok=True)
         os.makedirs(cls.HIDDEN+"workspaces/", exist_ok=True)
         os.makedirs(cls.HIDDEN+"scripts/", exist_ok=True)
@@ -70,6 +72,24 @@ class Apparatus:
 
             settings_file.write(structure)
             settings_file.close()
+        
+        return ask_for_setup
+        pass
+
+    @classmethod
+    def runSetup(cls):
+        select_outline = cls.confirmation("This looks like your first time running legoHDL! \
+Would you like automatically configured default settings?", warning=False)
+        if(select_outline):
+            resp = input("""Enter:
+1) nothing for defaults
+2) a path or git repository URL containing a valid legoHDL outline
+3) 'STOP' to cancel
+""")
+        if(resp.lower() == 'eel4712c'):
+            log.info("Running setup for EEL4712C...")
+
+        pass
 
     @classmethod
     def generateDefault(cls, t, *args):
@@ -86,7 +106,7 @@ class Apparatus:
     def load(cls):
         log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.INFO)
         #ensure all necessary hidden folder structures exist
-        cls.initialize()
+        ask_for_setup = cls.initialize()
 
         #load dictionary data in variable
         with open(cls.HIDDEN+"settings.yml", "r") as file:
@@ -115,6 +135,10 @@ class Apparatus:
             cls.SETTINGS['refresh-rate'] = cls.MAX_RATE
         elif(cls.SETTINGS['refresh-rate'] < cls.MIN_RATE):
             cls.SETTINGS['refresh-rate'] = cls.MIN_RATE
+
+        #run setup here
+        if(ask_for_setup):
+            cls.runSetup()
 
         cls.dynamicWorkspace()
         cls.dynamicMarkets()
@@ -259,8 +283,11 @@ class Apparatus:
             cls.__active_workspace = name
 
     @classmethod
-    def confirmation(cls, prompt):
-        log.warning(prompt+" [y/n]")
+    def confirmation(cls, prompt, warning=True):
+        if(warning):
+            log.warning(prompt+" [y/n]")
+        else:
+            log.info(prompt+" [y/n]")
         verify = input().lower()
         while True:
             if(verify == 'y'):
