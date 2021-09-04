@@ -1097,7 +1097,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             pass
         elif(command == "build" and self.blockCWD.isValid()):
             self.build(value)
-        elif(not valid and command == "new" and len(package)):
+        elif(command == "new" and len(package)):
+            if(valid):
+                exit(log.error("A block already exists as "+package))
             #option to create a new file
             if(options.count("file")):
                 options.remove("file")
