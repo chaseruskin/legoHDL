@@ -1058,7 +1058,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                     self.db.blockExists(package,"cache") or \
                     self.db.blockExists(package,"market")
         else:
-            exits = False
+            exists = False
 
         if(apt.inWorkspace() and apt.readyForRefresh()):
             self.db.sync('')
