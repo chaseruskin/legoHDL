@@ -50,7 +50,7 @@ class Block:
         pass
 
     #return the block's root path
-    def getPath(self, low=True):
+    def getPath(self, low=False):
         if(low):
             return self.__local_path.lower()
         else:
@@ -218,7 +218,6 @@ class Block:
             return
         #publish on market/bazaar! (also publish all versions not found)
         if(self.__market != None):
-            #todo : publish every version that DNE on market?
             changelog_txt = self.getChangeLog(self.getPath())
             self.__market.publish(self.__metadata, options, sorted_versions, changelog_txt)
         elif(self.getMeta("market") != None):
@@ -350,10 +349,10 @@ derives: []
         return body
 
     def isMarket(self):
-        return self.getPath().lower().count(apt.fs(apt.HIDDEN+"registry/").lower())
+        return self.getPath(low=True).count(apt.fs(apt.HIDDEN+"registry/").lower())
 
     def isLocal(self):
-        return self.getPath().lower().count(apt.fs(apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['local']).lower())
+        return self.getPath(low=True).count(apt.fs(apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['local']).lower())
 
     def bindMarket(self, mkt):
         if(mkt != None):
@@ -1309,7 +1308,7 @@ derives: []
     def grabExternalProject(cls, path):
         #print(path)
         #use its file to find out what block uses it
-        path_parse = apt.fs(path.lower()).split('/')
+        path_parse = apt.fs(path).split('/')
         #if in cache {library}/{block}/../.vhd
         if("cache" in path_parse):
             i = path_parse.index("cache")

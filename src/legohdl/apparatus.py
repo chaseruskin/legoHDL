@@ -86,8 +86,8 @@ Would you like automatically configured default settings?", warning=False)
 2) a path or git repository URL containing a valid legoHDL outline
 3) 'STOP' to cancel
 """)
-        if(resp.lower() == 'eel4712c'):
-            log.info("Running setup for EEL4712C...")
+            if(resp.lower() == 'eel4712c'):
+                log.info("Running setup for EEL4712C...")
 
         pass
 
