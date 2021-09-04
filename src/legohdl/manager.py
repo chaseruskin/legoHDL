@@ -1048,6 +1048,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 self.blockPKG = None
 
         valid = (self.blockPKG != None)
+
+        apt.readyForRefresh()
         
         #branching through possible commands
         if(command == "install"):

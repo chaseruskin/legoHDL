@@ -1,10 +1,12 @@
 #load in settings
-import copy
-from genericpath import isdir, isfile
-import yaml,os,logging as log
-import stat
+import yaml,stat
+import time
+from datetime import date
+from datetime import datetime
+import logging as log
 from subprocess import check_output
-import shutil
+import os,shutil,copy
+
 
 class Apparatus:
     SETTINGS = dict()
@@ -24,7 +26,7 @@ class Apparatus:
                'overlap-recursive', 'label',\
                'script',\
                'active-workspace', 'workspace',\
-               'market']
+               'refresh-rate','market']
 
     META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
     
@@ -32,6 +34,9 @@ class Apparatus:
     TAG_ID = '-legohdl'    
     #file kept in markets to remember all valid release points
     VER_LOG = "version.log"
+    #file kept in registry base folder to remember when last refresh
+    #based on refresh-rate it will store that many times
+    REFRESH_LOG = "refresh.log"
 
     #types of accepted HDL files to parse and interpret
     VHDL_CODE = ["*.vhd","*.vhdl"]
@@ -71,6 +76,8 @@ class Apparatus:
                     cls.SETTINGS[a] = {}
                 elif(t == bool):
                     cls.SETTINGS[a] = False
+                elif(t == int):
+                    cls.SETTINGS[a] = 0
 
     @classmethod
     def load(cls):
@@ -99,7 +106,13 @@ class Apparatus:
         #ensure all pieces of settings are correct
         cls.generateDefault(dict,"market","script","workspace")
         cls.generateDefault(bool,"multi-develop","overlap-recursive")
-        
+        cls.generateDefault(int,"refresh-rate")
+
+        if(cls.SETTINGS['refresh-rate'] > 96):
+            cls.SETTINGS['refresh-rate'] = 96
+        elif(cls.SETTINGS['refresh-rate'] < -1):
+            cls.SETTINGS['refresh-rate'] = -1
+
         cls.dynamicWorkspace()
         cls.dynamicMarkets()
 
@@ -220,9 +233,11 @@ class Apparatus:
         os.makedirs(workspace_dir+"versions", exist_ok=True)
         #store the code's state of each version for each block
         os.makedirs(workspace_dir+"cache", exist_ok=True)
-        
-        #if(not os.path.isfile(workspace_dir+"map.toml")):
-            #open(workspace_dir+"map.toml", 'w').write("[libraries]\n")
+        #create the refresh log
+        if(os.path.isfile(workspace_dir+cls.REFRESH_LOG) == False):
+            open(workspace_dir+cls.REFRESH_LOG, 'w').close()
+
+        #create YAML structure for workspace settings 'local' and 'market'
         if(name not in cls.SETTINGS['workspace'].keys()):
             cls.SETTINGS['workspace'][name] = {'local' : None, 'market' : None}
         #make sure market is a list
@@ -250,6 +265,63 @@ class Apparatus:
             elif(verify == 'n'):
                 return False
             verify = input("[y/n]").lower()
+
+    @classmethod
+    def readyForRefresh(cls):
+
+        def timeToFloat(prt):
+            time_stamp = prt.split(' ')[1]
+            notions = time_stamp.split(':')
+            hrs = int(notions[0])
+            #todo: capture more values to be into final decimal casting
+            mins = int(int(notions[1])/6)
+            time_fmt = float(str(hrs)+'.'+str(mins))
+            return time_fmt
+
+        rf_log_path = cls.HIDDEN+"workspaces/"+cls.SETTINGS['active-workspace']+"/"+cls.REFRESH_LOG
+        rate = cls.SETTINGS['refresh-rate']
+        #never perform an automatic refresh
+        if(rate == 0):
+            return False
+        elif(rate == -1):
+            return True
+        #track how many times have been kept for refresh
+        punch_count = 0
+        spacing = float(24 / rate)
+        
+        cur_time = str(datetime.now())
+    
+        intervals = []
+        for i in range(rate):
+            intervals += [spacing*i]
+        print(cur_time)
+        print(intervals)
+        with open(rf_log_path, 'r') as rf_log:
+            #read the latest date
+            punches = rf_log.readlines()
+            punch_count = len(punches)
+            if(punch_count == 0):
+                punches.insert(0,cur_time+"\n")
+            else:
+                #get latest time that was punched
+                last_time_fmt = timeToFloat(punches[0])
+                for cp in intervals:
+                    if(last_time_fmt < cp):
+                        next_checkpoint = cp
+                        break
+                #print(next_checkpoint)
+                cur_time_fmt = timeToFloat(cur_time)
+                print("currently",cur_time_fmt)
+                if(cur_time_fmt > next_checkpoint):
+                    print("TIME FOR AN UPDATE!")
+                    punches.insert(0,cur_time+"\n")
+                
+        print('done')
+
+        with open(rf_log_path, 'w') as rf_log:
+            for pch in punches:
+                rf_log.write(pch)
+        return False
     
     @classmethod
     def save(cls):
@@ -267,7 +339,7 @@ class Apparatus:
                     file.write("#script configurations\n")
                 elif(key == 'active-workspace'):
                     file.write("#workspace configurations\n")
-                elif(key == 'market'):
+                elif(key == 'refresh-rate'):
                     file.write("#market configurations\n")
                 
                 yaml.dump(single_dict, file)

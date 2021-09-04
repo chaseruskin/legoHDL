@@ -2,7 +2,7 @@
 
 - [x] better verilog to verilog external instanation recognition
 
-- [x] git pull on release before releasing -> elegant solution : do git remote update, and determine if the branch is 'up to date'. If not, then the release is cancelled and the user must git pull/git fetch/update their branch.
+- [!] refresh-rate setting, can set how often to automatically refresh the market repositories to see if any new blocks or versions are available
 
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
@@ -39,6 +39,7 @@
 
 
 __Completed__
+- [x] git pull on release before releasing -> elegant solution : do git remote update, and determine if the branch is 'up to date'. If not, then the release is cancelled and the user must git pull/git fetch/update their branch.
 - [x] fix how to rename entities within modules
 - [x] produce log.warning() when trying to make 'new' with a remote repo that isn't empty (doesnt link remote)
 - [x] implement additional "help" command documentation
