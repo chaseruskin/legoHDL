@@ -129,8 +129,8 @@ class Block:
             log.info("Verifying remote origin is up to date...")
             self._repo.git.remote('update')
             resp = self._repo.git.status('-uno')
-            if(resp.count('Your branch is up to date with') == 0):
-                exit(log.error("Your branch is not up to date; release failed."))
+            if(resp.count('Your branch is up to date with') == 0 and resp.count('Your branch is ahead of') == 0):
+                exit(log.error("Your branch conflicts with the remote; release failed."))
 
         #get current version numbers of latest valid tag
         highestVer = self.getHighestTaggedVersion()
