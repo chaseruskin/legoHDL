@@ -2,6 +2,8 @@
 
 - [x] better verilog to verilog external instanation recognition
 
+- [x] git pull on release before releasing -> elegant solution : do git remote update, and determine if the branch is 'up to date'. If not, then the release is cancelled and the user must git pull/git fetch/update their branch.
+
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag

@@ -121,10 +121,17 @@ class Block:
         #dynamically link on release
         if(self.grabGitRemote() != None and hasattr(self,"_repo")):
             if(apt.isValidURL(self.grabGitRemote())):
-                self.setRemote(self.grabGitRemote())
+                self.setRemote(self.grabGitRemote(), push=False)
             else:
                 log.warning("Invalid remote "+self.grabGitRemote()+" will be removed from Block.lock")
                 self._remote = None
+        if(self._remote != None):
+            log.info("Verifying remote origin is up to date...")
+            self._repo.git.remote('update')
+            resp = self._repo.git.status('-uno')
+            if(resp.count('Your branch is up to date with') == 0):
+                exit(log.error("Your branch is not up to date; release failed."))
+
         #get current version numbers of latest valid tag
         highestVer = self.getHighestTaggedVersion()
         major,minor,patch = self.sepVer(highestVer)
