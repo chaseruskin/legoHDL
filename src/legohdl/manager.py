@@ -541,8 +541,19 @@ class legoHDL:
             key = choice
         #chosen to delete setting from settings.yml
         if(delete):
-            log.info("Deleting from setting: "+options[0])
+            possibles = ['label', 'workspace', 'market', 'script']
             st = options[0].lower()
+            if(st not in possibles):
+                exit(log.error("Cannot use del command on "+st+" setting."))
+            #ensure this is a valid key to remove
+            if(choice not in apt.SETTINGS[st].keys()):
+                #check within both branches of label setting, 'shallow' and 'recursive'
+                if(st == 'label'):
+                    if(choice not in apt.SETTINGS[st]['shallow'].keys() and choice not in apt.SETTINGS[st]['recursive'].keys()):
+                        exit(log.error("No key '"+choice+"' exists under '"+st+"' setting."))
+                else:
+                    exit(log.error("No key '"+choice+"' exists under '"+st+"' setting."))
+
             #delete a key/value pair from the labels
             if(st == 'label'):
                 if(choice in apt.SETTINGS[st]['recursive'].keys()):
@@ -589,16 +600,12 @@ class legoHDL:
         #chosen to config a setting in settings.yml
         if(options[0] == 'active-workspace'):
             if(choice not in apt.SETTINGS['workspace'].keys()):
-                exit(log.error("Workspace not found!"))
+                exit(log.error("Workspace "+choice+" not found!"))
 
         #invalid option flag
         if(not options[0] in apt.SETTINGS.keys()):
             exit(log.error("No setting exists under that flag"))
         elif(options[0] == 'market'):
-            #@IDEA automatically appends new config to current workspace, can be skipped with -skip
-            #remove from current workspace with -remove
-            #append to current workspace with -append
-
             #allow for just referencing the market if trying to append to current workspace
             if(val == None and options.count("add") or options.count("remove")):
                 pass
@@ -786,7 +793,7 @@ class legoHDL:
 
         #make sure this path is witin our workspace's path before making it a block
         if(cwd.lower().count(apt.getLocal().lower()) == 0):
-            exit(log.error("Cannot initialize outside of workspace"))
+            exit(log.error("Cannot initialize outside of workspace path "+apt.fs(apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['local'])))
         block = None
 
         if(self.blockCWD.isValid() and options.count("market")):
@@ -817,8 +824,8 @@ class legoHDL:
                 exit(log.error("Could not fulfill init option flag"))
 
         files = os.listdir(cwd)
-        if apt.MARKER in files or self.db.blockExists(title, "local") or self.db.blockExists(title, "cache") or self.db.blockExists(title, "market"):
-            exit(log.info("Already a block existing for "+title))
+        if apt.MARKER in files:
+            exit(log.info("This folder already has a Block.lock file."))
 
         log.info("Transforming project into block...")
         #check if we are wanting to initialize from a git url
@@ -935,69 +942,57 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         pass
 
     def listLabels(self):
-        if(isinstance(apt.SETTINGS['label'],dict)):
-            print('{:<20}'.format("Label"),'{:<24}'.format("Extension"),'{:<14}'.format("Recursive"))
-            print("-"*20+" "+"-"*24+" "+"-"*14+" ")
-            for depth,pair in apt.SETTINGS['label'].items():
-                rec = "-"
-                if(depth == "recursive"):
-                    rec = "yes"
-                for key,val in pair.items():
-                    print('{:<20}'.format(key),'{:<24}'.format(val),'{:<14}'.format(rec))
-                pass
-        else:
-            log.info("No Labels added!")
+        print('{:<20}'.format("Label"),'{:<24}'.format("Extension"),'{:<14}'.format("Recursive"))
+        print("-"*20+" "+"-"*24+" "+"-"*14+" ")
+        for depth,pair in apt.SETTINGS['label'].items():
+            rec = "-"
+            if(depth == "recursive"):
+                rec = "yes"
+            for key,val in pair.items():
+                print('{:<20}'.format(key),'{:<24}'.format(val),'{:<14}'.format(rec))
+            pass
         pass
 
     def listMarkets(self):
-        if(isinstance(apt.SETTINGS['market'],dict)):
-            print('{:<16}'.format("Market"),'{:<50}'.format("URL"),'{:<12}'.format("Available"))
-            print("-"*16+" "+"-"*50+" "+"-"*12)
-            for key,val in apt.SETTINGS['market'].items():
-                rec = 'no'
-                if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
-                    rec = 'yes'
-                if(val == None):
-                    val = 'local'
-                print('{:<16}'.format(key),'{:<50}'.format(val),'{:<12}'.format(rec))
-                pass
-        else:
-            log.info("No markets added!")
+        print('{:<16}'.format("Market"),'{:<50}'.format("URL"),'{:<12}'.format("Available"))
+        print("-"*16+" "+"-"*50+" "+"-"*12)
+        for key,val in apt.SETTINGS['market'].items():
+            rec = 'no'
+            if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
+                rec = 'yes'
+            if(val == None):
+                val = 'local'
+            print('{:<16}'.format(key),'{:<50}'.format(val),'{:<12}'.format(rec))
+            pass
         pass
     
     def listWorkspace(self):
-        if(isinstance(apt.SETTINGS['workspace'],dict)):
-            print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Markets"))
-            print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
-            for key,val in apt.SETTINGS['workspace'].items():
-                act = '-'
-                rems = ''
-                for r in val['market']:
-                    rems = rems + r + ','
-                if(key == apt.SETTINGS['active-workspace']):
-                    act = 'yes'
-                print('{:<16}'.format(key),'{:<6}'.format(act),'{:<40}'.format(val['local']),'{:<14}'.format(rems))
-                pass
-        else:
-            log.info("No labels added!")
+        print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Markets"))
+        print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
+        for key,val in apt.SETTINGS['workspace'].items():
+            act = '-'
+            rems = ''
+            for r in val['market']:
+                rems = rems + r + ','
+            if(key == apt.SETTINGS['active-workspace']):
+                act = 'yes'
+            print('{:<16}'.format(key),'{:<6}'.format(act),'{:<40}'.format(val['local']),'{:<14}'.format(rems))
+            pass
         pass
 
     def listScripts(self):
-        if(isinstance(apt.SETTINGS['script'],dict)):
-            print('{:<12}'.format("Name"),'{:<12}'.format("Command"),'{:<54}'.format("Path"))
-            print("-"*12+" "+"-"*12+" "+"-"*54)
-            for key,val in apt.SETTINGS['script'].items():
-                spce = val.find(' ')
-                cmd = val[1:spce]
-                path = val[spce:len(val)-1].strip()
-                #command not found
-                if(spce == -1): 
-                    path = cmd
-                    cmd = ''
-                print('{:<12}'.format(key),'{:<12}'.format(cmd),'{:<54}'.format(path))
-                pass
-        else:
-            log.info("No scripts added!")
+        print('{:<12}'.format("Name"),'{:<12}'.format("Command"),'{:<54}'.format("Path"))
+        print("-"*12+" "+"-"*12+" "+"-"*54)
+        for key,val in apt.SETTINGS['script'].items():
+            spce = val.find(' ')
+            cmd = val[1:spce]
+            path = val[spce:len(val)-1].strip()
+            #command not found
+            if(spce == -1): 
+                path = cmd
+                cmd = ''
+            print('{:<12}'.format(key),'{:<12}'.format(cmd),'{:<54}'.format(path))
+            pass
         pass
 
     #! === UPDATE COMMAND ===
@@ -1049,7 +1044,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         value = package
         package = package.replace("-", "_")
 
-        L,N = Block.split(package)
+        L,N = Block.split(package, vhdl=False)
 
         if(apt.inWorkspace()):
             if(self.db.blockExists(package,"local")):
@@ -1153,6 +1148,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             elif(L == '' or N == ''):
                 self.setSetting(options, value, delete=True)
             else:
+                print(L,N)
                 log.info("Block does not exist in local path.")
 
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use

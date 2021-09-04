@@ -1011,6 +1011,8 @@ derives: []
             return '',''
         dot = dep.find('.')
         lib = dep[:dot]
+        if(dot == -1):
+            lib = ''
         dot2 = dep[dot+1:].find('.')
         if(dot2 == -1):
             #use semi-colon if only 1 dot is marked
