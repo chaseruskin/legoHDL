@@ -44,7 +44,7 @@ class legoHDL:
         self.blockCWD = None
         #defines path to dir of remote code base
         self.db = Registry(apt.getMarkets())
-        if(not apt.inWorkspace() and (command != 'config' and command != 'help' and (command != 'open' or "settings" not in options))):
+        if(not apt.inWorkspace() and (command != '' and command != 'config' and command != 'help' and (command != 'open' or ("settings" not in options and "template" not in options)))):
             exit()
         self.parse(command, package, options)
         pass
@@ -1053,9 +1053,14 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 self.blockPKG = None
 
         valid = (self.blockPKG != None)
-        exists = self.db.blockExists(package,"local") or self.db.blockExists(package,"cache") or self.db.blockExists(package,"market")
+        if(apt.inWorkspace()):
+            exists = self.db.blockExists(package,"local") or \
+                    self.db.blockExists(package,"cache") or \
+                    self.db.blockExists(package,"market")
+        else:
+            exists = False
 
-        if(apt.readyForRefresh()):
+        if(apt.inWorkspace() and apt.readyForRefresh()):
             self.db.sync('')
         
         #branching through possible commands

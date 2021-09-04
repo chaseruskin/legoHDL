@@ -2,6 +2,10 @@
 
 - [x] better verilog to verilog external instanation recognition
 
+- [ ] accept CHANGELOG* as glob pattern value to take CHANGELOG or CHANGELOG.md for release command
+
+- [ ] ensure all paths are either all lower-case or not case sensitive (preferred) to support linux filesystems
+
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
