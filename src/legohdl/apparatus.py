@@ -38,6 +38,9 @@ class Apparatus:
     #based on refresh-rate it will store that many times
     REFRESH_LOG = "refresh.log"
 
+    MAX_RATE = 1440
+    MIN_RATE = -1
+
     #types of accepted HDL files to parse and interpret
     VHDL_CODE = ["*.vhd","*.vhdl"]
     VERILOG_CODE = ["*.v","*.sv"]
@@ -108,10 +111,10 @@ class Apparatus:
         cls.generateDefault(bool,"multi-develop","overlap-recursive")
         cls.generateDefault(int,"refresh-rate")
 
-        if(cls.SETTINGS['refresh-rate'] > 1440):
-            cls.SETTINGS['refresh-rate'] = 1440
-        elif(cls.SETTINGS['refresh-rate'] < -1):
-            cls.SETTINGS['refresh-rate'] = -1
+        if(cls.SETTINGS['refresh-rate'] > cls.MAX_RATE):
+            cls.SETTINGS['refresh-rate'] = cls.MAX_RATE
+        elif(cls.SETTINGS['refresh-rate'] < cls.MIN_RATE):
+            cls.SETTINGS['refresh-rate'] = cls.MIN_RATE
 
         cls.dynamicWorkspace()
         cls.dynamicMarkets()
@@ -285,7 +288,7 @@ class Apparatus:
         if(rate == 0):
             return False
         #always perform an automatic refresh
-        elif(rate <= -1):
+        elif(rate <= cls.MIN_RATE):
             log.info("Automatically refreshing markets...")
             return True
     

@@ -741,6 +741,16 @@ class legoHDL:
                 apt.SETTINGS[options[0]] = None
             else:
                 apt.SETTINGS[options[0]] = apt.fs(choice)
+        elif(options[0] == 'refresh-rate'):
+            if(choice.isdecimal()):
+                digit_choice = int(choice)
+                if(digit_choice > apt.MAX_RATE):
+                    digit_choice = apt.MAX_RATE
+                elif(digit_choice < apt.MIN_RATE):
+                    digit_choice = apt.MIN_RATE
+                apt.SETTINGS[options[0]] = digit_choice
+            else:
+                exit(log.error("refresh-rate option takes an integer value"))
         # LABEL CONFIGURATION
         elif(options[0] == 'label'):
             depth = "shallow"
@@ -1537,7 +1547,7 @@ value (ex: -v1). If the -v0.0.0 flag is not properly working, -v0_0_0 is also va
             print('{:<16}'.format("-v0.0.0"),"Show this specific version or constrain the version list to this version")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","(-market (-add | -remove) | -active-workspace | -author | -editor | -template | -multi-develop | -overlap-recursive)")
+            printFmt("config","<value>","(-market (-add | -remove) | -active-workspace | -author | -editor | -template | -multi-develop | -overlap-recursive | -refresh-rate)")
             printFmt("config","<key>="+'"<value>"',"(-script [-link] | -label [-recursive] | -workspace | -market [-add | -remove])",quiet=True)
             rollover("""
 Configure settings for legoHDL. This is the command-line alternative to opening 
@@ -1545,7 +1555,10 @@ the settings.yml file for visual editing. If only a market name is given as <val
 be used as a reference to either -add or -remove the market from the current workspace. If raising
 -template, it requests the path to a folder to create new blocks from. If the <value> is empty, it will
 reference the built-in template folder. Valid <value> for -multi-develop and -overlap-recursive flags are either
-'true', 'false', 1, or 0.
+'true', 'false', 1, or 0. The flag -refresh-rate takes an integer for <value> and determines how many times per day
+to automatically refresh the markets tied to the workspace. If <value> is -1, then it will perform refresh on every
+legohdl command. Any other value (up to 1440) will evenly space out that many intervals throughout the day to 
+perform refresh.
             """)
             print('{:<16}'.format("<value>"),"respective to the raised flag")
             print('{:<16}'.format("<key>"),"an identifier/name respective to the raised flag")
@@ -1559,6 +1572,7 @@ reference the built-in template folder. Valid <value> for -multi-develop and -ov
             print('{:<16}'.format("-template"),"indicate where the template folder is found")
             print('{:<16}'.format("-multi-develop"),"prioritize using downloaded blocks over installed blocks")
             print('{:<16}'.format("-overlap-recursive"),"include all found labels regardless of possible duplication")
+            print('{:<16}'.format("-refresh-rate"),"integer for how often to automatically refresh markets per day")
             print('{:<16}'.format("-script"),"indicate the key/value to be a script name and the command")
             print('{:<16}'.format("-link"),"reference the script from its original location")
             print('{:<16}'.format("-label"),"indicate the key/value to be a label and glob-pattern")
