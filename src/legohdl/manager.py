@@ -1053,9 +1053,14 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 self.blockPKG = None
 
         valid = (self.blockPKG != None)
-        exists = self.db.blockExists(package,"local") or self.db.blockExists(package,"cache") or self.db.blockExists(package,"market")
+        if(apt.inWorkspace()):
+            exists = self.db.blockExists(package,"local") or \
+                    self.db.blockExists(package,"cache") or \
+                    self.db.blockExists(package,"market")
+        else:
+            exits = False
 
-        if(apt.readyForRefresh()):
+        if(apt.inWorkspace() and apt.readyForRefresh()):
             self.db.sync('')
         
         #branching through possible commands
