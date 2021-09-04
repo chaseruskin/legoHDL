@@ -1058,6 +1058,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 self.blockPKG = None
 
         valid = (self.blockPKG != None)
+        exists = self.db.blockExists(package,"local") or self.db.blockExists(package,"cache") or self.db.blockExists(package,"market")
 
         if(apt.readyForRefresh()):
             self.db.sync('')
@@ -1098,7 +1099,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         elif(command == "build" and self.blockCWD.isValid()):
             self.build(value)
         elif(command == "new" and len(package)):
-            if(valid):
+            if(exists):
                 exit(log.error("A block already exists as "+package))
             #option to create a new file
             if(options.count("file")):
@@ -1167,6 +1168,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 self.inventory(package,options)
             pass
         elif(command == "init"):
+            if(exists):
+                exit(log.error("A block already exists as "+package))
             self.convert(package, value, options)
         elif(command == "refresh"):
             #package value is the market looking to refresh
