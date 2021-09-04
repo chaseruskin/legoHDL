@@ -396,7 +396,10 @@ Would you like automatically configured default settings?", warning=False)
 
     @classmethod
     def getLocal(cls):
-        return cls.SETTINGS['workspace'][cls.__active_workspace]['local']
+        if(cls.inWorkspace()):
+            return cls.fs(cls.SETTINGS['workspace'][cls.__active_workspace]['local'])
+        else:
+            return ''
 
     #return the block file metadata from a specific version tag already includes 'v'
     #if returned none then it is an invalid legohdl release point

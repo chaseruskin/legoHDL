@@ -233,10 +233,15 @@ class Vhdl(Language):
     #append a signal/generic string to a list of its respective type
     def addSignal(self, stash, c, stream, true_stream, declare=False, isSig=False):
         names = []
+        #no signals are found on this line if ':' is not present
+        if(':' not in true_stream):
+            return stash
+
         while true_stream[c+1] != ':':
             if(true_stream[c+1] != '(' and true_stream[c+1] != ','):
                 names.append(true_stream[c+1])
             c = c + 1
+
         #go through all names found for this signal type
         for n in names:
             line = n
@@ -348,6 +353,10 @@ class Vhdl(Language):
             pass
         #print("generics",gens)
         #print("signals",signals)
+        
+        if(len(gens) == 0 and len(signals) == 0):
+            return ''
+
         mapping_txt = "uX : "+entity_name+"\n"
         #reassign beginning of mapping of it will be a pure entity instance
         if(pureEntity):

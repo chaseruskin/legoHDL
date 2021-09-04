@@ -793,7 +793,7 @@ class legoHDL:
 
         #make sure this path is witin our workspace's path before making it a block
         if(cwd.lower().count(apt.getLocal().lower()) == 0):
-            exit(log.error("Cannot initialize outside of workspace path "+apt.fs(apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['local'])))
+            exit(log.error("Cannot initialize outside of workspace path "+apt.getLocal()))
         block = None
 
         if(self.blockCWD.isValid() and options.count("market")):
