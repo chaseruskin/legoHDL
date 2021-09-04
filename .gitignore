@@ -5,6 +5,7 @@ build/**/*
 dist/
 
 src/legoHDL.egg-info/
+src/legohdl.egg-info/
 src/legohdl/__pycache__/
 
 pip-wheel-metadata/
