@@ -242,15 +242,16 @@ class Registry:
         return self._remote_prjs
 
     #check if any changes were made to market remotes for current workspace
+    #updates all markets if '' is passed into parameter
     def sync(self, mrkt):
         for mrk in self.getMarkets():
             rep = git.Repo(mrk.getPath())
-            if((mrkt.lower() == mrk.getName().lower() or mrkt == '')):
+            if(mrkt.lower() == mrk.getName().lower() or mrkt == ''):
                 if(mrk.isRemote()):
                     log.info("Refreshing "+mrk.getName()+"... "+mrk.url)
                     rep.remotes.origin.pull(rep.head.reference)
                 else:
-                    log.warning("Cannot refresh "+mrk.getName()+" due to no remote.")
+                    log.info("Skipping "+mrk.getName()+" because it is local...")
         pass
 
     def getMarkets(self):

@@ -2,13 +2,17 @@
 
 - [x] better verilog to verilog external instanation recognition
 
-- [!] refresh-rate setting, can set how often to automatically refresh the market repositories to see if any new blocks or versions are available
-
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
 
 ### Future Roadmap
+
+- [ ] handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. 
+
+- [ ] If two blocks (same titles) exist in separate markets (A and B) and market A is added (good) and then market B is added (conflict), ask user what block to use. The other block will be effectively ignored in the workspace. User should have the ability to later change decision at any point. Identify if its the same block based on title and if they have the same git url. Problem arises when same title yet different git urls.
+
+- [ ] also define what market (if applicable) the dependency came from
 
 - [ ] design question: remove 'run' command and instead have a positional argument for build command? '-e'
 
@@ -32,6 +36,7 @@
 - [ ] '-all' option on graph/export to grab all project-level code
 
 - [ ] '-no-clean' option on export ?
+- [ ] '-quiet' option on export ?
 
 - [ ] add cool logging
 
@@ -39,6 +44,7 @@
 
 
 __Completed__
+- [x] refresh-rate setting, can set how often to automatically refresh the workspace's market repositories to see if any new blocks or versions are available (-1 -> all the time, 0 -> no automatics, 1 -> once a day, 2 -> twice a day, 24 -> every hour, 96 -> every 15 minutes, 1440 (max) -> every minute)
 - [x] git pull on release before releasing -> elegant solution : do git remote update, and determine if the branch is 'up to date'. If not, then the release is cancelled and the user must git pull/git fetch/update their branch.
 - [x] fix how to rename entities within modules
 - [x] produce log.warning() when trying to make 'new' with a remote repo that isn't empty (doesnt link remote)

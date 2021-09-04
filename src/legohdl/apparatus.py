@@ -108,8 +108,8 @@ class Apparatus:
         cls.generateDefault(bool,"multi-develop","overlap-recursive")
         cls.generateDefault(int,"refresh-rate")
 
-        if(cls.SETTINGS['refresh-rate'] > 96):
-            cls.SETTINGS['refresh-rate'] = 96
+        if(cls.SETTINGS['refresh-rate'] > 1440):
+            cls.SETTINGS['refresh-rate'] = 1440
         elif(cls.SETTINGS['refresh-rate'] < -1):
             cls.SETTINGS['refresh-rate'] = -1
 
@@ -270,58 +270,68 @@ class Apparatus:
     def readyForRefresh(cls):
 
         def timeToFloat(prt):
-            time_stamp = prt.split(' ')[1]
-            notions = time_stamp.split(':')
-            hrs = int(notions[0])
-            #todo: capture more values to be into final decimal casting
-            mins = int(int(notions[1])/6)
-            time_fmt = float(str(hrs)+'.'+str(mins))
+            time_stamp = str(prt).split(' ')[1]
+            time_sects = time_stamp.split(':')
+            hrs = int(time_sects[0])
+            #convert to 'hours'.'minutes'
+            time_fmt = (float(hrs)+(float(float(time_sects[1])/60)))
             return time_fmt
+            
 
         rf_log_path = cls.HIDDEN+"workspaces/"+cls.SETTINGS['active-workspace']+"/"+cls.REFRESH_LOG
         rate = cls.SETTINGS['refresh-rate']
+        
         #never perform an automatic refresh
         if(rate == 0):
             return False
-        elif(rate == -1):
+        #always perform an automatic refresh
+        elif(rate <= -1):
+            log.info("Automatically refreshing markets...")
             return True
-        #track how many times have been kept for refresh
-        punch_count = 0
-        spacing = float(24 / rate)
-        
-        cur_time = str(datetime.now())
     
+        refresh = False
+        latest_punch = None
+        cur_time = datetime.now()
+
+        #divide the 24 hour period into even checkpoints
+        spacing = float(24 / rate)
         intervals = []
         for i in range(rate):
             intervals += [spacing*i]
-        print(cur_time)
-        print(intervals)
+ 
         with open(rf_log_path, 'r') as rf_log:
             #read the latest date
-            punches = rf_log.readlines()
-            punch_count = len(punches)
-            if(punch_count == 0):
-                punches.insert(0,cur_time+"\n")
+            file_data = rf_log.readlines()
+            #no refreshes have occurred so automatically need a refresh
+            if(len(file_data) == 0):
+                latest_punch = cur_time
+                refresh = True
             else:
+                latest_punch = datetime.fromisoformat(file_data[0])
                 #get latest time that was punched
-                last_time_fmt = timeToFloat(punches[0])
+                last_time_fmt = timeToFloat(latest_punch)
+                #determine the next checkpoint available for today
                 for cp in intervals:
                     if(last_time_fmt < cp):
                         next_checkpoint = cp
+                        print('next checkpoint',next_checkpoint)
                         break
-                #print(next_checkpoint)
+             
                 cur_time_fmt = timeToFloat(cur_time)
+                #check if the time has occurred on a previous day, (automatically update because its a new day)
+                next_day = cur_time.year > latest_punch.year or cur_time.month > latest_punch.month or cur_time.day > latest_punch.day
                 print("currently",cur_time_fmt)
-                if(cur_time_fmt > next_checkpoint):
-                    print("TIME FOR AN UPDATE!")
-                    punches.insert(0,cur_time+"\n")
-                
-        print('done')
+                #determine if the current time has passed the next checkpoint or if its a new day
+                if(next_day or cur_time_fmt >= next_checkpoint):
+                    log.info("Automatically refreshing markets...")
+                    latest_punch = cur_time
+                    refresh = True
 
+        #write back the latest punch
         with open(rf_log_path, 'w') as rf_log:
-            for pch in punches:
-                rf_log.write(pch)
-        return False
+            rf_log.write(str(latest_punch))
+
+        return refresh
     
     @classmethod
     def save(cls):

@@ -1049,7 +1049,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
 
         valid = (self.blockPKG != None)
 
-        apt.readyForRefresh()
+        if(apt.readyForRefresh()):
+            self.db.sync('')
         
         #branching through possible commands
         if(command == "install"):
