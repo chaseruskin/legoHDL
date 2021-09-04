@@ -291,6 +291,7 @@ class Apparatus:
     
         refresh = False
         latest_punch = None
+        stage = 0
         cur_time = datetime.now()
 
         #divide the 24 hour period into even checkpoints
@@ -305,31 +306,37 @@ class Apparatus:
             #no refreshes have occurred so automatically need a refresh
             if(len(file_data) == 0):
                 latest_punch = cur_time
+                stage = 1
                 refresh = True
             else:
                 latest_punch = datetime.fromisoformat(file_data[0])
                 #get latest time that was punched
                 last_time_fmt = timeToFloat(latest_punch)
                 #determine the next checkpoint available for today
-                for cp in intervals:
-                    if(last_time_fmt < cp):
-                        next_checkpoint = cp
-                        print('next checkpoint',next_checkpoint)
+                for i in range(len(intervals)):
+                    if(last_time_fmt < intervals[i]):
+                        next_checkpoint = intervals[i]
+                        stage = i+1
+                        #print('next checkpoint',next_checkpoint)
                         break
+                else:
+                    return False
              
                 cur_time_fmt = timeToFloat(cur_time)
                 #check if the time has occurred on a previous day, (automatically update because its a new day)
                 next_day = cur_time.year > latest_punch.year or cur_time.month > latest_punch.month or cur_time.day > latest_punch.day
-                print("currently",cur_time_fmt)
+                #print("currently",cur_time_fmt)
                 #determine if the current time has passed the next checkpoint or if its a new day
                 if(next_day or cur_time_fmt >= next_checkpoint):
-                    log.info("Automatically refreshing markets...")
                     latest_punch = cur_time
                     refresh = True
 
         #write back the latest punch
         with open(rf_log_path, 'w') as rf_log:
             rf_log.write(str(latest_punch))
+
+        if(refresh):
+            log.info("Automatically refreshing markets... ("+str(stage)+"/"+str(rate)+")")
 
         return refresh
     
