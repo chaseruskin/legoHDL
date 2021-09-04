@@ -6,13 +6,13 @@
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
 
+- [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list
+
 ### Future Roadmap
 
 - [ ] handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. One step further (the real issue), also a block has conflicts if the block has entities/modules that are already defined in a user's workspace.
 
 - [ ] If two blocks (same titles) exist in separate markets (A and B) and market A is added (good) and then market B is added (conflict), ask user what block to use. The other block will be effectively ignored in the workspace. User should have the ability to later change decision at any point. Identify if its the same block based on title and if they have the same git url. Problem arises when same title yet different git urls.
-
-- [ ] also define what market (if applicable) the dependency came from
 
 - [ ] design question: remove 'run' command and instead have a positional argument for build command? '-e'
 
