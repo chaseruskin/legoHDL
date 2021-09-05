@@ -71,18 +71,17 @@ class Apparatus:
             settings_file.write(structure)
             settings_file.close()
         
-        return ask_for_setup
+        return ask_for_setup or True
 
     @classmethod
     def runSetup(cls):
-        select_outline = cls.confirmation("This looks like your first time running legoHDL! \
+        is_select = cls.confirmation("This looks like your first time running legoHDL! \
 Would you like to use a profile (import settings, template, and scripts)?", warning=False)
-        if(select_outline):
+        if(is_select):
             resp = input("""Enter:
 1) nothing for default profile
 2) a path or git repository to a legoHDL profile
-3) 'eel4712c' for UF EEL4712C profile
-4) 'exit' to cancel
+3) 'exit' to cancel
 """)
             while True:
                 if(resp.lower() == 'eel4712c'):
@@ -91,7 +90,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 elif(resp == ''):
                     log.info("Setting up default profile...")
                     break
-                elif(resp.lower() == 'stop'):
+                elif(resp.lower() == 'exit'):
                     log.info('Profile configuration skipped.')
                     break
                 elif(os.path.exists(resp) or cls.isValidURL(resp)):

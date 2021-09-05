@@ -6,7 +6,7 @@
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
 
-- [ ] profiles : a folder with the ability to override various configuration aspects such as the template, scripts, and any settings in the settings.yml -> it will overwrite settings that match, and also append settings that don't exist in master settings.yml. Other settings not found/touched in the profile can still live. It simply imports these settings on 'runSetup' (not every time legohdl is called). For the template, it gets completely replaced, and for scripts, scripts get added/overwritten, but others can exist (like settings).
+- [ ] profiles : a folder with the ability to override various configuration aspects such as the template, scripts, and any settings in the settings.yml -> it will overwrite settings that match, and also append settings that don't exist the main settings.yml. Other settings not found/touched in the profile can still live. It simply imports these settings on 'runSetup' (not every time legohdl is called, but can be explicitly recalled to update profile if changes have been made). For the template, it gets completely replaced, and for scripts, scripts get added/overwritten, but others can exist (like settings). Should profiles be bound to workspaces or decoupled?
 
 - [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list
 
