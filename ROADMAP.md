@@ -2,10 +2,6 @@
 
 - [x] better verilog to verilog external instanation recognition
 
-- [ ] accept CHANGELOG* as glob pattern value to take CHANGELOG or CHANGELOG.md for release command
-
-- [ ] ensure all paths are either all lower-case or not case sensitive (preferred) to support linux filesystems
-
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
@@ -52,7 +48,9 @@
 
 
 __Completed__
+- [x] ensure all paths are case sensitive for linux filesystems
 - [x] refresh-rate setting, can set how often to automatically refresh the workspace's market repositories to see if any new blocks or versions are available (-1 -> all the time, 0 -> no automatics, 1 -> once a day, 2 -> twice a day, 24 -> every hour, 96 -> every 15 minutes, 1440 (max) -> every minute)
+- [o] accept CHANGELOG* as glob pattern value to take CHANGELOG or CHANGELOG.md for release command -> skipped
 - [x] git pull on release before releasing -> elegant solution : do git remote update, and determine if the branch is 'up to date'. If not, then the release is cancelled and the user must git pull/git fetch/update their branch.
 - [x] fix how to rename entities within modules
 - [x] produce log.warning() when trying to make 'new' with a remote repo that isn't empty (doesnt link remote)
