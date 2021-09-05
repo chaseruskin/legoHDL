@@ -1217,6 +1217,13 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                         log.info("Opening built-in script folder at... "+script_path)
 
                 os.system(apt.SETTINGS['editor']+" "+script_path)
+            #open profile
+            elif(options.count("profile")):
+                if(value in apt.getProfiles().keys()):
+                    log.info("Opening profile at... "+apt.getProfiles()[value])
+                    os.system(apt.SETTINGS['editor']+" "+apt.getProfiles()[value])
+                else:
+                    log.error("No profile exists as "+value)
             #open settings
             elif(options.count("settings")):
                 log.info("Opening settings YAML file at... "+apt.fs(apt.HIDDEN+"settings.yml"))

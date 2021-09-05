@@ -1,4 +1,5 @@
 #load in settings
+from genericpath import isdir
 import yaml,stat,glob,git
 from datetime import datetime
 import logging as log
@@ -133,6 +134,10 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 if('shallow' not in cls.SETTINGS[opt].keys() or \
                     isinstance(cls.SETTINGS[opt]['shallow'], dict) == False):
                     cls.SETTINGS[opt]['shallow'] = {}
+        
+        #run setup here
+        if(ask_for_setup):
+            cls.runSetup()
 
         #ensure all pieces of settings are correct
         cls.generateDefault(dict,"market","script","workspace")
@@ -143,10 +148,6 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             cls.SETTINGS['refresh-rate'] = cls.MAX_RATE
         elif(cls.SETTINGS['refresh-rate'] < cls.MIN_RATE):
             cls.SETTINGS['refresh-rate'] = cls.MIN_RATE
-
-        #run setup here
-        if(ask_for_setup):
-            cls.runSetup()
 
         cls.dynamicWorkspace()
         cls.dynamicMarkets()
@@ -268,6 +269,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         else:
             return True
 
+    #determines if value is an existing profile or a path to a new profile to be copied in
+    #will stage the profile into the correct place
     @classmethod
     def loadProfile(cls, value):
         prfl_dir = cls.HIDDEN+"profiles/"
@@ -277,9 +280,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         sel_prfl = None
         #see if this is a profile that already exists
         if(value in profiles):
-            log.info("Loading existing profile "+value+"...")
-            sel_prfl = profiles[value]
-            #now load settings from this path
+            sel_prfl = value
+            log.info("Loading existing profile "+sel_prfl+"...")
         else:
             value = cls.fs(value)
             #clone the repository and see if it is a valid profile
@@ -321,21 +323,46 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             if(os.path.exists(tmp_dir)):  
                 shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
             pass
-
-
+        #perform backend operation to overload settings, template, and scripts
+        cls.importProfile(sel_prfl)
         return True
 
+    #perform backend operation to overload settings, template, and scripts
+    @classmethod
+    def importProfile(cls, prfl_name):
+        prfl_path = cls.getProfiles()[prfl_name]
+        #overload available settings
+        if(os.path.isfile(prfl_path+'settings.yml') == True):
+            log.info('Setting up settings.yml...')
+            with open(prfl_path+'settings.yml', 'r') as f:
+                prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
+            pass
+
+        #point to template folder
+        if(os.path.isdir(prfl_path+'template/') == True):
+            log.info('Setting up template...')
+            cls.SETTINGS['template'] = cls.fs(prfl_path+'template/')
+            pass
+
+        #link scripts
+        if(os.path.isdir(prfl_path+'scripts/') == True):
+            log.info('Setting up scripts...')
+            pass
+
+        cls.save()
+        pass
+
+    #looks within profiles directory and returns dict of all valid profiles
     @classmethod
     def getProfiles(cls):
         places = os.listdir(cls.HIDDEN+"profiles/")
         profiles = dict()
         for plc in places:
-            path = cls.HIDDEN+"profiles/"+plc+"/"
+            path = cls.fs(cls.HIDDEN+"profiles/"+plc+"/")
             if(os.path.isfile(path+plc+cls.PRFL_EXT)):
                 profiles[plc] = path
-        print(profiles)
+
         return profiles
-        pass
 
     @classmethod
     def initializeWorkspace(cls, name):

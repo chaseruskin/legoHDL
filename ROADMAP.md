@@ -4,9 +4,17 @@
 
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
-- [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
+profiles
+- [ ] implement legohdl list -profile
+- [ ] finish implementing the action that profiles perform (also embed default profile)
+- [ ] allow master settings.yml to list available profiles, if a user deletes one from list, it will be removed, if a user adds a new name, a blank one will be created.
+- [ ] allow del command to delete a profile
 
 - [ ] profiles : a folder with the ability to override various configuration aspects such as the template, scripts, and any settings in the settings.yml -> it will overwrite settings that match, and also append settings that don't exist the main settings.yml. Other settings not found/touched in the profile can still live. It simply imports these settings on 'runSetup' (not every time legohdl is called, but can be explicitly recalled to update profile if changes have been made). For the template, it gets completely replaced, and for scripts, scripts get added/overwritten, but others can exist (like settings). Should profiles be bound to workspaces or decoupled?
+
+- [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
+
+- [ ] if going from already installed to download, ensure all requirements are installed else give an error stating the missing installations 
 
 - [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list
 
