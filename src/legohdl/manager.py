@@ -963,6 +963,11 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             print('{:<16}'.format(key),'{:<50}'.format(val),'{:<12}'.format(rec))
             pass
         pass
+
+    def listProfiles(self):
+        apt.getProfiles()
+        print('{:<16}'.format("Profile"),'{:<6}'.format("Last Used"),'{:<40}'.format("Settings"),'{:<14}'.format("Template"),'{:<14}'.format("Scripts"))
+        print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
     
     def listWorkspace(self):
         print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Markets"))
@@ -1163,6 +1168,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 self.listMarkets()
             elif(options.count("workspace")):
                 self.listWorkspace()
+            elif(options.count("profile")):
+                self.listProfiles()
             else:
                 self.inventory(package,options)
             pass
@@ -1244,6 +1251,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             #perform install over remote url
             self.update(package)
             pass
+        elif(command == "profile"):
+            apt.loadProfile(package)
         elif(command == "port"):
             mapp = pure_ent = False
             ent_name = None
@@ -1303,6 +1312,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             formatHelp("update","update installed block to be to the latest version")
             formatHelp("show","read further detail about a specified block")
             formatHelp("config","set package manager settings")
+            formatHelp("profile","import configurations for scripts, settings, and template")
             print("\nType \'legohdl help <command>\' to read more on entered command.")
         else:
             print("Invalid command; type \"legohdl help\" to see a list of available commands")
