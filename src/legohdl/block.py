@@ -1,5 +1,6 @@
 from genericpath import isdir, isfile
 import os, yaml, shutil
+from git.util import rmtree
 from datetime import date
 import glob, git
 import logging as log
@@ -58,6 +59,7 @@ class Block:
 
     #download block from a url (can be from cache or remote)
     def downloadFromURL(self, rem, in_place=False):
+        tmp_dir = apt.HIDDEN+"tmp/"
         if(in_place):
             self._repo = git.Repo(self.getPath())
             self.pull()
@@ -67,23 +69,33 @@ class Block:
         #new path is default to local/library/
         new_path = apt.fs(apt.getLocal()+"/"+self.getLib(low=False)+"/")
         os.makedirs(new_path, exist_ok=True)
+        #create temp directory to clone project into
+        os.makedirs(tmp_dir, exist_ok=True)
         #clone project
-        git.Git(new_path).clone(rem)
+        git.Git(tmp_dir).clone(rem)
+
+        self.__local_path = new_path+self.getName(low=False)
+
         #this is a remote url, so when it clones we must make sure to rename the base folder
         if(rem.endswith(".git")):
             url_name = rem[rem.rfind('/')+1:rem.rfind('.git')]
+        #this was cloned from a cached folder
         else:
             path_prts = rem.strip('/').split('/')
             url_name = path_prts[len(path_prts)-1]
         #rename the cloned folder to the case sensitive name of the block
         try:
-            os.rename(new_path+url_name, new_path+self.getName(low=False))
-        except FileExistsError:
-            shutil.rmtree(new_path+self.getName(low=False), onerror=apt.rmReadOnly)
-            os.rename(new_path+url_name, new_path+self.getName(low=False))
+            shutil.copytree(tmp_dir+url_name, self.getPath())
+        #remove a folder that exists here because its not a block!
+        except(OSError, FileExistsError):
+            shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
+            shutil.copytree(tmp_dir+url_name, self.getPath())
 
         #assign the repo of the newly downloaded block
-        self._repo = git.Repo(new_path+self.getName(low=False))
+        self._repo = git.Repo(self.getPath())
+        #remove temp directory
+        shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
+        
         #if downloaded from cache, make a master branch if no remote  
         if(len(self._repo.heads) == 0):
             self._repo.git.checkout("-b","master")

@@ -20,13 +20,17 @@ class Market:
                 url_name = url[url.rfind('/')+1:url.rfind('.git')]
 
             if(valid_remote):
-                git.Git(apt.HIDDEN+"registry/").clone(url)
+                tmp_dir = apt.HIDDEN+"tmp/"
+                #create temp directory to clone market into
+                os.makedirs(tmp_dir, exist_ok=True)
+                git.Git(tmp_dir).clone(url)
                 log.info("Found and linked remote repository to "+self.getName())
+                #transfer from temp directory into market directory
+                shutil.copytree(tmp_dir+url_name, self._local_path)
+                shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
             else:
                 git.Repo.init(self._local_path)
                 log.warning("No remote repository configured for "+self.getName())
-                url_name = self.getName()
-            os.rename(apt.HIDDEN+"registry/"+url_name, self._local_path)
             
         self._repo = git.Repo(self._local_path)
         pass

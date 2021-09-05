@@ -75,7 +75,7 @@ class Apparatus:
             settings_file.write(structure)
             settings_file.close()
         
-        return ask_for_setup or True
+        return ask_for_setup
 
     @classmethod
     def runSetup(cls):
@@ -272,10 +272,10 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
     def loadProfile(cls, value):
         prfl_dir = cls.HIDDEN+"profiles/"
         tmp_dir = cls.HIDDEN+"tmp/"
-        #try first if its already been added
-        #first check if its a name found in the 'profiles' directory
+        #get all available profiles
         profiles = cls.getProfiles()
         sel_prfl = None
+        #see if this is a profile that already exists
         if(value in profiles):
             log.info("Loading existing profile "+value+"...")
             sel_prfl = profiles[value]
@@ -299,11 +299,11 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 log.error("This path/repository does not exist")
                 return False
             
+            #check if a .prfl file exists for this folder (validates profile)
             log.info("Locating .prfl file... ")
             prfl_file = glob.glob(path_to_check+"*"+cls.PRFL_EXT)
             if(len(prfl_file)):
                 sel_prfl = os.path.basename(prfl_file[0].replace('.prfl',''))
-                print(sel_prfl)
                 pass
             else:
                 log.error("Invalid profile; no .prfl file found")
@@ -317,10 +317,9 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             log.info("Importing new profile "+sel_prfl+"...")
             if(os.path.exists(prfl_dir+sel_prfl) == False):
                 shutil.copytree(path_to_check, prfl_dir+sel_prfl)
-                #remove temp directory
-                if(os.path.exists(tmp_dir)):  
-                    shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
-
+            #remove temp directory
+            if(os.path.exists(tmp_dir)):  
+                shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
             pass
 
 
@@ -386,7 +385,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
 
     @classmethod
     def readyForRefresh(cls):
-
+        #helper method to convert a datetime time word to a decimal floating type number
         def timeToFloat(prt):
             time_stamp = str(prt).split(' ')[1]
             time_sects = time_stamp.split(':')
@@ -416,7 +415,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         intervals = []
         for i in range(rate):
             intervals += [spacing*i]
- 
+
+        #read when the last refresh time occurred
         with open(rf_log_path, 'r') as rf_log:
             #read the latest date
             file_data = rf_log.readlines()
