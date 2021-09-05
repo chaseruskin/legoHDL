@@ -487,7 +487,6 @@ class legoHDL:
                 shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/"+n+"/", onerror=apt.rmReadOnly)
             except:
                 pass
-            print("here")
             #update cache installation if a new version is available
             self.install(title, None)
   

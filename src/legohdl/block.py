@@ -261,6 +261,7 @@ class Block:
         #split into list
         all_tags = all_tags.split("\n")
         tags = []
+        
         #only add any tags identified by legohdl
         for t in all_tags:
             if(t.endswith(apt.TAG_ID)):

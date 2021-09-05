@@ -481,6 +481,11 @@ Would you like automatically configured default settings?", warning=False)
         path = os.path.expanduser(path)
         path = path.replace('\\','/')
         path = path.replace('//','/')
+        #re-add the double // to the http component
+        if(path.lower().startswith('http')):
+            i = path.find(':/')
+            path = path[:i+2] + "/" + path[i+2:]
+
         dot = path.rfind('.')
         last_slash = path.rfind('/')
         if(last_slash > dot and path[len(path)-1] != '/'):
