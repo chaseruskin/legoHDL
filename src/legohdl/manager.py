@@ -1058,7 +1058,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         else:
             exists = False
 
-        if(apt.inWorkspace() and apt.readyForRefresh()):
+        if(apt.inWorkspace() and apt.readyForRefresh() and apt.linkedMarket()):
             self.db.sync('')
         
         #branching through possible commands
@@ -1190,7 +1190,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             #open template
             if(options.count("template")):
                 log.info("Opening block template folder at... "+apt.fs(apt.TEMPLATE))
-                os.system(apt.SETTINGS['editor']+" \""+apt.TEMPLATE+"\"")
+                os.system(apt.SETTINGS['editor']+" \""+apt.fs(apt.TEMPLATE)+"\"")
             #open scripts
             elif(options.count("script")):
                 #want to open the specified script?
@@ -1212,7 +1212,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 os.system(apt.SETTINGS['editor']+" "+script_path)
             #open settings
             elif(options.count("settings")):
-                log.info("Opening settings YAML file at... "+apt.HIDDEN+"settings.yml")
+                log.info("Opening settings YAML file at... "+apt.fs(apt.HIDDEN+"settings.yml"))
                 os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/settings.yml\"")
             #open block
             elif(valid):

@@ -71,7 +71,7 @@ class Apparatus:
             settings_file.write(structure)
             settings_file.close()
         
-        return ask_for_setup or True
+        return ask_for_setup
 
     @classmethod
     def runSetup(cls):
