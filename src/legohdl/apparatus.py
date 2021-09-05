@@ -1,5 +1,5 @@
 #load in settings
-import yaml,stat
+import yaml,stat,glob,git
 from datetime import datetime
 import logging as log
 from subprocess import check_output
@@ -13,6 +13,8 @@ class Apparatus:
     HIDDEN = os.path.expanduser("~/.legohdl/")
 
     MARKER = "Block.lock"
+
+    PRFL_EXT = ".prfl"
 
     CHANGELOG = "CHANGELOG.md"
 
@@ -56,6 +58,8 @@ class Apparatus:
         os.makedirs(cls.HIDDEN+"scripts/", exist_ok=True)
         os.makedirs(cls.HIDDEN+"registry/", exist_ok=True)
         os.makedirs(cls.HIDDEN+"template/", exist_ok=True)
+        os.makedirs(cls.HIDDEN+"profiles/", exist_ok=True)
+
         #create bare settings.yml if DNE
         if(not os.path.isfile(cls.HIDDEN+"settings.yml")):
             settings_file = open(cls.HIDDEN+"settings.yml", 'w')
@@ -71,7 +75,7 @@ class Apparatus:
             settings_file.write(structure)
             settings_file.close()
         
-        return ask_for_setup
+        return ask_for_setup or True
 
     @classmethod
     def runSetup(cls):
@@ -80,21 +84,17 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         if(is_select):
             resp = input("""Enter:
 1) nothing for default profile
-2) a path or git repository to a legoHDL profile
+2) a path or git repository to a new profile
 3) 'exit' to cancel
 """)
             while True:
-                if(resp.lower() == 'eel4712c'):
-                    log.info("Setting up profile for EEL4712C...")
+                if(cls.loadProfile(resp.lower())):
                     break
                 elif(resp == ''):
                     log.info("Setting up default profile...")
                     break
                 elif(resp.lower() == 'exit'):
                     log.info('Profile configuration skipped.')
-                    break
-                elif(os.path.exists(resp) or cls.isValidURL(resp)):
-                    log.info('Setting up profile from... '+resp)
                     break
                 resp = input()
         pass
@@ -269,6 +269,76 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             return True
 
     @classmethod
+    def loadProfile(cls, value):
+        prfl_dir = cls.HIDDEN+"profiles/"
+        tmp_dir = cls.HIDDEN+"tmp/"
+        #try first if its already been added
+        #first check if its a name found in the 'profiles' directory
+        profiles = cls.getProfiles()
+        sel_prfl = None
+        if(value in profiles):
+            log.info("Loading existing profile "+value+"...")
+            sel_prfl = profiles[value]
+            #now load settings from this path
+        else:
+            value = cls.fs(value)
+            #clone the repository and see if it is a valid profile
+            log.info("Grabbing profile from... "+value)
+            if(cls.isValidURL(value)):
+                os.makedirs(tmp_dir)
+                git.Git(tmp_dir).clone(value)
+                url_name = value[value.rfind('/')+1:value.rfind('.git')]
+                path_to_check = cls.fs(tmp_dir+url_name)
+            #check if the path is a local directory
+            elif(os.path.isdir(value)):
+                path_prts = value.strip('/').split('/')
+                url_name = path_prts[len(path_prts)-1]
+                path_to_check = value
+                pass
+            else:
+                log.error("This path/repository does not exist")
+                return False
+            
+            log.info("Locating .prfl file... ")
+            prfl_file = glob.glob(path_to_check+"*"+cls.PRFL_EXT)
+            if(len(prfl_file)):
+                sel_prfl = os.path.basename(prfl_file[0].replace('.prfl',''))
+                print(sel_prfl)
+                pass
+            else:
+                log.error("Invalid profile; no .prfl file found")
+                #delete if it was cloned for evaluation
+                if(os.path.exists(tmp_dir)):   
+                    shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
+                
+                return False
+
+            #insert profile into profiles directory
+            log.info("Importing new profile "+sel_prfl+"...")
+            if(os.path.exists(prfl_dir+sel_prfl) == False):
+                shutil.copytree(path_to_check, prfl_dir+sel_prfl)
+                #remove temp directory
+                if(os.path.exists(tmp_dir)):  
+                    shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
+
+            pass
+
+
+        return True
+
+    @classmethod
+    def getProfiles(cls):
+        places = os.listdir(cls.HIDDEN+"profiles/")
+        profiles = dict()
+        for plc in places:
+            path = cls.HIDDEN+"profiles/"+plc+"/"
+            if(os.path.isfile(path+plc+cls.PRFL_EXT)):
+                profiles[plc] = path
+        print(profiles)
+        return profiles
+        pass
+
+    @classmethod
     def initializeWorkspace(cls, name):
         workspace_dir = cls.HIDDEN+"workspaces/"+name+"/"
         if(os.path.isdir(workspace_dir) == False):
@@ -325,7 +395,6 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             time_fmt = (float(hrs)+(float(float(time_sects[1])/60)))
             return time_fmt
             
-
         rf_log_path = cls.HIDDEN+"workspaces/"+cls.SETTINGS['active-workspace']+"/"+cls.REFRESH_LOG
         rate = cls.SETTINGS['refresh-rate']
         
