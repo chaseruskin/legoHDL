@@ -789,13 +789,14 @@ class legoHDL:
         l,n = Block.split(title)
         if((l == '' or n == '') and len(options) == 0):
             exit(log.error("Must provide a block title <library>.<block-name>"))
+        
         cwd = apt.fs(os.getcwd())
-
         #make sure this path is witin our workspace's path before making it a block
-        if(cwd.lower().count(apt.getLocal().lower()) == 0):
-            exit(log.error("Cannot initialize outside of workspace path "+apt.getLocal()))
-        block = None
+        if(apt.isSubPath(apt.getLocal(), cwd) == False):
+            exit(log.error("Cannot initialize outside or at root of workspace path "+apt.getLocal()))
 
+        block = None
+        #check if we are trying to init something other than an actual project to block
         if(self.blockCWD.isValid() and options.count("market")):
             if(value.lower() != ""):
                 if(value not in apt.SETTINGS['market'].keys()):
@@ -821,7 +822,7 @@ class legoHDL:
             return
         elif(len(options)):
             if(l == '' or n == ''):
-                exit(log.error("Could not fulfill init option flag"))
+                exit(log.error("Could not fulfill init option flag '"+options[0]+"'"))
 
         files = os.listdir(cwd)
         if apt.MARKER in files:
@@ -843,8 +844,6 @@ class legoHDL:
         if(last_slash == len(cwd)-1):
             last_slash = cwd[:cwd.rfind('/')].rfind('/')
 
-        if(apt.fs(apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['local']).lower().count(apt.fs(cwd).lower())):
-            exit(log.error("Cannot initialize a block at the root of the workspace's local path."))
         cwdb1 = cwd[:last_slash]+"/"+n+"/"
 
         if(git_url == None):

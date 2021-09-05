@@ -24,7 +24,7 @@ class Block:
         if(path != None):
             if(self.isValid()):
                 if(not excludeGit):
-                    self._repo = git.Repo(self.__local_path)
+                    self._repo = git.Repo(self.getPath())
                 self.loadMeta()
             return
         elif(path == None):
@@ -33,7 +33,7 @@ class Block:
         #try to see if this directory is indeed a git repo
         self._repo = None
         try:
-            self._repo = git.Repo(self.__local_path)
+            self._repo = git.Repo(self.getPath())
         except:
             pass
 
@@ -72,11 +72,16 @@ class Block:
         #this is a remote url, so when it clones we must make sure to rename the base folder
         if(rem.endswith(".git")):
             url_name = rem[rem.rfind('/')+1:rem.rfind('.git')]
-            try:
-                os.rename(new_path+url_name, new_path+self.getName(low=False))
-            except FileExistsError:
-                shutil.rmtree(new_path+self.getName(low=False), onerror=apt.rmReadOnly)
-                os.rename(new_path+url_name, new_path+self.getName(low=False))
+        else:
+            path_prts = rem.strip('/').split('/')
+            url_name = path_prts[len(path_prts)-1]
+        #rename the cloned folder to the case sensitive name of the block
+        try:
+            os.rename(new_path+url_name, new_path+self.getName(low=False))
+        except FileExistsError:
+            shutil.rmtree(new_path+self.getName(low=False), onerror=apt.rmReadOnly)
+            os.rename(new_path+url_name, new_path+self.getName(low=False))
+
         #assign the repo of the newly downloaded block
         self._repo = git.Repo(new_path+self.getName(low=False))
         #if downloaded from cache, make a master branch if no remote  
@@ -349,10 +354,10 @@ derives: []
         return body
 
     def isMarket(self):
-        return self.getPath(low=True).count(apt.fs(apt.HIDDEN+"registry/").lower())
+        return apt.isSubPath(apt.HIDDEN+"registry/", self.getPath())
 
     def isLocal(self):
-        return self.getPath(low=True).count(apt.fs(apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['local']).lower())
+        return apt.isSubPath(apt.getLocal(), self.getPath())
 
     def bindMarket(self, mkt):
         if(mkt != None):
@@ -443,9 +448,9 @@ derives: []
         #make any necessary directories
         os.makedirs(newfile.replace(filename,""), exist_ok=True)
         #copy file to the new location
-        shutil.copyfile(templateFile, self.__local_path+newfile)
+        shutil.copyfile(templateFile, self.getPath()+newfile)
         #reassign file to be the whole path
-        newfile = self.__local_path+newfile
+        newfile = self.getPath()+newfile
         #generate today's date
         today = date.today().strftime("%B %d, %Y")
         #write blank if no author configured
@@ -477,12 +482,12 @@ derives: []
         if(fresh):
             if(os.path.isdir(apt.TEMPLATE)):
                 #copy all files from template project
-                shutil.copytree(apt.TEMPLATE, self.__local_path)
+                shutil.copytree(apt.TEMPLATE, self.getPath())
                 #delete any previous git repository that was attached to template
-                if(os.path.isdir(self.__local_path+"/.git/")):
-                    shutil.rmtree(self.__local_path+"/.git/", onerror=apt.rmReadOnly)
+                if(os.path.isdir(self.getPath()+"/.git/")):
+                    shutil.rmtree(self.getPath()+"/.git/", onerror=apt.rmReadOnly)
             else:
-                os.makedirs(self.__local_path, exist_ok=True)
+                os.makedirs(self.getPath(), exist_ok=True)
 
         #clone from existing remote repo
         if(not fresh and self.grabGitRemote() != None):
@@ -490,22 +495,22 @@ derives: []
             self.downloadFromURL(self.grabGitRemote(), in_place=True)
         #make a new repo
         elif(not git_exists):
-            self._repo = git.Repo.init(self.__local_path)
+            self._repo = git.Repo.init(self.getPath())
         #there is already a repo here
         else:
-            self._repo = git.Repo(self.__local_path)
+            self._repo = git.Repo(self.getPath())
             #does a remote exist?
             if(self.grabGitRemote(override=True) != None):
                 #ensure we have the latest version before creating marker file
                 self._repo.git.pull()
 
         #create the marker file
-        open(self.__local_path+apt.MARKER, 'w').write(self.lockFile())
+        open(self.getPath()+apt.MARKER, 'w').write(self.lockFile())
 
         #run the commands to generate new project from template
         if(fresh):
             #replace all file names that contain the word 'template'
-            replacements = glob.glob(self.__local_path+"/**/*template*", recursive=True)
+            replacements = glob.glob(self.getPath()+"/**/*template*", recursive=True)
             for f in replacements:
                 if(os.path.isfile(f)):
                     os.rename(f, f.replace('template', self.getName(low=False)))
@@ -517,7 +522,7 @@ derives: []
             today = date.today().strftime("%B %d, %Y")
 
             #go through all files and update with special placeholders
-            allFiles = glob.glob(self.__local_path+"/**/*", recursive=True)
+            allFiles = glob.glob(self.getPath()+"/**/*", recursive=True)
             for f in allFiles:
                 file_data = []
                 #store and transform lines into file dictionary
@@ -584,7 +589,7 @@ derives: []
         if(len(self._repo.remotes)):
             origin = self._repo.remotes
             for o in origin:
-                if(o.url == self.__local_path):
+                if(o.url == self.getPath()):
                     continue
                 elif(o.url.endswith(".git")):
                     self._remote = o.url
@@ -886,7 +891,7 @@ derives: []
             self.__local_path = specific_cache_dir+"/"
             base_installed = True
 
-        self._repo = git.Repo(self.__local_path)
+        self._repo = git.Repo(self.getPath())
         self.loadMeta()
 
         #2. now perform install from cache

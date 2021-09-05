@@ -1,11 +1,9 @@
 #load in settings
 import yaml,stat
-import time
-from datetime import date
 from datetime import datetime
 import logging as log
 from subprocess import check_output
-import os,shutil,copy
+import os,shutil,copy,platform
 
 
 class Apparatus:
@@ -162,6 +160,16 @@ Would you like automatically configured default settings?", warning=False)
         #ensure no dead scripts are populated in 'script' section of settings
         cls.dynamicScripts()
         pass
+
+    @classmethod
+    def isSubPath(cls, inner_path, path):
+        kernel = platform.system()
+        #must be careful to exactly match paths within Linux OS
+        if(kernel != "Linux"):
+            inner_path = inner_path.lower()
+            path = path.lower()
+
+        return cls.fs(path).startswith(cls.fs(inner_path)) and (path != inner_path)
 
     #automatically set market names to lower-case, and prompt user to settle duplicate keys
     @classmethod
