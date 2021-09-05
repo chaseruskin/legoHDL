@@ -1387,18 +1387,22 @@ providing a market name, make sure the market is listed under the current worksp
         elif(cmd == "open"):
             printFmt("open","<block>")
             printFmt("open","[<script-name>] -script",quiet=True)
+            printFmt("open","<profile-name> -profile",quiet=True)
             printFmt("open","(-template | -settings)",quiet=True)
             rollover("""
 Open a variety of legohdl folders/files. With no flags raised, the block will be opened if
 it is found in the workspace's local path. If the script flag is raised with no <script>,
-it will open the built-in script folder. If a valid <script> is specified with the script 
-flag raised, it will directly open its file.
+it will open the built-in script folder. If a valid <script-name> is specified with the script 
+flag raised, it will directly open its file. If a valid <profile-name> is specified with the profile
+flag raised, it will open the profile to make edits.
             """)
             print('{:<16}'.format("<block>"),"the block's title to be opened by the text-editor")
             print('{:<16}'.format("<script-name>"),"script's name found in legohdl settings")
+            print('{:<16}'.format("<profile-name>"),"available profile found in legohdl settings")
             print()
             print('{:<16}'.format("-template"),"open the template folder")
             print('{:<16}'.format("-script"),"open the built-in script folder if no script specified")
+            print('{:<16}'.format("-profile"),"open the specified profile to edit")
             print('{:<16}'.format("-settings"),"open the settings YAML file")
             pass
         elif(cmd == "release"):
@@ -1420,7 +1424,7 @@ If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.
             print('{:<16}'.format("-soft"),"push a side branch to the linked market for merge")
             pass
         elif(cmd == "list"):
-            printFmt("list","[[<search>]","[-alpha]] [-script | -label | -market | -workspace]")
+            printFmt("list","[[<search>]","[-alpha]] [-script | -label | -market | -workspace | -profile]")
             rollover("""
 Provide a formatted view for a variety of groups. The default is to list the active
 workspace's blocks. When listing blocks, you can also search by providing a partial block 
@@ -1434,6 +1438,7 @@ label, market, or workspace, will print their respective group found within the 
             print('{:<16}'.format("-label"),"view labels as label, extension, recursive")
             print('{:<16}'.format("-market"),"view markets as market, url, linked to workspace")
             print('{:<16}'.format("-workspace"),"view workspaces as workspace, active, path, markets")
+            print('{:<16}'.format("-profile"),"view available profiles to overload configurations")
             pass
         elif(cmd == "install"):
             printFmt("install","((<block>","[-v0.0.0]) | -requirements)")
