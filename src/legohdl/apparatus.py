@@ -163,13 +163,15 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             cls.TEMPLATE = cls.SETTINGS['template']
             pass
         
-        if(cls.SETTINGS['workspace'][cls.__active_workspace]['local'] == None):
+        if(cls.getLocal() == None):
             log.error("Please specify a local path! See \'legohdl help config\' for more details")
 
         cls.WORKSPACE = cls.HIDDEN+"workspaces/"+cls.SETTINGS['active-workspace']+"/"
 
         #ensure no dead scripts are populated in 'script' section of settings
         cls.dynamicScripts()
+        #save all safety measures
+        cls.save()
         pass
 
     @classmethod
@@ -219,6 +221,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             #try to make this local directory
             if("local" in val.keys() and os.path.isdir(val['local']) == False):
                 os.makedirs(val['local'],exist_ok=True)
+            cls.SETTINGS['workspace'][ws]['local'] = cls.fs(val['local'])
             cls.initializeWorkspace(ws)
 
         ws_dirs = os.listdir(cls.HIDDEN+"workspaces/")
@@ -256,8 +259,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         #clean dead script from scripts section
         for d in deletions:
             del cls.SETTINGS['script'][d]
-            #print(d)
-        cls.save()
+        pass
 
     @classmethod
     def inWorkspace(cls):
@@ -330,12 +332,39 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
     #perform backend operation to overload settings, template, and scripts
     @classmethod
     def importProfile(cls, prfl_name):
+        #merge all values found in src override dest into a new dictionary
+        def deepMerge(src, dest):
+            for k,v in src.items():
+                #go even deeper into the dictionary tree
+                if(isinstance(v, dict)):
+                    deepMerge(v, dest[k])
+                else:
+                    #append to list, don't overwrite
+                    if(isinstance(v, list) and isinstance(dest[k], list)):
+                        for i in v:
+                            if(isinstance(v,str)):
+                                v = v.replace("$(PROFILE)", prfl_path[:len(prfl_path)-1])
+                            dest[k] += [i]
+                    #otherwise normal overwrite
+                    else:
+                        if(isinstance(v,str)):
+                            v = v.replace("$(PROFILE)", prfl_path[:len(prfl_path)-1])
+                        dest[k] = v
+            return dest
+
         prfl_path = cls.getProfiles()[prfl_name]
         #overload available settings
         if(os.path.isfile(prfl_path+'settings.yml') == True):
             log.info('Setting up settings.yml...')
             with open(prfl_path+'settings.yml', 'r') as f:
-                prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
+                try:
+                    prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
+                except yaml.scanner.ScannerError:
+                    log.error("Skipped settings.yml due to invalid syntax")
+                
+                dest_settings = copy.deepcopy(cls.SETTINGS)
+                dest_settings = deepMerge(prfl_settings, dest_settings)
+                cls.SETTINGS = dest_settings
             pass
 
         #point to template folder

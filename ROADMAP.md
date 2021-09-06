@@ -4,6 +4,8 @@
 
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
+- [ ] allow scripts/alias to be stored as a list
+- [ ] editor can be stored as a list too
 profiles
 - [ ] implement legohdl list -profile
 - [ ] finish implementing the action that profiles perform (also embed default profile)

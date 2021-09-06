@@ -1213,8 +1213,10 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                             break
                     else:
                         log.info("Opening built-in script folder at... "+script_path)
-                else:
+                elif(value == ''):
                         log.info("Opening built-in script folder at... "+script_path)
+                else:
+                    exit(log.error("Script "+value+" does not exist"))
 
                 os.system(apt.SETTINGS['editor']+" "+script_path)
             #open profile
