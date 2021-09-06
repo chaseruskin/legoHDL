@@ -23,6 +23,7 @@ profiles
 - [ ] allow del command to delete a profile
 - [ ] allow config command to load a new profile
 - [ ] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts
+- [ ] add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
 
@@ -53,7 +54,7 @@ profiles
 
 - [ ] allow option to print a .log file on export so a record of graph can be kept? This alludes to having a -quiet flag (silences output) and then a -log flag to reroute output away from console.
 
-- [ ] graph command but -upstream option (returns all blocks that are effected/use this block)
+- [ ] graph command but -upstream option (returns all blocks that are effected/use this block) -> to add on to this, a big end goal is the ability to make a change in a low-level design, then automatically have ability to test all designs that would update to using this improved design and if tests pass out, it can use this version, else it locks to the previous validated version
 
 - [-] improve show -version with constraining to specific version range -> is somewhat implemented as users can constrain using -v0.0.0 flag with -v0 option as well
 
