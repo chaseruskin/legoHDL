@@ -6,19 +6,14 @@
 
 - [!] allow scripts/alias to be stored as a list
 - [!] editor can be stored as a list too
+
+
+- [ ] for list command, highlight if a profile is availble to be updated (bonus)
 - [ ] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
-profiles
+profiles (bonus)
 
-- [ ] prompts user to complete a workspace if chose not to use a profile
-
-- [ ] if no editor is specified on first bootup, prompt for one
-- [ ] if no name is specified on first bootup, prompt for one
-
-- [x] for list command, remember last imported profile
-
-- [ ] for list command, highlight if a profile is availble to be updated
-
-- [ ] create default as a visible profile? within profiles directory or embed it
+- [ ] add default market for default profile (open-square)
+- [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
 
 - [ ] document `profile` command with `help`
 
@@ -77,6 +72,11 @@ profiles
 
 
 __Completed__
+- [x] embed default profile and make visible in profiles on runSetup
+- [x] if no editor is specified on first bootup, prompt for one
+- [x] if no name is specified on first bootup, prompt for one
+- [x] for list command, remember last imported profile
+- [x] prompts user to complete a workspace if chose not to use a profile on setup
 - [x] profiles : a folder with the ability to override various configuration aspects such as the template, scripts, and any settings in the settings.yml -> it will overwrite settings that match, and also append settings that don't exist the main settings.yml. Other settings not found/touched in the profile can still live. It simply imports these settings on 'runSetup' (not every time legohdl is called, but can be explicitly recalled to update profile if changes have been made). For the template, it gets completely replaced, and for scripts, scripts get added/overwritten, but others can exist (like settings). Should profiles be bound to workspaces or decoupled? -> decoupled
 - [x] implement legohdl list -profile
 - [x] have a -ask flag for profile command that will allow user to manually select if they want to use specifc piece of the profile, can skip certain things like template,settings, or scripts

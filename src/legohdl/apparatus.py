@@ -408,10 +408,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             if(act):
                 log.info('Overloading settings.yml...')
                 with open(prfl_path+'settings.yml', 'r') as f:
-                    try:
-                        prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
-                    except yaml.scanner.ScannerError:
-                        log.error("Skipped settings.yml due to invalid syntax")
+                    prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
                     
                     dest_settings = copy.deepcopy(cls.SETTINGS)
                     dest_settings = deepMerge(prfl_settings, dest_settings)
@@ -748,13 +745,94 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         #create profile marker file
         open(prfl_path+prfl_name+cls.PRFL_EXT, 'w').close()
 
+        def_settings = dict()
+        def_settings['script'] = \
+        {
+            'hello'  : 'python $(LEGOHDL)/scripts/hello_world.py',
+        }
         #create default settings.yml
+        with open(prfl_path+"settings.yml", 'w') as f:
+            yaml.dump(def_settings, f)
+            pass
 
         #create default template
         os.makedirs(prfl_path+"template/")
+        os.makedirs(prfl_path+"template/src")
+        os.makedirs(prfl_path+"template/test")
+        os.makedirs(prfl_path+"template/constr")
+        #create readme
+        with open(prfl_path+'template/README.md', 'w') as f:
+            f.write("# %BLOCK%")
+            pass
+        #create .gitignore
+        with open(prfl_path+'template/.gitignore', 'w') as f:
+            f.write("build/")
+            pass
+
+        comment_section = """
+-- Block: %BLOCK%
+-- Author: %AUTHOR%
+-- Creation Date: %DATE%
+-- Entity: template
+-- Description:
+--   
+"""
+        vhdl_code = """
+  
+library ieee;
+use ieee.std_logic_1164.all;
+
+
+entity template is
+    port(
+
+    );
+end entity;
+
+
+architecture rtl of template is
+begin
+
+end architecture;      
+"""
+        #create template design
+        with open(prfl_path+'template/src/template.vhd', 'w') as f:
+            comment_border = '-'*80
+            f.write(comment_border)
+            f.write(comment_section)
+            f.write(comment_border)
+            f.write(vhdl_code)
+            pass
+
+        #create template testbench
+        with open(prfl_path+'template/test/template_tb.vhd', 'w') as f:
+            comment_border = '-'*80
+            f.write(comment_border)
+            f.write(comment_section.replace("template", "template_tb"))
+            f.write(comment_border)
+            f.write(vhdl_code.replace("template", "template_tb").replace("""\n    port(
+
+    );""", '\b'))
+            pass
 
         #create default scripts
         os.makedirs(prfl_path+"scripts/")
+
+        # with open(prfl_path+"scripts/verilator_default.py", 'w') as f:
+            
+        #     pass
+
+        # with open(prfl_path+"scripts/modelsim_default.py", 'w') as f:
+
+        #     pass
+        with open(prfl_path+"scripts/hello_world.py", 'w') as f:
+            f.write("""import sys
+if(sys.argv.count('uf')):
+    print('go gators!')
+else:
+    print('hello world!')
+""")
+            pass
 
 
         cls.importProfile("default")

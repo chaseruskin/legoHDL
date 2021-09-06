@@ -308,7 +308,7 @@ class legoHDL:
 
             #using the version that was latched onto the name, alter cache path setting?
             if(V != None):
-                print(tmp.getPath())
+                #print(tmp.getPath())
                 base_cache_path = os.path.dirname(tmp.getPath()[:len(tmp.getPath())-1])
                 spec_path = base_cache_path+"/"+V+"/"
                 pass
@@ -976,16 +976,16 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             has_scripts = 'yes' if(apt.isInProfile(prfl, 'scripts')) else '-'
             has_settings = 'yes' if(apt.isInProfile(prfl, 'settings.yml')) else '-'
             #check if it has a remote
-            prfl_path = apt.getProfiles()[prfl]
-            if(os.path.exists(prfl_path+".git")):
-                repo = git.Repo(prfl_path)
-                if(len(repo.remotes)):
-                    repo.git.remote('update')
-                    status = repo.git.status('-uno')
-                    if(status.count('Your branch is up to date with') or status.count('Your branch is ahead of')):
-                        pass
-                    else:
-                        print('needs update')
+            # prfl_path = apt.getProfiles()[prfl]
+            # if(os.path.exists(prfl_path+".git")):
+            #     repo = git.Repo(prfl_path)
+            #     if(len(repo.remotes)):
+            #         repo.git.remote('update')
+            #         status = repo.git.status('-uno')
+            #         if(status.count('Your branch is up to date with') or status.count('Your branch is ahead of')):
+            #             pass
+            #         else:
+            #             print('needs update')
                 
             print('{:<16}'.format(prfl),'{:<12}'.format(last_import),'{:<16}'.format(has_settings),'{:<12}'.format(has_template),'{:<12}'.format(has_scripts))
             pass
@@ -1009,8 +1009,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         print("-"*12+" "+"-"*12+" "+"-"*54)
         for key,val in apt.SETTINGS['script'].items():
             spce = val.find(' ')
-            cmd = val[1:spce]
-            path = val[spce:len(val)-1].strip()
+            cmd = val[0:spce]
+            path = val[spce:].strip()
             #command not found
             if(spce == -1): 
                 path = cmd
@@ -1177,8 +1177,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             elif(L == '' or N == ''):
                 self.setSetting(options, value, delete=True)
             else:
-                print(L,N)
-                log.info("Block does not exist in local path.")
+                #print(L,N)
+                log.info("Block "+L+'.'+N+" does not exist in local path.")
 
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             if(options.count("script")):
