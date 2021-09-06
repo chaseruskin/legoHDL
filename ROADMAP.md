@@ -6,19 +6,15 @@
 
 - [!] allow scripts/alias to be stored as a list
 - [!] editor can be stored as a list too
-- [ ] add ability to update profile using `legohdl update <profile-name> -profile`?
+- [ ] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
 profiles
 
 - [ ] if no editor is specified on first bootup, prompt for one
 - [ ] if no name is specified on first bootup, prompt for one
 
-- [ ] copy profile scripts to built-in scripts folder? copy template folder to built-in template folder? Copying allows users to separate from modifying the actual repo and personally modifying their settings/scripts/templates post-importing a profile. Helps alleviate conflicts that may arise when trying to update the profile and while someone has indeed changed their scripts to work for them.
-- [ ] can always make real edits to the repo, update the repo, and then rerun the profile
-- [x] have a -ask flag for profile command that will allow user to manually select if they want to use specifc piece of the profile, can skip certain things like template,settings, or scripts
-
 - [ ] implement legohdl list -profile
-- [ ] finish implementing the action that profiles perform (also embed default profile)
-- [ ] allow master settings.yml to list available profiles, if a user deletes one from list, it will be removed, if a user adds a new name, a blank one will be created.
+- [ ] embed default profile
+
 - [ ] allow del command to delete a profile
 
 - [ ] profiles : a folder with the ability to override various configuration aspects such as the template, scripts, and any settings in the settings.yml -> it will overwrite settings that match, and also append settings that don't exist the main settings.yml. Other settings not found/touched in the profile can still live. It simply imports these settings on 'runSetup' (not every time legohdl is called, but can be explicitly recalled to update profile if changes have been made). For the template, it gets completely replaced, and for scripts, scripts get added/overwritten, but others can exist (like settings). Should profiles be bound to workspaces or decoupled?
@@ -38,6 +34,8 @@ profiles
 - [ ] cross check version tags with the hidden version.log (in case a legohdl tag was manually created by a user) -> delete the tag if not valid
 
 - [ ] design question: remove 'run' command and instead have a positional argument for build command? '-e'
+
+- [ ] allow scripts to live/import into any depth inside built-in scripts folder
 
 - [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
 
@@ -67,6 +65,11 @@ profiles
 
 
 __Completed__
+- [x] have a -ask flag for profile command that will allow user to manually select if they want to use specifc piece of the profile, can skip certain things like template,settings, or scripts
+- [x] finish implementing the action that profiles perform
+- [x] allow master settings.yml to list available profiles, if a user deletes one from list, it will be removed, if a user adds a new name, a blank one will be created.
+- [x] copy profile scripts to built-in scripts folder? copy template folder to built-in template folder? Copying allows users to separate from modifying the actual repo and personally modifying their settings/scripts/templates post-importing a profile. Helps alleviate conflicts that may arise when trying to update the profile and while someone has indeed changed their scripts to work for them.
+- [x] can always make real edits to the repo, update the repo, and then rerun the profile
 - [x] ensure all paths are case sensitive for linux filesystems
 - [x] refresh-rate setting, can set how often to automatically refresh the workspace's market repositories to see if any new blocks or versions are available (-1 -> all the time, 0 -> no automatics, 1 -> once a day, 2 -> twice a day, 24 -> every hour, 96 -> every 15 minutes, 1440 (max) -> every minute)
 - [o] accept CHANGELOG* as glob pattern value to take CHANGELOG or CHANGELOG.md for release command -> skipped

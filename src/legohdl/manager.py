@@ -1254,7 +1254,6 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 self.db.getBlocks("local")[L][N].show(listVers, ver, changelog)
             elif(self.db.blockExists(package, "market") == True):
                 self.db.getBlocks("market")[L][N].show(listVers, ver, changelog)
-
             pass
         elif(command == "update" and self.db.blockExists(package,"cache")):
             #perform install over remote url

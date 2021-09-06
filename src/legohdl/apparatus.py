@@ -385,7 +385,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         if(os.path.isfile(prfl_path+'settings.yml') == True):
             act = not explicit or cls.confirmation("Import settings.yml?", warning=False)
             if(act):
-                log.info('Setting up settings.yml...')
+                log.info('Merging settings.yml...')
                 with open(prfl_path+'settings.yml', 'r') as f:
                     try:
                         prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
@@ -397,19 +397,33 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                     cls.SETTINGS = dest_settings
             pass
 
-        #point to template folder
+        #copy in template folder
         if(os.path.isdir(prfl_path+'template/') == True):
             act = not explicit or cls.confirmation("Import template?", warning=False)
             if(act):
-                log.info('Setting up template...')
-                cls.SETTINGS['template'] = cls.fs(prfl_path+'template/')
+                log.info('Importing template...')
+                cls.SETTINGS['template'] = None
+                shutil.rmtree(cls.HIDDEN+"template/",onerror=cls.rmReadOnly)
+                shutil.copytree(prfl_path+"template/", cls.HIDDEN+"template/")
             pass
 
         #link scripts
         if(os.path.isdir(prfl_path+'scripts/') == True):
             act = not explicit or cls.confirmation("Import scripts?", warning=False)
             if(act):
-                log.info('Setting up scripts...')
+                log.info('Importing scripts...')
+                scripts = os.listdir(prfl_path+'scripts/')
+                for scp in scripts:
+                    if(os.path.isfile(prfl_path+'scripts/'+scp)):
+                        #copy contents into built-in script folder
+                        prfl_script = open(prfl_path+'scripts/'+scp, 'r')
+                        copied_script = open(cls.HIDDEN+'scripts/'+scp,'w')
+                        script_data = prfl_script.readlines()
+                        copied_script.writelines(script_data)
+                        prfl_script.close()
+                        copied_script.close()
+                        pass
+                    pass
             pass
 
         cls.save()
