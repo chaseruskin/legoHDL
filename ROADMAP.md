@@ -9,6 +9,8 @@
 - [ ] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
 profiles
 
+- [ ] prompts user to complete a workspace if chose not to use a profile
+
 - [ ] if no editor is specified on first bootup, prompt for one
 - [ ] if no name is specified on first bootup, prompt for one
 
@@ -19,6 +21,8 @@ profiles
 - [ ] create default as a visible profile? within profiles directory or embed it
 
 - [ ] document `profile` command with `help`
+
+- [ ] use `new` command with profile flag to create a new profile ?
 
 - [ ] allow del command to delete a profile
 - [ ] allow config command to load a new profile

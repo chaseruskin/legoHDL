@@ -97,11 +97,21 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                     break
                 elif(resp == ''):
                     log.info("Setting up default profile...")
+                    cls.loadDefaultProfile()
                     break
                 elif(cls.loadProfile(resp.lower())):
                     break
                 resp = input()
                 pass
+        
+        if(not is_select or cls.inWorkspace() == False):
+            #ask to create workspace
+            ws_name = input("Enter a workspace name: ")
+            while(len(ws_name) == 0 or ws_name.isalnum() == False):
+                ws_name = input()
+            ws_path = input("Enter the workspace's path: ")
+            cls.initializeWorkspace(ws_name, cls.fs(ws_path))
+
         #ask for name and text-editor
         feedback = input("Enter your name: ")
         cls.SETTINGS['author'] = cls.SETTINGS['author'] if(feedback.strip() == '') else feedback.strip()
@@ -161,7 +171,6 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         elif(cls.SETTINGS['refresh-rate'] < cls.MIN_RATE):
             cls.SETTINGS['refresh-rate'] = cls.MIN_RATE
 
-        #todo: create safety for profiles setting
         cls.dynamicProfiles()
         cls.dynamicWorkspace()
         cls.dynamicMarkets()
@@ -173,7 +182,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             log.warning("Active workspace not found!")
             return
 
-        if(cls.SETTINGS['template'] is not None and os.path.isdir(cls.SETTINGS['template'])):
+        if(cls.SETTINGS['template'] != None and os.path.isdir(cls.SETTINGS['template'])):
+            cls.SETTINGS['template'] = cls.fs(cls.SETTINGS['template'])
             cls.TEMPLATE = cls.SETTINGS['template']
             pass
         
@@ -252,11 +262,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
     def dynamicWorkspace(cls):
         acting_ws = cls.SETTINGS['active-workspace']
         for ws,val in cls.SETTINGS['workspace'].items():
-            #try to make this local directory
-            if("local" in val.keys() and os.path.isdir(val['local']) == False):
-                os.makedirs(val['local'],exist_ok=True)
-            cls.SETTINGS['workspace'][ws]['local'] = cls.fs(val['local'])
-            cls.initializeWorkspace(ws)
+            cls.initializeWorkspace(ws, cls.fs(val['local']))
 
         ws_dirs = os.listdir(cls.HIDDEN+"workspaces/")
         #remove any hidden workspace folders that are no longer in the settings.yml
@@ -465,7 +471,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         return profiles
 
     @classmethod
-    def initializeWorkspace(cls, name):
+    def initializeWorkspace(cls, name, local_path=None):
         workspace_dir = cls.HIDDEN+"workspaces/"+name+"/"
         if(os.path.isdir(workspace_dir) == False):
             log.info("Creating workspace directories for "+name+"...")
@@ -477,16 +483,22 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         #create the refresh log
         if(os.path.isfile(workspace_dir+cls.REFRESH_LOG) == False):
             open(workspace_dir+cls.REFRESH_LOG, 'w').close()
+        
+        if(local_path != None):
+            if(os.path.exists(local_path) == False):
+                log.info("Creating new path... "+local_path)
+                os.makedirs(local_path)
 
         #create YAML structure for workspace settings 'local' and 'market'
         if(name not in cls.SETTINGS['workspace'].keys()):
-            cls.SETTINGS['workspace'][name] = {'local' : None, 'market' : None}
+            cls.SETTINGS['workspace'][name] = {'local' : local_path, 'market' : None}
         #make sure market is a list
         if(isinstance(cls.SETTINGS['workspace'][name]['market'],list) == False):
             cls.SETTINGS['workspace'][name]['market'] = []
         #make sure local is a string 
         if(isinstance(cls.SETTINGS['workspace'][name]['local'],str) == False):
             cls.SETTINGS['workspace'][name]['local'] = None
+            #cannot become active-workspace if there is no local path
             if(cls.SETTINGS['active-workspace'] == name):
                 cls.SETTINGS['active-workspace'] = None
                 return
@@ -495,6 +507,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         if(not cls.inWorkspace()):
             cls.SETTINGS['active-workspace'] = name
             cls.__active_workspace = name
+        
 
     @classmethod
     def confirmation(cls, prompt, warning=True):
@@ -521,7 +534,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             time_fmt = (float(hrs)+(float(float(time_sects[1])/60)))
             return time_fmt
             
-        rf_log_path = cls.HIDDEN+"workspaces/"+cls.SETTINGS['active-workspace']+"/"+cls.REFRESH_LOG
+        rf_log_path = cls.WORKSPACE+cls.REFRESH_LOG
         rate = cls.SETTINGS['refresh-rate']
         
         #never perform an automatic refresh
@@ -719,3 +732,30 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         os.chmod(path, stat.S_IWRITE)
         func(path)
     pass
+
+    @classmethod
+    def loadDefaultProfile(cls):
+        prfl_dir = cls.HIDDEN+"profiles/"
+        prfl_name = "default"
+        prfl_path = prfl_dir+prfl_name+"/"
+
+        #remove default if previously existed
+        if(os.path.isdir(prfl_path)):
+            shutil.rmtree(prfl_path, onerror=cls.rmReadOnly)
+        
+        #create default
+        os.makedirs(prfl_path)
+        #create profile marker file
+        open(prfl_path+prfl_name+cls.PRFL_EXT, 'w').close()
+
+        #create default settings.yml
+
+        #create default template
+        os.makedirs(prfl_path+"template/")
+
+        #create default scripts
+        os.makedirs(prfl_path+"scripts/")
+
+
+        cls.importProfile("default")
+        pass

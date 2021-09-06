@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from genericpath import isfile
+from genericpath import isdir, isfile
 import os, sys, shutil
 from re import M
 import yaml
@@ -975,6 +975,18 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             has_template = 'yes' if(apt.isInProfile(prfl, 'template')) else '-'
             has_scripts = 'yes' if(apt.isInProfile(prfl, 'scripts')) else '-'
             has_settings = 'yes' if(apt.isInProfile(prfl, 'settings.yml')) else '-'
+            #check if it has a remote
+            prfl_path = apt.getProfiles()[prfl]
+            if(os.path.exists(prfl_path+".git")):
+                repo = git.Repo(prfl_path)
+                if(len(repo.remotes)):
+                    repo.git.remote('update')
+                    status = repo.git.status('-uno')
+                    if(status.count('Your branch is up to date with') or status.count('Your branch is ahead of')):
+                        pass
+                    else:
+                        print('needs update')
+                
             print('{:<16}'.format(prfl),'{:<12}'.format(last_import),'{:<16}'.format(has_settings),'{:<12}'.format(has_template),'{:<12}'.format(has_scripts))
             pass
     
