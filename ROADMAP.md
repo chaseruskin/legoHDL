@@ -6,6 +6,7 @@
 
 - [ ] allow scripts/alias to be stored as a list
 - [ ] editor can be stored as a list too
+- [ ] add ability to update profile using `legohdl update <profile-name> -profile`?
 profiles
 - [ ] implement legohdl list -profile
 - [ ] finish implementing the action that profiles perform (also embed default profile)
