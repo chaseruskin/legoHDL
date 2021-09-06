@@ -4,10 +4,18 @@
 
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
-- [ ] allow scripts/alias to be stored as a list
-- [ ] editor can be stored as a list too
+- [!] allow scripts/alias to be stored as a list
+- [!] editor can be stored as a list too
 - [ ] add ability to update profile using `legohdl update <profile-name> -profile`?
 profiles
+
+- [ ] if no editor is specified on first bootup, prompt for one
+- [ ] if no name is specified on first bootup, prompt for one
+
+- [ ] copy profile scripts to built-in scripts folder? copy template folder to built-in template folder? Copying allows users to separate from modifying the actual repo and personally modifying their settings/scripts/templates post-importing a profile. Helps alleviate conflicts that may arise when trying to update the profile and while someone has indeed changed their scripts to work for them.
+- [ ] can always make real edits to the repo, update the repo, and then rerun the profile
+- [x] have a -ask flag for profile command that will allow user to manually select if they want to use specifc piece of the profile, can skip certain things like template,settings, or scripts
+
 - [ ] implement legohdl list -profile
 - [ ] finish implementing the action that profiles perform (also embed default profile)
 - [ ] allow master settings.yml to list available profiles, if a user deletes one from list, it will be removed, if a user adds a new name, a blank one will be created.

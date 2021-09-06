@@ -23,7 +23,7 @@ class Apparatus:
 
     WORKSPACE = HIDDEN
 
-    OPTIONS = ['author', 'editor', 'template', 'multi-develop',\
+    OPTIONS = ['author', 'editor', 'template', 'multi-develop', 'profiles',\
                'overlap-recursive', 'label',\
                'script',\
                'active-workspace', 'workspace',\
@@ -110,6 +110,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                     cls.SETTINGS[a] = False
                 elif(t == int):
                     cls.SETTINGS[a] = 0
+                elif(t == list):
+                    cls.SETTINGS[a] = []
 
     @classmethod
     def load(cls):
@@ -143,12 +145,15 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         cls.generateDefault(dict,"market","script","workspace")
         cls.generateDefault(bool,"multi-develop","overlap-recursive")
         cls.generateDefault(int,"refresh-rate")
+        cls.generateDefault(list,"profiles")
 
         if(cls.SETTINGS['refresh-rate'] > cls.MAX_RATE):
             cls.SETTINGS['refresh-rate'] = cls.MAX_RATE
         elif(cls.SETTINGS['refresh-rate'] < cls.MIN_RATE):
             cls.SETTINGS['refresh-rate'] = cls.MIN_RATE
 
+        #todo: create safety for profiles setting
+        cls.dynamicProfiles()
         cls.dynamicWorkspace()
         cls.dynamicMarkets()
 
@@ -183,6 +188,26 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             path = path.lower()
 
         return cls.fs(path).startswith(cls.fs(inner_path)) and (path != inner_path)
+
+    @classmethod
+    def dynamicProfiles(cls):
+        #identify valid profiles in the hidden direcotory
+        found_prfls = cls.getProfiles()
+        #identify potential profiles in the setting.yml
+        listed_prfls = cls.SETTINGS['profiles']
+        #target deletions
+        for prfl in found_prfls:
+            if(prfl not in listed_prfls):
+                shutil.rmtree(cls.getProfiles()[prfl])
+        
+        #target additions
+        for prfl in listed_prfls:
+            if(prfl not in found_prfls):
+                log.info("Creating empty profile "+prfl+"...")
+                os.makedirs(cls.HIDDEN+"profiles/"+prfl, exist_ok=True)
+                with open(cls.HIDDEN+"profiles/"+prfl+"/"+prfl+cls.PRFL_EXT, 'w'):
+                    pass
+        pass
 
     #automatically set market names to lower-case, and prompt user to settle duplicate keys
     @classmethod
@@ -274,7 +299,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
     #determines if value is an existing profile or a path to a new profile to be copied in
     #will stage the profile into the correct place
     @classmethod
-    def loadProfile(cls, value):
+    def loadProfile(cls, value, explicit=False):
         prfl_dir = cls.HIDDEN+"profiles/"
         tmp_dir = cls.HIDDEN+"tmp/"
         #get all available profiles
@@ -326,56 +351,65 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
             pass
         #perform backend operation to overload settings, template, and scripts
-        cls.importProfile(sel_prfl)
+        cls.importProfile(sel_prfl, explicit=explicit)
         return True
 
     #perform backend operation to overload settings, template, and scripts
     @classmethod
-    def importProfile(cls, prfl_name):
+    def importProfile(cls, prfl_name, explicit=False):
+        if(prfl_name not in cls.SETTINGS['profiles']):
+            cls.SETTINGS['profiles'] += [prfl_name]
         #merge all values found in src override dest into a new dictionary
         def deepMerge(src, dest):
             for k,v in src.items():
                 #go even deeper into the dictionary tree
                 if(isinstance(v, dict)):
                     deepMerge(v, dest[k])
-                else:
+                #combine all settings except if profiles setting exists in src
+                elif(k != 'profiles'):
                     #append to list, don't overwrite
                     if(isinstance(v, list) and isinstance(dest[k], list)):
                         for i in v:
                             if(isinstance(v,str)):
-                                v = v.replace("$(PROFILE)", prfl_path[:len(prfl_path)-1])
+                                v = v.replace("$(LEGOHDL)", cls.HIDDEN[:len(cls.HIDDEN)-1])
                             dest[k] += [i]
                     #otherwise normal overwrite
                     else:
                         if(isinstance(v,str)):
-                            v = v.replace("$(PROFILE)", prfl_path[:len(prfl_path)-1])
+                            v = v.replace("$(LEGOHDL)", cls.HIDDEN[:len(cls.HIDDEN)-1])
                         dest[k] = v
             return dest
 
         prfl_path = cls.getProfiles()[prfl_name]
         #overload available settings
         if(os.path.isfile(prfl_path+'settings.yml') == True):
-            log.info('Setting up settings.yml...')
-            with open(prfl_path+'settings.yml', 'r') as f:
-                try:
-                    prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
-                except yaml.scanner.ScannerError:
-                    log.error("Skipped settings.yml due to invalid syntax")
-                
-                dest_settings = copy.deepcopy(cls.SETTINGS)
-                dest_settings = deepMerge(prfl_settings, dest_settings)
-                cls.SETTINGS = dest_settings
+            act = not explicit or cls.confirmation("Import settings.yml?", warning=False)
+            if(act):
+                log.info('Setting up settings.yml...')
+                with open(prfl_path+'settings.yml', 'r') as f:
+                    try:
+                        prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
+                    except yaml.scanner.ScannerError:
+                        log.error("Skipped settings.yml due to invalid syntax")
+                    
+                    dest_settings = copy.deepcopy(cls.SETTINGS)
+                    dest_settings = deepMerge(prfl_settings, dest_settings)
+                    cls.SETTINGS = dest_settings
             pass
 
         #point to template folder
         if(os.path.isdir(prfl_path+'template/') == True):
-            log.info('Setting up template...')
-            cls.SETTINGS['template'] = cls.fs(prfl_path+'template/')
+            act = not explicit or cls.confirmation("Import template?", warning=False)
+            if(act):
+                log.info('Setting up template...')
+                cls.SETTINGS['template'] = cls.fs(prfl_path+'template/')
             pass
 
         #link scripts
         if(os.path.isdir(prfl_path+'scripts/') == True):
-            log.info('Setting up scripts...')
+            act = not explicit or cls.confirmation("Import scripts?", warning=False)
+            if(act):
+                log.info('Setting up scripts...')
             pass
 
         cls.save()

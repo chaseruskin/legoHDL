@@ -1261,7 +1261,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             self.update(package)
             pass
         elif(command == "profile"):
-            apt.loadProfile(package)
+            apt.loadProfile(package, explicit=options.count('ask'))
         elif(command == "port"):
             mapp = pure_ent = False
             ent_name = None
