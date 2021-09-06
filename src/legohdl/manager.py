@@ -955,7 +955,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         print('{:<16}'.format("Market"),'{:<50}'.format("URL"),'{:<12}'.format("Available"))
         print("-"*16+" "+"-"*50+" "+"-"*12)
         for key,val in apt.SETTINGS['market'].items():
-            rec = 'no'
+            rec = '-'
             if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
                 rec = 'yes'
             if(val == None):
@@ -965,9 +965,18 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         pass
 
     def listProfiles(self):
-        apt.getProfiles()
-        print('{:<16}'.format("Profile"),'{:<6}'.format("Last Used"),'{:<40}'.format("Settings"),'{:<14}'.format("Template"),'{:<14}'.format("Scripts"))
-        print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
+        prfls = apt.getProfiles()
+        last_prfl = open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'r').readline()
+        #todo: also indicate if an update is available
+        print('{:<16}'.format("Profile"),'{:<12}'.format("Last Import"),'{:<16}'.format("settings.yml"),'{:<12}'.format("template/"),'{:<12}'.format("scripts/"))
+        print("-"*16+" "+"-"*12+" "+"-"*16+" "+"-"*12+" "+"-"*12)
+        for prfl in prfls:
+            last_import = 'yes' if(last_prfl == prfl) else '-'
+            has_template = 'yes' if(apt.isInProfile(prfl, 'template')) else '-'
+            has_scripts = 'yes' if(apt.isInProfile(prfl, 'scripts')) else '-'
+            has_settings = 'yes' if(apt.isInProfile(prfl, 'settings.yml')) else '-'
+            print('{:<16}'.format(prfl),'{:<12}'.format(last_import),'{:<16}'.format(has_settings),'{:<12}'.format(has_template),'{:<12}'.format(has_scripts))
+            pass
     
     def listWorkspace(self):
         print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Markets"))
@@ -1259,7 +1268,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             #perform install over remote url
             self.update(package)
             pass
-        elif(command == "profile"):
+        elif(command == "profile" and package != ''):
             apt.loadProfile(package, explicit=options.count('ask'))
         elif(command == "port"):
             mapp = pure_ent = False
@@ -1300,8 +1309,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 print('  ','{:<12}'.format(cmd),des)
                 pass
             print("Development")
-            formatHelp("init","initialize the current folder into a valid block format")
             formatHelp("new","create a templated empty block into workspace")
+            formatHelp("init","initialize the current folder into a valid block format")
             formatHelp("open","opens the downloaded block with the configured text-editor")
             formatHelp("port","print ports list of specified entity")
             formatHelp("graph","visualize dependency graph for reference")

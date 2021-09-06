@@ -16,6 +16,7 @@ class Apparatus:
     MARKER = "Block.lock"
 
     PRFL_EXT = ".prfl"
+    PRFL_LOG = "import.log"
 
     CHANGELOG = "CHANGELOG.md"
 
@@ -83,21 +84,29 @@ class Apparatus:
         is_select = cls.confirmation("This looks like your first time running legoHDL! \
 Would you like to use a profile (import settings, template, and scripts)?", warning=False)
         if(is_select):
+            #give user options to proceeding to load a profile
             resp = input("""Enter:
 1) nothing for default profile
 2) a path or git repository to a new profile
 3) 'exit' to cancel
 """)
+            #continually prompt until get a valid response to move forward
             while True:
-                if(cls.loadProfile(resp.lower())):
+                if(resp.lower() == 'exit'):
+                    log.info('Profile configuration skipped.')
                     break
                 elif(resp == ''):
                     log.info("Setting up default profile...")
                     break
-                elif(resp.lower() == 'exit'):
-                    log.info('Profile configuration skipped.')
+                elif(cls.loadProfile(resp.lower())):
                     break
                 resp = input()
+                pass
+        #ask for name and text-editor
+        feedback = input("Enter your name: ")
+        cls.SETTINGS['author'] = cls.SETTINGS['author'] if(feedback.strip() == '') else feedback.strip()
+        feedback = input("Enter your text-editor: ")
+        cls.SETTINGS['editor'] = cls.SETTINGS['editor'] if(feedback.strip() == '') else feedback.strip()
         pass
 
     @classmethod
@@ -325,7 +334,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 path_to_check = value
                 pass
             else:
-                log.error("This path/repository does not exist")
+                log.error("This is not an existing profile name, path, or repository")
                 return False
             
             #check if a .prfl file exists for this folder (validates profile)
@@ -357,6 +366,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
     #perform backend operation to overload settings, template, and scripts
     @classmethod
     def importProfile(cls, prfl_name, explicit=False):
+        with open(cls.HIDDEN+"profiles/"+cls.PRFL_LOG, 'w') as f:
+            f.write(prfl_name)
         if(prfl_name not in cls.SETTINGS['profiles']):
             cls.SETTINGS['profiles'] += [prfl_name]
         #merge all values found in src override dest into a new dictionary
@@ -368,11 +379,15 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 #combine all settings except if profiles setting exists in src
                 elif(k != 'profiles'):
                     #append to list, don't overwrite
-                    if(isinstance(v, list) and isinstance(dest[k], list)):
-                        for i in v:
-                            if(isinstance(v,str)):
-                                v = v.replace("$(LEGOHDL)", cls.HIDDEN[:len(cls.HIDDEN)-1])
-                            dest[k] += [i]
+                    if(isinstance(v, list)):
+                        #create new list if DNE
+                        if(k not in dest.keys()):
+                            dest[k] = []
+                        if(isinstance(dest[k], list)):   
+                            for i in v:
+                                if(isinstance(v,str)):
+                                    v = v.replace("$(LEGOHDL)", cls.HIDDEN[:len(cls.HIDDEN)-1])
+                                dest[k] += [i]
                     #otherwise normal overwrite
                     else:
                         if(isinstance(v,str)):
@@ -382,10 +397,10 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
 
         prfl_path = cls.getProfiles()[prfl_name]
         #overload available settings
-        if(os.path.isfile(prfl_path+'settings.yml') == True):
+        if(cls.isInProfile(prfl_name, 'settings.yml')):
             act = not explicit or cls.confirmation("Import settings.yml?", warning=False)
             if(act):
-                log.info('Merging settings.yml...')
+                log.info('Overloading settings.yml...')
                 with open(prfl_path+'settings.yml', 'r') as f:
                     try:
                         prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
@@ -398,7 +413,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             pass
 
         #copy in template folder
-        if(os.path.isdir(prfl_path+'template/') == True):
+        if(cls.isInProfile(prfl_name, 'template')):
             act = not explicit or cls.confirmation("Import template?", warning=False)
             if(act):
                 log.info('Importing template...')
@@ -407,8 +422,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 shutil.copytree(prfl_path+"template/", cls.HIDDEN+"template/")
             pass
 
-        #link scripts
-        if(os.path.isdir(prfl_path+'scripts/') == True):
+        #copy in scripts
+        if(cls.isInProfile(prfl_name, 'scripts')):
             act = not explicit or cls.confirmation("Import scripts?", warning=False)
             if(act):
                 log.info('Importing scripts...')
@@ -428,6 +443,14 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
 
         cls.save()
         pass
+    
+    @classmethod
+    def isInProfile(cls, name, loc):
+        if(name in cls.getProfiles()):
+            if(loc == 'settings.yml'):
+                return os.path.isfile(cls.getProfiles()[name]+loc)
+            else:
+                return os.path.isdir(cls.getProfiles()[name]+loc+"/")
 
     #looks within profiles directory and returns dict of all valid profiles
     @classmethod

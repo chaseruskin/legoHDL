@@ -1059,7 +1059,7 @@ derives: []
         self._top = None
         for name,unit in list(units[self.getLib()].items()):
             #if the entity is value under this key, it is lower-level
-            if(unit.isTB() or unit.isPKG()):  
+            if(unit.isTB() or unit.isPKG()): 
                 if(name in top_contenders):
                     top_contenders.remove(name)
                 continue
@@ -1069,7 +1069,7 @@ derives: []
                     top_contenders.remove(dep.getName())
 
         if(len(top_contenders) == 0):
-            log.error("No top level detected.")
+            log.warning("No top level detected.")
         elif(len(top_contenders) > 1):
             log.warning("Multiple top levels detected. "+str(top_contenders))
             validTop = input("Enter a valid toplevel entity: ").lower()

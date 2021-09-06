@@ -12,12 +12,17 @@ profiles
 - [ ] if no editor is specified on first bootup, prompt for one
 - [ ] if no name is specified on first bootup, prompt for one
 
-- [ ] implement legohdl list -profile
-- [ ] embed default profile
+- [x] for list command, remember last imported profile
+
+- [ ] for list command, highlight if a profile is availble to be updated
+
+- [ ] create default as a visible profile? within profiles directory or embed it
+
+- [ ] document `profile` command with `help`
 
 - [ ] allow del command to delete a profile
-
-- [ ] profiles : a folder with the ability to override various configuration aspects such as the template, scripts, and any settings in the settings.yml -> it will overwrite settings that match, and also append settings that don't exist the main settings.yml. Other settings not found/touched in the profile can still live. It simply imports these settings on 'runSetup' (not every time legohdl is called, but can be explicitly recalled to update profile if changes have been made). For the template, it gets completely replaced, and for scripts, scripts get added/overwritten, but others can exist (like settings). Should profiles be bound to workspaces or decoupled?
+- [ ] allow config command to load a new profile
+- [ ] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
 
@@ -33,11 +38,13 @@ profiles
 
 - [ ] cross check version tags with the hidden version.log (in case a legohdl tag was manually created by a user) -> delete the tag if not valid
 
-- [ ] design question: remove 'run' command and instead have a positional argument for build command? '-e'
+- [ ] if an already existing profile's .prfl file gets changed, then needs to move to temp directory and have its folder renamed on next legohdl call
 
 - [ ] allow scripts to live/import into any depth inside built-in scripts folder
 
 - [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
+
+- [ ] design question: remove 'run' command and instead have a positional argument for build command? '-e'
 
 - [ ] add a 'categories' section to a Block.lock? (multiple keywords to help identify the block)
 		OR in more general, allow users to add new fields to the Block.lock file? (will be ignored by legohdl)
@@ -65,6 +72,8 @@ profiles
 
 
 __Completed__
+- [x] profiles : a folder with the ability to override various configuration aspects such as the template, scripts, and any settings in the settings.yml -> it will overwrite settings that match, and also append settings that don't exist the main settings.yml. Other settings not found/touched in the profile can still live. It simply imports these settings on 'runSetup' (not every time legohdl is called, but can be explicitly recalled to update profile if changes have been made). For the template, it gets completely replaced, and for scripts, scripts get added/overwritten, but others can exist (like settings). Should profiles be bound to workspaces or decoupled? -> decoupled
+- [x] implement legohdl list -profile
 - [x] have a -ask flag for profile command that will allow user to manually select if they want to use specifc piece of the profile, can skip certain things like template,settings, or scripts
 - [x] finish implementing the action that profiles perform
 - [x] allow master settings.yml to list available profiles, if a user deletes one from list, it will be removed, if a user adds a new name, a blank one will be created.
