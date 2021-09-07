@@ -373,14 +373,14 @@ class legoHDL:
             if(tb.getLanguageType() == Unit.Language.VHDL):
                 line = line+"VHDL"
             elif(tb.getLanguageType() == Unit.Language.VERILOG):
-                line = line+"VERI"
+                line = line+"VLOG"
             output.write(line+"-SIM-TOP "+tb.getName(low=False)+" "+tb.getFile()+"\n")
         if(top != None):
             line = '@'
             if(top.getLanguageType() == Unit.Language.VHDL):
                 line = line+"VHDL"
             elif(top.getLanguageType() == Unit.Language.VERILOG):
-                line = line+"VERI"
+                line = line+"VLOG"
             output.write(line+"-SRC-TOP "+top.getName(low=False)+" "+top.getFile()+"\n")
             
         output.close()
@@ -428,7 +428,7 @@ class legoHDL:
             if(u.getLanguageType() == Unit.Language.VHDL):
                 line = line+"VHDL"
             elif(u.getLanguageType() == Unit.Language.VERILOG):
-                line = line+"VERI"
+                line = line+"VLOG"
             #this unit comes from an external block so it is a library file
             if(u.getLib() != block.getLib() or u.getBlock() != block.getName()):
                 line = line+'-LIB '+u.getLib()+' '
