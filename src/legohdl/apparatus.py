@@ -692,20 +692,19 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
     #forward-slash fixer
     @classmethod
     def fs(cls, path):
-        if(path == None):
-            return None
+        if(path == None or path.lower().startswith('http') or path.lower().startswith('git@')):
+            return path
+
         path = os.path.expanduser(path)
         path = path.replace('\\','/')
         path = path.replace('//','/')
-        #re-add the double // to the http component
-        if(path.lower().startswith('http')):
-            i = path.find(':/')
-            path = path[:i+2] + "/" + path[i+2:]
 
         dot = path.rfind('.')
         last_slash = path.rfind('/')
+
         if(last_slash > dot and path[len(path)-1] != '/'):
             path = path + '/'
+        
         return path
 
     #merge: place1 <- place2 (place2 has precedence)
