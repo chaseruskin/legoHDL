@@ -458,7 +458,9 @@ derives: []
         else:
             templateFile = replacements[0]
         #make any necessary directories
-        os.makedirs(newfile.replace(filename,""), exist_ok=True)
+        newdirs = newfile.replace(filename,"")
+        if(len(newdirs)):
+            os.makedirs(newdirs, exist_ok=True)
         #copy file to the new location
         shutil.copyfile(templateFile, self.getPath()+newfile)
         #reassign file to be the whole path

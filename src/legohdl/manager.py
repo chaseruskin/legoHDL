@@ -1128,7 +1128,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 if(self.blockCWD.isValid()):
                     if(len(options) == 0):
                         exit(log.error("Please specify a file from your template to copy from"))
-                    self.blockCWD.fillTemplateFile(package, options[0])
+                    self.blockCWD.fillTemplateFile(value, options[0])
                 else:
                     exit(log.error("Cannot create a project file when not inside a project"))
                 return
