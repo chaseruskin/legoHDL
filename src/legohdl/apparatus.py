@@ -464,6 +464,10 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
 
         cls.save()
         pass
+
+    def updateProfile(cls, name):
+
+        pass
     
     @classmethod
     def isInProfile(cls, name, loc):
@@ -566,7 +570,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         cur_time = datetime.now()
 
         #divide the 24 hour period into even checkpoints
-        spacing = float(24 / rate)
+        max_hours = float(24)
+        spacing = float(max_hours / rate)
         intervals = []
         for i in range(rate):
             intervals += [spacing*i]
@@ -582,21 +587,21 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 refresh = True
             else:
                 latest_punch = datetime.fromisoformat(file_data[0])
+                #print(latest_punch)
                 #get latest time that was punched
                 last_time_fmt = timeToFloat(latest_punch)
                 #determine the next checkpoint available for today
+                next_checkpoint = max_hours
                 for i in range(len(intervals)):
                     if(last_time_fmt < intervals[i]):
                         next_checkpoint = intervals[i]
                         stage = i+1
-                        #print('next checkpoint',next_checkpoint)
                         break
-                else:
-                    return False
-             
+                #print('next checkpoint',next_checkpoint)
                 cur_time_fmt = timeToFloat(cur_time)
                 #check if the time has occurred on a previous day, (automatically update because its a new day)
                 next_day = cur_time.year > latest_punch.year or cur_time.month > latest_punch.month or cur_time.day > latest_punch.day
+                #print(next_day)
                 #print("currently",cur_time_fmt)
                 #determine if the current time has passed the next checkpoint or if its a new day
                 if(next_day or cur_time_fmt >= next_checkpoint):

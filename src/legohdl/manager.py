@@ -1273,10 +1273,14 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             elif(self.db.blockExists(package, "market") == True):
                 self.db.getBlocks("market")[L][N].show(listVers, ver, changelog)
             pass
-        elif(command == "update" and self.db.blockExists(package,"cache")):
-            #perform install over remote url
-            self.update(package)
-            pass
+        elif(command == "update"):
+            if(options.count('profile')):
+                #update this profile if it has a remote repository
+                apt.updateProfile(value)
+            elif(self.db.blockExists(package,"cache")):
+                #perform install over remote url
+                self.update(package)
+                pass
         elif(command == "profile" and package != ''):
             apt.loadProfile(value, explicit=options.count('ask'))
         elif(command == "port"):
