@@ -71,7 +71,8 @@ class Market:
             #refresh remote
             if(len(self._repo.remotes)):
                 log.info("Refreshing "+self.getName()+"... "+self.url)
-                self._repo.git.pull()  
+                if(apt.isRemoteBare(self.url) == False):
+                    self._repo.git.pull()  
             #create remote origin
             else:
                 if(apt.isValidURL(self.url)):
