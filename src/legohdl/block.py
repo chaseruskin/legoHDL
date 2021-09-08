@@ -140,6 +140,7 @@ class Block:
                 self.setRemote(self.grabGitRemote(), push=False)
             else:
                 log.warning("Invalid remote "+self.grabGitRemote()+" will be removed from Block.lock")
+                self.__metadata['remote'] = None
                 self._remote = None
         if(self._remote != None):
             log.info("Verifying remote origin is up to date...")

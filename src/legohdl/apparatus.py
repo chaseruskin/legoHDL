@@ -413,6 +413,9 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                     else:
                         if(isinstance(v,str)):
                             v = v.replace("$(LEGOHDL)", cls.HIDDEN[:len(cls.HIDDEN)-1])
+                        #do not allow a null workspace path to overwrite an already established workspace path
+                        if(k in dest.keys() and k == 'local' and v == None):
+                            continue
                         dest[k] = v
             return dest
 
