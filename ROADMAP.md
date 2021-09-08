@@ -9,6 +9,7 @@
 
 - [ ] use a -args flag to indicate all following arguments are to be passed to the build script?
 
+- [ ] remove data in versions when uninstalling/del and block is no longer available
 
 - [ ] for list command, highlight if a profile is availble to be updated (bonus)
 - [x] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
