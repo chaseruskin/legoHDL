@@ -783,7 +783,7 @@ class legoHDL:
     
     def convert(self, title, value, options=[]):
         #must look through tags of already established repo
-        l,n = Block.split(title)
+        l,n = Block.split(title, lower=False)
         if((l == '' or n == '') and len(options) == 0):
             exit(log.error("Must provide a block title <library>.<block-name>"))
         
@@ -842,28 +842,27 @@ class legoHDL:
             last_slash = cwd[:cwd.rfind('/')].rfind('/')
 
         cwdb1 = cwd[:last_slash]+"/"+n+"/"
-
-        if(git_url == None):
+        cwdb1 = cwd
+        try:
             os.rename(cwd, cwdb1)
-        else:
-            cwdb1 = apt.getLocal()+l+"/"+n
-            os.makedirs(cwdb1,exist_ok=True)
-        #print(cwd,cwdb1)
-        git_exists = True
-        if ".git" not in files and git_url == None:
-            #see if there is a .git folder and create if needed
-            log.info("Initializing git repository...")
-            git_exists = False
+        except PermissionError:
             pass
 
-        if(git_exists):
-            repo = git.Repo(cwdb1)
-            #a remote already exists
-            if(len(repo.remotes)):
-                git_url = repo.remotes[0].url
-        
+        #print(cwd,cwdb1)
+        git_exists = False
+        #see if there is a .git folder
+        if(".git" in files):
+            git_exists = True
+            pass
+        else:
+            log.info("Initializing git repository...")
+            git.Repo.init(cwdb1)                
+            git_exists = True
+            pass
+
         #create marker file
         block = Block(title=title, path=cwdb1, remote=git_url, market=mrkt_sync)
+        block.genRemote(push=False)
         log.info("Creating "+apt.MARKER+" file...")
         block.create(fresh=False, git_exists=git_exists)
 

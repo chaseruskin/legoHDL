@@ -745,6 +745,18 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
     pass
 
     @classmethod
+    def isRemoteBare(cls, git_url):
+        tmp_dir = cls.HIDDEN+"tmp/"
+        #print(repo.git.rev_parse('--is-bare-repository '))
+        os.makedirs(tmp_dir, exist_ok=True)
+        repo = git.Git(tmp_dir).clone(git_url)
+        name = os.listdir(tmp_dir)[0]
+        repo = git.Repo(tmp_dir+name)
+        isBare = repo.git.status('-uno').count('No commits yet\n') > 0
+        shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
+        return isBare
+
+    @classmethod
     def loadDefaultProfile(cls):
         prfl_dir = cls.HIDDEN+"profiles/"
         prfl_name = "default"

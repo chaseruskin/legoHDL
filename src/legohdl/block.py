@@ -1,6 +1,4 @@
-from genericpath import isdir, isfile
 import os, yaml, shutil
-from git.util import rmtree
 from datetime import date
 import glob, git
 import logging as log
@@ -27,7 +25,7 @@ class Block:
                 if(not excludeGit):
                     self._repo = git.Repo(self.getPath())
                 self.loadMeta()
-            return
+                return
         elif(path == None):
             self.__local_path = apt.fs(apt.getLocal()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
 
@@ -40,6 +38,7 @@ class Block:
 
         if(remote != None):
             self.grabGitRemote(remote)
+
         #is this block already existing?
         if(self.isValid()):
             #load in metadata from YML
@@ -503,14 +502,14 @@ derives: []
                 os.makedirs(self.getPath(), exist_ok=True)
 
         #clone from existing remote repo
-        if(not fresh and self.grabGitRemote() != None):
+        if(not fresh and self.grabGitRemote() != None and ((self._repo != None and not apt.isRemoteBare(self.grabGitRemote()))  or self._repo == None)):
             log.info("Cloning project from remote url...")
             self.downloadFromURL(self.grabGitRemote(), in_place=True)
         #make a new repo
         elif(not git_exists):
             self._repo = git.Repo.init(self.getPath())
         #there is already a repo here
-        else:
+        elif(fresh):
             self._repo = git.Repo(self.getPath())
             #does a remote exist?
             if(self.grabGitRemote(override=True) != None):
@@ -617,6 +616,8 @@ derives: []
     def genRemote(self, push):
         if(self.isLinked()):
             remote_url = self.getMeta("remote")
+            if(remote_url == None):
+                remote_url = self.grabGitRemote()
             try: #attach to remote code base
                 self._repo.create_remote('origin', remote_url) 
             except: #relink origin to new remote url

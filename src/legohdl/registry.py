@@ -248,12 +248,14 @@ class Registry:
             rep = git.Repo(mrk.getPath())
             if(mrkt.lower() == mrk.getName().lower() or mrkt == ''):
                 if(mrk.isRemote()):
-                    rep.git.remote('update')
-                    if(rep.git.status('-uno').count('No commits yet\n') == 0):
+                    try:
                         log.info("Refreshing "+mrk.getName()+"... "+mrk.url)
                         rep.remotes.origin.pull(rep.head.reference)
-                    else:
-                        log.info("Skipping "+mrk.getName()+" because it is empty...")
+                    except:
+                        if(apt.isRemoteBare(mrk.url)):
+                             log.info("Skipping "+mrk.getName()+" because it is empty...")
+                        else:
+                            log.error("Could not refresh "+mrkt+".")                       
                 else:
                     log.info("Skipping "+mrk.getName()+" because it is local...")
         pass
