@@ -53,6 +53,7 @@ class Apparatus:
 
     @classmethod
     def initialize(cls):
+        cls.HIDDEN = cls.fs(cls.HIDDEN)
         ask_for_setup = (os.path.exists(cls.HIDDEN) == False)
         
         os.makedirs(cls.HIDDEN, exist_ok=True)
@@ -104,13 +105,17 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 resp = input()
                 pass
         
-        if(not is_select or cls.inWorkspace() == False):
+        if(not is_select or len(cls.SETTINGS['workspace'].keys()) == 0):
             #ask to create workspace
             ws_name = input("Enter a workspace name: ")
             while(len(ws_name) == 0 or ws_name.isalnum() == False):
                 ws_name = input()
-            ws_path = input("Enter the workspace's path: ")
-            cls.initializeWorkspace(ws_name, cls.fs(ws_path))
+            cls.SETTINGS['workspace'][ws_name] = dict()
+        #ask to create paths for workspace's with invalid paths
+        for ws_name,ws_dict in cls.SETTINGS['workspace'].items():
+            if(ws_dict['local'] == None):
+                ws_path = input("Enter the "+ws_name+" workspace's path: ")
+                cls.SETTINGS['workspace'][ws_name]['local'] = cls.fs(ws_path)
 
         #ask for name and text-editor
         feedback = input("Enter your name: ")
@@ -194,7 +199,9 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             pass
         
         if(cls.getLocal() == None):
-            log.error("Please specify a local path! See \'legohdl help config\' for more details")
+            log.error("Please specify a workspace path for "+cls.SETTINGS['active-workspace']+". See \'legohdl help config\' for more details.")
+            cls.SETTINGS['active-workspace'] = None
+            return
 
         cls.WORKSPACE = cls.HIDDEN+"workspaces/"+cls.SETTINGS['active-workspace']+"/"
 
