@@ -161,7 +161,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         cls.generateDefault(bool,"multi-develop","overlap-recursive")
         cls.generateDefault(int,"refresh-rate")
         cls.generateDefault(list,"profiles")
-        
+
         #run setup here
         if(ask_for_setup):
             cls.runSetup()
@@ -387,6 +387,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             for k,v in src.items():
                 #go even deeper into the dictionary tree
                 if(isinstance(v, dict)):
+                    if(k not in dest.keys()):
+                        dest[k] = dict()
                     deepMerge(v, dest[k])
                 #combine all settings except if profiles setting exists in src
                 elif(k != 'profiles'):
