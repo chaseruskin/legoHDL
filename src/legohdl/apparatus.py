@@ -591,7 +591,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
     
         refresh = False
         latest_punch = None
-        stage = 0
+        stage = 1
         cur_time = datetime.now()
 
         #divide the 24 hour period into even checkpoints
@@ -608,7 +608,6 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             #no refreshes have occurred so automatically need a refresh
             if(len(file_data) == 0):
                 latest_punch = cur_time
-                stage = 1
                 refresh = True
             else:
                 latest_punch = datetime.fromisoformat(file_data[0])
@@ -620,7 +619,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 for i in range(len(intervals)):
                     if(last_time_fmt < intervals[i]):
                         next_checkpoint = intervals[i]
-                        stage = i+1
+                        stage = i + 1
                         break
                 #print('next checkpoint',next_checkpoint)
                 cur_time_fmt = timeToFloat(cur_time)
