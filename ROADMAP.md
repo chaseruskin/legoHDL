@@ -7,6 +7,8 @@
 - [!] allow scripts/alias to be stored as a list
 - [!] editor can be stored as a list too
 
+- [ ] use a -args flag to indicate all following arguments are to be passed to the build script?
+
 
 - [ ] for list command, highlight if a profile is availble to be updated (bonus)
 - [x] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
