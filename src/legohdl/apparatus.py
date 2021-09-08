@@ -155,6 +155,12 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 if('shallow' not in cls.SETTINGS[opt].keys() or \
                     isinstance(cls.SETTINGS[opt]['shallow'], dict) == False):
                     cls.SETTINGS[opt]['shallow'] = {}
+
+        #ensure all pieces of settings are correct
+        cls.generateDefault(dict,"market","script","workspace")
+        cls.generateDefault(bool,"multi-develop","overlap-recursive")
+        cls.generateDefault(int,"refresh-rate")
+        cls.generateDefault(list,"profiles")
         
         #run setup here
         if(ask_for_setup):

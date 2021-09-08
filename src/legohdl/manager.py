@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-from genericpath import isdir, isfile
 import os, sys, shutil
-from re import M
 import yaml
 from .block import Block
 from .__version__ import __version__
