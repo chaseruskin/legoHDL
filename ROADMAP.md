@@ -9,7 +9,7 @@
 
 
 - [ ] for list command, highlight if a profile is availble to be updated (bonus)
-- [ ] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
+- [x] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
 profiles (bonus)
 
 - [ ] add default market for default profile (open-square)
@@ -17,7 +17,7 @@ profiles (bonus)
 
 - [ ] document `profile` command with `help`
 
-- [ ] use `new` command with profile flag to create a new profile ?
+- [ ] use `new` command with profile flag to create a new profile ? or use config command
 
 - [ ] allow del command to delete a profile
 - [ ] allow config command to load a new profile
