@@ -465,8 +465,33 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         cls.save()
         pass
 
+    @classmethod
     def updateProfile(cls, name):
+        reload_default = (name.lower() == "default")
 
+        if name in cls.getProfiles():
+            #see if this path is a git repository
+            try:
+                repo = git.Repo(cls.getProfiles()[name])
+                log.info("Updating repository for "+name+" profile...")
+                #pull down the latest
+                if(len(repo.remotes)):
+                    repo.remotes[0].pull()
+                    log.info("success")
+                    return
+                else:  
+                    if(not reload_default):
+                        exit(log.error("This git repository has no remote URL."))
+            except:
+                if(not reload_default):
+                    exit(log.error("Not a git repository."))
+        else:
+            log.error("Profile "+name+" does not exist.")
+            pass
+
+        if(reload_default):
+            log.info("Reloading default profile...")
+            cls.loadDefaultProfile(importing=False)
         pass
     
     @classmethod
@@ -765,7 +790,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         return isBare
 
     @classmethod
-    def loadDefaultProfile(cls):
+    def loadDefaultProfile(cls, importing=True):
         prfl_dir = cls.HIDDEN+"profiles/"
         prfl_name = "default"
         prfl_path = prfl_dir+prfl_name+"/"
@@ -868,6 +893,6 @@ else:
 """)
             pass
 
-
-        cls.importProfile("default")
+        if(importing):
+            cls.importProfile("default")
         pass
