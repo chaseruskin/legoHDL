@@ -6,6 +6,8 @@
 
 - [ ] use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command)
 
+- [ ] don't perform .lower() on market name to save, but use it for eval between markets
+
 - [ ] add default market for default profile (open-square)
 - [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
 
