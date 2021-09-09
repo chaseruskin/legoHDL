@@ -1542,11 +1542,16 @@ respective testbench and add it to the graph.
             print('{:<16}'.format("<toplevel>"),"explicitly set the toplevel entity/module")
         elif(cmd == "update"):
             printFmt("update","<block>")
+            printFmt("update","<profile> -profile",quiet=True)
             rollover("""
 Update an installed block to have the latest version available. In order for a block to be updated
-it must be installed. All previous version installations will be unaffected.
+it must be installed. All previous version installations will be unaffected. Can also update a profile
+if it is a repository and has a remote URL.
             """)
-            printFmt("<block>","the cached block to have its tracking master branch updated")
+            print('{:<16}'.format("<block>"),"the cached block to have its tracking master branch updated")
+            print('{:<16}'.format("<profile>"),"the profile to be updated from its remote git URL")
+            print()
+            print('{:<16}'.format("-profile"),"indicate that a profile is being targeted for an update")
             pass
         elif(cmd == "export"):
             printFmt("export","[<toplevel>]")
@@ -1572,7 +1577,7 @@ the script named 'master'. If only 1 script is configured, it will default to th
             pass
         elif(cmd == "del"):
             printFmt("del","<block>","[-uninstall]")
-            printFmt("del","<value>","(-market | -script | -label | -workspace)",quiet=True)
+            printFmt("del","<value>","(-market | -script | -label | -workspace | -profile)",quiet=True)
             rollover("""
 Delete a block from the local path, typically used after releasing a new version and development
 is complete. If deleting a workspace, the local path will be preserved but all legohdl settings and structure
@@ -1588,6 +1593,7 @@ will not be deleted from its path.
             print('{:<16}'.format("-script"),"forget the script")
             print('{:<16}'.format("-label"),"forget the label")
             print('{:<16}'.format("-workspace"),"keeps local path, but remove from settings")
+            print('{:<16}'.format("-profile"),"remove the folder found in legoHDL containing this profile")
         elif(cmd == "port"):
             printFmt("port","<block>[.<entity>]","[-map -instance]")
             rollover("""
@@ -1614,7 +1620,7 @@ value (ex: -v1). If the -v0.0.0 flag is not properly working, -v0_0_0 is also va
             print('{:<16}'.format("-v0.0.0"),"Show this specific version or constrain the version list to this version")
             pass
         elif(cmd == "config"):
-            printFmt("config","<value>","(-market (-add | -remove) | -active-workspace | -author | -editor | -template | -multi-develop | -overlap-recursive | -refresh-rate)")
+            printFmt("config","<value>","(-market (-add | -remove) | -active-workspace | -author | -editor | -template | -multi-develop | -overlap-recursive | -refresh-rate | -profile)")
             printFmt("config","<key>="+'"<value>"',"(-script [-link] | -label [-recursive] | -workspace | -market [-add | -remove])",quiet=True)
             rollover("""
 Configure settings for legoHDL. This is the command-line alternative to opening 
@@ -1637,6 +1643,7 @@ perform refresh.
             print('{:<16}'.format("-author"),"the user's preferred name")
             print('{:<16}'.format("-editor"),"a text-editor to open various folders and files")
             print('{:<16}'.format("-template"),"indicate where the template folder is found")
+            print('{:<16}'.format("-profile"),"create a new blank profile with the name from <value>")
             print('{:<16}'.format("-multi-develop"),"prioritize using downloaded blocks over installed blocks")
             print('{:<16}'.format("-overlap-recursive"),"include all found labels regardless of possible duplication")
             print('{:<16}'.format("-refresh-rate"),"integer for how often to automatically refresh markets per day")
@@ -1645,6 +1652,19 @@ perform refresh.
             print('{:<16}'.format("-label"),"indicate the key/value to be a label and glob-pattern")
             print('{:<16}'.format("-recursive"),"categorize this label to be searched for in all dependencies")
             print('{:<16}'.format("-workspace"),"provide a workspace name and a local path for key/value")
+            pass
+        elif(cmd == 'profile'):
+            printFmt("profile","<profile>","[-ask]")
+            rollover("""
+Import configuration settings, template, and/or scripts from one location. This is
+the fast and more efficient way to share settings and save different configurations.
+<profile> can be an existing profile, a git remote url pointing to a valid profile, or
+a local path to a valid profile. A profile is valid if the folder contains a .prfl file.
+The name of the .prfl file is the name of the profile itself.            
+            """)
+            print('{:<16}'.format("<profile>"),"an existing profile name, git repository, or path")
+            print()
+            print('{:<16}'.format("-ask"),"prompt the user what portions of profile to import")
             pass
         print()
         exit()

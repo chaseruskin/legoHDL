@@ -378,6 +378,10 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             log.info("Importing new profile "+sel_prfl+"...")
             if(os.path.exists(prfl_dir+sel_prfl) == False):
                 shutil.copytree(path_to_check, prfl_dir+sel_prfl)
+            else:
+                shutil.rmtree(prfl_dir+sel_prfl, onerror=cls.rmReadOnly)
+                shutil.copytree(path_to_check, prfl_dir+sel_prfl)
+                
             #remove temp directory
             if(os.path.exists(tmp_dir)):  
                 shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
@@ -676,7 +680,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                     file.write("#workspace configurations\n")
                 elif(key == 'refresh-rate'):
                     file.write("#market configurations\n")
-                
+
                 yaml.dump(single_dict, file)
                 pass
             pass
