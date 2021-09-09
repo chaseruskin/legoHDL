@@ -111,11 +111,6 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             while(len(ws_name) == 0 or ws_name.isalnum() == False):
                 ws_name = input()
             cls.SETTINGS['workspace'][ws_name] = dict()
-        #ask to create paths for workspace's with invalid paths
-        for ws_name,ws_dict in cls.SETTINGS['workspace'].items():
-            if(ws_dict['local'] == None):
-                ws_path = input("Enter the "+ws_name+" workspace's path: ")
-                cls.SETTINGS['workspace'][ws_name]['local'] = cls.fs(ws_path)
 
         #ask for name and text-editor
         feedback = input("Enter your name: ")
@@ -275,6 +270,15 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
     def dynamicWorkspace(cls):
         acting_ws = cls.SETTINGS['active-workspace']
         for ws,val in cls.SETTINGS['workspace'].items():
+            if(isinstance(val, dict) == False):
+                val = dict()
+                cls.SETTINGS['workspace'][ws] = dict()
+            if('local' not in val.keys() or isinstance(val['local'],str) == False):
+                val['local'] = None
+                cls.SETTINGS['workspace'][ws]['local'] = None
+            if('market' not in val.keys() or isinstance(val['market'],list) == False):
+                val['market'] = list()
+                cls.SETTINGS['workspace'][ws]['market'] = list()
             cls.initializeWorkspace(ws, cls.fs(val['local']))
 
         ws_dirs = os.listdir(cls.HIDDEN+"workspaces/")
@@ -520,18 +524,23 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         if(os.path.isdir(workspace_dir) == False):
             log.info("Creating workspace directories for "+name+"...")
             os.makedirs(workspace_dir, exist_ok=True)
-        #store the list of available versions for each block
-        os.makedirs(workspace_dir+"versions", exist_ok=True)
         #store the code's state of each version for each block
         os.makedirs(workspace_dir+"cache", exist_ok=True)
         #create the refresh log
         if(os.path.isfile(workspace_dir+cls.REFRESH_LOG) == False):
             open(workspace_dir+cls.REFRESH_LOG, 'w').close()
         
-        if(local_path != None):
-            if(os.path.exists(local_path) == False):
-                log.info("Creating new path... "+local_path)
-                os.makedirs(local_path)
+        #ask to create paths for workspace's with invalid paths
+        if(local_path == None):
+            ws_path = input("Enter the "+name+" workspace's path: ")
+            while(len(ws_path) <= 0):
+                ws_path = input()
+            cls.SETTINGS['workspace'][name]['local'] = cls.fs(ws_path)
+            local_path = cls.SETTINGS['workspace'][name]['local']
+        
+        if(os.path.exists(local_path) == False):
+            log.info("Creating new path... "+local_path)
+            os.makedirs(local_path)
 
         #create YAML structure for workspace settings 'local' and 'market'
         if(name not in cls.SETTINGS['workspace'].keys()):
@@ -542,16 +551,17 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         #make sure local is a string 
         if(isinstance(cls.SETTINGS['workspace'][name]['local'],str) == False):
             cls.SETTINGS['workspace'][name]['local'] = None
-            #cannot become active-workspace if there is no local path
-            if(cls.SETTINGS['active-workspace'] == name):
-                cls.SETTINGS['active-workspace'] = None
-                return
+
+        #cannot be active workspace if a workspace path is null
+        if(cls.SETTINGS['workspace'][name]['local'] == None and cls.__active_workspace == name):
+            cls.__active_workspace = None
+            return
 
         #if no active-workspace then set it as active
         if(not cls.inWorkspace()):
             cls.SETTINGS['active-workspace'] = name
             cls.__active_workspace = name
-        
+        pass
 
     @classmethod
     def confirmation(cls, prompt, warning=True):
