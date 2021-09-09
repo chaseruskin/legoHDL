@@ -538,12 +538,12 @@ class legoHDL:
             key = choice
         #chosen to delete setting from settings.yml
         if(delete):
-            possibles = ['label', 'workspace', 'market', 'script']
+            possibles = ['label', 'workspace', 'market', 'script', 'profile']
             st = options[0].lower()
             if(st not in possibles):
                 exit(log.error("Cannot use del command on "+st+" setting."))
             #ensure this is a valid key to remove
-            if(choice not in apt.SETTINGS[st].keys()):
+            if(st != 'profile' and choice not in apt.SETTINGS[st].keys()):
                 #check within both branches of label setting, 'shallow' and 'recursive'
                 if(st == 'label'):
                     if(choice not in apt.SETTINGS[st]['shallow'].keys() and choice not in apt.SETTINGS[st]['recursive'].keys()):
@@ -557,6 +557,15 @@ class legoHDL:
                     del apt.SETTINGS[st]['recursive'][choice]
                 if(choice in apt.SETTINGS[st]['shallow'].keys()):
                     del apt.SETTINGS[st]['shallow'][choice]
+            elif(st == 'profile'):
+                choice = choice.lower()
+                if(choice in apt.getProfiles()):
+                    #remove directory
+                    shutil.rmtree(apt.getProfiles()[choice])
+                    #remove from settings
+                    apt.SETTINGS[st+'s'].remove(choice)
+                else:
+                    exit(log.error("Profile "+choice+" does not exist."))
             #delete a key/value pair from the scripts or workspaces
             elif(st == 'script' or st == 'workspace' or st == 'market'):
                 if(choice in apt.SETTINGS[st].keys()):
@@ -600,7 +609,7 @@ class legoHDL:
                 exit(log.error("Workspace "+choice+" not found!"))
 
         #invalid option flag
-        if(not options[0] in apt.SETTINGS.keys()):
+        if(not options[0] in apt.SETTINGS.keys() and options[0] != 'profile'):
             exit(log.error("No setting exists under that flag"))
         elif(options[0] == 'market'):
             #allow for just referencing the market if trying to append to current workspace
@@ -669,6 +678,15 @@ class legoHDL:
             else:
                 exit(log.error("Workspace not added. Provide a local path for the workspace"))
             pass
+        elif(options[0] == 'profile'):
+            choice = choice.lower()
+            if(choice not in apt.getProfiles()):
+                #add to settings
+                apt.SETTINGS[options[0]+'s'].append(choice)
+                #create new directory
+                apt.dynamicProfiles()
+            else:
+                exit(log.error("A profile already exists as "+choice+"."))
         # BUILD SCRIPT CONFIGURATION
         elif(options[0] == 'script'):
             if(val == None):

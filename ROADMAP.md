@@ -9,13 +9,10 @@
 
 - [ ] use a -args flag to indicate all following arguments are to be passed to the build script?
 
-- [ ] remove data in versions when uninstalling/del and block is no longer available
-
 - [ ] always prompt user to input a workspace path if the path found in settings is null?
 
 - [ ] for list command, highlight if a profile is availble to be updated (bonus)
-- [x] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
-profiles (bonus)
+
 
 - [ ] add default market for default profile (open-square)
 - [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
@@ -24,8 +21,6 @@ profiles (bonus)
 
 - [ ] use `new` command with profile flag to create a new profile ? or use config command
 
-- [ ] allow del command to delete a profile
-- [ ] allow config command to load a new profile
 - [ ] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts
 - [ ] add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
 
@@ -33,8 +28,18 @@ profiles (bonus)
 
 - [ ] if going from already installed to download, ensure all requirements are installed else give an error stating the missing installations 
 
-- [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list
+- [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list, examples: 
+```
+derives:
+- tmp.testc(v0.3.2) [open-square]
 
+- open-square.tmp.testc(v0.3.2) 
+
+- tmp.testc(v0.3.2) { open-square
+
+- tmp.testc(v0.3.2) < open-square
+- tmp.testb(v1.0.0)
+```
 ### Future Roadmap
 
 - [ ] handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. One step further (the real issue), also a block has conflicts if the block has entities/modules that are already defined in a user's workspace.
@@ -73,10 +78,14 @@ profiles (bonus)
 
 - [ ] add cool logging
 
-- [ ] investiage if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design)
+- [ ] investigate if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design) -> I believe it does not
 
 
 __Completed__
+- [x] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
+profiles (bonus)
+- [x] allow del command to delete a profile
+- [x] allow config command to load a new profile
 - [x] embed default profile and make visible in profiles on runSetup
 - [x] if no editor is specified on first bootup, prompt for one
 - [x] if no name is specified on first bootup, prompt for one

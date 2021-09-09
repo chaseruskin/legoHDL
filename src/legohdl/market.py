@@ -72,7 +72,7 @@ class Market:
             if(len(self._repo.remotes)):
                 log.info("Refreshing "+self.getName()+"... "+self.url)
                 if(apt.isRemoteBare(self.url) == False):
-                    self._repo.git.pull()  
+                    self._repo.git.pull()
             #create remote origin
             else:
                 if(apt.isValidURL(self.url)):
@@ -91,7 +91,7 @@ class Market:
         #locate block's directory within market
         block_dir = apt.fs(self._local_path+"/"+meta['library']+"/"+meta['name']+"/")
         os.makedirs(block_dir,exist_ok=True)
-        
+
         #read in all logging info about valid release points
         file_data = []
         #insert any versions found as valid release points to version.log

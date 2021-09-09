@@ -480,6 +480,13 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 log.info("Updating repository for "+name+" profile...")
                 #pull down the latest
                 if(len(repo.remotes)):
+                    repo.git.remote('update')
+                    status = repo.git.status('-uno')
+                    if(status.count('Your branch is up to date with') or status.count('Your branch is ahead of')):
+                        log.info("Already up-to-date.")
+                        return
+                    else:
+                        log.info('Pulling new updates...')
                     repo.remotes[0].pull()
                     log.info("success")
                     return
