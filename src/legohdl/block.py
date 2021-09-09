@@ -219,14 +219,6 @@ class Block:
 
         sorted_versions = self.sortVersions(self.getTaggedVersions())
 
-        #create a version.log file
-        ver_path = apt.WORKSPACE+"versions/"+self.getLib()+"/"+self.getName()+"/"
-        os.makedirs(ver_path, exist_ok=True)
-        with open(ver_path+apt.VER_LOG,'w') as f:
-            for v in sorted_versions:
-                f.write(v+"\n")
-            f.close()
-
         #push to remote codebase!! (we have a valid remote url to use)
         if(url != None):
             self.pushRemote()
@@ -694,7 +686,6 @@ derives: []
         if(os.path.isfile(path)):
                 with open(path,'r') as f:
                     return f.readlines()
-                    f.close()
         else:
             return None
 

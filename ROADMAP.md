@@ -11,6 +11,8 @@
 
 - [ ] remove data in versions when uninstalling/del and block is no longer available
 
+- [ ] always prompt user to input a workspace path if the path found in settings is null?
+
 - [ ] for list command, highlight if a profile is availble to be updated (bonus)
 - [x] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
 profiles (bonus)

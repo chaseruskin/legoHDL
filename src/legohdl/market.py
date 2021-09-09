@@ -91,23 +91,16 @@ class Market:
         #locate block's directory within market
         block_dir = apt.fs(self._local_path+"/"+meta['library']+"/"+meta['name']+"/")
         os.makedirs(block_dir,exist_ok=True)
-        #read in all loggin info about valid release points
+        
+        #read in all logging info about valid release points
         file_data = []
-        if(os.path.exists(block_dir+apt.VER_LOG)):
-            with open(block_dir+apt.VER_LOG,'r') as f:
-                file_data = f.readlines()
+        #insert any versions found as valid release points to version.log
+        for v in all_vers:
+            file_data = file_data + [v+"\n"]
+        #rewrite version.log file to track all valid versions
+        with open(block_dir+apt.VER_LOG,'w') as f:
+                f.writelines(file_data)
                 pass
-        #insert any versions not found in file_data to also be valid release points to version.log
-        for old_ver in all_vers:
-            #skip our current version
-            if(old_ver[1:] == meta['version']):
-                continue
-            if(old_ver+"\n" not in file_data):
-                file_data.append(old_ver+"\n")
-
-        #insert this version as a new valid release point to version.log
-        ver_path = apt.WORKSPACE+"versions/"+meta['library']+"/"+meta['name']+"/"+apt.VER_LOG
-        shutil.copyfile(ver_path,block_dir+apt.VER_LOG)
 
         #save changelog 
         if(changelog != None):
