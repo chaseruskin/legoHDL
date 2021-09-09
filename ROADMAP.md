@@ -4,12 +4,10 @@
 
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
-- [ ] use a -args flag to indicate all following arguments are to be passed to the build script?
+- [ ] use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command)
 
 - [ ] add default market for default profile (open-square)
 - [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
-
-- [ ] document `profile` command with `help`
 
 - [ ] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts
 - [ ] add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
@@ -76,6 +74,7 @@ derives:
 
 
 __Completed__
+- [x] document `profile` command with `help`
 - [x] always prompt user to input a workspace path if the path found in settings is null?
 - [x] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
 profiles (bonus)
