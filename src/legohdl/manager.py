@@ -1083,7 +1083,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         value = package
         package = package.replace("-", "_")
         #by leaving VHDL true, it may split up groups of three commas
-        L,N = Block.split(package, VHDL=True)
+        L,N = Block.split(package, vhdl=True)
 
         if(apt.inWorkspace()):
             if(self.db.blockExists(package,"local")):
