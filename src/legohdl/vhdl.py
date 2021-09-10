@@ -111,7 +111,10 @@ class Vhdl(Language):
                         L,U,_ = splitBlock(pkg)
                         if(entity_name in comps):
                             #now add the unit for the entity instance itself
-                            use_packages.append(design_book[L][entity_name])
+                            if(entity_name in design_book[L].keys()):
+                                use_packages.append(design_book[L][entity_name])
+                            else:
+                                log.warning("No entity "+entity_name+" is found in source code.")
                     #or if the plain old entity name is indeed with a library
                     for lib in design_book.keys():
                         if(entity_name in design_book[lib].keys()):
