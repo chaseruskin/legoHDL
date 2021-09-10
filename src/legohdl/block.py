@@ -465,12 +465,25 @@ derives: []
         if(author == None):
             author = ''
 
+        #default the design name to be the file name
+        design_name = file
+        #grab name of template file
+        template_name = os.path.basename(templateFile)
+        template_name,_ = os.path.splitext(template_name)
+        if(template_name.count("template")):
+            template_name_extra_before = template_name[:template_name.find("template")]
+            template_name_extra_after = template_name[template_name.find("template")+len("template"):]
+            print(template_name_extra_before)
+            print(template_name_extra_after)
+            design_name = file.replace(template_name_extra_before, "").replace(template_name_extra_after, "")
+        
+        print(design_name)
         #store the file data to be transformed and rewritten
         lines = []
         #find and replace all proper items
         with open(newfile, 'r') as file_in:
             for line in file_in.readlines():
-                line = line.replace("template", file)
+                line = line.replace("template", design_name)
                 line = line.replace("%DATE%", today)
                 line = line.replace("%AUTHOR%", author)
                 line = line.replace("%BLOCK%", self.getTitle(low=False))
