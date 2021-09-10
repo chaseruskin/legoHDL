@@ -1,23 +1,13 @@
 ## Roadmap to Release v1.0.0
 
-- [x] better verilog to verilog external instanation recognition
-
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
 - [ ] use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command)
 
-- [ ] don't perform .lower() on market name to save, but use it for eval between markets
+- [-] don't perform .lower() on market name to save, but use it for eval between markets
 
-- [ ] add default market for default profile (open-square)
-- [x] add a default workspace for users to upload with default profile
+- [ ] add default market for default profile (FreeSquare)
 - [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
-
-- [ ] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts
-- [ ] add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
-
-- [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
-
-- [ ] if going from already installed to download, ensure all requirements are installed else give an error stating the missing installations 
 
 - [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list, examples: 
 ```
@@ -32,6 +22,9 @@ derives:
 - tmp.testb(v1.0.0)
 ```
 ### Future Roadmap
+
+- [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
+- [ ] support verilog header files, verilog packages
 
 - [ ] handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. One step further (the real issue), also a block has conflicts if the block has entities/modules that are already defined in a user's workspace.
 
@@ -75,10 +68,18 @@ derives:
 - [ ] allow scripts/alias to be stored as a list
 - [ ] editor can be stored as a list too
 
+- [ ] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts
+
+- [ ] add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
+
+- [ ] if going from already installed to download, ensure all requirements are installed else give an error stating the missing installations 
+
 - [ ] investigate if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design) -> I believe it does not
 
 
 __Completed__
+- [x] better verilog to verilog external instanation recognition
+- [x] add a default workspace for users to upload with default profile
 - [x] document `profile` command with `help`
 - [x] always prompt user to input a workspace path if the path found in settings is null?
 - [x] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`

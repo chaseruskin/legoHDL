@@ -1,5 +1,4 @@
 #load in settings
-from genericpath import isdir
 import yaml,stat,glob,git
 from datetime import datetime
 import logging as log
@@ -112,9 +111,10 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 ws_name = input()
             cls.SETTINGS['workspace'][ws_name] = dict()
 
-        #ask for name and text-editor
+        #ask for name to store in settings
         feedback = input("Enter your name: ")
         cls.SETTINGS['author'] = cls.SETTINGS['author'] if(feedback.strip() == '') else feedback.strip()
+        #ask for test-editor to store in settings
         feedback = input("Enter your text-editor: ")
         cls.SETTINGS['editor'] = cls.SETTINGS['editor'] if(feedback.strip() == '') else feedback.strip()
         pass
