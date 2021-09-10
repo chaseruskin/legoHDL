@@ -55,12 +55,16 @@ class Unit:
             if(not pureEntity or mapping):
                 report =  report + self.getLang().writeComponentDeclaration() + "\n"
             if(mapping or pureEntity):
-                report = report + "\n" + self.getLang().writeComponentSignals() + "\n"
+                if(len(report) > 1):
+                    report = report + "\n"
+                report = report + self.getLang().writeComponentSignals() + "\n"
                 if(mapping):
                     report = report + self.getLang().writeComponentMapping(False, lib) + "\n"
                 if(pureEntity):
                     report = report + self.getLang().writeComponentMapping(pureEntity, lib) + "\n"
                 pass
+            if(not mapping and not pureEntity):
+                report = report + "\n"
         return report
 
     def getLanguageType(self):

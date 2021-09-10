@@ -210,7 +210,7 @@ class Block:
             self._repo.index.add(self._repo.untracked_files)
         #default message
         if(msg == None):
-            msg = "Releases version -> "+self.getVersion()
+            msg = "Releases version "+self.getVersion()
         #commit new changes with message
         self._repo.index.commit(msg)
 
@@ -1362,6 +1362,8 @@ derives: []
     
         if(entity.lower() in units[self.getLib()].keys()):
             info = units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)
+        else:
+            exit(log.error("Cannot locate "+entity+" (version may not exist or may not be installed)."))
         return info
     pass
 

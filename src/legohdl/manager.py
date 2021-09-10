@@ -1326,7 +1326,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 inserted_lib = 'work'
             
             if((self.db.blockExists(package, "local") or self.db.blockExists(package, "cache"))):
-                print(self.db.getBlocks("local","cache")[L][N].ports(mapp,inserted_lib,pure_ent,ent_name,ver))
+                print(self.db.getBlocks("local","cache")[L][N].ports(mapp,inserted_lib,pure_ent,ent_name,ver), end='')
             else:
                 exit(log.error("No block exists in local path or workspace cache."))
         elif(command == "config"):
