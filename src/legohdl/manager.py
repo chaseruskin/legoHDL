@@ -1300,7 +1300,10 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 self.update(package)
                 pass
         elif(command == "profile" and package != ''):
+            #import new settings
             apt.loadProfile(value, explicit=options.count('ask'))
+            #reinitialize all settings/perform safety measures
+            apt.load()
         elif(command == "port"):
             mapp = pure_ent = False
             ent_name = None

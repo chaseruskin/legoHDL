@@ -243,6 +243,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         tmp_dict = {}
         for mrkt in cls.SETTINGS['market'].keys():
             lower_mrkt = mrkt.lower()
+            replace = True
             if(lower_mrkt in tmp_dict.keys()):
                 log.warning("Duplicate market names have been detected; which one do you want to keep?")
                 print('1)',true_case[lower_mrkt],':',tmp_dict[lower_mrkt])
@@ -255,15 +256,25 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                     opt_2 = resp == '2' or resp == mrkt
                     if(opt_2):
                         tmp_dict[lower_mrkt] = cls.SETTINGS['market'][mrkt]
+                        if(os.path.exists(cls.HIDDEN+"registry/"+true_case[lower_mrkt])):
+                            shutil.rmtree(cls.HIDDEN+"registry/"+true_case[lower_mrkt],onerror=cls.rmReadOnly)
+                    else:
+                        if(os.path.exists(cls.HIDDEN+"registry/"+mrkt)):
+                            shutil.rmtree(cls.HIDDEN+"registry/"+mrkt,onerror=cls.rmReadOnly)
+                        replace = False
                     if(opt_1 or opt_2):
-                        shutil.rmtree(cls.HIDDEN+"registry/"+lower_mrkt,onerror=cls.rmReadOnly)
                         break
             else:   
                 tmp_dict[lower_mrkt] = cls.SETTINGS['market'][mrkt]
+            
+            if(replace):
+                true_case[lower_mrkt] = mrkt
 
-            true_case[lower_mrkt] = mrkt
+        for mrkt_low in true_case.keys():
+            if(mrkt_low in tmp_dict.keys()):
+                cls.SETTINGS['market'][true_case[mrkt_low]] = tmp_dict[mrkt_low]
         
-        cls.SETTINGS['market'] = tmp_dict
+        #cls.SETTINGS['market'] = tmp_dict
     
     #automatically create local paths for workspaces or delete hidden folders
     @classmethod
@@ -543,7 +554,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         
         #ask to create paths for workspace's with invalid paths
         if(local_path == None):
-            ws_path = input("Enter the "+name+" workspace's path: ")
+            ws_path = input("Enter workspace "+name+"'s path: ")
             while(len(ws_path) <= 0):
                 ws_path = input()
             cls.SETTINGS['workspace'][name]['local'] = cls.fs(ws_path)
@@ -730,13 +741,13 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         #key: name, val: url
         if(cls.inWorkspace() and workspace_level):
             for name in cls.SETTINGS['workspace'][cls.__active_workspace]['market']:
-                if(name.lower() in cls.SETTINGS['market'].keys()):
-                    returnee[name.lower()] = cls.SETTINGS['market'][name.lower()]
+                if(name in cls.SETTINGS['market'].keys()):
+                    returnee[name] = cls.SETTINGS['market'][name]
             cls.SETTINGS['workspace'][cls.__active_workspace]['market'] = list(returnee.keys())
             cls.save()
         elif(cls.inWorkspace()):
             for name in cls.SETTINGS['market'].keys():
-                returnee[name.lower()] = cls.SETTINGS['market'][name.lower()]
+                returnee[name] = cls.SETTINGS['market'][name]
 
         return returnee
 
@@ -829,6 +840,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         {
             'hello'  : 'python $(LEGOHDL)/scripts/hello_world.py',
         }
+        def_settings['workspace'] = dict()
+        def_settings['workspace']['primary'] = {'local' : None, 'market' : None}
         #create default settings.yml
         with open(prfl_path+"settings.yml", 'w') as f:
             yaml.dump(def_settings, f)

@@ -189,6 +189,7 @@ class Registry:
                 self._local_prjs[c.getLib()] = dict()
             self._local_prjs[c.getLib()][c.getName()] = c
         #print(self._local_prjs)
+        #print("ran1")
         return self._local_prjs
 
     def getProjectsCache(self, updt=False):
@@ -209,6 +210,7 @@ class Registry:
                 if(os.path.exists(path+l+"/"+b+"/"+b+"/")):
                     self._cache_prjs[l.lower()][b.lower()] = Block(path=path+l+"/"+b+"/"+b+"/")
         #print(self._cache_prjs)
+        #print("ran2")
         return self._cache_prjs
         pass
 
@@ -239,6 +241,7 @@ class Registry:
                         self._remote_prjs[L][N] = block
 
         #print(self._remote_prjs)
+        #print("ran3")
         return self._remote_prjs
 
     #check if any changes were made to market remotes for current workspace

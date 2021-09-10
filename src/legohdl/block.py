@@ -423,10 +423,10 @@ derives: []
                 self.__metadata['market'] = self.__market.getName()
             #see if the market is bound to your workspace
             elif(self.getMeta("market") != None):
-                if(self.getMeta("market").lower() in apt.getMarkets().keys()):
-                    self.__market = Market(self.__metadata['market'], apt.SETTINGS['market'][self.__metadata['market'].lower()])
+                if self.getMeta("market") in apt.getMarkets().keys():
+                    self.__market = Market(self.getMeta('market'), apt.SETTINGS['market'][self.getMeta('market')])
                 else:
-                    log.warning("Market "+self.__metadata['market']+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
+                    log.warning("Market "+self.getMeta('market')+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
                     self.__metadata['market'] = None
                     self.__market = self.__metadata['market']
         self.save()

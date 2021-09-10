@@ -9,6 +9,7 @@
 - [ ] don't perform .lower() on market name to save, but use it for eval between markets
 
 - [ ] add default market for default profile (open-square)
+- [x] add a default workspace for users to upload with default profile
 - [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
 
 - [ ] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts
@@ -25,7 +26,7 @@ derives:
 
 - open-square.tmp.testc(v0.3.2) 
 
-- tmp.testc(v0.3.2) { open-square
+- tmp.testc(v0.3.2) {open-square}
 
 - tmp.testc(v0.3.2) < open-square
 - tmp.testb(v1.0.0)
@@ -39,6 +40,8 @@ derives:
 - [ ] cross check version tags with the hidden version.log (in case a legohdl tag was manually created by a user) -> delete the tag if not valid
 
 - [ ] if an already existing profile's .prfl file gets changed, then needs to move to temp directory and have its folder renamed on next legohdl call
+
+- [ ] if a user explicitly defines an architecture to use for an instance, only read that architecture?
 
 - [ ] allow scripts to live/import into any depth inside built-in scripts folder
 

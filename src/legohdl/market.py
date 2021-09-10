@@ -1,4 +1,4 @@
-from genericpath import isdir
+from genericpath import exists, isdir
 import os,shutil,git
 import logging as log
 import copy
@@ -10,9 +10,10 @@ class Market:
     def __init__(self, name, url):
         self._name = name
         self.url = url
-        self._local_path = apt.HIDDEN+"registry/"+self.getName()
+        self._local_path = apt.fs(apt.HIDDEN+"registry/"+self.getName(low=False))
+        
         #is there not a git repository here? if so, need to init
-        if(not os.path.isdir(self._local_path+"/.git")):
+        if(not os.path.isdir(self.getPath()+"/.git")):
             valid_remote = False
             #validate if the url is good to connect
             if(url != None):
@@ -24,23 +25,26 @@ class Market:
                 #create temp directory to clone market into
                 os.makedirs(tmp_dir, exist_ok=True)
                 git.Git(tmp_dir).clone(url)
-                log.info("Found and linked remote repository to "+self.getName())
+                log.info("Found and linked remote repository to "+self.getName(low=False))
                 #transfer from temp directory into market directory
-                shutil.copytree(tmp_dir+url_name, self._local_path)
+                shutil.copytree(tmp_dir+url_name, self.getPath())
                 shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
             else:
-                git.Repo.init(self._local_path)
-                log.warning("No remote repository configured for "+self.getName())
+                git.Repo.init(self.getPath())
+                log.warning("No remote repository configured for "+self.getName(low=False))
             
-        self._repo = git.Repo(self._local_path)
+        self._repo = git.Repo(self.getPath())
         pass
 
-    def getName(self):
-        return self._name.lower()
+    def getName(self, low=True):
+        if(low):
+            return self._name.lower()
+        else:
+            return self._name
 
     def delete(self):
-         if(os.path.exists(self._local_path)):
-                shutil.rmtree(self._local_path, onerror=apt.rmReadOnly)
+        if(os.path.exists(self._local_path)):
+            shutil.rmtree(self._local_path, onerror=apt.rmReadOnly)
 
     def setRemote(self, url):
         if((self.isRemote() and self._repo.remotes.origin.url != self.url) or (not self.isRemote())):
@@ -50,10 +54,10 @@ class Market:
             #is this a valid remote path? if it is and we have no origin, make it linked!
             if(not self.isRemote() and valid_remote):
                 self._repo.create_remote('origin', self.url)
-                log.info("Creating link for "+self.getName()+" to "+self.url+"...")
+                log.info("Creating link for "+self.getName(low=False)+" to "+self.url+"...")
             elif(self.isRemote() and valid_remote):
             #is this a valid remote path? do we already have one? if we already have a remote path, delete folder
-                log.info("Swapping link for "+self.getName()+" to "+self.url+"...")
+                log.info("Swapping link for "+self.getName(low=False)+" to "+self.url+"...")
                 if(os.path.exists(self._local_path)):
                     shutil.rmtree(self._local_path, onerror=apt.rmReadOnly)
                 git.Git(apt.HIDDEN+"registry/").clone(url) #and clone from new valid remote path
@@ -70,7 +74,7 @@ class Market:
         if(self.url != None):
             #refresh remote
             if(len(self._repo.remotes)):
-                log.info("Refreshing "+self.getName()+"... "+self.url)
+                log.info("Refreshing "+self.getName(low=False)+"... "+self.url)
                 if(apt.isRemoteBare(self.url) == False):
                     self._repo.git.pull()
             #create remote origin
@@ -85,7 +89,7 @@ class Market:
         #switch to side branch if '-soft' flag raised
         tmp_branch = meta['library']+"."+meta['name']+"-"+meta['version']
         if(self.url != None and options.count("soft")):
-            log.info("Creating new branch ["+tmp_branch+"] to release block to: "+self.getName())
+            log.info("Checking out new branch '"+tmp_branch+"' to release block to "+self.getName(low=False)+"...")
             self._repo.git.checkout("-b",tmp_branch)
 
         #locate block's directory within market
