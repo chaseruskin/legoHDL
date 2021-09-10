@@ -553,12 +553,14 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             open(workspace_dir+cls.REFRESH_LOG, 'w').close()
         
         #ask to create paths for workspace's with invalid paths
-        if(local_path == None):
+        ws_path = local_path
+        if(ws_path == None):
             ws_path = input("Enter workspace "+name+"'s path: ")
             while(len(ws_path) <= 0):
                 ws_path = input()
-            cls.SETTINGS['workspace'][name]['local'] = cls.fs(ws_path)
-            local_path = cls.SETTINGS['workspace'][name]['local']
+
+        cls.SETTINGS['workspace'][name]['local'] = cls.fs(ws_path)
+        local_path = cls.SETTINGS['workspace'][name]['local']
         
         if(os.path.exists(local_path) == False):
             log.info("Creating new path... "+local_path)
@@ -910,7 +912,7 @@ end architecture;
         #create default scripts
         os.makedirs(prfl_path+"scripts/")
 
-        # with open(prfl_path+"scripts/verilator_default.py", 'w') as f:
+        # with open(prfl_path+"scripts/xsim_default.py", 'w') as f:
             
         #     pass
 
