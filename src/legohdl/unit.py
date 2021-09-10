@@ -1,4 +1,5 @@
 from enum import Enum
+import os
 from .vhdl import Vhdl
 from .verilog import Verilog
 from .graph import Graph
@@ -20,11 +21,12 @@ class Unit:
 
     def __init__(self, filepath, dtype, lib, block, unitName):
         self._filepath = filepath
-
-        if(filepath.lower().endswith(".vhd") or filepath.lower().endswith(".vhdl")):
+        _,ext = os.path.splitext(self.getFile())
+        ext = '*'+ext.lower()
+        if(ext in apt.VHDL_CODE):
             self._language = self.Language.VHDL
             self._lang = Vhdl(filepath)
-        elif(filepath.lower().endswith(".v") or filepath.lower().endswith(".sv")):
+        elif(ext in apt.VERILOG_CODE):
             self._language = self.Language.VERILOG
             self._lang = Verilog(filepath)
 
@@ -55,12 +57,16 @@ class Unit:
             if(not pureEntity or mapping):
                 report =  report + self.getLang().writeComponentDeclaration() + "\n"
             if(mapping or pureEntity):
-                report = report + "\n" + self.getLang().writeComponentSignals() + "\n"
+                if(len(report) > 1):
+                    report = report + "\n"
+                report = report + self.getLang().writeComponentSignals() + "\n"
                 if(mapping):
                     report = report + self.getLang().writeComponentMapping(False, lib) + "\n"
                 if(pureEntity):
                     report = report + self.getLang().writeComponentMapping(pureEntity, lib) + "\n"
                 pass
+            if(not mapping and not pureEntity):
+                report = report + "\n"
         return report
 
     def getLanguageType(self):

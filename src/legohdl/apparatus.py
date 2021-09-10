@@ -1,5 +1,4 @@
 #load in settings
-from genericpath import isdir
 import yaml,stat,glob,git
 from datetime import datetime
 import logging as log
@@ -111,15 +110,11 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             while(len(ws_name) == 0 or ws_name.isalnum() == False):
                 ws_name = input()
             cls.SETTINGS['workspace'][ws_name] = dict()
-        #ask to create paths for workspace's with invalid paths
-        for ws_name,ws_dict in cls.SETTINGS['workspace'].items():
-            if(ws_dict['local'] == None):
-                ws_path = input("Enter the "+ws_name+" workspace's path: ")
-                cls.SETTINGS['workspace'][ws_name]['local'] = cls.fs(ws_path)
 
-        #ask for name and text-editor
+        #ask for name to store in settings
         feedback = input("Enter your name: ")
         cls.SETTINGS['author'] = cls.SETTINGS['author'] if(feedback.strip() == '') else feedback.strip()
+        #ask for test-editor to store in settings
         feedback = input("Enter your text-editor: ")
         cls.SETTINGS['editor'] = cls.SETTINGS['editor'] if(feedback.strip() == '') else feedback.strip()
         pass
@@ -248,6 +243,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         tmp_dict = {}
         for mrkt in cls.SETTINGS['market'].keys():
             lower_mrkt = mrkt.lower()
+            replace = True
             if(lower_mrkt in tmp_dict.keys()):
                 log.warning("Duplicate market names have been detected; which one do you want to keep?")
                 print('1)',true_case[lower_mrkt],':',tmp_dict[lower_mrkt])
@@ -260,21 +256,40 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                     opt_2 = resp == '2' or resp == mrkt
                     if(opt_2):
                         tmp_dict[lower_mrkt] = cls.SETTINGS['market'][mrkt]
+                        if(os.path.exists(cls.HIDDEN+"registry/"+true_case[lower_mrkt])):
+                            shutil.rmtree(cls.HIDDEN+"registry/"+true_case[lower_mrkt],onerror=cls.rmReadOnly)
+                    else:
+                        if(os.path.exists(cls.HIDDEN+"registry/"+mrkt)):
+                            shutil.rmtree(cls.HIDDEN+"registry/"+mrkt,onerror=cls.rmReadOnly)
+                        replace = False
                     if(opt_1 or opt_2):
-                        shutil.rmtree(cls.HIDDEN+"registry/"+lower_mrkt,onerror=cls.rmReadOnly)
                         break
             else:   
                 tmp_dict[lower_mrkt] = cls.SETTINGS['market'][mrkt]
+            
+            if(replace):
+                true_case[lower_mrkt] = mrkt
 
-            true_case[lower_mrkt] = mrkt
+        for mrkt_low in true_case.keys():
+            if(mrkt_low in tmp_dict.keys()):
+                cls.SETTINGS['market'][true_case[mrkt_low]] = tmp_dict[mrkt_low]
         
-        cls.SETTINGS['market'] = tmp_dict
+        #cls.SETTINGS['market'] = tmp_dict
     
     #automatically create local paths for workspaces or delete hidden folders
     @classmethod
     def dynamicWorkspace(cls):
         acting_ws = cls.SETTINGS['active-workspace']
         for ws,val in cls.SETTINGS['workspace'].items():
+            if(isinstance(val, dict) == False):
+                val = dict()
+                cls.SETTINGS['workspace'][ws] = dict()
+            if('local' not in val.keys() or isinstance(val['local'],str) == False):
+                val['local'] = None
+                cls.SETTINGS['workspace'][ws]['local'] = None
+            if('market' not in val.keys() or isinstance(val['market'],list) == False):
+                val['market'] = list()
+                cls.SETTINGS['workspace'][ws]['market'] = list()
             cls.initializeWorkspace(ws, cls.fs(val['local']))
 
         ws_dirs = os.listdir(cls.HIDDEN+"workspaces/")
@@ -374,6 +389,10 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             log.info("Importing new profile "+sel_prfl+"...")
             if(os.path.exists(prfl_dir+sel_prfl) == False):
                 shutil.copytree(path_to_check, prfl_dir+sel_prfl)
+            else:
+                shutil.rmtree(prfl_dir+sel_prfl, onerror=cls.rmReadOnly)
+                shutil.copytree(path_to_check, prfl_dir+sel_prfl)
+                
             #remove temp directory
             if(os.path.exists(tmp_dir)):  
                 shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
@@ -476,6 +495,13 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 log.info("Updating repository for "+name+" profile...")
                 #pull down the latest
                 if(len(repo.remotes)):
+                    repo.git.remote('update')
+                    status = repo.git.status('-uno')
+                    if(status.count('Your branch is up to date with') or status.count('Your branch is ahead of')):
+                        log.info("Already up-to-date.")
+                        return
+                    else:
+                        log.info('Pulling new updates...')
                     repo.remotes[0].pull()
                     log.info("success")
                     return
@@ -520,18 +546,23 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         if(os.path.isdir(workspace_dir) == False):
             log.info("Creating workspace directories for "+name+"...")
             os.makedirs(workspace_dir, exist_ok=True)
-        #store the list of available versions for each block
-        os.makedirs(workspace_dir+"versions", exist_ok=True)
         #store the code's state of each version for each block
         os.makedirs(workspace_dir+"cache", exist_ok=True)
         #create the refresh log
         if(os.path.isfile(workspace_dir+cls.REFRESH_LOG) == False):
             open(workspace_dir+cls.REFRESH_LOG, 'w').close()
         
-        if(local_path != None):
-            if(os.path.exists(local_path) == False):
-                log.info("Creating new path... "+local_path)
-                os.makedirs(local_path)
+        #ask to create paths for workspace's with invalid paths
+        if(local_path == None):
+            ws_path = input("Enter workspace "+name+"'s path: ")
+            while(len(ws_path) <= 0):
+                ws_path = input()
+            cls.SETTINGS['workspace'][name]['local'] = cls.fs(ws_path)
+            local_path = cls.SETTINGS['workspace'][name]['local']
+        
+        if(os.path.exists(local_path) == False):
+            log.info("Creating new path... "+local_path)
+            os.makedirs(local_path)
 
         #create YAML structure for workspace settings 'local' and 'market'
         if(name not in cls.SETTINGS['workspace'].keys()):
@@ -542,16 +573,17 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         #make sure local is a string 
         if(isinstance(cls.SETTINGS['workspace'][name]['local'],str) == False):
             cls.SETTINGS['workspace'][name]['local'] = None
-            #cannot become active-workspace if there is no local path
-            if(cls.SETTINGS['active-workspace'] == name):
-                cls.SETTINGS['active-workspace'] = None
-                return
+
+        #cannot be active workspace if a workspace path is null
+        if(cls.SETTINGS['workspace'][name]['local'] == None and cls.__active_workspace == name):
+            cls.__active_workspace = None
+            return
 
         #if no active-workspace then set it as active
         if(not cls.inWorkspace()):
             cls.SETTINGS['active-workspace'] = name
             cls.__active_workspace = name
-        
+        pass
 
     @classmethod
     def confirmation(cls, prompt, warning=True):
@@ -659,7 +691,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                     file.write("#workspace configurations\n")
                 elif(key == 'refresh-rate'):
                     file.write("#market configurations\n")
-                
+
                 yaml.dump(single_dict, file)
                 pass
             pass
@@ -709,13 +741,13 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         #key: name, val: url
         if(cls.inWorkspace() and workspace_level):
             for name in cls.SETTINGS['workspace'][cls.__active_workspace]['market']:
-                if(name.lower() in cls.SETTINGS['market'].keys()):
-                    returnee[name.lower()] = cls.SETTINGS['market'][name.lower()]
+                if(name in cls.SETTINGS['market'].keys()):
+                    returnee[name] = cls.SETTINGS['market'][name]
             cls.SETTINGS['workspace'][cls.__active_workspace]['market'] = list(returnee.keys())
             cls.save()
         elif(cls.inWorkspace()):
             for name in cls.SETTINGS['market'].keys():
-                returnee[name.lower()] = cls.SETTINGS['market'][name.lower()]
+                returnee[name] = cls.SETTINGS['market'][name]
 
         return returnee
 
@@ -808,6 +840,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         {
             'hello'  : 'python $(LEGOHDL)/scripts/hello_world.py',
         }
+        def_settings['workspace'] = dict()
+        def_settings['workspace']['primary'] = {'local' : None, 'market' : None}
         #create default settings.yml
         with open(prfl_path+"settings.yml", 'w') as f:
             yaml.dump(def_settings, f)

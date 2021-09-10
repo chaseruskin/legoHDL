@@ -1,38 +1,31 @@
 ## Roadmap to Release v1.0.0
 
-- [x] better verilog to verilog external instanation recognition
+- [ ] use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command)
 
-- [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
+- [-] don't perform .lower() on market name to save, but use it for eval between markets
 
-- [!] allow scripts/alias to be stored as a list
-- [!] editor can be stored as a list too
-
-- [ ] use a -args flag to indicate all following arguments are to be passed to the build script?
-
-
-- [ ] for list command, highlight if a profile is availble to be updated (bonus)
-- [x] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
-profiles (bonus)
-
-- [ ] add default market for default profile (open-square)
+- [ ] add default market for default profile (FreeSquare)
 - [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
 
-- [ ] document `profile` command with `help`
+- [ ] have a .mrkt file exist within a market repository to signify its name rather than using the settings name? Would it be beneficial if
+all users downloaded the same market and therefore the market had the same name (users couldnt change it) so then you know what market it came from. What happens if someone tries to rename the .mrkt file? -> issue warning that bad things may happen
+- [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list, examples: 
+```
+derives:
+- tmp.testc(v0.3.2) [FreeSquare]
 
-- [ ] use `new` command with profile flag to create a new profile ? or use config command
+- FreeSquare.tmp.testc(v0.3.2) 
 
-- [ ] allow del command to delete a profile
-- [ ] allow config command to load a new profile
-- [ ] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts
-- [ ] add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
+- tmp.testc(v0.3.2) {FreeSquare}
+
+- tmp.testc(v0.3.2) Freesquare
+- tmp.testb(v1.0.0)
+```
+### Future Roadmap
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
-
-- [ ] if going from already installed to download, ensure all requirements are installed else give an error stating the missing installations 
-
-- [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list
-
-### Future Roadmap
+- [ ] support verilog header files, verilog packages
+- [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
 - [ ] handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. One step further (the real issue), also a block has conflicts if the block has entities/modules that are already defined in a user's workspace.
 
@@ -41,6 +34,8 @@ profiles (bonus)
 - [ ] cross check version tags with the hidden version.log (in case a legohdl tag was manually created by a user) -> delete the tag if not valid
 
 - [ ] if an already existing profile's .prfl file gets changed, then needs to move to temp directory and have its folder renamed on next legohdl call
+
+- [ ] if a user explicitly defines an architecture to use for an instance, only read that architecture?
 
 - [ ] allow scripts to live/import into any depth inside built-in scripts folder
 
@@ -63,17 +58,36 @@ profiles (bonus)
 
 - [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive --open, -o (argparse?)
 
+- [ ] for list command, highlight if a profile is availble to be updated (bonus)
+
 - [ ] '-all' option on graph/export to grab all project-level code
 
 - [ ] '-no-clean' option on export ?
 - [ ] '-quiet' option on export ?
 
 - [ ] add cool logging
+- [ ] allow scripts/alias to be stored as a list
+- [ ] editor can be stored as a list too
 
-- [ ] investiage if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design)
+- [ ] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts
+
+- [ ] add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
+
+- [ ] if going from already installed to download, ensure all requirements are installed else give an error stating the missing installations 
+
+- [ ] investigate if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design) -> I believe it does not
 
 
 __Completed__
+- [x] better verilog to verilog external instanation recognition
+- [x] add a default workspace for users to upload with default profile
+- [x] document `profile` command with `help`
+- [x] always prompt user to input a workspace path if the path found in settings is null?
+- [x] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
+profiles (bonus)
+- [x] allow del command to delete a profile
+- [x] allow config command to load a new profile
+- [x] use `new` command with profile flag to create a new profile ? or use config command -> use config command
 - [x] embed default profile and make visible in profiles on runSetup
 - [x] if no editor is specified on first bootup, prompt for one
 - [x] if no name is specified on first bootup, prompt for one

@@ -210,7 +210,7 @@ class Block:
             self._repo.index.add(self._repo.untracked_files)
         #default message
         if(msg == None):
-            msg = "Releases version -> "+self.getVersion()
+            msg = "Releases version "+self.getVersion()
         #commit new changes with message
         self._repo.index.commit(msg)
 
@@ -218,14 +218,6 @@ class Block:
         self._repo.create_tag(ver+apt.TAG_ID)
 
         sorted_versions = self.sortVersions(self.getTaggedVersions())
-
-        #create a version.log file
-        ver_path = apt.WORKSPACE+"versions/"+self.getLib()+"/"+self.getName()+"/"
-        os.makedirs(ver_path, exist_ok=True)
-        with open(ver_path+apt.VER_LOG,'w') as f:
-            for v in sorted_versions:
-                f.write(v+"\n")
-            f.close()
 
         #push to remote codebase!! (we have a valid remote url to use)
         if(url != None):
@@ -431,10 +423,10 @@ derives: []
                 self.__metadata['market'] = self.__market.getName()
             #see if the market is bound to your workspace
             elif(self.getMeta("market") != None):
-                if(self.getMeta("market").lower() in apt.getMarkets().keys()):
-                    self.__market = Market(self.__metadata['market'], apt.SETTINGS['market'][self.__metadata['market'].lower()])
+                if self.getMeta("market") in apt.getMarkets().keys():
+                    self.__market = Market(self.getMeta('market'), apt.SETTINGS['market'][self.getMeta('market')])
                 else:
-                    log.warning("Market "+self.__metadata['market']+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
+                    log.warning("Market "+self.getMeta('market')+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
                     self.__metadata['market'] = None
                     self.__market = self.__metadata['market']
         self.save()
@@ -694,7 +686,6 @@ derives: []
         if(os.path.isfile(path)):
                 with open(path,'r') as f:
                     return f.readlines()
-                    f.close()
         else:
             return None
 
@@ -1371,6 +1362,8 @@ derives: []
     
         if(entity.lower() in units[self.getLib()].keys()):
             info = units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)
+        else:
+            exit(log.error("Cannot locate "+entity+" (version may not exist or may not be installed)."))
         return info
     pass
 

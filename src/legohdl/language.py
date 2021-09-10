@@ -10,12 +10,12 @@ class Language(ABC):
         _,self._ext = os.path.splitext(fpath)
         #create as all lower case
         if(self._ext != None):
-            self._ext = self._ext.lower()
+            self._ext = '*'+self._ext.lower()
         #determine which comments to ignore in generating code stream
-        if("*"+self._ext in apt.VERILOG_CODE):
+        if(self._ext in apt.VERILOG_CODE):
             self._comments = "//"
             self._multi_comment = ("/*","*/")
-        elif("*"+self._ext in apt.VHDL_CODE):
+        elif(self._ext in apt.VHDL_CODE):
             self._comments = "--"
             self._multi_comment = None
         pass
@@ -41,9 +41,9 @@ class Language(ABC):
 
     #find all unit names within the source file and replace accordingly
     def setUnitName(self, name_pairs):
-        if("*"+self._ext in apt.VHDL_CODE):
+        if(self._ext in apt.VHDL_CODE):
             case_sense = False
-        elif("*"+self._ext in apt.VERILOG_CODE):
+        elif(self._ext in apt.VERILOG_CODE):
             case_sense = True
 
         all_pairs = []
