@@ -1,4 +1,5 @@
 from enum import Enum
+import os
 from .vhdl import Vhdl
 from .verilog import Verilog
 from .graph import Graph
@@ -20,11 +21,12 @@ class Unit:
 
     def __init__(self, filepath, dtype, lib, block, unitName):
         self._filepath = filepath
-
-        if(filepath.lower().endswith(".vhd") or filepath.lower().endswith(".vhdl")):
+        _,ext = os.path.splitext(self.getFile())
+        ext = '*'+ext.lower()
+        if(ext in apt.VHDL_CODE):
             self._language = self.Language.VHDL
             self._lang = Vhdl(filepath)
-        elif(filepath.lower().endswith(".v") or filepath.lower().endswith(".sv")):
+        elif(ext in apt.VERILOG_CODE):
             self._language = self.Language.VERILOG
             self._lang = Verilog(filepath)
 
