@@ -1,7 +1,5 @@
 ## Roadmap to Release v1.0.0
 
-- [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
-
 - [ ] use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command)
 
 - [-] don't perform .lower() on market name to save, but use it for eval between markets
@@ -9,22 +7,25 @@
 - [ ] add default market for default profile (FreeSquare)
 - [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
 
+- [ ] have a .mrkt file exist within a market repository to signify its name rather than using the settings name? Would it be beneficial if
+all users downloaded the same market and therefore the market had the same name (users couldnt change it) so then you know what market it came from. What happens if someone tries to rename the .mrkt file? -> issue warning that bad things may happen
 - [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list, examples: 
 ```
 derives:
-- tmp.testc(v0.3.2) [open-square]
+- tmp.testc(v0.3.2) [FreeSquare]
 
-- open-square.tmp.testc(v0.3.2) 
+- FreeSquare.tmp.testc(v0.3.2) 
 
-- tmp.testc(v0.3.2) {open-square}
+- tmp.testc(v0.3.2) {FreeSquare}
 
-- tmp.testc(v0.3.2) < open-square
+- tmp.testc(v0.3.2) Freesquare
 - tmp.testb(v1.0.0)
 ```
 ### Future Roadmap
 
 - [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
 - [ ] support verilog header files, verilog packages
+- [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
 - [ ] handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. One step further (the real issue), also a block has conflicts if the block has entities/modules that are already defined in a user's workspace.
 
