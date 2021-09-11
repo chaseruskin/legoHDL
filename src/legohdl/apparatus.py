@@ -409,22 +409,32 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         if(prfl_name not in cls.SETTINGS['profiles']):
             cls.SETTINGS['profiles'] += [prfl_name]
         #merge all values found in src override dest into a new dictionary
-        def deepMerge(src, dest):
+        def deepMerge(src, dest, setting=""):
             for k,v in src.items():
+                next_level = setting
+                if(setting == ""):
+                    next_level = k
+                else:
+                    next_level = next_level + ":" + k
+
                 #go even deeper into the dictionary tree
                 if(isinstance(v, dict)):
                     if(k not in dest.keys()):
                         dest[k] = dict()
-                    deepMerge(v, dest[k])
+                        #log.info("Creating new dictionary "+k+" under "+next_level+"...")
+                    deepMerge(v, dest[k], setting=next_level)
                 #combine all settings except if profiles setting exists in src
                 elif(k != 'profiles'):
+                    #log.info("Overloading "+next_level+"...")
                     #append to list, don't overwrite
                     if(isinstance(v, list)):
                         #create new list if DNE
                         if(k not in dest.keys()):
+                            #log.info("Creating new list "+k+" under "+next_level+"...")
                             dest[k] = []
                         if(isinstance(dest[k], list)):   
                             for i in v:
+                                #find replace all parts of string with %LEGOHDL%
                                 if(isinstance(v,str)):
                                     v = v.replace("%LEGOHDL%", cls.HIDDEN[:len(cls.HIDDEN)-1])
                                 dest[k] += [i]
@@ -436,6 +446,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                         if(k in dest.keys() and k == 'local' and v == None):
                             continue
                         dest[k] = v
+                    log.info(next_level+" = "+str(v))
             return dest
 
         prfl_path = cls.getProfiles()[prfl_name]
@@ -457,7 +468,6 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             act = not explicit or cls.confirmation("Import template?", warning=False)
             if(act):
                 log.info('Importing template...')
-                cls.SETTINGS['template'] = None
                 shutil.rmtree(cls.HIDDEN+"template/",onerror=cls.rmReadOnly)
                 shutil.copytree(prfl_path+"template/", cls.HIDDEN+"template/")
             pass
@@ -469,6 +479,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                 log.info('Importing scripts...')
                 scripts = os.listdir(prfl_path+'scripts/')
                 for scp in scripts:
+                    log.info("Copying "+scp+" to built-in scripts folder...")
                     if(os.path.isfile(prfl_path+'scripts/'+scp)):
                         #copy contents into built-in script folder
                         prfl_script = open(prfl_path+'scripts/'+scp, 'r')

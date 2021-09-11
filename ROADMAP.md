@@ -69,7 +69,7 @@ derives:
 - [ ] allow scripts/alias to be stored as a list
 - [ ] editor can be stored as a list too
 
-- [ ] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts
+- [x] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts -> automatically prints the new appended settings by default
 
 - [ ] add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
 
