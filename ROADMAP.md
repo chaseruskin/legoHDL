@@ -75,10 +75,11 @@ derives:
 
 - [ ] if going from already installed to download, ensure all requirements are installed else give an error stating the missing installations 
 
-- [ ] investigate if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design) -> I believe it does not
+- [ ] investigate if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design) -> I believe it does not (it does if using modelsim, tested)
 
 
 __Completed__
+- [x] use %LEGOHDL% to reference legohdl's hidden folder when specifying certain paths
 - [x] better verilog to verilog external instanation recognition
 - [x] add a default workspace for users to upload with default profile
 - [x] document `profile` command with `help`

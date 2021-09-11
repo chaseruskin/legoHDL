@@ -529,6 +529,8 @@ class legoHDL:
         
         if(choice == 'null'):
             choice = ''
+        
+        choice = choice.replace("%LEGOHDL%",apt.HIDDEN[:len(apt.HIDDEN)-1])
 
         eq = choice.find("=")
         key = choice[:eq]

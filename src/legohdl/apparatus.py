@@ -426,12 +426,12 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
                         if(isinstance(dest[k], list)):   
                             for i in v:
                                 if(isinstance(v,str)):
-                                    v = v.replace("$(LEGOHDL)", cls.HIDDEN[:len(cls.HIDDEN)-1])
+                                    v = v.replace("%LEGOHDL%", cls.HIDDEN[:len(cls.HIDDEN)-1])
                                 dest[k] += [i]
                     #otherwise normal overwrite
                     else:
                         if(isinstance(v,str)):
-                            v = v.replace("$(LEGOHDL)", cls.HIDDEN[:len(cls.HIDDEN)-1])
+                            v = v.replace("%LEGOHDL%", cls.HIDDEN[:len(cls.HIDDEN)-1])
                         #do not allow a null workspace path to overwrite an already established workspace path
                         if(k in dest.keys() and k == 'local' and v == None):
                             continue
@@ -776,6 +776,8 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         if(path == None or path.lower().startswith('http') or path.lower().startswith('git@')):
             return path
 
+        path = path.replace("%LEGOHDL%", cls.HIDDEN[:len(cls.HIDDEN)-1])
+
         path = os.path.expanduser(path)
         path = path.replace('\\','/')
         path = path.replace('//','/')
@@ -840,7 +842,7 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
         def_settings = dict()
         def_settings['script'] = \
         {
-            'hello'  : 'python $(LEGOHDL)/scripts/hello_world.py',
+            'hello'  : 'python %LEGOHDL%/scripts/hello_world.py',
         }
         def_settings['workspace'] = dict()
         def_settings['workspace']['primary'] = {'local' : None, 'market' : None}
