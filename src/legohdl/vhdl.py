@@ -279,9 +279,9 @@ class Vhdl(Language):
     #generate string of component's signal declarations to be interfaced with the port
     def writeComponentSignals(self):
         #keep cases and keep terminators
-        true_code = self.generateCodeStream(True, True, *self._std_parsers,',')
+        true_code = self.generateCodeStream(True, True, *self._std_parsers)
         #ignore cases and keep terminators
-        cs = self.generateCodeStream(False, True, *self._std_parsers,',')
+        cs = self.generateCodeStream(False, True, *self._std_parsers)
         in_ports = in_gens = False
         signals = []
         constants = []

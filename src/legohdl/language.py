@@ -6,7 +6,7 @@ class Language(ABC):
 
     def __init__(self, fpath):
         self._file_path = apt.fs(fpath)
-        self._std_parsers = "(",")",":",";"
+        self._std_parsers = "(",")",":",";",","
         _,self._ext = os.path.splitext(fpath)
         #create as all lower case
         if(self._ext != None):
