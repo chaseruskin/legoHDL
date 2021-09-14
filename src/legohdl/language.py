@@ -109,6 +109,8 @@ class Language(ABC):
     
     #turn a HDL file in to a string of words
     def generateCodeStream(self, keep_case, keep_term, *extra_parsers):
+        if(hasattr(self, "_code_stream")):
+            return self._code_stream
         code_stream = []
         #take in a single word, return a list of the broken up words
         def chopSticks(piece):
@@ -213,5 +215,6 @@ class Language(ABC):
                             code_stream = code_stream + [sliced]
 
         #print(code_stream)
-        return code_stream
+        self._code_stream = code_stream
+        return self._code_stream
     pass
