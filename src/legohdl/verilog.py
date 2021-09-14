@@ -85,7 +85,7 @@ class Verilog(Language):
             pass
 
         return design_book
-        
+    
     #generate string of component's signal declarations to be interfaced with the port
     def writeComponentSignals(self, return_names=False):
         #print("writing signals")
@@ -239,11 +239,9 @@ class Verilog(Language):
                     r = r + "    ."+sig+"("+sig+"),\n"
         r = r + ';'
         return r
+
     #write out the entity but as a component
     def writeComponentDeclaration(self):
-        #print("NOT USED")
-        return ''
-        pass
-
+        return self.writeComponentMapping()
 
     pass
