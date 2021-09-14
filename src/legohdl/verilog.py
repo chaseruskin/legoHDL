@@ -87,42 +87,45 @@ class Verilog(Language):
         return design_book
         
     #generate string of component's signal declarations to be interfaced with the port
-    def writeComponentSignals(self):
-        print("writing signals")
+    def writeComponentSignals(self, return_names=False):
+        #print("writing signals")
         #keep cases and keep terminators
         true_code = self.generateCodeStream(True, True, *self._std_parsers)
-        print(true_code)
+        #print(true_code)
         signals = []
-        constants = []
+        parameters = []
         #iterate through all important code words
         for i in range(0,len(true_code)):
             if(true_code[i] == "input"):
-                print("found input")
-                signals = self.addSignal(signals, i, true_code, declare=True)
+                #print("found input")
+                signals = self.addSignal(signals, i, true_code, declare=(not return_names))
             elif(true_code[i] == "output"):
-                print("found output")
-                signals = self.addSignal(signals, i, true_code, declare=True)
+                #print("found output")
+                signals = self.addSignal(signals, i, true_code, declare=(not return_names))
             elif(true_code[i] == "inout"):
-                print("found inout")
-                signals = self.addSignal(signals, i, true_code, declare=True)
+                #print("found inout")
+                signals = self.addSignal(signals, i, true_code, declare=(not return_names))
             elif(true_code[i] == "parameter"):
-                print("found parameter")
-                constants = self.addSignal(constants, i, true_code, declare=True)
+                #print("found parameter")
+                parameters = self.addSignal(parameters, i, true_code, declare=(not return_names))
                 pass
         pass
         signals_txt = ''
-        #write all identified constants
-        for const in constants:
+        #write all identified parameters
+        for const in parameters:
             signals_txt = signals_txt + const + "\n"
-        #write an extra new line to separate constants from signals
-        if(len(constants)):
+        #write an extra new line to separate parameters from signals
+        if(len(parameters)):
             signals_txt = signals_txt + "\n"
         #write all identified signals
         for sig in signals:
             signals_txt = signals_txt + sig + '\n'
         #print(signals_txt)
-        return signals_txt
-        pass
+        #only return the list of names and parameters
+        if(return_names):
+            return (signals, parameters)
+        else:
+            return signals_txt
 
     #append a signal/generic string to a list of its respective type
     def addSignal(self, stash, c, true_stream, declare=False):
@@ -141,9 +144,8 @@ class Verilog(Language):
         if(is_param):
             s_type = port_dir
 
-
         in_bus = False  
-        bus_width = ''
+        bus_width = ' '
         def_value = ''
         def_pos = -1
         #print(self._param_end)
@@ -154,15 +156,19 @@ class Verilog(Language):
             #capture the last signal of this assignment
             if(true_stream[c+1] == ';' or c == self._param_end or c == self._port_end):
                 #print(c)
+                # do not add bus width if not declaring signals (only need names)
+                if(declare == False):
+                    bus_width = ''
                 if(true_stream[c] == ')' and true_stream[c+1] == ';' and def_pos == -1):
-                    names.append(bus_width+" "+true_stream[c-1])
+                    names.append(bus_width+true_stream[c-1])
                 elif(def_pos > -1):
-                    names.append(bus_width+" "+true_stream[def_pos-1])
+                    names.append(bus_width+true_stream[def_pos-1])
                     #add default value to every assignment
-                    for i in range(len(names)):
-                        names[i] = names[i] + def_value
+                    if(declare):
+                        for i in range(len(names)):
+                            names[i] = names[i] + def_value
                 else:
-                    names.append(bus_width+" "+true_stream[c])
+                    names.append(bus_width+true_stream[c])
                 break
             #multiple signals are assigned to this same type
             if(true_stream[c+1] == ','):
@@ -174,6 +180,7 @@ class Verilog(Language):
             if(in_bus):
                 bus_width = bus_width + true_stream[c]
             if(true_stream[c] == ']'):
+                bus_width = bus_width + ' '
                 in_bus = False
 
             #find default value
@@ -181,10 +188,15 @@ class Verilog(Language):
                 def_pos = c
                 def_value = ' = '
             c = c + 1
-
+        #print(names)
+        #simply return the list of found port names
+        if(not declare):
+            stash += names
+            return stash
+            
         #go through all names found for this signal type
         for n in names:
-            stash.append(s_type+n+";")
+                stash.append(s_type+n+";")
         return stash
 
     #write out the mapping instance of an entity (can be pure instance using 'entity' keyword also)
@@ -192,38 +204,32 @@ class Verilog(Language):
         #get parsed case-sensitive code stream with terminators
         c_stream = self.generateCodeStream(True,True,*self._std_parsers)
 
-        signals = ['tes']
-        parameters = ['bop','bop2']
+        signals, parameters = self.writeComponentSignals(return_names=True)
+        #print(signals, parameters)
         module_name = None
         #1. gather the inputs and outputs
         for i in range(len(c_stream)):
         # look for keywords then look for comma
             if(c_stream[i] == 'module'):
-                in_ports = True
                 module_name = c_stream[i+1]
-            #find parameters and ports
-            elif(c_stream[i] == "input"):
-                pass
-            elif(c_stream[i] == "output"):
-                pass
-            elif(c_stream[i] == "inout"):
-                pass
-            elif(c_stream[i] == "parameter"):
-                pass
+                break
 
-        
-        r = module_name+" uX"
+        def_name = "uX"
+        r = module_name
+        #write out parameter section
         if(len(parameters)):
-            r = r + '\n#(\n'
+            r = r + ' #(\n'
             for param in parameters:
                 if(param == parameters[len(parameters)-1]):
                     r = r + "    ."+param+"("+param+")\n"
-                    r = r + ")"
+                    r = r + ")\n" + def_name
                 else:
                     r = r + "    ."+param+"("+param+"),\n"
-        
+        else:
+            r = r + " " + def_name
+        #write out port section
         if(len(signals)):
-            r = r + '\n(\n'
+            r = r + ' (\n'
             for sig in signals:
                 if(sig == signals[len(signals)-1]):
                     r = r + "    ."+sig+"("+sig+")\n"
@@ -234,7 +240,7 @@ class Verilog(Language):
         return r
     #write out the entity but as a component
     def writeComponentDeclaration(self):
-        print("NOT USED")
+        #print("NOT USED")
         return ''
         pass
 
