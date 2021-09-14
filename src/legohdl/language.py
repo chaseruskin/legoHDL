@@ -6,7 +6,9 @@ class Language(ABC):
 
     def __init__(self, fpath):
         self._file_path = apt.fs(fpath)
-        self._std_parsers = "(",")",":",";",","
+        self._std_delimiters = "(",")",":",";",","
+        
+        #determine if the file is VHDL or Verilog/SystemVerilog
         _,self._ext = os.path.splitext(fpath)
         #create as all lower case
         if(self._ext != None):
@@ -109,12 +111,10 @@ class Language(ABC):
     
     #turn a HDL file in to a string of words
     def generateCodeStream(self, keep_case, keep_term, *extra_parsers):
-        if(hasattr(self, "_code_stream")):
-            return self._code_stream
         code_stream = []
         #take in a single word, return a list of the broken up words
         def chopSticks(piece):
-
+            #inner method to continously split delimiters that are bunched
             def computeNextIndex(w):
                 min_index = sys.maxsize
                 for d in extra_parsers:
@@ -123,9 +123,8 @@ class Language(ABC):
                         min_index = tmp_i
                 if(min_index == sys.maxsize):
                     return -1
-                else:
-                    return min_index
-
+                return min_index
+                
             #print(delimiters)
             index = computeNextIndex(piece)
 
@@ -215,6 +214,5 @@ class Language(ABC):
                             code_stream = code_stream + [sliced]
 
         #print(code_stream)
-        self._code_stream = code_stream
-        return self._code_stream
+        return code_stream
     pass

@@ -11,7 +11,7 @@ class Vhdl(Language):
             log.info("Deciphering VHDL file...")
             log.info(self._file_path)
         #parse into words
-        cs = self.generateCodeStream(False, False, *self._std_parsers)
+        cs = self.generateCodeStream(False, False, *self._std_delimiters)
 
         def splitBlock(name):
             specs = name.split('.')
@@ -207,7 +207,7 @@ class Vhdl(Language):
         #reassign file path so code stream comes from right file
         tmp_file = self._file_path
         self._file_path = filepath
-        cs = self.generateCodeStream(False, False, *self._std_parsers)
+        cs = self.generateCodeStream(False, False, *self._std_delimiters)
 
         in_pkg = False
         entity_name = pkg_name = None
@@ -279,9 +279,9 @@ class Vhdl(Language):
     #generate string of component's signal declarations to be interfaced with the port
     def writeComponentSignals(self):
         #keep cases and keep terminators
-        true_code = self.generateCodeStream(True, True, *self._std_parsers)
+        true_code = self.generateCodeStream(True, True, *self._std_delimiters)
         #ignore cases and keep terminators
-        cs = self.generateCodeStream(False, True, *self._std_parsers)
+        cs = self.generateCodeStream(False, True, *self._std_delimiters)
         in_ports = in_gens = False
         signals = []
         constants = []

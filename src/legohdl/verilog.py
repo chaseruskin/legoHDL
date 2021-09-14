@@ -5,7 +5,7 @@ class Verilog(Language):
 
     def __init__(self, fpath):
         super().__init__(fpath)
-        self._std_parsers = *self._std_parsers,'#','[',']','='
+        self._std_delimiters = *self._std_delimiters,'#','[',']','='
         self._param_end = -1
         self._port_end = -1
 
@@ -14,7 +14,7 @@ class Verilog(Language):
             log.info("Deciphering VERILOG file...")
             log.info(self._file_path)
         #keep case sensitivity
-        c_stream = self.generateCodeStream(True,True,*self._std_parsers)
+        c_stream = self.generateCodeStream(True,True,*self._std_delimiters)
         #print(c_stream)
         #store a list of all available module names
         all_available_modules = []
@@ -90,7 +90,7 @@ class Verilog(Language):
     def writeComponentSignals(self, return_names=False):
         #print("writing signals")
         #keep cases and keep terminators
-        true_code = self.generateCodeStream(True, True, *self._std_parsers)
+        true_code = self.generateCodeStream(True, True, *self._std_delimiters)
         #print(true_code)
         signals = []
         parameters = []
@@ -203,7 +203,7 @@ class Verilog(Language):
     #write out the mapping instance of an entity (can be pure instance using 'entity' keyword also)
     def writeComponentMapping(self, pureEntity=True, lib=''):
         #get parsed case-sensitive code stream with terminators
-        c_stream = self.generateCodeStream(True,True,*self._std_parsers)
+        c_stream = self.generateCodeStream(True,True,*self._std_delimiters)
 
         signals, parameters = self.writeComponentSignals(return_names=True)
         #print(signals, parameters)
