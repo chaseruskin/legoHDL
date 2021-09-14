@@ -150,15 +150,16 @@ class Verilog(Language):
         def_pos = -1
         #print(self._param_end)
         while True:
+            #done writing these signals from this type if seeing another port next
+            if(true_stream[c+1] == 'input' or true_stream[c+1] == 'output' or true_stream[c+1] == 'inout'):
+                break
             if(def_pos > -1 and (is_param and c != self._param_end) or (not is_param and c != self._port_end)):
                  def_value = def_value + true_stream[c]
-            
+            if(declare == False):
+                bus_width = ''
             #capture the last signal of this assignment
             if(true_stream[c+1] == ';' or c == self._param_end or c == self._port_end):
-                #print(c)
                 # do not add bus width if not declaring signals (only need names)
-                if(declare == False):
-                    bus_width = ''
                 if(true_stream[c] == ')' and true_stream[c+1] == ';' and def_pos == -1):
                     names.append(bus_width+true_stream[c-1])
                 elif(def_pos > -1):
@@ -172,7 +173,7 @@ class Verilog(Language):
                 break
             #multiple signals are assigned to this same type
             if(true_stream[c+1] == ','):
-                names.append(bus_width+" "+true_stream[c])
+                names.append(bus_width+true_stream[c])
             #find out the bus width (if applicable)
             if(true_stream[c] == '['):
                 bus_width = ' '

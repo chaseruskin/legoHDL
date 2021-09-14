@@ -25,7 +25,8 @@ derives:
 ```
 ### Future Roadmap
 
-- [ ] implement code for 'port' command to provide prints for verilog instantiations + cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag
+- [x] implement code for 'port' command to provide prints for verilog instantiations 
+- [ ] cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag on port command
 - [ ] support verilog header files, verilog packages
 - [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
