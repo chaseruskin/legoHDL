@@ -242,6 +242,44 @@ class Verilog(Language):
 
     #write out the entity but as a component
     def writeComponentDeclaration(self):
-        return self.writeComponentMapping()
+        print("declaration")
+        dec_text = ''
+        in_module = False
+        end_parenth = False
+        with open(self._file_path, 'r') as file:
+            for line in file.readlines():
+                #find when within module
+                if "module" in line:
+                    in_module = True
+                pass
+
+                if(in_module):
+                    dec_text = dec_text + line
+                #stop reading the lines if we found the end of the module
+                if "endmodule" in line:
+                    break
+                
+                #find first time that token ')' is followed by ';'
+                if(end_parenth == False):
+                    token_1 = line.rfind(')')
+                if(token_1 > -1):
+                    end_parenth = True
+
+                #we found a ')', now is the next character a ';'?
+                if(end_parenth):
+                    token_2 = line[token_1+1:].strip()
+                    #start from beginning of next line to find ';'
+                    if(token_2 == ''):
+                        token_1 = -1
+                        pass
+                    #found ';' as next character
+                    elif(token_2 == ';'):
+                        in_module = False
+                    #did not find ';' as next character
+                    else:
+                        end_parenth = False
+            pass
+
+        return dec_text
 
     pass
