@@ -1,26 +1,28 @@
 ## Roadmap to Release v1.0.0
 
-- [ ] use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command)
+- [ ] use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
 - [ ] VHDL port command test generic assignment with := with no spaces
 
-- [-] don't perform .lower() on market name to save, but use it for eval between markets
+- [-] don't perform .lower() on market name to save, but use it for eval between markets (market names preserve case sensitivity, but market names are evaluated case insensitive)
 
-- [ ] add default market for default profile (FreeSquare)
+- [ ] add default market for default profile (OpenSquare)
 - [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
 
-- [ ] have a .mrkt file exist within a market repository to signify its name rather than using the settings name? Would it be beneficial if
+- [ ] have a .mrkt file exist within a market repository to signify its name rather than using the settings name? Would it be beneficial if -> leaning yes
+- [ ] allow users to edit/add a README to a market through command-line? or just open the market repository?
+
 all users downloaded the same market and therefore the market had the same name (users couldnt change it) so then you know what market it came from. What happens if someone tries to rename the .mrkt file? -> issue warning that bad things may happen
 - [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list, examples: 
 ```
 derives:
-- tmp.testc(v0.3.2) [FreeSquare]
+- tmp.testc(v0.3.2) [OpenSquare]
 
 - FreeSquare.tmp.testc(v0.3.2) 
 
-- tmp.testc(v0.3.2) {FreeSquare}
+- tmp.testc(v0.3.2) {OpenSquare}
 
-- tmp.testc(v0.3.2) Freesquare
+- tmp.testc(v0.3.2) OpenSquare
 - tmp.testb(v1.0.0)
 ```
 ### Future Roadmap
