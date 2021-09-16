@@ -18,7 +18,7 @@ _lego_**HDL** is available to work completely local or along with remote locatio
 
 ### __Documentation__
 
-Documentation can be found [here](https://legohdl.notion.site/legohdl/legoHDL-f798525eee2f4378bcf5e970ae6373cf). 
+Documentation can be found [here](https://hdl.notion.site/legoHDL-f798525eee2f4378bcf5e970ae6373cf). 
 
 
 ### __Roadmap__
