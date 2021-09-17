@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+
+<h1>Gator Banking & Financial Literacy</h1>
+<p>An interactive website to engage the user<br>in learning about financial literacy.</p>
+<p><br></p>
+
+<img class=center_row src="{{url_for('static', filename='images/dollar.png')}}", alt="dollar bill", width="128", height="128">
+<img src="{{url_for('static', filename='images/coin_spin.gif')}}", alt="shiny coin", width="128", height="128">
+<img src="{{url_for('static', filename='images/coin_spin.gif')}}", alt="shiny coin", width="128", height="128">
+<img src="{{url_for('static', filename='images/coin_spin.gif')}}", alt="shiny coin", width="128", height="128">
+<img src="{{url_for('static', filename='images/dollar.png')}}", alt="dollar bill", width="128", height="128">
+
+<p><br></p>
+
+<div class="container1">
+    <a style="color: black;"  href="earn">
+        <img src="{{url_for('static', filename='images/nav_bar_blue.png')}}", width="200", height="32">    
+        <div class="centered">EARN</div>
+    </a>  
+</div>
+
+<div class="container2">
+    <a style="color: black;" href="save">
+        <img src="{{url_for('static', filename='images/nav_bar_orange.png')}}", width="200", height="32">
+        <div class="centered">SAVE</div>
+    </a>
+</div>
+
+<div class="container3">
+    <a style="color: black;" href="spend">
+        <img src="{{url_for('static', filename='images/nav_bar_green.png')}}", width="200", height="32">
+        <div class="centered">SPEND</div>
+    </a>  
+</div>
+
+
+</body>
+</html>
