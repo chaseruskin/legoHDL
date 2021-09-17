@@ -1,8 +1,10 @@
 ## Roadmap to Release v1.0.0
 
-- [ ] use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
+- [ ] ** use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
 - [ ] VHDL port command test generic assignment with := with no spaces
+
+- [ ] if multi-develop is ON and issue a warning when trying to use 'port' command on a block that has no release points but is in downloads ("This block is unstable (has no released versions") -> else do not print port command (user cant use it) if multi-develop is set to OFF
 
 - [-] don't perform .lower() on market name to save, but use it for eval between markets (market names preserve case sensitivity, but market names are evaluated case insensitive)
 

@@ -1572,9 +1572,9 @@ respective testbench and add it to the graph.
         elif(cmd == "build"):
             printFmt("build","[+<script-name>]","[...]")
             rollover("""
-Build the design with a custom configured script. The toplevel and testbench will be auto-detected and ask
-the user to select one if multiple exist. If no script name is specified, it will default look for
-the script named 'master'. If only 1 script is configured, it will default to that script regardless of name.
+Build the design with a custom configured script. If no script name is specified, it will default look for
+the script named 'master'. If only 1 script is configured and no script name is specified, it will default 
+to that script regardless of name.
             """)
             print('{:<16}'.format("+<script-name>"),"the script name given by the user to legohdl")
             print()
