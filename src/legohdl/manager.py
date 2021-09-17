@@ -1421,7 +1421,7 @@ will be altered with the <value>.
 Create a new block into the base of the workspace's local path. The block's default 
 created path is <workspace-path>/<block-library>/<block-name>. The template folder 
 will be copied and a git repository will be created. If providing a remote git URL, make sure
-it is an empty repository. If you have a nonempty repository, checkout the 'init' command. If
+it is an empty repository. If you have a nonempty repository, try the 'init' command. If
 providing a market name, make sure the market is listed under the current workspace.
             """)
             print('{:<16}'.format("<block>"),"the block's title to be created")
