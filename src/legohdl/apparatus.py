@@ -203,14 +203,13 @@ scripts)?", warning=False)
 
         cls.dynamicProfiles()
         cls.dynamicWorkspace()
-        #cls.getMarkets(workspace_level=False)
 
         #determine current workspace currently being used
         cls.__active_workspace = cls.SETTINGS['active-workspace']
 
         if(not cls.inWorkspace()):
             log.warning("Active workspace not found!")
-            return
+            return False
 
         if(cls.SETTINGS['template'] != None and os.path.isdir(cls.SETTINGS['template'])):
             cls.SETTINGS['template'] = cls.fs(cls.SETTINGS['template'])
@@ -275,12 +274,35 @@ scripts)?", warning=False)
                 with open(cls.HIDDEN+"profiles/"+prfl+"/"+prfl+cls.PRFL_EXT, 'w'):
                     pass
         pass
+
+    @classmethod
+    def getWorkspaceNames(cls):
+        '''
+        This method returns a dictionary of lower-case workspace names mapped 
+        with their case-sensitive folder names found within legohdl's workspace 
+        folder.
+        '''
+        if(hasattr(cls, '_ws_map')):
+            return cls._ws_map
+        cls._ws_map = {}
+        ws_names = os.listdir(cls.HIDDEN+"workspaces/")
+        for n in ws_names:
+            cls._ws_map[n.lower()] = n
+        return cls._ws_map
     
-    #automatically create local paths for workspaces or delete hidden folders
     @classmethod
     def dynamicWorkspace(cls):
+        '''
+        This method automatically creates local paths for workspaces and 
+        deletes data from stale workspaces.
+        '''
         acting_ws = cls.SETTINGS['active-workspace']
-        for ws,val in cls.SETTINGS['workspace'].items():
+        coupled_ws = tuple(cls.SETTINGS['workspace'].items())
+        for ws,val in coupled_ws:
+            #check if there is a name conflict
+            if(cls.isConflict(cls.getWorkspaceNames(), ws)):
+                del cls.SETTINGS['workspace'][ws]
+                continue
             if(isinstance(val, dict) == False):
                 val = dict()
                 cls.SETTINGS['workspace'][ws] = dict()
@@ -292,9 +314,8 @@ scripts)?", warning=False)
                 cls.SETTINGS['workspace'][ws]['market'] = list()
             cls.initializeWorkspace(ws, cls.fs(val['local']))
 
-        ws_dirs = os.listdir(cls.HIDDEN+"workspaces/")
         #remove any hidden workspace folders that are no longer in the settings.yml
-        for ws in ws_dirs:
+        for ws in cls.getWorkspaceNames().values():
             if(ws not in cls.SETTINGS['workspace'].keys()):
                 #delete if found a directory type
                 if(os.path.isdir(cls.HIDDEN+"workspaces/"+ws)):
@@ -305,6 +326,7 @@ scripts)?", warning=False)
 
         if(acting_ws != None):
             cls.SETTINGS['active-workspace'] = acting_ws
+        
         pass
     
     #automatically manage if a script still exists and clean up non-existent scripts
@@ -753,6 +775,18 @@ scripts)?", warning=False)
         return meta
 
     @classmethod
+    def isConflict(cls, mapping, name):
+        '''
+        This method returns true if a naming conflict exists between the name
+        in question with a dictionary of the true names mapped by lower names.
+        '''
+        c = (name.lower() in mapping.keys() and mapping[name.lower()] != name)
+        if(c):
+            log.warning("Could not keep "+name+" due to name conlict with "+\
+                mapping[name.lower()]+".")
+        return c
+
+    @classmethod
     def getMarkets(cls, workspace_level=True):
         '''
         This method returns a dictionary consisting of the key as the market's 
@@ -760,21 +794,13 @@ scripts)?", warning=False)
         Can be used to only gather info on current workspace markets or all
         markets available.
         '''
-
-        def isConflict(n):
-            c = (n.lower() in cls.getMarketNames() and cls.getMarketNames()[n.lower()] != n)
-            if(c):
-                log.warning("Could not keep "+name+" as a market due to name conlict with "+\
-                    cls.getMarketNames()[n.lower()]+".")
-            return c
-
         mrkt_roots = dict()
         #key: name (lower-case), val: url
         if(cls.inWorkspace() and workspace_level):
             name_list = list(cls.getWorkspace('market'))
             for name in name_list:
                 #see if there is conflict
-                if(isConflict(name)):
+                if(cls.isConflict(cls.getMarketNames(), name)):
                     #this means this name does have a folder in the markets/ 
                     cls.getWorkspace('market').remove(name)
                     del cls.SETTINGS['market'][name]
@@ -787,16 +813,15 @@ scripts)?", warning=False)
                 else:
                     cls.getWorkspace('market').remove(name)
                 pass
-        elif(cls.inWorkspace()):
+        else:
             name_list = list(cls.SETTINGS['market'].keys())
             for name in name_list:
-                if(isConflict(name)):                
+                if(cls.isConflict(cls.getMarketNames(), name)):                
                     #this means this name does have a folder in the markets/ 
                     del cls.SETTINGS['market'][name]
                     continue
                 #store its root (location/path, aka is it remote or only local)
                 mrkt_roots[name] = cls.SETTINGS['market'][name]
-        
 
         cls.save()
         return mrkt_roots

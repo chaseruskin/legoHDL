@@ -660,6 +660,9 @@ class legoHDL:
                 apt.SETTINGS[options[0]] = dict()
             #insertion
             if(val != None):
+                #ensure there is no conflict with making this workspace key/val pair
+                if(apt.isConflict(apt.getWorkspaceNames(), key) == True):
+                    exit(log.error("Setting not saved."))
                 #initialize the workspace folders and structure
                 apt.initializeWorkspace(key)
                 #create new workspace profile
