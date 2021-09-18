@@ -2,7 +2,6 @@
 
 - [ ] ** use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
-- [ ] same routine for checking duplicate market names (evaulated as .lower()) needs to hold true as well for routines for profile keys and workspace keys
 - [ ] allow users to simply enter a git remote url for adding a market rather than a key/value pair (name is already handled in the .mrkt file)
 
 - [ ] add docstrings to every function/method
@@ -32,9 +31,11 @@ derives:
 - [ ] cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag on port command
 - [ ] support verilog header files, verilog packages
 
-- [ ] handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. One step further (the real issue), also a block has conflicts if the block has entities/modules that are already defined in a user's workspace.
+- [ ] add ability to add summary text to .prfl and .mrkt files to then use "show" command to read the description about the given profile/market.
 
-- [ ] If two blocks (same titles) exist in separate markets (A and B) and market A is added (good) and then market B is added (conflict), ask user what block to use. The other block will be effectively ignored in the workspace. User should have the ability to later change decision at any point. Identify if its the same block based on title and if they have the same git url. Problem arises when same title yet different git urls.
+- [!] #10 handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. One step further (the real issue), also a block has conflicts if the block has entities/modules that are already defined in a user's workspace. -> or allow user to specify if found multiple entity names when generating dependency tree -> yes. Maybe also specify market name on commands that require using a block title if ambigiuous (multiple exist). Identify if its the same block based on title and if they have the same git url.
+
+- [ ] If two blocks (same titles) exist in separate markets (A and B) and market A is added (good) and then market B is added (conflict), ask user what block to use. The other block will be effectively ignored in the workspace. User should have the ability to later change decision at any point. Problem arises when same title yet different git urls. -> This is no longer being pursued. see #10.
 
 - [ ] cross check version tags with the hidden version.log (in case a legohdl tag was manually created by a user) -> delete the tag if not valid
 
@@ -85,6 +86,7 @@ derives:
 
 __Completed__
 - [x] if multi-develop is ON and issue a warning when trying to use 'port' command on a block that has no release points but is in downloads ("This block is unstable (has no released versions") and IF outside of that block's directory -> else do not print port command (user cant use it) if multi-develop is set to OFF and IF outside of that block's directory
+- [x] same routine for checking duplicate market names (evaulated as .lower()) needs to hold true as well for routines for profile keys and workspace keys
 - [x] have a .mrkt file exist within a market repository to signify its name rather than using the settings name? Would it be beneficial if -> leaning yes
 - [x] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
 - [x] implement code for 'port' command to provide prints for verilog instantiations 

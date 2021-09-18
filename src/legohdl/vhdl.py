@@ -105,7 +105,7 @@ class Vhdl(Language):
                 if(in_entity):
                     design_book[cur_lib][unit_name].unsetTB()
             elif(code_word == ":"):
-                # todo - entity instantiations from within deep architecture using full title (library.pkg.entity)
+                # :todo: entity instantiations from within deep architecture using full title (library.pkg.entity)
                 if(in_true_arch):
                     #the instance has a package and unit with it
                     P,U,_ = splitBlock(cs[i+1])
@@ -139,7 +139,7 @@ class Vhdl(Language):
                     arch_name = cs[i+1]
                 pass
             elif(code_word == "component"):
-                # todo - component declarations from within shallow architecture
+                # :todo: - component declarations from within shallow architecture
                 #the entity exists in the current library
                 if(in_arch and cs[i+1] in design_book[cur_lib].keys()):
                     use_packages.append(design_book[cur_lib][cs[i+1]])
@@ -310,7 +310,7 @@ class Vhdl(Language):
                 if(cs[i] == ';' and cs[i+1] != 'end'):
                     signals = self.addSignal(signals, i, cs, true_code, declare=True, isSig=True)
             elif(in_gens):
-                #todo [complete] : add generics as constants to be written to declarations
+                # :done: add generics as constants to be written to declarations
                 if(cs[i] == ';' and cs[i+1] != 'end' and cs[i+1] != 'port'):
                     constants = self.addSignal(constants, i, cs, true_code, declare=True, isSig=False)
                 pass

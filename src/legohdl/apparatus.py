@@ -269,8 +269,14 @@ scripts)?", warning=False)
         #target additions
         for prfl in listed_prfls:
             if(prfl not in found_prfls):
+                #check if there is a conflict with trying to make a new profile
+                if(os.path.exists(cls.HIDDEN+"profiles/"+prfl)):
+                    log.error("A profile already exists for "+prfl+".")
+                    cls.SETTINGS['profiles'].remove(prfl)
+                    continue
                 log.info("Creating empty profile "+prfl+"...")
                 os.makedirs(cls.HIDDEN+"profiles/"+prfl, exist_ok=True)
+                
                 with open(cls.HIDDEN+"profiles/"+prfl+"/"+prfl+cls.PRFL_EXT, 'w'):
                     pass
         pass

@@ -45,7 +45,7 @@ class Registry:
     @classmethod
     def dynamicLoad(cls, mrkts):
         '''
-        This method creates markets if not existing in markets/ and deletes
+        This method creates markets if not existing in markets dir and deletes
         market folders if the key is not found in the settings.
         '''
         #try to create system-wide markets if DNE

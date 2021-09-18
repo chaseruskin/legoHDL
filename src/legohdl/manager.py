@@ -207,7 +207,7 @@ class legoHDL:
                 if(confirm):
                     for v in rm_vers:
                         shutil.rmtree(base_cache_dir+v+"/", onerror=apt.rmReadOnly)
-                    #todo: also update the parent version to a new level or delete it
+                    #delete parent if specified
                     if(rm_parent):
                         shutil.rmtree(base_cache_dir+parent_ver+"/", onerror=apt.rmReadOnly)
                     #if found, update parent version to next best available level
@@ -1001,7 +1001,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
     def listProfiles(self):
         prfls = apt.getProfiles()
         last_prfl = open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'r').readline()
-        #todo: also indicate if an update is available
+        # :todo: also indicate if an update is available
         print('{:<16}'.format("Profile"),'{:<12}'.format("Last Import"),'{:<16}'.format("settings.yml"),'{:<12}'.format("template/"),'{:<12}'.format("scripts/"))
         print("-"*16+" "+"-"*12+" "+"-"*16+" "+"-"*12+" "+"-"*12)
         for prfl in prfls:

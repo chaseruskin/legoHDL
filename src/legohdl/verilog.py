@@ -72,6 +72,8 @@ class Verilog(Language):
             #inside the module "architecture"
             elif(in_module):
                 #check with every possible unit if its an instance
+                # :todo: count the number of modules that share that name, then prompt user to select which one
+                # to resolve ambiguity
                 for u in all_available_modules:
                     ignore_case = False
                     m_name = c_stream[i]

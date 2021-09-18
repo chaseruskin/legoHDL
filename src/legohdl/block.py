@@ -750,9 +750,9 @@ derives: []
                         print(v)
             else:
                 ver_sorted = self.sortVersions(self.getTaggedVersions())
-                #todo : also * the installed versions
+                # :done: also * the installed versions
                 #soln : grab list dir of all valid versions in cache, and match them with '*'
-                #todo : show 'x' amount at a time? then use 'f' and 'b' to paginate
+                # :todo : show 'x' amount at a time? then use 'f' and 'b' to paginate
                 #track what major versions have been identified
                 maj_vers = []
                 for x in ver_sorted:
@@ -1185,7 +1185,7 @@ derives: []
         #get all possible units (units are incomplete (this is intended))
         self._unit_bank = self.grabDesigns(override, "cache","current")
         #self.printUnits()
-        #todo : only start from top-level unit if it exists
+        # :todo: only start from top-level unit if it exists
         #gather all project-level units
         project_level_units = self.grabDesigns(False, "current")[self.getLib()]
         for unit in project_level_units.values():
@@ -1206,7 +1206,7 @@ derives: []
             pass
         return design_book
 
-    #todo : use generateCodeStream
+    # :todo: use generateCodeStream
     #return an updated dictionary object with any blank units found in the file (vhdl-style)
     def skimVHDL(self, designs, filepath, L, N):
         with open(filepath, 'r') as file:
@@ -1227,7 +1227,7 @@ derives: []
         file.close()
         return designs
 
-    #todo: use generateCodeStream
+    # :todo: use generateCodeStream
     #return an updated dictionary object with any blank units found in the file (verilog-style)
     def skimVerilog(self, designs, filepath, L, N):
         with open(filepath, 'r') as file:
