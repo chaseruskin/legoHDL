@@ -523,7 +523,12 @@ scripts)?", warning=False)
                 if(not reload_default):
                     exit(log.error("Not a git repository."))
         else:
-            log.error("Profile "+name+" does not exist.")
+            #must add to setting if default not found
+            if(reload_default):
+                cls.SETTINGS['profiles'].append('default')
+                cls.save()
+            else:
+                log.error("Profile "+name+" does not exist.")
             pass
 
         if(reload_default):
