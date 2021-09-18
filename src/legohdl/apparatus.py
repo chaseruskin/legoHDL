@@ -18,19 +18,25 @@ import os,shutil,copy,platform
 class Apparatus:
     SETTINGS = dict()
 
-    #path to registry and cachess
+    #path to hidden legohdl folder
     HIDDEN = os.path.expanduser("~/.legohdl/")
 
+    #identify a valid block project within the framework
     MARKER = "Block.lock"
 
+    #identify a valid market and its name
+    MRKT_EXT = ".mrkt"
+    #identify a valid profile and its name
     PRFL_EXT = ".prfl"
-    PRFL_LOG = "import.log"
 
+    #looks for this file upon a release to ask user to update changelog
     CHANGELOG = "CHANGELOG.md"
 
+    #path to template within legohdl
     TEMPLATE = HIDDEN+"template/"
 
-    WORKSPACE = HIDDEN
+    #path to current workspace within legohdl (is updated on intialization)
+    WORKSPACE = HIDDEN+"workspaces/"
 
     OPTIONS = ['author', 'editor', 'template', 'multi-develop', 'profiles',\
                'overlap-recursive', 'label',\
@@ -48,6 +54,9 @@ class Apparatus:
     #file kept in registry base folder to remember when last refresh
     #based on refresh-rate it will store that many times
     REFRESH_LOG = "refresh.log"
+
+    #used to track which profile was last imported
+    PRFL_LOG = "import.log"
 
     MAX_RATE = 1440
     MIN_RATE = -1
@@ -211,13 +220,27 @@ scripts)?", warning=False)
             cls.SETTINGS['active-workspace'] = None
             return
 
-        cls.WORKSPACE = cls.HIDDEN+"workspaces/"+cls.SETTINGS['active-workspace']+"/"
+        cls.WORKSPACE = cls.WORKSPACE+cls.SETTINGS['active-workspace']+"/"
 
         #ensure no dead scripts are populated in 'script' section of settings
         cls.dynamicScripts()
         #save all safety measures
         cls.save()
         pass
+
+    @classmethod
+    def getWorkspace(cls, key, modify=False, value=None):
+        '''
+        This method directly accesses the settings for the active workspace as a
+        dictionary. It allows for modification and accessing. Set modify=True to
+        write the value parameter to the key within the current workspace's
+        settings. Key can be 'local' or 'market'.
+        '''
+        if(not modify):
+            return cls.SETTINGS['workspace'][cls.SETTINGS['active-workspace']][key]
+        else:
+            cls.SETTINGS['workspace'][cls.SETTINGS['active-workspace']][key] = value
+            return True
 
     @classmethod
     def isSubPath(cls, inner_path, path):

@@ -643,11 +643,11 @@ class legoHDL:
                     val = None
                 apt.SETTINGS['market'][key] = val
             # add to active workspace markets
-            if(options.count("add") and key not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']): 
-                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market'].append(key)
+            if(options.count("add") and key not in apt.getWorkspace('market')): 
+                apt.getWorkspace('market').append(key)
             # remove from active workspace markets
-            elif(options.count("remove") and key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
-                apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market'].remove(key)
+            elif(options.count("remove") and key in apt.getWorkspace('market')):
+                apt.getWorkspace('market').remove(key)
         # WORKSPACE CONFIGURATION
         elif(options[0] == 'workspace'):
             #create entire new workspace settings
@@ -669,10 +669,11 @@ class legoHDL:
                     os.makedirs(apt.fs(val), exist_ok=True)
                 #otherwise that directory already exists, are there any blocks already there?
                 else:
-                    #go through all the found blocks and see if any are "released"
+                    #go through all the found blocks in this already existing path and see if any are "released"
                     blks = self.db.getBlocks("local")
                     for sects in blks.values():
                         for blk in sects.values():
+                            #temporarily set the workspace path to properly install any found blocks to cache
                             apt.WORKSPACE = apt.HIDDEN+"workspaces/"+key+"/"
                             if(Block.biggerVer(blk.getVersion(),'0.0.0') != '0.0.0'):
                                 #install to cache
@@ -826,7 +827,7 @@ class legoHDL:
             if(value.lower() != ""):
                 if(value not in apt.SETTINGS['market'].keys()):
                     exit(log.error("No market is recognized under "+value))
-                if(value not in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
+                if(value not in apt.getWorkspace('market')):
                     exit(log.error("The current workspace does not have "+value+" configured as a market"))
             else:
                 value = None
@@ -981,7 +982,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         print("-"*16+" "+"-"*50+" "+"-"*12)
         for key,val in apt.SETTINGS['market'].items():
             rec = '-'
-            if(key in apt.SETTINGS['workspace'][apt.SETTINGS['active-workspace']]['market']):
+            if(key in apt.getWorkspace('market')):
                 rec = 'yes'
             if(val == None):
                 val = 'local'
