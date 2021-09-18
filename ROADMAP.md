@@ -3,19 +3,20 @@
 - [ ] ** use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
 - [!] have a .mrkt file exist within a market repository to signify its name rather than using the settings name? Would it be beneficial if -> leaning yes
+- [-] don't perform .lower() on market name to save, but use it for eval between markets (market names preserve case sensitivity, but market names are evaluated case insensitive)
 
 - [ ] add docstrings to every function/method
 
-- [ ] if multi-develop is ON and issue a warning when trying to use 'port' command on a block that has no release points but is in downloads ("This block is unstable (has no released versions") -> else do not print port command (user cant use it) if multi-develop is set to OFF
-
-- [-] don't perform .lower() on market name to save, but use it for eval between markets (market names preserve case sensitivity, but market names are evaluated case insensitive)
+- [!] if multi-develop is ON and issue a warning when trying to use 'port' command on a block that has no release points but is in downloads ("This block is unstable (has no released versions") -> else do not print port command (user cant use it) if multi-develop is set to OFF
 
 - [ ] add default market for default profile (OpenSquare)
 - [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
 
 - [ ] allow users to edit/add a README to a market through command-line? or just open the market repository?
 
-all users downloaded the same market and therefore the market had the same name (users couldnt change it) so then you know what market it came from. What happens if someone tries to rename the .mrkt file? -> issue warning that bad things may happen
+all users downloaded the same market and therefore the market had the same name (users couldnt change it) so then you know what market it came from. What happens if someone tries to rename the .mrkt file? -> issue warning that bad things may happen -> ?(append a -1,-2,-3,etc. to duplicate market names on a user's machine to help legohdl determine 
+which market to access)
+
 - [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list, examples: 
 ```
 derives:

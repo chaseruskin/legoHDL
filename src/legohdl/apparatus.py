@@ -34,6 +34,8 @@ class Apparatus:
 
     #path to template within legohdl
     TEMPLATE = HIDDEN+"template/"
+    #path to markets within legohdl
+    MARKETS = HIDDEN+"markets/"
 
     #path to current workspace within legohdl (is updated on intialization)
     WORKSPACE = HIDDEN+"workspaces/"
@@ -51,6 +53,7 @@ class Apparatus:
     TAG_ID = '-legohdl'    
     #file kept in markets to remember all valid release points
     VER_LOG = "version.log"
+
     #file kept in registry base folder to remember when last refresh
     #based on refresh-rate it will store that many times
     REFRESH_LOG = "refresh.log"
@@ -77,8 +80,8 @@ class Apparatus:
         os.makedirs(cls.HIDDEN, exist_ok=True)
         os.makedirs(cls.HIDDEN+"workspaces/", exist_ok=True)
         os.makedirs(cls.HIDDEN+"scripts/", exist_ok=True)
-        os.makedirs(cls.HIDDEN+"registry/", exist_ok=True)
-        os.makedirs(cls.HIDDEN+"template/", exist_ok=True)
+        os.makedirs(cls.MARKETS, exist_ok=True)
+        os.makedirs(cls.TEMPLATE, exist_ok=True)
         os.makedirs(cls.HIDDEN+"profiles/", exist_ok=True)
 
         #create bare settings.yml if DNE
@@ -292,11 +295,11 @@ scripts)?", warning=False)
                     opt_2 = resp == '2' or resp == mrkt
                     if(opt_2):
                         tmp_dict[lower_mrkt] = cls.SETTINGS['market'][mrkt]
-                        if(os.path.exists(cls.HIDDEN+"registry/"+true_case[lower_mrkt])):
-                            shutil.rmtree(cls.HIDDEN+"registry/"+true_case[lower_mrkt],onerror=cls.rmReadOnly)
+                        if(os.path.exists(cls.MARKETS+true_case[lower_mrkt])):
+                            shutil.rmtree(cls.MARKETS+true_case[lower_mrkt],onerror=cls.rmReadOnly)
                     else:
-                        if(os.path.exists(cls.HIDDEN+"registry/"+mrkt)):
-                            shutil.rmtree(cls.HIDDEN+"registry/"+mrkt,onerror=cls.rmReadOnly)
+                        if(os.path.exists(cls.MARKETS+mrkt)):
+                            shutil.rmtree(cls.MARKETS+mrkt,onerror=cls.rmReadOnly)
                         replace = False
                     if(opt_1 or opt_2):
                         break
@@ -799,6 +802,16 @@ scripts)?", warning=False)
                 returnee[name] = cls.SETTINGS['market'][name]
 
         return returnee
+
+    @classmethod
+    def getMarketNames(cls):
+        '''
+        Return a dictionary mapping a market's lower-case name (key) to its
+        real-case name (value). No market can share the same case-insensitive
+        name.
+        '''
+        #find all markets
+        mrkt_files = glob.glob(cls.MARKETS+"**/*"+cls.MRKT_EXT, recursive=True)
 
     @classmethod
     def isValidURL(cls, url):

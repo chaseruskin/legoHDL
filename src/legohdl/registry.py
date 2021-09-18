@@ -34,7 +34,6 @@ class Registry:
         if(apt.inWorkspace() and apt.linkedMarket()):
             for rem,val in mrkts.items():
                 self.__mkts.append(Market(rem,val))
-        self.__registry_path = apt.HIDDEN+"registry/"
         pass
     
     @classmethod
@@ -43,13 +42,13 @@ class Registry:
         for rem,val in mrkts.items():
             Market(rem,val)
         #if a folder exists in registry path but key is not in settings, delete the registry
-        regs = os.listdir(apt.HIDDEN+"registry/")
+        regs = os.listdir(apt.MARKETS)
         for r in regs:
             if r not in mrkts.keys():
-                if(os.path.isdir(apt.HIDDEN+"registry/"+r)):
-                    shutil.rmtree(apt.HIDDEN+"registry/"+r, onerror=apt.rmReadOnly)
+                if(os.path.isdir(apt.MARKETS+r)):
+                    shutil.rmtree(apt.MARKETS+r, onerror=apt.rmReadOnly)
                 else:
-                    os.remove(apt.HIDDEN+"registry/"+r)
+                    os.remove(apt.MARKETS+r)
 
     def listBlocks(self, search_for, options):
         i_dot = search_for.find('.')
@@ -228,7 +227,7 @@ class Registry:
         self._remote_prjs = dict()
         #identify .lock files from each remote set up with this workspace
         for mkt in self.getMarkets():
-            lego_files = glob.glob(self.__registry_path+mkt.getName()+"/**/"+apt.MARKER, recursive=True)
+            lego_files = glob.glob(apt.MARKETS+mkt.getName()+"/**/"+apt.MARKER, recursive=True)
             #from each lego file, create a Block object
             #print(lego_files)
             for x in lego_files:

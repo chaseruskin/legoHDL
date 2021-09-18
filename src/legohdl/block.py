@@ -369,7 +369,7 @@ derives: []
         return body
 
     def isMarket(self):
-        return apt.isSubPath(apt.HIDDEN+"registry/", self.getPath())
+        return apt.isSubPath(apt.MARKETS, self.getPath())
 
     def isLocal(self):
         return apt.isSubPath(apt.getLocal(), self.getPath())

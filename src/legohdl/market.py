@@ -18,7 +18,7 @@ class Market:
     def __init__(self, name, url):
         self._name = name
         self.url = url
-        self._local_path = apt.fs(apt.HIDDEN+"registry/"+self.getName(low=False))
+        self._local_path = apt.fs(apt.MARKETS+self.getName(low=False))
         
         #is there not a git repository here? if so, need to init
         if(not os.path.isdir(self.getPath()+"/.git")):
@@ -68,9 +68,9 @@ class Market:
                 log.info("Swapping link for "+self.getName(low=False)+" to "+self.url+"...")
                 if(os.path.exists(self._local_path)):
                     shutil.rmtree(self._local_path, onerror=apt.rmReadOnly)
-                git.Git(apt.HIDDEN+"registry/").clone(url) #and clone from new valid remote path
+                git.Git(apt.MARKETS).clone(url) #and clone from new valid remote path
                 url_name = url[url.rfind('/')+1:url.rfind('.git')]
-                os.rename(apt.HIDDEN+"registry/"+url_name, self._local_path)
+                os.rename(apt.MARKETS+url_name, self._local_path)
             else:
                 log.error("Invalid link- setting could not be changed")
                 if(self.isRemote() and url != None):
