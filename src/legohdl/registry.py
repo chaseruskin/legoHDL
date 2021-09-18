@@ -38,7 +38,8 @@ class Registry:
         if(apt.inWorkspace() and apt.linkedMarket()):
             for nm,val in mrkts.items():
                 #pass the true-case name of the market to initialize
-                self.__mkts.append(Market(all_mrkt_names[nm],val))
+                if(nm in all_mrkt_names.keys()):
+                    self.__mkts.append(Market(all_mrkt_names[nm],val))
         pass
     
     @classmethod
