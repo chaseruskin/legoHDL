@@ -6,8 +6,6 @@
 
 - [ ] add docstrings to every function/method
 
-- [ ] VHDL port command test generic assignment with := with no spaces
-
 - [ ] if multi-develop is ON and issue a warning when trying to use 'port' command on a block that has no release points but is in downloads ("This block is unstable (has no released versions") -> else do not print port command (user cant use it) if multi-develop is set to OFF
 
 - [-] don't perform .lower() on market name to save, but use it for eval between markets (market names preserve case sensitivity, but market names are evaluated case insensitive)
@@ -89,6 +87,7 @@ derives:
 
 
 __Completed__
+- [x] VHDL port command test generic assignment with := with no spaces
 - [x] use %LEGOHDL% to reference legohdl's hidden folder when specifying certain paths
 - [x] better verilog to verilog external instanation recognition
 - [x] add a default workspace for users to upload with default profile
