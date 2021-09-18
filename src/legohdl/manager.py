@@ -1137,6 +1137,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 #install block to cache
                 self.install(package, ver)
             pass
+
         elif(command == "uninstall"):
             ver = None
             #ensure version option is valid before using it to install
@@ -1147,8 +1148,11 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
 
             self.uninstall(package, ver)
             pass
+
         elif(command == "build" and self.blockCWD.isValid()):
             self.build(value)
+            pass
+
         elif(command == "new" and len(package)):
             if(exists):
                 exit(log.error("A block already exists as "+package))
@@ -1174,12 +1178,14 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             if(startup):
                 self.blockPKG.load()
             pass
+
         elif(command == "release" and self.blockCWD.isValid()):
             #upload is used when a developer finishes working on a project and wishes to push it back to the
             # remote codebase (all CI should pass locally before pushing up)
             if(value == ''):
                 value = None
             self.upload(self.blockCWD, value, options=options)
+            pass
 
         #a visual aide to help a developer see what package's are at the ready to use
         elif(command == 'graph' and self.blockCWD.isValid()):
@@ -1189,12 +1195,15 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             top_dog,_,_ = self.blockCWD.identifyTopDog(top, None)
             #generate dependency tree
             self.formGraph(self.blockCWD, top_dog)
+            pass
+
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
             self.download(package)
             if('open' in options):
                 self.db.getBlocks("local", updt=True)[L][N].load()
             pass
+
         elif(command == 'del'):
             #try to delete a block
             if(valid):
@@ -1206,6 +1215,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             else:
                 #print(L,N)
                 log.info("Block "+L+'.'+N+" does not exist in local path.")
+            pass
 
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             if(options.count("script")):
@@ -1221,14 +1231,19 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             else:
                 self.inventory(package,options)
             pass
+
         elif(command == "init"):
             if(exists):
                 exit(log.error("A block already exists as "+package))
             self.convert(package, value, options)
+            pass
+
         elif(command == "refresh"):
             #package value is the market looking to refresh
             #if package value is null then all markets tied to this workspace refresh by default
             self.db.sync(value)
+            pass
+
         elif(command == "export" and self.blockCWD.isValid()):
             #'' and list() are default to pkg and options
             top = package.lower()
@@ -1236,9 +1251,12 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 top = None
             self.export(self.blockCWD, top)
             pass
+
         elif(command == "run" and self.blockCWD.isValid()):
             self.export(self.blockCWD)
             self.build(value)
+            pass
+
         elif(command == "open"):
             if(apt.SETTINGS['editor'] == None):
                 exit(log.error("No text-editor configured!"))
@@ -1283,6 +1301,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 self.blockPKG.load()
             else:
                 exit(log.error("No block "+package+" exists in your workspace."))
+            pass
+
         elif(command == "show" and 
             (self.db.blockExists(package, "local") or \
                 self.db.blockExists(package, "cache") or \
@@ -1303,6 +1323,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             elif(self.db.blockExists(package, "market") == True):
                 self.db.getBlocks("market")[L][N].show(listVers, ver, changelog)
             pass
+
         elif(command == "update"):
             if(options.count('profile')):
                 #update this profile if it has a remote repository
@@ -1310,20 +1331,23 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             elif(self.db.blockExists(package,"cache")):
                 #perform install over remote url
                 self.update(package)
-                pass
+            pass
+
         elif(command == "profile" and package != ''):
             #import new settings
             apt.loadProfile(value, explicit=options.count('ask'))
             #reinitialize all settings/perform safety measures
             apt.load()
+            pass
+
         elif(command == "port"):
-            mapp = pure_ent = False
             ent_name = None
-            if(len(options) and 'map' in options):
-                mapp = True
-            if(len(options) and 'instance' in options):
-                pure_ent = True
-            if(package.count('.') == 2): #if provided an extra identifier, it is the entity in this given project
+            #show component instantiation?
+            mapp = (len(options) and 'map' in options)
+            #show direct entity instantiation?
+            pure_ent = (len(options) and 'instance' in options)
+            #if provided an extra identifier, it is the entity in this given block
+            if(package.count('.') == 2): 
                 ent_name = package[package.rfind('.')+1:]
                 package = package[:package.rfind('.')]
             #grab the version number if it was in flags
@@ -1333,11 +1357,13 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                     ver = Block.stdVer(o)
                     break
 
+            #trying to reference a unit from the current block for internal usage
+            within_block = (self.blockCWD.isValid() and self.blockCWD.getLib() == L and self.blockCWD.getName() == N)
+            
+            #swap the library name from its original to using 'work'
             inserted_lib = L
-            within_block = False
-            if(self.blockCWD.isValid() and self.blockCWD.getLib() == L and self.blockCWD.getName() == N):
+            if(within_block): 
                 inserted_lib = 'work'
-                within_block = True
 
             carry_on = (within_block) or (self.db.blockExists(package, "local") and apt.SETTINGS['multi-develop'])
             
@@ -1361,9 +1387,12 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             #this block does not exist
             else:
                 exit(log.error("No block "+package+" exists in local path or workspace cache."))
+            pass
+
         elif(command == "config"):
             self.setSetting(options, value)
             pass
+        
         elif(command == "help" or command == ''):
             #list all of command details
             self.commandHelp(package)
