@@ -17,7 +17,7 @@ class Language(ABC):
 
     def __init__(self, fpath):
         self._file_path = apt.fs(fpath)
-        self._std_delimiters = "(",")",":",";",","
+        self._std_delimiters = "(",")",":",";",",","="
         
         #determine if the file is VHDL or Verilog/SystemVerilog
         _,self._ext = os.path.splitext(fpath)
