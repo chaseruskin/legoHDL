@@ -1,9 +1,9 @@
-# _lego_**HDL**
+# ![](./docs/legohdl64.png) legoHDL
 ### The simple, lightweight, powerful HDL package manager and development tool.
   
 <br />  
 
-_lego_**HDL** is a simple, powerful, and flexible HDL package manager and development tool used through the command-line interface. It provides full package management capabilities as one would expect from premiere software package managers like Cargo, APT, PIP, and RubyGems and incorporates special functionality specific to HDL designing to rapidly improve development workflow.
+legoHDL is a simple, powerful, and flexible HDL package manager and development tool used through the command-line interface. It provides full package management capabilities as one would expect from premiere software package managers like Cargo, APT, PIP, and RubyGems and incorporates special functionality specific to HDL designing to rapidly improve development workflow.
 
 Inspired by the modular and fun building approach of LEGO® bricks, legoHDL brings modularity and management to the HDL world by enabling designs to be built as if they are LEGO® bricks. LEGO® is a trademark of the LEGO Group of companies which does not sponsor, authorize or endorse this site or this project.
 
@@ -13,7 +13,7 @@ Supports VHDL and Verilog/SystemVerilog with mixed language support.
 
 <br />
 
-_lego_**HDL** is available to work completely local or along with remote locations to collaborate and share blocks with others. It is designed to give the developer complete customization and increased productivity in their workflow.
+legoHDL is available to work completely local or along with remote locations to collaborate and share blocks with others. It is designed to give the developer complete customization and increased productivity in their workflow.
 <br /> 
 
 ### __Documentation__
@@ -39,4 +39,4 @@ Once the roadmap is complete for v1.0.0, users will be able to install legoHDL d
 Some basic, ready-to-use backend scripts are available at https://github.com/legoHDL/scripts. Use them, be inspired by them, or ignore them.
 
 ### __Quick Start__
-A quick start kit (a repository containing sample backend scripts and a sample settings file) will be created soon to help users dive right in.
+A default profile is under development so users can get started quicker. A profile is a group of legoHDL settings, template, and scripts.
