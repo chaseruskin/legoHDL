@@ -1,7 +1,15 @@
-from genericpath import exists, isdir
+################################################################################
+#   Project: legohdl
+#   Script: market.py
+#   Author: Chase Ruskin
+#   Description:
+#       This script describes the attributes and behaviors of legohdl markets.
+#   A market holds 'pointer' files to legohdl blocks available on the internet
+#   as git repositories.
+################################################################################
+
 import os,shutil,git
 import logging as log
-import copy
 from .apparatus import Apparatus as apt
 import yaml
 

@@ -1,5 +1,12 @@
-#registry.py is in charge of seeing what packages are hosted remotely and syncing
-#packages between user and remote
+################################################################################
+#   Project: legohdl
+#   Script: registry.py
+#   Author: Chase Ruskin
+#   Description:
+#       This script is in charge of seeing what blocks are available in the
+#   the current workspace and syncing blocks between user-end and market-end.
+################################################################################
+
 from enum import Enum
 import git,yaml
 import logging as log

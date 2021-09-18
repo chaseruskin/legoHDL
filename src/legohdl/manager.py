@@ -1,4 +1,12 @@
-#!/usr/bin/env python3
+################################################################################
+#   Project: legohdl
+#   Script: manager.py
+#   Author: Chase Ruskin
+#   Description:
+#       This script is the entry-point to the legohdl program. It parses the
+#   command-line arguments and contains a method for each valid command.
+################################################################################
+
 import os, sys, shutil
 import yaml
 from .block import Block

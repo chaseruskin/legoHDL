@@ -1,5 +1,13 @@
+################################################################################
+#   Project: legohdl
+#   Script: vhdl.py
+#   Author: Chase Ruskin
+#   Description:
+#       This script inherits language.py and implements the behaviors for
+#   VHDL code files (syntax, deciphering).
+################################################################################
+
 from legohdl.language import Language
-from .apparatus import Apparatus as apt
 import logging as log
 from .language import Language
 

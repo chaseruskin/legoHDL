@@ -1,3 +1,13 @@
+################################################################################
+#   Project: legohdl
+#   Script: block.py
+#   Author: Chase Ruskin
+#   Description:
+#       This script describes the attributes and behaviors for a "block" within
+#   the legohdl framework. A block is a HDL project with a marker file at the 
+#   root folder.
+################################################################################
+
 import os, yaml, shutil
 from datetime import date
 import glob, git

@@ -1,3 +1,12 @@
+################################################################################
+#   Project: legohdl
+#   Script: verilog.py
+#   Author: Chase Ruskin
+#   Description:
+#       This script inherits language.py and implements the behaviors for
+#   verilog/systemverilog code files (syntax, deciphering).
+################################################################################
+
 from .language import Language
 import logging as log
 

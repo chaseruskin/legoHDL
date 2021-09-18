@@ -1,3 +1,15 @@
+################################################################################
+#   Project: legohdl
+#   Script: unit.py
+#   Author: Chase Ruskin
+#   Description:
+#       This script describes the attributes and functions for a HDL design 
+#   unit. In verilog, this is called a 'module', and in VHDL, this is called an 
+#   'entity'. Other design units include 'packages', which are available in both
+#   VHDL and verilog. Units are used to help gather data on the type of HDL
+#   dependency tree that will be generated for the current design.
+################################################################################
+
 from enum import Enum
 import os
 from .vhdl import Vhdl

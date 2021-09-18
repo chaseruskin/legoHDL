@@ -1,4 +1,13 @@
-#load in settings
+################################################################################
+#   Project: legohdl
+#   Script: apparatus.py
+#   Author: Chase Ruskin
+#   Description:
+#       This script is used to hold the legohdl settings. It includes code for 
+#   safety measures to ensure the proper settings exits, as well as helper
+#   functions that are used throughout other scripts.
+################################################################################
+
 import yaml,stat,glob,git
 from datetime import datetime
 import logging as log
@@ -29,7 +38,8 @@ class Apparatus:
                'active-workspace', 'workspace',\
                'refresh-rate','market']
 
-    META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', 'remote', 'market', 'derives']
+    META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', \
+            'remote', 'market', 'derives']
     
     #this is appended to the tag to make it unique for legoHDL
     TAG_ID = '-legohdl'    
@@ -81,8 +91,9 @@ class Apparatus:
 
     @classmethod
     def runSetup(cls):
-        is_select = cls.confirmation("This looks like your first time running legoHDL! \
-Would you like to use a profile (import settings, template, and scripts)?", warning=False)
+        is_select = cls.confirmation("This looks like your first time running \
+legoHDL! Would you like to use a profile (import settings, template, and \
+scripts)?", warning=False)
         if(is_select):
             #give user options to proceeding to load a profile
             resp = input("""Enter:
@@ -194,7 +205,9 @@ Would you like to use a profile (import settings, template, and scripts)?", warn
             pass
         
         if(cls.getLocal() == None):
-            log.error("Please specify a workspace path for "+cls.SETTINGS['active-workspace']+". See \'legohdl help config\' for more details.")
+            log.error("Please specify a workspace path for "\
+                +cls.SETTINGS['active-workspace']\
+                +". See \'legohdl help config\' for more details.")
             cls.SETTINGS['active-workspace'] = None
             return
 

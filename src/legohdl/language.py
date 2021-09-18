@@ -1,3 +1,14 @@
+################################################################################
+#   Project: legohdl
+#   Script: language.py
+#   Author: Chase Ruskin
+#   Description:
+#       This script is a parent class parser for VHDL and Verilog files. It will
+#   break down the source code and split into valid tokens through the 
+#   'generate_code_stream' method.
+################################################################################
+
+
 from abc import ABC, abstractmethod
 from .apparatus import Apparatus as apt
 import sys,os
