@@ -33,6 +33,9 @@ class Market:
                 #create temp directory to clone market into
                 os.makedirs(tmp_dir, exist_ok=True)
                 git.Git(tmp_dir).clone(url)
+                
+                # :todo: check if it is a valid market (has .mrkt file)
+
                 log.info("Found and linked remote repository to "+self.getName(low=False))
                 #transfer from temp directory into market directory
                 shutil.copytree(tmp_dir+url_name, self.getPath())
@@ -40,6 +43,8 @@ class Market:
             else:
                 git.Repo.init(self.getPath())
                 log.warning("No remote repository configured for "+self.getName(low=False))
+                #create blank market marker file
+                open(self.getPath()+self.getName(low=False)+apt.MRKT_EXT, 'w').close()
             
         self._repo = git.Repo(self.getPath())
         pass

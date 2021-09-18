@@ -290,7 +290,7 @@ class Vhdl(Language):
         true_code = self.generateCodeStream(True, True, *self._std_delimiters)
         #ignore cases and keep terminators
         cs = self.generateCodeStream(False, True, *self._std_delimiters)
-        print(true_code)
+
         in_ports = in_gens = False
         signals = []
         constants = []

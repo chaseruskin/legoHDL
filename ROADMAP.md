@@ -3,11 +3,9 @@
 - [ ] ** use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
 - [!] have a .mrkt file exist within a market repository to signify its name rather than using the settings name? Would it be beneficial if -> leaning yes
-- [-] don't perform .lower() on market name to save, but use it for eval between markets (market names preserve case sensitivity, but market names are evaluated case insensitive)
+- [ ] same routine for checking duplicate market names (evaulated as .lower()) needs to hold true as well for routines for profile keys and workspace keys
 
 - [ ] add docstrings to every function/method
-
-- [!] if multi-develop is ON and issue a warning when trying to use 'port' command on a block that has no release points but is in downloads ("This block is unstable (has no released versions") -> else do not print port command (user cant use it) if multi-develop is set to OFF
 
 - [ ] add default market for default profile (OpenSquare)
 - [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
@@ -31,10 +29,8 @@ derives:
 ```
 ### Future Roadmap
 
-- [x] implement code for 'port' command to provide prints for verilog instantiations 
 - [ ] cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag on port command
 - [ ] support verilog header files, verilog packages
-- [-] add verilog/systemverilog file support (parse verilog for module dependencies/instances) -> mostly there
 
 - [ ] handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. One step further (the real issue), also a block has conflicts if the block has entities/modules that are already defined in a user's workspace.
 
@@ -88,6 +84,9 @@ derives:
 
 
 __Completed__
+- [x] if multi-develop is ON and issue a warning when trying to use 'port' command on a block that has no release points but is in downloads ("This block is unstable (has no released versions") and IF outside of that block's directory -> else do not print port command (user cant use it) if multi-develop is set to OFF and IF outside of that block's directory
+- [x] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
+- [x] implement code for 'port' command to provide prints for verilog instantiations 
 - [x] VHDL port command test generic assignment with := with no spaces
 - [x] use %LEGOHDL% to reference legohdl's hidden folder when specifying certain paths
 - [x] better verilog to verilog external instanation recognition
@@ -96,6 +95,7 @@ __Completed__
 - [x] always prompt user to input a workspace path if the path found in settings is null?
 - [x] add ability to update (if remote repository) profile using `legohdl update <profile-name> -profile`
 profiles (bonus)
+- [x] don't perform .lower() on market name to save, but use it for eval between markets (market names preserve case sensitivity, but market names are evaluated case insensitive)
 - [x] allow del command to delete a profile
 - [x] allow config command to load a new profile
 - [x] use `new` command with profile flag to create a new profile ? or use config command -> use config command

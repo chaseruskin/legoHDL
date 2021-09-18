@@ -40,6 +40,7 @@ class legoHDL:
         if(command == '--version'):
             print(__version__)
             exit()
+
         #load settings.yml
         apt.load()
         #dyamincally manage any registries that were added to settings.yml
@@ -1333,13 +1334,33 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                     break
 
             inserted_lib = L
+            within_block = False
             if(self.blockCWD.isValid() and self.blockCWD.getLib() == L and self.blockCWD.getName() == N):
                 inserted_lib = 'work'
+                within_block = True
+
+            carry_on = (within_block) or (self.db.blockExists(package, "local") and apt.SETTINGS['multi-develop'])
             
-            if((self.db.blockExists(package, "local") or self.db.blockExists(package, "cache"))):
-                print(self.db.getBlocks("local","cache")[L][N].ports(mapp,inserted_lib,pure_ent,ent_name,ver), end='')
+            if(carry_on or self.db.blockExists(package, "cache")):
+                #allow blocks to be from local path as well if using multi-develop
+                if(apt.SETTINGS['multi-develop']):
+                    domain = self.db.getBlocks("local","cache")
+                    if(self.db.blockExists(package, "local") and ver == None):
+                        log.warning("Using this block may be unstable as ports are locally referenced.")
+                #only allowed to search in cache for ports
+                else:
+                    if(within_block == True):
+                        domain = {L : {N : self.blockCWD}}
+                    else:
+                        domain = self.db.getBlocks("cache")
+                #print the port mapping/listing to the console for user aide
+                print(domain[L][N].ports(mapp,inserted_lib,pure_ent,ent_name,ver), end='')
+            #could not use this block because it is only available locally
+            elif(not within_block and apt.SETTINGS['multi-develop'] == False and self.db.blockExists(package, "local")):
+                exit(log.error("Cannot use "+package+" because it has no release points and multi-develop is set to OFF."))
+            #this block does not exist
             else:
-                exit(log.error("No block exists in local path or workspace cache."))
+                exit(log.error("No block "+package+" exists in local path or workspace cache."))
         elif(command == "config"):
             self.setSetting(options, value)
             pass

@@ -26,14 +26,19 @@ class Registry:
         OTHER = 5
         pass
 
-    #TO-DO: fix how to store and use remotes [x]
-    #things to consider: where to host remote central store (can have multiple)
-    #what is a project's remote url when making a new one?
     def __init__(self, mrkts):
-        self.__mkts = list() #list of all clusters for current workspace
+        '''
+        Initialize all market objects that have been found for this workspace.
+        '''
+        #list of all markets for current workspace
+        self.__mkts = list()
+        #list of all available market names as dictionary 
+        all_mrkt_names = apt.getMarketNames()
+
         if(apt.inWorkspace() and apt.linkedMarket()):
-            for rem,val in mrkts.items():
-                self.__mkts.append(Market(rem,val))
+            for nm,val in mrkts.items():
+                #pass the true-case name of the market to initialize
+                self.__mkts.append(Market(all_mrkt_names[nm],val))
         pass
     
     @classmethod

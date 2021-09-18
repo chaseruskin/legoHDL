@@ -1378,7 +1378,7 @@ derives: []
         #tack on version number if given as arg
         if(ver != None):
             entity = entity+"_"+ver.replace(".","_")
-    
+            
         if(entity.lower() in units[self.getLib()].keys()):
             info = units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)
         else:

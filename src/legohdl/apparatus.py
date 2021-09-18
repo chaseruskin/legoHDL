@@ -8,6 +8,7 @@
 #   functions that are used throughout other scripts.
 ################################################################################
 
+from posixpath import basename
 import yaml,stat,glob,git
 from datetime import datetime
 import logging as log
@@ -786,38 +787,97 @@ scripts)?", warning=False)
             meta = None
         return meta
 
-    #returns workspace-level markets or system-wide markets
     @classmethod
     def getMarkets(cls, workspace_level=True):
-        returnee = dict()
-        #key: name, val: url
+        '''
+        This method returns a dictionary consisting of the key as the market's 
+        eval name and the value as its root status (local or a valid git url).
+        Can be used to only gather info on current workspace markets or all
+        markets available.
+        '''
+        mrkt_roots = dict()
+        #key: name (lower-case), val: url
         if(cls.inWorkspace() and workspace_level):
-            for name in cls.SETTINGS['workspace'][cls.__active_workspace]['market']:
+            for name in cls.getWorkspace('market'):
+                #must be case-matching between workspace market list and entire market list
                 if(name in cls.SETTINGS['market'].keys()):
-                    returnee[name] = cls.SETTINGS['market'][name]
-            cls.SETTINGS['workspace'][cls.__active_workspace]['market'] = list(returnee.keys())
-            cls.save()
+                    #store its root (location/path, aka is it remote or only local)
+                    mrkt_roots[name.lower()] = cls.SETTINGS['market'][name]
+                #this market DNE as any market!
+                else:
+                    cls.getWorkspace('market').remove(name)
+                cls.save()
         elif(cls.inWorkspace()):
             for name in cls.SETTINGS['market'].keys():
-                returnee[name] = cls.SETTINGS['market'][name]
+                #store its root (location/path, aka is it remote or only local)
+                mrkt_roots[name] = cls.SETTINGS['market'][name]
 
-        return returnee
+        return mrkt_roots
+
+
+    def resolveMarketConflict(cls, first_mrkt, second_mrkt):
+        '''
+        This method resolves naming conflicts between two markets that share
+        the same eval name (not necessarily the same true name). Returns true if
+        the second market (the market )
+        '''
+        log.warning("Duplicate market names have been detected; which one do you want to keep?")
+        print('1)',first_mrkt,':',cls.SETTINGS['market'][first_mrkt])
+        print('2)',second_mrkt,':',cls.SETTINGS['market'][second_mrkt])
+        resp = None
+        while True:
+            resp = input()
+            opt_1 = resp == '1' or resp == first_mrkt
+            opt_2 = resp == '2' or resp == second_mrkt
+            #keep second market
+            if(opt_2):
+                #remove first market from settings
+                del cls.SETTINGS['market'][first_mrkt]
+                if(os.path.exists(cls.MARKETS+first_mrkt)):
+                    shutil.rmtree(cls.MARKETS+first_mrkt,onerror=cls.rmReadOnly)
+                return True
+            #keep first market
+            elif(opt_1):
+                #remove second market from market settings
+                del cls.SETTINGS['market'][second_mrkt]
+                return False
+        pass
+
 
     @classmethod
     def getMarketNames(cls):
         '''
         Return a dictionary mapping a market's lower-case name (key) to its
         real-case name (value). No market can share the same case-insensitive
-        name.
+        name. This are the .mrkt files found in the market folder.
         '''
+        if(hasattr(cls,"_mrkt_map")):
+            return cls._mrkt_map
+
+        cls._mrkt_map = {}
         #find all markets
         mrkt_files = glob.glob(cls.MARKETS+"**/*"+cls.MRKT_EXT, recursive=True)
+        for m in mrkt_files:
+            #get file name and exlude extension
+            name = os.path.basename(m).replace(cls.MRKT_EXT,'')
+            #ask user to resolve issue of multiple eval names
+            if(name.lower() in cls._mrkt_map.keys()):
+                cls.resolveMarketConflict(cls._mrkt_map[name.lower()], name)
+            #store the true-case name as value behind the lower-case name key
+            cls._mrkt_map[name.lower()] = name
+        
+        return cls._mrkt_map
 
     @classmethod
     def isValidURL(cls, url):
-        if(url == None or url.count(".git") == 0): #quick test to pass before actually verifying url
-            return False
+        '''
+        This method takes a URL and tests it to see if it is a valid remote git
+        repository. Returns true if its valid else false.
+        '''
+        #first perform quick test to pass before actually verifying url
         log.info("Checking ability to link to url...")
+        if(url == None or url.count(".git") == 0):
+            return False
         try:
             check_output(["git","ls-remote",url])
         except:
@@ -925,14 +985,15 @@ scripts)?", warning=False)
             f.write("build/")
             pass
 
-        comment_section = """
+        comment_section = """--------------------------------------------------------------------------------
 -- Block: %BLOCK%
 -- Author: %AUTHOR%
 -- Creation Date: %DATE%
 -- Entity: template
 -- Description:
---   
-"""
+--      This is a sample template VHDL source file to help automate boilerplate 
+--  code.
+--------------------------------------------------------------------------------"""
         vhdl_code = """
   
 library ieee;
@@ -953,19 +1014,13 @@ end architecture;
 """
         #create template design
         with open(prfl_path+'template/src/template.vhd', 'w') as f:
-            comment_border = '-'*80
-            f.write(comment_border)
             f.write(comment_section)
-            f.write(comment_border)
             f.write(vhdl_code)
             pass
 
         #create template testbench
         with open(prfl_path+'template/test/template_tb.vhd', 'w') as f:
-            comment_border = '-'*80
-            f.write(comment_border)
             f.write(comment_section.replace("template", "template_tb"))
-            f.write(comment_border)
             f.write(vhdl_code.replace("template", "template_tb").replace("""\n    port(
 
     );""", '\b'))
