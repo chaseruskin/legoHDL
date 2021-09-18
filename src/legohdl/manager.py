@@ -531,7 +531,7 @@ class legoHDL:
 
     #! === CONFIG COMMAND ===
 
-    def setSetting(self, options, choice, delete=False):
+    def configure(self, options, choice, delete=False):
         if(len(options) == 0):
             log.error("No setting was flagged to as an option")
             return
@@ -627,21 +627,25 @@ class legoHDL:
             if(val == None and options.count("add") or options.count("remove")):
                 pass
             else:
-                key = key.lower()
-                #add/change value to all-remote list
-                mkt = Market(key,val) #create market object!  
                 if(val == ''):
                     val = None
-                #only create remote in the list
-                if(key in apt.SETTINGS['market'].keys()):
-                    #market name already exists
-                    confirm = apt.confirmation("You are about to reconfigure the already existing market "+key+". Are you sure you want to do this?")
-                    if(not confirm):
-                        exit(log.info("Setting not saved."))
-                    val = mkt.setRemote(val) 
+                if(key.lower() in apt.getMarketNames().keys()):
+                    if(key != apt.getMarketNames()[key.lower()]):
+                        exit(log.error("Market name conflicts with market "+apt.getMarketNames()[key.lower()]+"."))
+                    #only create remote in the list
+                    else:
+                        #market name already exists
+                        confirm = apt.confirmation("You are about to reconfigure the already existing market "+key+". Are you sure you want to do this?")
+                        if(not confirm):
+                            exit(log.info("Setting not saved."))
+                    pass
+                #create market object!  
+                mkt = Market(key,val) 
                 #set to null if the tried remote DNE
                 if(not mkt.isRemote()):
                     val = None
+                val = mkt.setRemote(val)
+                #update settings to accurately reflect
                 apt.SETTINGS['market'][key] = val
             # add to active workspace markets
             if(options.count("add") and key not in apt.getWorkspace('market')): 
@@ -1211,7 +1215,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 self.cleanup(self.blockPKG, force)
             #try to delete a setting
             elif(L == '' or N == ''):
-                self.setSetting(options, value, delete=True)
+                self.configure(options, value, delete=True)
             else:
                 #print(L,N)
                 log.info("Block "+L+'.'+N+" does not exist in local path.")
@@ -1390,7 +1394,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             pass
 
         elif(command == "config"):
-            self.setSetting(options, value)
+            self.configure(options, value)
             pass
         
         elif(command == "help" or command == ''):

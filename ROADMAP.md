@@ -2,8 +2,8 @@
 
 - [ ] ** use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
-- [!] have a .mrkt file exist within a market repository to signify its name rather than using the settings name? Would it be beneficial if -> leaning yes
 - [ ] same routine for checking duplicate market names (evaulated as .lower()) needs to hold true as well for routines for profile keys and workspace keys
+- [ ] allow users to simply enter a git remote url for adding a market rather than a key/value pair (name is already handled in the .mrkt file)
 
 - [ ] add docstrings to every function/method
 
@@ -85,6 +85,7 @@ derives:
 
 __Completed__
 - [x] if multi-develop is ON and issue a warning when trying to use 'port' command on a block that has no release points but is in downloads ("This block is unstable (has no released versions") and IF outside of that block's directory -> else do not print port command (user cant use it) if multi-develop is set to OFF and IF outside of that block's directory
+- [x] have a .mrkt file exist within a market repository to signify its name rather than using the settings name? Would it be beneficial if -> leaning yes
 - [x] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
 - [x] implement code for 'port' command to provide prints for verilog instantiations 
 - [x] VHDL port command test generic assignment with := with no spaces

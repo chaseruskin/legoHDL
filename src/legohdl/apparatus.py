@@ -203,7 +203,7 @@ scripts)?", warning=False)
 
         cls.dynamicProfiles()
         cls.dynamicWorkspace()
-        cls.dynamicMarkets()
+        #cls.getMarkets(workspace_level=False)
 
         #determine current workspace currently being used
         cls.__active_workspace = cls.SETTINGS['active-workspace']
@@ -275,46 +275,6 @@ scripts)?", warning=False)
                 with open(cls.HIDDEN+"profiles/"+prfl+"/"+prfl+cls.PRFL_EXT, 'w'):
                     pass
         pass
-
-    #automatically set market names to lower-case, and prompt user to settle duplicate keys
-    @classmethod
-    def dynamicMarkets(cls):
-        true_case = {}
-        tmp_dict = {}
-        for mrkt in cls.SETTINGS['market'].keys():
-            lower_mrkt = mrkt.lower()
-            replace = True
-            if(lower_mrkt in tmp_dict.keys()):
-                log.warning("Duplicate market names have been detected; which one do you want to keep?")
-                print('1)',true_case[lower_mrkt],':',tmp_dict[lower_mrkt])
-                print('2)',mrkt,':',cls.SETTINGS['market'][mrkt])
-                resp = None
-
-                while True:
-                    resp = input()
-                    opt_1 = resp == '1' or resp == true_case[lower_mrkt]
-                    opt_2 = resp == '2' or resp == mrkt
-                    if(opt_2):
-                        tmp_dict[lower_mrkt] = cls.SETTINGS['market'][mrkt]
-                        if(os.path.exists(cls.MARKETS+true_case[lower_mrkt])):
-                            shutil.rmtree(cls.MARKETS+true_case[lower_mrkt],onerror=cls.rmReadOnly)
-                    else:
-                        if(os.path.exists(cls.MARKETS+mrkt)):
-                            shutil.rmtree(cls.MARKETS+mrkt,onerror=cls.rmReadOnly)
-                        replace = False
-                    if(opt_1 or opt_2):
-                        break
-            else:   
-                tmp_dict[lower_mrkt] = cls.SETTINGS['market'][mrkt]
-            
-            if(replace):
-                true_case[lower_mrkt] = mrkt
-
-        for mrkt_low in true_case.keys():
-            if(mrkt_low in tmp_dict.keys()):
-                cls.SETTINGS['market'][true_case[mrkt_low]] = tmp_dict[mrkt_low]
-        
-        #cls.SETTINGS['market'] = tmp_dict
     
     #automatically create local paths for workspaces or delete hidden folders
     @classmethod
@@ -795,10 +755,25 @@ scripts)?", warning=False)
         Can be used to only gather info on current workspace markets or all
         markets available.
         '''
+
+        def isConflict(n):
+            c = (n.lower() in cls.getMarketNames() and cls.getMarketNames()[n.lower()] != n)
+            if(c):
+                log.warning("Could not keep "+name+" as a market due to name conlict with "+\
+                    cls.getMarketNames()[n.lower()]+".")
+            return c
+
         mrkt_roots = dict()
         #key: name (lower-case), val: url
         if(cls.inWorkspace() and workspace_level):
-            for name in cls.getWorkspace('market'):
+            name_list = list(cls.getWorkspace('market'))
+            for name in name_list:
+                #see if there is conflict
+                if(isConflict(name)):
+                    #this means this name does have a folder in the markets/ 
+                    cls.getWorkspace('market').remove(name)
+                    del cls.SETTINGS['market'][name]
+                    continue
                 #must be case-matching between workspace market list and entire market list
                 if(name in cls.SETTINGS['market'].keys()):
                     #store its root (location/path, aka is it remote or only local)
@@ -806,12 +781,19 @@ scripts)?", warning=False)
                 #this market DNE as any market!
                 else:
                     cls.getWorkspace('market').remove(name)
-                cls.save()
+                pass
         elif(cls.inWorkspace()):
-            for name in cls.SETTINGS['market'].keys():
+            name_list = list(cls.SETTINGS['market'].keys())
+            for name in name_list:
+                if(isConflict(name)):                
+                    #this means this name does have a folder in the markets/ 
+                    del cls.SETTINGS['market'][name]
+                    continue
                 #store its root (location/path, aka is it remote or only local)
                 mrkt_roots[name] = cls.SETTINGS['market'][name]
+        
 
+        cls.save()
         return mrkt_roots
 
 
@@ -861,8 +843,8 @@ scripts)?", warning=False)
             #get file name and exlude extension
             name = os.path.basename(m).replace(cls.MRKT_EXT,'')
             #ask user to resolve issue of multiple eval names
-            if(name.lower() in cls._mrkt_map.keys()):
-                cls.resolveMarketConflict(cls._mrkt_map[name.lower()], name)
+            #if(name.lower() in cls._mrkt_map.keys()):
+                #cls.resolveMarketConflict(cls._mrkt_map[name.lower()], name)
             #store the true-case name as value behind the lower-case name key
             cls._mrkt_map[name.lower()] = name
         
