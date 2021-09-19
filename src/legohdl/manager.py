@@ -1303,8 +1303,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 os.system(apt.SETTINGS['editor']+" "+script_path)
             #open profile
             elif(options.count("profile")):
-                if(value in apt.getProfiles().keys()):
-                    log.info("Opening profile at... "+apt.getProfiles()[value])
+                if(value.lower() in apt.getProfileNames().keys()):
+                    value = apt.getProfileNames()[value.lower()]
+                    log.info("Opening profile "+value+" at... "+apt.getProfiles()[value])
                     os.system(apt.SETTINGS['editor']+" "+apt.getProfiles()[value])
                 else:
                     log.error("No profile exists as "+value)
@@ -1342,8 +1343,13 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
 
         elif(command == "update"):
             if(options.count('profile')):
-                #update this profile if it has a remote repository
-                apt.updateProfile(value)
+                if(value.lower() in apt.getProfileNames().keys()):
+                    value = apt.getProfileNames()[value.lower()]
+                    #update this profile if it has a remote repository
+                    apt.updateProfile(value)
+                else:
+                    log.error("No profile exists as "+value)
+                
             elif(self.db.blockExists(package,"cache")):
                 #perform install over remote url
                 self.update(package)
