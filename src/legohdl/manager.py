@@ -623,9 +623,13 @@ class legoHDL:
         if(not options[0] in apt.SETTINGS.keys() and options[0] != 'profile'):
             exit(log.error("No setting exists under that flag"))
         elif(options[0] == 'market'):
-            #allow for just referencing the market if trying to append to current workspace
-            if(val == None and options.count("add") or options.count("remove")):
-                pass
+            #try to link existing market into markets
+            if(val == None):
+                result = apt.loadMarket(key)
+                if(result == False):
+                    exit(log.error("Setting not saved."))
+                key = result
+                val = apt.getMarkets(workspace_level=False)[key]
             else:
                 if(val == ''):
                     val = None
@@ -639,6 +643,8 @@ class legoHDL:
                         if(not confirm):
                             exit(log.info("Setting not saved."))
                     pass
+                else:
+                    log.info("Creating new market "+key+"...")
                 #create market object!  
                 mkt = Market(key,val) 
                 #set to null if the tried remote DNE
@@ -647,11 +653,14 @@ class legoHDL:
                 val = mkt.setRemote(val)
                 #update settings to accurately reflect
                 apt.SETTINGS['market'][key] = val
+            
             # add to active workspace markets
             if(options.count("add") and key not in apt.getWorkspace('market')): 
+                log.info("Adding "+key+" market to active workspace...")
                 apt.getWorkspace('market').append(key)
             # remove from active workspace markets
             elif(options.count("remove") and key in apt.getWorkspace('market')):
+                log.info("Removing "+key+" market to active workspace...")
                 apt.getWorkspace('market').remove(key)
         # WORKSPACE CONFIGURATION
         elif(options[0] == 'workspace'):

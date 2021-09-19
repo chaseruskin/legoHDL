@@ -1,8 +1,6 @@
 ## Roadmap to Release v1.0.0
 
-- [ ] ** use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
-
-- [ ] allow users to simply enter a git remote url for adding a market rather than a key/value pair (name is already handled in the .mrkt file) -> use just `<value>` if its an already existing market to add. use `key/val` to create a new market with that name `key`.
+- [ ] * use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
 - [ ] add docstrings to every function/method
 
@@ -38,6 +36,8 @@ derives:
 - [ ] cross check version tags with the hidden version.log (in case a legohdl tag was manually created by a user) -> delete the tag if not valid
 
 - [ ] allow users to edit/add a README to a market through command-line? or just open the market repository?
+
+- [ ] keep a extra file of the market urls to note when one changes through manual edit if it is still a valid remote
 
 - [ ] if an already existing profile's .prfl file gets changed, then needs to move to temp directory and have its folder renamed on next legohdl call
 
@@ -81,6 +81,7 @@ derives:
 
 
 __Completed__
+- [x] allow users to simply enter a git remote url for adding a market rather than a key/value pair (name is already handled in the .mrkt file) -> use just `<value>` if its an already existing market to add. use `key/val` to create a new market with that name `key`.
 - [x] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts -> automatically prints the new appended settings by default
 - [x] if using -ask, and yes to scripts, then overload script settings as well.
 - [x] add code to default scripts (hello-world)

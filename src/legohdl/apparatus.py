@@ -319,6 +319,7 @@ scripts)?", warning=False)
         '''
         acting_ws = cls.SETTINGS['active-workspace']
         coupled_ws = tuple(cls.SETTINGS['workspace'].items())
+        all_mrkts = list(cls.getMarkets(workspace_level=False).keys())
         for ws,val in coupled_ws:
             #check if there is a name conflict
             if(cls.isConflict(cls.getWorkspaceNames(), ws)):
@@ -333,6 +334,12 @@ scripts)?", warning=False)
             if('market' not in val.keys() or isinstance(val['market'],list) == False):
                 val['market'] = list()
                 cls.SETTINGS['workspace'][ws]['market'] = list()
+            #automatically remove invalid market names from workspace's market list
+            ws_mrkts = list(cls.SETTINGS['workspace'][ws]['market'])
+            for mrkt in ws_mrkts:
+                if mrkt not in all_mrkts:
+                    cls.SETTINGS['workspace'][ws]['market'].remove(mrkt)
+            #try to initialize workspace
             cls.initializeWorkspace(ws, cls.fs(val['local']))
 
         #remove any hidden workspace folders that are no longer in the settings.yml
@@ -383,6 +390,61 @@ scripts)?", warning=False)
             return True
 
     @classmethod
+    def loadMarket(cls, value):
+        '''
+        This method determines if the value is a valid remote url wired to a
+        valid market (indicated by having a .mrkt file). Returns the market name
+        if successfully imported it, returns false otherwise. It will attempt to
+        add it in if the name is not already taken.
+        '''
+        tmp_dir = cls.HIDDEN+"tmp/"
+        mrkt_names = cls.getMarketNames()
+        value = cls.fs(value)
+        if(cls.isValidURL(value)):
+            #clone the repository and see if it is a valid profile
+            log.info("Grabbing market from... "+value)
+            os.makedirs(tmp_dir)
+            git.Git(tmp_dir).clone(value)
+            url_name = value[value.rfind('/')+1:value.rfind('.git')]
+            path_to_check = cls.fs(tmp_dir+url_name)
+        else:
+            log.error("Invalid remote repository URL.")
+            return False
+
+        #check if a .prfl file exists for this folder (validates profile)
+        log.info("Locating .mrkt file... ")
+        mrkt_file = glob.glob(path_to_check+"*"+cls.MRKT_EXT)
+        if(len(mrkt_file)):
+            sel_mrkt = os.path.basename(mrkt_file[0].replace('.mrkt',''))
+            pass
+        else:
+            log.error("Invalid market; no .mrkt file found.")
+            #delete if it was cloned for evaluation
+            if(os.path.exists(tmp_dir)):   
+                shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
+            return False
+
+        success = (cls.isConflict(mrkt_names,sel_mrkt) == False)
+        if(success):
+            #insert market into markets directory
+            log.info("Importing new market "+sel_mrkt+"...")
+            if(os.path.exists(cls.MARKETS+sel_mrkt) == False):
+                shutil.copytree(path_to_check, cls.MARKETS+sel_mrkt)
+            else:
+                shutil.rmtree(cls.MARKETS+sel_mrkt, onerror=cls.rmReadOnly)
+                shutil.copytree(path_to_check, cls.MARKETS+sel_mrkt)
+            
+            cls.SETTINGS['market'][sel_mrkt] = value  
+        #remove temp directory
+        if(os.path.exists(tmp_dir)):  
+            shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
+        
+        if(success):
+            return sel_mrkt
+        else:
+            return success
+
+    @classmethod
     def loadProfile(cls, value, explicit=False, append=False):
         '''
         This method determines if the value is an existing profile name or a git
@@ -431,7 +493,7 @@ scripts)?", warning=False)
                 sel_prfl = os.path.basename(prfl_file[0].replace('.prfl',''))
                 pass
             else:
-                log.error("Invalid profile; no .prfl file found")
+                log.error("Invalid profile; no .prfl file found.")
                 #delete if it was cloned for evaluation
                 if(os.path.exists(tmp_dir)):   
                     shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
