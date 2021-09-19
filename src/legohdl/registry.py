@@ -51,6 +51,7 @@ class Registry:
         #try to create system-wide markets if DNE
         for rem,val in mrkts.items():
             Market(rem,val)
+
         #if a folder exists in registry path but key is not in settings, delete the registry
         regs = os.listdir(apt.MARKETS)
         for r in regs:

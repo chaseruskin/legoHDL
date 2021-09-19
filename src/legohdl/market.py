@@ -41,6 +41,8 @@ class Market:
                 shutil.copytree(tmp_dir+url_name, self.getPath())
                 shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
             else:
+                self.url = None
+                apt.SETTINGS['market'][self.getName(low=False)] = None
                 git.Repo.init(self.getPath())
                 log.warning("No remote repository configured for "+self.getName(low=False))
                 #create blank market marker file

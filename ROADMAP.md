@@ -31,7 +31,7 @@ derives:
 
 - [ ] add ability to add summary text to .prfl and .mrkt files to then use "show" command to read the description about the given profile/market.
 
-- [!] #10 handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. One step further (the real issue), also a block has conflicts if the block has entities/modules that are already defined in a user's workspace. -> or allow user to specify if found multiple entity names when generating dependency tree -> yes. Maybe also specify market name on commands that require using a block title if ambigiuous (multiple exist). Identify if its the same block based on title and if they have the same git url.
+- [ ] ! #10 handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. One step further (the real issue), also a block has conflicts if the block has entities/modules that are already defined in a user's workspace. -> or allow user to specify if found multiple entity names when generating dependency tree -> yes. Maybe also specify market name on commands that require using a block title if ambigiuous (multiple exist). Identify if its the same block based on title and if they have the same git url.
 
 - [ ] If two blocks (same titles) exist in separate markets (A and B) and market A is added (good) and then market B is added (conflict), ask user what block to use. The other block will be effectively ignored in the workspace. User should have the ability to later change decision at any point. Problem arises when same title yet different git urls. -> This is no longer being pursued. see #10.
 
@@ -42,8 +42,6 @@ derives:
 - [ ] if an already existing profile's .prfl file gets changed, then needs to move to temp directory and have its folder renamed on next legohdl call
 
 - [ ] if a user explicitly defines an architecture to use for an instance, only read that architecture?
-
-- [ ] allow scripts to live/import into any depth inside built-in scripts folder
 
 - [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
 
@@ -87,6 +85,7 @@ __Completed__
 - [x] if using -ask, and yes to scripts, then overload script settings as well.
 - [x] add code to default scripts (hello-world)
 - [x] if multi-develop is ON and issue a warning when trying to use 'port' command on a block that has no release points but is in downloads ("This block is unstable (has no released versions") and IF outside of that block's directory -> else do not print port command (user cant use it) if multi-develop is set to OFF and IF outside of that block's directory
+- [o] allow scripts to live/import into any depth inside built-in scripts folder
 - [x] same routine for checking duplicate market names (evaulated as .lower()) needs to hold true as well for routines for profile keys and workspace keys
 - [x] have a .mrkt file exist within a market repository to signify its name rather than using the settings name? Would it be beneficial if -> leaning yes
 - [x] add verilog/systemverilog file support (parse verilog for module dependencies/instances)
