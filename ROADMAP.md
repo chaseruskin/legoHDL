@@ -2,14 +2,12 @@
 
 - [ ] ** use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
-- [ ] allow users to simply enter a git remote url for adding a market rather than a key/value pair (name is already handled in the .mrkt file)
+- [ ] allow users to simply enter a git remote url for adding a market rather than a key/value pair (name is already handled in the .mrkt file) -> use just `<value>` if its an already existing market to add. use `key/val` to create a new market with that name `key`.
 
 - [ ] add docstrings to every function/method
 
 - [ ] add default market for default profile (OpenSquare)
 - [ ] add code to default scripts in profile (modelsim, and xsim)
-
-- [ ] allow users to edit/add a README to a market through command-line? or just open the market repository?
 
 all users downloaded the same market and therefore the market had the same name (users couldnt change it) so then you know what market it came from. What happens if someone tries to rename the .mrkt file? -> issue warning that bad things may happen -> ?(append a -1,-2,-3,etc. to duplicate market names on a user's machine to help legohdl determine 
 which market to access)
@@ -38,6 +36,8 @@ derives:
 - [ ] If two blocks (same titles) exist in separate markets (A and B) and market A is added (good) and then market B is added (conflict), ask user what block to use. The other block will be effectively ignored in the workspace. User should have the ability to later change decision at any point. Problem arises when same title yet different git urls. -> This is no longer being pursued. see #10.
 
 - [ ] cross check version tags with the hidden version.log (in case a legohdl tag was manually created by a user) -> delete the tag if not valid
+
+- [ ] allow users to edit/add a README to a market through command-line? or just open the market repository?
 
 - [ ] if an already existing profile's .prfl file gets changed, then needs to move to temp directory and have its folder renamed on next legohdl call
 
