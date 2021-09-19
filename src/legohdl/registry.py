@@ -299,7 +299,8 @@ class Registry:
         return (l in folder.keys() and (n in folder[l].keys() or n == '*'))
         pass
     
-    #TO-DO > work with APIs to be able to allow a user to automatically create a new remote repo if DNE
+    # :todo: work with APIs to be able to allow a user to automatically create a new remote repo if DNE
+    @DeprecationWarning
     def createProjectRemote(self, git_url):
         mode = None
         keyword = 'https://'
@@ -315,71 +316,3 @@ class Registry:
         tail = tail.replace(".git","")
         print(base,"---"+tail)
         pass
-
-    def encrypt(self, token, file):
-        log.info("Encrypting access token... ",end='')
-        random.seed()
-        with open(apt.HIDDEN+file+".bin", 'w') as file:
-            for letter in token:
-                secret = bin(ord(letter))[2:]
-                secret = ((8-len(secret))*"0")+secret #pad to make fixed 8-bits
-                for x in range(len(secret)):
-                    file.write(str(random.randint(0, 1)) + secret[x])
-                pass
-            file.close()
-        print("success")
-        pass
-
-    def decrypt(self, file):
-        token = ''
-        with open(apt.HIDDEN+file+".bin", 'r') as file:
-            binary_str = file.read()
-            while len(binary_str):
-                tmp = ''
-                for x in range(8*2):
-                    if x % 2 == 0:
-                        binary_str = binary_str[1:]
-                        continue
-                    tmp += binary_str[0]
-                    binary_str = binary_str[1:]
-                token += chr((int('0b'+tmp, base=2)))
-            file.close()
-        return token
-
-    @DeprecationWarning
-    def assignRandomID(self):
-        MIN_ID = 10000000
-        MAX_ID = 99999999
-        id = random.randint(MIN_ID, MAX_ID)
-        while id in self.__local_reg.keys():
-            id = random.randint(MIN_ID, MAX_ID)
-        return id
-
-    @DeprecationWarning
-    def accessGitlabAPI(self, base, tail, api_ext='', multi=False):
-        sect = 'groups/hdldb/projects?name='
-        if(not multi):
-            sect = 'projects?name='
-            print(tail[1:])
-        print("Trying to access remote...",end=' ')
-        link = base+"/api/v4/"+sect+tail[1:]
-        tk = self.decrypt('gl-token')
-        #try to create new project
-        z = requests.get(link, headers={'PRIVATE-TOKEN': tk})
-        if(z.status_code == 200):
-            print("success")
-        else:
-            print("error")
-        return json.loads(z.text)
-
-    @DeprecationWarning
-    def createSubgroup(self, name, parent):
-        print("Trying to create remote library "+name+"...",end=' ')
-        link = self.__base_url+"/api/v4/groups/?name="+name+"&path="+name+"&visibility=private&parent_id="+str(parent['id'])
-        tk = self.decrypt('gl-token')
-        z = requests.post(link, headers={'PRIVATE-TOKEN': tk})
-        if(z.status_code == 201):
-            print("success")
-        else:
-            print("error")
-    pass
