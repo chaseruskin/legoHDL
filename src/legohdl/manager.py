@@ -698,14 +698,11 @@ class legoHDL:
                 exit(log.error("Workspace not added. Provide a local path for the workspace"))
             pass
         elif(options[0] == 'profile'):
-            choice = choice.lower()
-            if(choice not in apt.getProfiles()):
+            if(choice.lower() not in apt.getProfileNames().keys()):
                 #add to settings
-                apt.SETTINGS[options[0]+'s'].append(choice)
-                #create new directory
-                apt.dynamicProfiles()
+                apt.loadProfile(choice, append=True)
             else:
-                exit(log.error("A profile already exists as "+choice+"."))
+                exit(log.error("A profile already exists as "+apt.getProfileNames()[choice.lower()]+"."))
         # BUILD SCRIPT CONFIGURATION
         elif(options[0] == 'script'):
             if(val == None):

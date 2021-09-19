@@ -256,6 +256,21 @@ scripts)?", warning=False)
         return cls.fs(path).startswith(cls.fs(inner_path)) and (path != inner_path)
 
     @classmethod
+    def getProfileNames(cls):
+        '''
+        This method returns a dictionary of the lower-case names to the
+        true-case names for each profile.
+        '''
+        if(hasattr(cls, "_prfl_map")):
+            return cls._prfl_map
+
+        cls._prfl_map = {}
+        names = cls.getProfiles()
+        for n in names:
+            cls._prfl_map[n.lower()] = n
+        return cls._prfl_map
+
+    @classmethod
     def dynamicProfiles(cls):
         #identify valid profiles in the hidden direcotory
         found_prfls = cls.getProfiles()
@@ -367,34 +382,44 @@ scripts)?", warning=False)
         else:
             return True
 
-    #determines if value is an existing profile or a path to a new profile to be copied in
-    #will stage the profile into the correct place
     @classmethod
-    def loadProfile(cls, value, explicit=False):
+    def loadProfile(cls, value, explicit=False, append=False):
+        '''
+        This method determines if the value is an existing profile name or a git
+        repository/path to a valid profile. It will stage the profile into the 
+        correct place.
+        '''
         prfl_dir = cls.HIDDEN+"profiles/"
         tmp_dir = cls.HIDDEN+"tmp/"
         #get all available profiles
-        profiles = cls.getProfiles()
+        prfl_names = cls.getProfileNames()
         sel_prfl = None
         #see if this is a profile that already exists
-        if(value in profiles):
-            sel_prfl = value
+        if(value.lower() in prfl_names.keys()):
+            sel_prfl = prfl_names[value.lower()]
             log.info("Loading existing profile "+sel_prfl+"...")
         else:
             value = cls.fs(value)
-            #clone the repository and see if it is a valid profile
-            log.info("Grabbing profile from... "+value)
             if(cls.isValidURL(value)):
+                #clone the repository and see if it is a valid profile
+                log.info("Grabbing profile from... "+value)
                 os.makedirs(tmp_dir)
                 git.Git(tmp_dir).clone(value)
                 url_name = value[value.rfind('/')+1:value.rfind('.git')]
                 path_to_check = cls.fs(tmp_dir+url_name)
             #check if the path is a local directory
             elif(os.path.isdir(value)):
+                log.info("Grabbing profile from... "+value)
                 path_prts = value.strip('/').split('/')
                 url_name = path_prts[len(path_prts)-1]
                 path_to_check = value
                 pass
+            elif(append):
+                #add to settings
+                cls.SETTINGS['profiles'].append(value)
+                #create new directories if applicable
+                cls.dynamicProfiles()
+                return True
             else:
                 log.error("This is not an existing profile name, path, or repository")
                 return False
@@ -425,8 +450,10 @@ scripts)?", warning=False)
             if(os.path.exists(tmp_dir)):  
                 shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
             pass
+
         #perform backend operation to overload settings, template, and scripts
-        cls.importProfile(sel_prfl, explicit=explicit)
+        if(append == False):
+            cls.importProfile(sel_prfl, explicit=explicit)
         return True
 
     #perform backend operation to overload settings, template, and scripts
@@ -437,14 +464,15 @@ scripts)?", warning=False)
         if(prfl_name not in cls.SETTINGS['profiles']):
             cls.SETTINGS['profiles'] += [prfl_name]
         #merge all values found in src override dest into a new dictionary
-        def deepMerge(src, dest, setting=""):
+        def deepMerge(src, dest, setting="", scripts_only=False):
             for k,v in src.items():
                 next_level = setting
                 if(setting == ""):
                     next_level = k
                 else:
                     next_level = next_level + ":" + k
-
+                if(scripts_only and next_level.startswith('script') == 0):
+                    continue
                 #go even deeper into the dictionary tree
                 if(isinstance(v, dict)):
                     if(k not in dest.keys()):
@@ -518,6 +546,12 @@ scripts)?", warning=False)
                         copied_script.close()
                         pass
                     pass
+                log.info('Overloading scripts in settings.yml...')
+                with open(prfl_path+'settings.yml', 'r') as f:
+                    prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
+                    dest_settings = copy.deepcopy(cls.SETTINGS)
+                    dest_settings = deepMerge(prfl_settings, dest_settings, scripts_only=True)
+                    cls.SETTINGS = dest_settings
             pass
 
         cls.save()

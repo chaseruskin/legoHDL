@@ -7,7 +7,7 @@
 - [ ] add docstrings to every function/method
 
 - [ ] add default market for default profile (OpenSquare)
-- [ ] add code to default scripts in profile (a hello-world, modelsim, and xsim)
+- [ ] add code to default scripts in profile (modelsim, and xsim)
 
 - [ ] allow users to edit/add a README to a market through command-line? or just open the market repository?
 
@@ -75,8 +75,6 @@ derives:
 - [ ] allow scripts/alias to be stored as a list
 - [ ] editor can be stored as a list too
 
-- [x] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts -> automatically prints the new appended settings by default
-
 - [ ] add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
 
 - [ ] if going from already installed to download, ensure all requirements are installed else give an error stating the missing installations 
@@ -85,6 +83,9 @@ derives:
 
 
 __Completed__
+- [x] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts -> automatically prints the new appended settings by default
+- [x] if using -ask, and yes to scripts, then overload script settings as well.
+- [x] add code to default scripts (hello-world)
 - [x] if multi-develop is ON and issue a warning when trying to use 'port' command on a block that has no release points but is in downloads ("This block is unstable (has no released versions") and IF outside of that block's directory -> else do not print port command (user cant use it) if multi-develop is set to OFF and IF outside of that block's directory
 - [x] same routine for checking duplicate market names (evaulated as .lower()) needs to hold true as well for routines for profile keys and workspace keys
 - [x] have a .mrkt file exist within a market repository to signify its name rather than using the settings name? Would it be beneficial if -> leaning yes
