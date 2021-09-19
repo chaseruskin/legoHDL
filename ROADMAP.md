@@ -7,9 +7,6 @@
 - [ ] add default market for default profile (OpenSquare)
 - [ ] add code to default scripts in profile (modelsim, and xsim)
 
-all users downloaded the same market and therefore the market had the same name (users couldnt change it) so then you know what market it came from. What happens if someone tries to rename the .mrkt file? -> issue warning that bad things may happen -> ?(append a -1,-2,-3,etc. to duplicate market names on a user's machine to help legohdl determine 
-which market to access)
-
 - [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list, examples: 
 ```
 derives:
@@ -61,6 +58,8 @@ derives:
 - [-] have some way of notifying user that a block is missing from installations when trying to export -> is somewhat implemented as a warning in some cases if it has the library available but can't find the unit name
 
 - [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive --open, -o (argparse?)
+
+- [ ] % all users downloaded the same market and therefore the market had the same name (users couldnt change it) so then you know what market it came from. What happens if someone tries to rename the .mrkt file? -> issue warning that bad things may happen -> ?(append a -1,-2,-3,etc. to duplicate market names on a user's machine to help legohdl determine which market to access). Markets cannot share same namespace (case-insensitive.)
 
 - [ ] for list command, highlight if a profile is availble to be updated (bonus)
 
