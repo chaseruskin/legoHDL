@@ -493,7 +493,8 @@ scripts)?", warning=False)
                                 #find replace all parts of string with %LEGOHDL%
                                 if(isinstance(v,str)):
                                     v = v.replace("%LEGOHDL%", cls.HIDDEN[:len(cls.HIDDEN)-1])
-                                dest[k] += [i]
+                                if(i not in dest[k]):
+                                    dest[k] += [i]
                     #otherwise normal overwrite
                     else:
                         if(isinstance(v,str)):
@@ -502,6 +503,7 @@ scripts)?", warning=False)
                         if(k in dest.keys() and k == 'local' and v == None):
                             continue
                         dest[k] = v
+                    #print to console the overloaded settings
                     log.info(next_level+" = "+str(v))
             return dest
 
