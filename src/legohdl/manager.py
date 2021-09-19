@@ -625,11 +625,14 @@ class legoHDL:
         elif(options[0] == 'market'):
             #try to link existing market into markets
             if(val == None):
-                result = apt.loadMarket(key)
-                if(result == False):
-                    exit(log.error("Setting not saved."))
-                key = result
-                val = apt.getMarkets(workspace_level=False)[key]
+                if(key.lower() not in apt.getMarketNames().keys()):
+                    result = apt.loadMarket(key)
+                    if(result == False):
+                        exit(log.error("Setting not saved."))
+                    key = result
+                    val = apt.getMarkets(workspace_level=False)[key]
+                else:
+                    key = apt.getMarketNames()[key]
             else:
                 if(val == ''):
                     val = None
