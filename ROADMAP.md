@@ -14,15 +14,17 @@ derives:
 - [ ] perform a "git restore ." on a block in cache to make sure the source code is consistent even if designer
 accidently altered it previously
 
-- [ ] thoughts on resolving multiple L.N's spanning different markets (say mA.L.N and mB.L.N): It is a cache, so if mB.L.N were to exist, then user would have to uninstall the other mA.L.N from cache to free up that "address" for the mB.L.N to be installed. Only one L.N could be installed at a time. This allows for multiple blocks of same library and name to technically coexist. However, an issue arises when a block uses both as dependencies, one could be directly but the other could be used indirectly down the dependency tree. A L.N can be identified as same or different based on a variety of things, market name, remote url, but most importantly the first few git commits. If the SHA's match between blocks, then it can be very confident in saying its the same block and no conflict exists. If they don't match, then there are different duplicate L.N's existing.
+- [ ] thoughts on resolving multiple L.N's spanning different markets (say mA.L.N and mB.L.N): It is a cache, so if mB.L.N were to exist, then user would have to uninstall the other mA.L.N from cache to free up that "address" for the mB.L.N to be installed. Only one L.N could be installed at a time. This allows for multiple blocks of same library and name to technically coexist. However, an issue arises when a block uses both as dependencies, one could be directly but the other could be used indirectly down the dependency tree. Perform this check when generating block order on export/graph, one block should not reference L.N.. A L.N can be identified as same or different based on a variety of things, market name, remote url, but most importantly the first few git commits. If the SHA's match between blocks, then it can be very confident in saying its the same block and no conflict exists. If they don't match, then there are different duplicate L.N's existing.  
 
 ### Future Roadmap
 
 - [ ] internal: add docstrings to every function/method
 
+- [ ] improve deciphering when unit calls decipher to also pass in entity name to know when to start parsing if multiple entities exist in same file
+
 - [ ] #9 use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
-- [ ] intelligent component recognition (intellisense): Multiple entities can share the same exact name, but legoHDL will be able to identify which entity you are referencing in your design based on factors like port names and port list size within the instantiation. Although some EDA tools don't support having multiple units with same name, we can have multiple units with same name as long as they are not being used in the same current project dependency tree.
+- [ ] intelligent component recognition (intellisense): Multiple entities can share the same exact name, but legoHDL will be able to identify which entity you are referencing in your design based on factors like port names and port list size within the instantiation. Although some EDA tools don't support having multiple units with same name, we can have multiple units with same name as long as they are not being used in the same current project dependency tree. *Won't export if identifies using 2 different entities of same name, will prompt to change the entity name in the current project.
 
 - [ ] ambiguity resolution: you can have block's with the same library and name as long as they don't have the same market. If blocks with same L and N exist, then must also prepend the M to determine what block you are referencing in legoHDL commands. like ufl.arith.adder and std.arith.adder. Intellisense will be able to identify which design you instantiated and export the right file accordingly. ? - Use a "cache-2" folder when a conflict arises, so that L+N folder will then exist in cache-2 under an additional market name folder (cache-2/std/arith/adder while the other one lives cache/arith/adder).
 
@@ -41,7 +43,9 @@ accidently altered it previously
 
 - [ ] keep a extra file of the market urls to note when one changes through manual edit if it is still a valid remote
 
-- [ ] if an already existing profile's .prfl file gets changed, then needs to move to temp directory and have its folder renamed on next legohdl call
+- [ ] #5. if an already existing profile's .prfl file gets changed, then needs to move to temp directory and have its folder renamed on next legohdl call. 
+
+- [ ] ? #5-1. if an already existing market's .mrkt file gets changed, then move to temp dir and have its folder renamed on next legohdl call. Have all blocks that referenced the old market to now reference the correct market in their block.lock?
 
 - [ ] if a user explicitly defines an architecture to use for an instance, only read that architecture?
 
