@@ -21,6 +21,10 @@ derives:
 ```
 ### Future Roadmap
 
+- [ ] intelligent component recognition (intellisense): Multiple entities can share the same exact name, but legoHDL will be able to identify which entity you are referencing in your design based on factors like port names and port list size within the instantiation. Although some EDA tools don't support having multiple units with same name, we can have multiple units with same name as long as they are not being used in the same current project dependency tree.
+
+- [ ] ambiguity resolution: you can have block's with the same library and name as long as they don't have the same market. If blocks with same L and N exist, then must also prepend the M to determine what block you are referencing in legoHDL commands. like ufl.arith.adder and std.arith.adder. Intellisense will be able to identify which design you instantiated and export the right file accordingly.
+
 - [ ] cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag on port command
 - [ ] support verilog header files, verilog packages
 
