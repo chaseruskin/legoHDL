@@ -1,7 +1,5 @@
 ## Roadmap to Release v1.0.0
 
-- [ ] * use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
-
 - [ ] add docstrings to every function/method
 
 - [ ] add default market for default profile (OpenSquare)
@@ -20,6 +18,8 @@ derives:
 - tmp.testb(v1.0.0)
 ```
 ### Future Roadmap
+
+- [ ] * use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
 - [ ] intelligent component recognition (intellisense): Multiple entities can share the same exact name, but legoHDL will be able to identify which entity you are referencing in your design based on factors like port names and port list size within the instantiation. Although some EDA tools don't support having multiple units with same name, we can have multiple units with same name as long as they are not being used in the same current project dependency tree.
 

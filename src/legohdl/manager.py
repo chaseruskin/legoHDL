@@ -8,14 +8,13 @@
 ################################################################################
 
 import os, sys, shutil
-import yaml
+import yaml,git
+import logging as log
 from .block import Block
 from .__version__ import __version__
 from .registry import Registry
 from .apparatus import Apparatus as apt
 from .market import Market
-import git
-import logging as log
 from .unit import Unit
 
 class legoHDL:
@@ -23,7 +22,10 @@ class legoHDL:
     #! === INITIALIZE ===
 
     def __init__(self):
-
+        '''
+        Initialize the legoHDL tool. This method specifically parses the command
+        line arguments, loads tool-wide settings, and initializes the registry.
+        '''
         command = package = ""
         options = []
         #store args accordingly from command-line
@@ -60,6 +62,12 @@ class legoHDL:
 
     #install block to cache, and recursively install dependencies
     def install(self, title, ver=None, required_by=[]):
+        '''
+        This method performs the install command. It will recursively install
+        any dependencies and ensure no duplicate installation attempts through the
+        'required_by' argument. If ver=None, it will install the latest version.
+        Title consists of a block's L and N.
+        '''
         l,n = Block.split(title, vhdl=False)
         block = None
         cache_path = apt.WORKSPACE+"cache/"
@@ -140,6 +148,13 @@ class legoHDL:
     #! === UNINSTALL COMMAND ===
 
     def uninstall(self, blk, ver):
+        '''
+        This method performs the uninstall command. A warning with a preview of
+        the directories/versions that will be deleted are issued to the user
+        before proceeding to delete the installations. If deleting a version
+        that is also the major version, it will attempt to find a new 
+        replacement for being the highest major version.
+        '''
         #remove from cache
         l,n = Block.split(blk)
         base_cache_dir = apt.WORKSPACE+"cache/"+l+"/"+n+"/"
@@ -234,6 +249,11 @@ class legoHDL:
     #! === BUILD COMMAND ===
 
     def build(self, script):
+        '''
+        This method performs the build command. It will search the available
+        scripts in the settings and call it accordingly. Arguments found after
+        the script name on the command line are passed to the build script.
+        '''
         script_identifier = "+"
         arg_start = 3
         
@@ -269,6 +289,12 @@ class legoHDL:
     #! === EXPORT/GRAPH COMMAND ===
 
     def export(self, block, top=None):
+        '''
+        This method performs the export command. The requirements are organized 
+        into a topologically sorted graph and written to the recipe file. It
+        also searches for recursive/shallow custom labels within the required
+        blocks.
+        '''
         log.info("Exporting...")
         log.info("Block's path: "+block.getPath())
         build_dir = block.getPath()+"build/"
@@ -397,6 +423,11 @@ class legoHDL:
         pass
 
     def formGraph(self, block, top):
+        '''
+        This method performs the graph command. It generates the unit order
+        through a topologically sorted graph and prints it to the user for
+        visual aide. It is a inner part to the export command.
+        '''
         log.info("Generating dependency tree...")
         #start with top unit (returns all units if no top unit is found (packages case))
         block.grabUnits(top, override=True)
@@ -429,6 +460,10 @@ class legoHDL:
 
     #given a dependency graph, write out the actual list of files needed
     def compileList(self, block, unit_order):
+        '''
+        This method is used in the export command. It formats the units with
+        their file into the recipe structure with respective labels.
+        '''
         recipe_list = []
         for u in unit_order:
             line = '@'
@@ -455,6 +490,12 @@ class legoHDL:
 
     #will also install project into cache and have respective pkg in lib
     def download(self, title, reinstall=True):
+        '''
+        This method performs the download command. It will force a reinstallation
+        when 'reinstall' is True. A title is a block's L and N. It will try to
+        clone from a git repository if available, else it will clone from the
+        cache.
+        '''
         l,n = Block.split(title)
         #1. download
         #update local block if it has a remote
@@ -502,6 +543,11 @@ class legoHDL:
     #! === RELEASE COMMAND ===
 
     def upload(self, block, msg=None, options=None):
+        '''
+        This method performs the release command. A block becomes released and
+        gains a release point with a special git tag. Users can optionally pass
+        a 'msg' for the git commit.
+        '''
         err_msg = "Flag the next version for release with one of the following args:\n"\
                     "\t[-v0.0.0 | -maj | -min | -fix]"
         if(len(options) == 0):
@@ -532,6 +578,10 @@ class legoHDL:
     #! === CONFIG COMMAND ===
 
     def configure(self, options, choice, delete=False):
+        '''
+        This method performs the config command. It is in charge of handling
+        setting settings through the command-line interface.
+        '''
         if(len(options) == 0):
             log.error("No setting was flagged to as an option")
             return
@@ -828,6 +878,11 @@ class legoHDL:
     #! === INIT COMMAND ===
     
     def convert(self, title, value, options=[]):
+        '''
+        This method performs the init command. It takes an existing project
+        and tries to convert it into a valid block by creating a Block.lock 
+        file, and a git repository if needed.
+        '''
         #must look through tags of already established repo
         l,n = Block.split(title, lower=False)
         if((l == '' or n == '') and len(options) == 0):
@@ -917,12 +972,19 @@ class legoHDL:
         pass
 
     def validateMarketAndURL(self, options):
+        '''
+        This method helps validate if an option passed from command-line is
+        indeed a valid market and also if there is a valid git url found in the
+        options. If found, they are removed from the options. Returns 'None' for
+        a market or url if not found. Returns the market object if found and the
+        git url if found.
+        '''
         mkt_sync = None
         git_url = None
         #try to find a valid market being used
         for mkt in self.db.getMarkets():
             for opt in options:
-                if(mkt.getName() == opt):
+                if(mkt.getName(low=True) == opt.lower()):
                     log.info("Tying market "+mkt.getName()+" to this initialized block...")
                     mkt_sync = mkt
                     options.remove(opt)
@@ -941,6 +1003,11 @@ class legoHDL:
     #! === DEL COMMAND ===
 
     def cleanup(self, block, force=False):
+        '''
+        This method performs the del command. The force parameter will also
+        remove all installations from the cache. If this is all that is left of
+        a block, a warning will be issued to the user before deletion.
+        '''
         if(not block.isValid()):
             log.info('Block '+block.getName()+' does not exist locally.')
             return
@@ -978,11 +1045,17 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
     #! === LIST COMMAND ===
 
     def inventory(self, search_for, options):
+        '''
+        This method perfoms the list command for blocks.
+        '''
         self.db.listBlocks(search_for.lower(), options)
         print()
         pass
 
     def listLabels(self):
+        '''
+        This method perfoms the list command for labels.
+        '''
         print('{:<20}'.format("Label"),'{:<24}'.format("Extension"),'{:<14}'.format("Recursive"))
         print("-"*20+" "+"-"*24+" "+"-"*14+" ")
         for depth,pair in apt.SETTINGS['label'].items():
@@ -995,6 +1068,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         pass
 
     def listMarkets(self):
+        '''
+        This method perfoms the list command for markets.
+        '''
         print('{:<16}'.format("Market"),'{:<50}'.format("URL"),'{:<12}'.format("Available"))
         print("-"*16+" "+"-"*50+" "+"-"*12)
         for key,val in apt.SETTINGS['market'].items():
@@ -1008,6 +1084,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         pass
 
     def listProfiles(self):
+        '''
+        This method perfoms the list command for profiles.
+        '''
         prfls = apt.getProfiles()
         last_prfl = open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'r').readline()
         # :todo: also indicate if an update is available
@@ -1034,6 +1113,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             pass
     
     def listWorkspace(self):
+        '''
+        This method perfoms the list command for workspaces.
+        '''
         print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Markets"))
         print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
         for key,val in apt.SETTINGS['workspace'].items():
@@ -1048,6 +1130,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         pass
 
     def listScripts(self):
+        '''
+        This method perfoms the list command for scripts.
+        '''
         print('{:<12}'.format("Name"),'{:<12}'.format("Command"),'{:<54}'.format("Path"))
         print("-"*12+" "+"-"*12+" "+"-"*54)
         for key,val in apt.SETTINGS['script'].items():
@@ -1065,6 +1150,13 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
     #! === UPDATE COMMAND ===
 
     def update(self, title, ver=None, bypassMrkt=False):
+        '''
+        This method perfoms the update command for blocks and/or profiles. The
+        bypassMrkt parameter is set True when a block is being newly released,
+        it won't look to market when updating if the block does not link to 
+        market anymore to perform re-installation. Update will perform git pull
+        on the cache and update the cache's main/master git commit line.
+        '''
         l,n = Block.split(title)
         #check if market version is bigger than the installed version
         c_ver = '0.0.0'
@@ -1101,6 +1193,11 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
     #! === PARSING ===
 
     def parse(self, cmd, pkg, opt):
+        '''
+        This method is the logic for branching between the available commands
+        for legoHDL. Some commands can only be ran from within the root of a 
+        block's directory.
+        '''
         #check if we are in a project directory (necessary to run a majority of commands)
         self.blockCWD = Block(path=os.getcwd()+"/")
    
@@ -1455,7 +1552,11 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
     #! === HELP COMMAND ===
 
     def commandHelp(self, cmd):
-
+        '''
+        This method performs the help command. It prints additional information
+        regarding a requrest command, such as description, format, and 
+        arguments.
+        '''
         def printFmt(cmd,val,options='',quiet=False):
             if(not quiet):
                 print("USAGE:")
@@ -1754,12 +1855,12 @@ The name of the .prfl file is the name of the profile itself.
             pass
         print()
         exit()
-        pass
     pass
+
 
 def main():
     legoHDL()
 
-
+#entry-point
 if __name__ == "__main__":
     main()
