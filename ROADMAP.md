@@ -11,6 +11,8 @@ derives:
 - myMarket.basic.mux_2x1(v1.0.1)
 ```
 
+- [ ] ? switch behavior of explicitly setting top-level to not try to automatically find top-level testbench associated with the design if the design is passed in (user can always pass in tb)
+
 - [ ] perform a "git restore ." on a block in cache to make sure the source code is consistent even if designer
 accidently altered it previously
 
