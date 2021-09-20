@@ -401,6 +401,8 @@ derives: []
             self.__metadata = yaml.load(file, Loader=yaml.FullLoader)
             file.close()
 
+        self._initial_metadata = self.__metadata.copy()
+
         #ensure all pieces are there
         for key in apt.META:
             if(key not in self.__metadata.keys()):
@@ -784,8 +786,10 @@ derives: []
     
     #write the values computed for metadata back to the file
     def save(self, meta=None):
-        #unlock metadata to write to it (NOT USED)
-        #os.chmod(self.metadataPath(), stat.S_IWOTH | stat.S_IWGRP | stat.S_IWUSR | stat.S_IWRITE)
+        #do no rewrite meta data if nothing has changed
+        if(self._initial_metadata == self.__metadata):
+            return
+
         #write back YAML values with respect to order
         with open(self.metadataPath(), "w") as file:
             for key in apt.META:
@@ -799,8 +803,6 @@ derives: []
                 pass
             pass
             file.close()
-        #lock metadata into read-only mode
-        #os.chmod(self.metadataPath(), stat.S_IROTH | stat.S_IRGRP | stat.S_IREAD | stat.S_IRUSR)
         pass
 
     #return true if a remote repository is linked to this block

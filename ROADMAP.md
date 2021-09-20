@@ -11,6 +11,9 @@ derives:
 - myMarket.basic.mux_2x1(v1.0.1)
 ```
 
+- [ ] perform a "git restore ." on a block in cache to make sure the source code is consistent even if designer
+accidently altered it previously
+
 - [ ] thoughts on resolving multiple L.N's spanning different markets (say mA.L.N and mB.L.N): It is a cache, so if mB.L.N were to exist, then user would have to uninstall the other mA.L.N from cache to free up that "address" for the mB.L.N to be installed. Only one L.N could be installed at a time. This allows for multiple blocks of same library and name to technically coexist. However, an issue arises when a block uses both as dependencies, one could be directly but the other could be used indirectly down the dependency tree. A L.N can be identified as same or different based on a variety of things, market name, remote url, but most importantly the first few git commits. If the SHA's match between blocks, then it can be very confident in saying its the same block and no conflict exists. If they don't match, then there are different duplicate L.N's existing.
 
 ### Future Roadmap
@@ -79,6 +82,7 @@ derives:
 
 
 __Completed__
+- [x] does not rewrite Block.lock if the metadata has not changed on a legohdl call.
 - [x] allow users to simply enter a git remote url for adding a market rather than a key/value pair (name is already handled in the .mrkt file) -> use just `<value>` if its an already existing market to add. use `key/val` to create a new market with that name `key`.
 - [x] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts -> automatically prints the new appended settings by default
 - [x] if using -ask, and yes to scripts, then overload script settings as well.
