@@ -11,6 +11,8 @@ derives:
 - myMarket.basic.mux_2x1(v1.0.1)
 ```
 
+- [ ] have ability to set top-level entity on release to avoid maybe auto-selecting a top-level implementation wrapper
+
 - [ ] perform a "git restore ." on a block in cache to make sure the source code is consistent even if designer
 accidently altered it previously
 
