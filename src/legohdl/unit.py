@@ -12,6 +12,7 @@
 
 from enum import Enum
 import os
+
 from .vhdl import Vhdl
 from .verilog import Verilog
 from .graph import Graph
@@ -93,11 +94,17 @@ class Unit:
     def getFile(self):
         return apt.fs(self._filepath)
 
-    def getBlock(self):
-        return self._block
+    def getBlock(self, low=True):
+        if(low):
+            return self._block.lower()
+        else:
+            return self._block
 
-    def getLib(self):
-        return self._lib
+    def getLib(self, low=True):
+        if(low):
+            return self._lib.lower()
+        else:
+            return self._lib
 
     def getName(self, low=True):
         if(low):

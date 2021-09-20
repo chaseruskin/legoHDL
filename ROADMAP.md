@@ -1,29 +1,25 @@
 ## Roadmap to Release v1.0.0
 
-- [ ] add docstrings to every function/method
-
 - [ ] add default market for default profile (OpenSquare)
 - [ ] add code to default scripts in profile (modelsim, and xsim)
 
 - [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list, examples: 
 ```
 derives:
-- tmp.testc(v0.3.2) [OpenSquare]
-
 - FreeSquare.tmp.testc(v0.3.2) 
-
-- tmp.testc(v0.3.2) {OpenSquare}
-
-- tmp.testc(v0.3.2) OpenSquare
 - tmp.testb(v1.0.0)
+- myMarket.basic.mux_2x1(v1.0.1)
 ```
+
 ### Future Roadmap
 
-- [ ] * use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
+- [ ] internal: add docstrings to every function/method
+
+- [ ] #9 use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
 - [ ] intelligent component recognition (intellisense): Multiple entities can share the same exact name, but legoHDL will be able to identify which entity you are referencing in your design based on factors like port names and port list size within the instantiation. Although some EDA tools don't support having multiple units with same name, we can have multiple units with same name as long as they are not being used in the same current project dependency tree.
 
-- [ ] ambiguity resolution: you can have block's with the same library and name as long as they don't have the same market. If blocks with same L and N exist, then must also prepend the M to determine what block you are referencing in legoHDL commands. like ufl.arith.adder and std.arith.adder. Intellisense will be able to identify which design you instantiated and export the right file accordingly.
+- [ ] ambiguity resolution: you can have block's with the same library and name as long as they don't have the same market. If blocks with same L and N exist, then must also prepend the M to determine what block you are referencing in legoHDL commands. like ufl.arith.adder and std.arith.adder. Intellisense will be able to identify which design you instantiated and export the right file accordingly. ? - Use a "cache-2" folder when a conflict arises, so that L+N folder will then exist in cache-2 under an additional market name folder (cache-2/std/arith/adder while the other one lives cache/arith/adder).
 
 - [ ] cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag on port command
 - [ ] support verilog header files, verilog packages
@@ -46,37 +42,34 @@ derives:
 
 - [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
 
-- [ ] design question: remove 'run' command and instead have a positional argument for build command? '-e'
+- [ ] design question: remove 'run' command and instead have a positional argument for build command? '-e'. see #9.
+- [ ] allow option to print a .log file on export so a record of graph can be kept? This alludes to having a -quiet flag (silences output) and then a -log flag to reroute output away from console. See #9.
+- [ ] '-all' option on graph/export to grab all project-level code. see #9.
+- [ ] '-no-clean' option on export ? see #9.
+- [ ] '-quiet' option on export ? see #9.
 
 - [ ] add a 'categories' section to a Block.lock? (multiple keywords to help identify the block)
 		OR in more general, allow users to add new fields to the Block.lock file? (will be ignored by legohdl)
 
 - [ ] add ability to search by market
 
-- [ ] allow option to print a .log file on export so a record of graph can be kept? This alludes to having a -quiet flag (silences output) and then a -log flag to reroute output away from console.
-
-- [ ] graph command but -upstream option (returns all blocks that are effected/use this block) -> to add on to this, a big end goal is the ability to make a change in a low-level design, then automatically have ability to test all designs that would update to using this improved design and if tests pass out, it can use this version, else it locks to the previous validated version
+- [ ] #2. graph command but -upstream option (returns all blocks that are effected/use this block) -> to add on to this, a big end goal is the ability to make a change in a low-level design, then automatically have ability to test all designs that would update to using this improved design and if tests pass out, it can use this version, else it locks to the previous validated version
 
 - [-] improve show -version with constraining to specific version range -> is somewhat implemented as users can constrain using -v0.0.0 flag with -v0 option as well
 
 - [-] have some way of notifying user that a block is missing from installations when trying to export -> is somewhat implemented as a warning in some cases if it has the library available but can't find the unit name
 
-- [ ] better commands/parsing? examples: --flag=value --market=open-market --git=url.git --open --soft 	--label="PINS=*.pins" --recursive --open, -o (argparse?)
+- [ ] better commands/parsing with argparse?
 
 - [ ] % all users downloaded the same market and therefore the market had the same name (users couldnt change it) so then you know what market it came from. What happens if someone tries to rename the .mrkt file? -> issue warning that bad things may happen -> ?(append a -1,-2,-3,etc. to duplicate market names on a user's machine to help legohdl determine which market to access). Markets cannot share same namespace (case-insensitive.)
 
-- [ ] for list command, highlight if a profile is availble to be updated (bonus)
-
-- [ ] '-all' option on graph/export to grab all project-level code
-
-- [ ] '-no-clean' option on export ?
-- [ ] '-quiet' option on export ?
+- [ ] for list command, highlight if a profile is available to be updated (bonus)
 
 - [ ] add cool logging
 - [ ] allow scripts/alias to be stored as a list
 - [ ] editor can be stored as a list too
 
-- [ ] add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
+- [ ] #4. add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
 
 - [ ] if going from already installed to download, ensure all requirements are installed else give an error stating the missing installations 
 
