@@ -78,7 +78,7 @@ class Language(ABC):
                 for c in content: 
                     tmp_content.append(c.lower())
                 content = tmp_content
-            print('begin\n',all_pairs)
+
             #try to locate every name pair
             for i in range(len(all_pairs)):
                 file_data = []
