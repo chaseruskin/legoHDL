@@ -78,13 +78,14 @@ class Language(ABC):
                 for c in content: 
                     tmp_content.append(c.lower())
                 content = tmp_content
-
+            print('begin\n',all_pairs)
             #try to locate every name pair
             for i in range(len(all_pairs)):
                 file_data = []
                 n = all_pairs[i]
                 #find the biggest matching name
                 name_to_locate = n[0]
+                #read through each text line
                 for line in content:
                     #this is a verilog module we are looking for
                     if(all_langs[i] == 'VERILOG'):
@@ -93,23 +94,18 @@ class Language(ABC):
                             name_to_locate = name_to_locate.lower()
                         pass
 
-                    #ensure it only replaces once
-                    cont = j = 0
-                    while j != -1:
-                        j = line[cont:].find(name_to_locate)
-                        if(j > -1):
-                            line = line[:cont] + line[cont:].replace(name_to_locate,n[1])
-                        cont = j+len(n[1])
-                    
-                    #check if remaining name pairs if n is a subset of any other name pairs
-                    for j in range(i+1, len(all_pairs)):
-                        m = all_pairs[j]
-                        if(m[0].count(name_to_locate) and not m[0].count(n[1])):
-                            #update with new thing to look for
-                            all_pairs[j] = (m[0].replace(name_to_locate,n[1]), m[1])
+                    #replace all occurences of the name this line with the remaining line with replaced entity name
+                    line = line.replace(name_to_locate,n[1])
 
                     file_data.append(line)
                     pass
+                #check if remaining name pairs if n is a subset of any other name pairs
+                for j in range(i+1, len(all_pairs)):
+                    m = all_pairs[j]
+                    if(m[0].count(name_to_locate) and not m[0].count(n[1]) and m[0] != name_to_locate):
+                        #update with new thing to look for
+                        all_pairs[j] = (m[0].replace(name_to_locate,n[1]), m[1])
+
                 content = file_data
                 pass
 
