@@ -24,7 +24,7 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 
 - [ ] internal: add docstrings to every function/method
 
-- [ ] improve deciphering when unit calls decipher to also pass in entity name to know when to start parsing if multiple entities exist in same file
+- [ ] improve deciphering when unit calls decipher to also pass in entity name to know when to start parsing if multiple entities exist in same file (also possibly pass architecture name if defined in dependency call). Improve Units and store the data on first decipher of src file so code is only parsed once per file.
 
 - [ ] #9 use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
