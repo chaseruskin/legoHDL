@@ -1389,24 +1389,24 @@ derives: []
             last_p = p
             pass
 
+        #the latest version is found here
+        latest_block_path = apt.WORKSPACE+"cache/"+L+"/"+N+"/"+N+"/"
+
         #open and read what the version number is for this current project
         with open(path_to_block_file+apt.MARKER, 'r') as f:
             meta = yaml.load(f, Loader=yaml.FullLoader)
-            N_and_V = N+"(v"+meta['version']+")"
+            N = N+"(v"+meta['version']+")"
             cur_M = meta['market']
             if(cur_M != None and cur_M.lower() in apt.getMarketNames().keys()):
                 M = cur_M
 
-        #the latest version is found here
         #determine what the latest market being used is for this block
-        latest_block_path = apt.WORKSPACE+"cache/"+L+"/"+N+"/"+N+"/"
         with open(latest_block_path+apt.MARKER, 'r') as f:
             meta = yaml.load(f, Loader=yaml.FullLoader)
             latest_M = meta['market']
             if(latest_M != None and latest_M.lower() in apt.getMarketNames().keys()):
                 M = latest_M
-                
-        N = N_and_V
+ 
         return M,L,N
         
     #print helpful port mappings/declarations of a desired entity
