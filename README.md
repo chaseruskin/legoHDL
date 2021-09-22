@@ -22,21 +22,60 @@ Documentation can be found [here](https://hdl.notion.site/legoHDL-f798525eee2f43
 
 
 ### __Roadmap__
-The project is currently under development, and the roadmap gives a glimpse into what is being developed with new things always being added. The overall roadmap to an initial release:
-
-1. Finish implementing verilog support (printing instantiations, ability to have a -vhdl or -verilog flag to convert code into the proper instantiations)
-2. Update documentation to correctly reflect the newest changes (new default labels) and further explain concepts behind legohdl design.
+The project is currently under development, and the [roadmap](./ROADMAP.md) gives a glimpse into what is being developed with new things always being added.
 
 ### __Trying it out__
 Being under active development, some things are out-of-date in the documentation and features are constantly being changed. If you still want to try some things out, you currently can:
 1. clone this repository
-2. run `pip install .` from within the repository's root directory
+2. run `pip install .` from within the repository's root directory.
 3. have fun! See the documentation website for further info on getting started.
 
 Once the roadmap is complete for v1.0.0, users will be able to install legoHDL directly through pip from PYPI.
 
-### __Getting sample scripts__
-Some basic, ready-to-use backend scripts are available at https://github.com/legoHDL/scripts. Use them, be inspired by them, or ignore them.
-
 ### __Quick Start__
-A default profile is under development so users can get started quicker. A profile is a group of legoHDL settings, template, and scripts.
+
+1. Upon first time calling legohdl, run `legohdl` from the command line.
+
+2. When prompted to import a profile, return `y`.
+
+3. Next, return nothing to get going with the default profile.
+
+4. Enter other prompted information such as your name, text-editor, and workspace path.
+
+5. Ready to build! Create a block from the imported default template and automtically open it in the configured text-editor: `legohdl new demo.MyBlock -open`. Refer
+to the [documentation](https://hdl.notion.site/legoHDL-f798525eee2f4378bcf5e970ae6373cf) for more details.
+
+### Commands
+
+```
+USAGE:             
+        legohdl <command> [argument] [flags]            
+
+COMMANDS:
+
+Development
+   new          create a templated empty block into workspace
+   init         initialize the current folder into a valid block format
+   open         opens the downloaded block with the configured text-editor
+   port         print ports list of specified entity
+   graph        visualize dependency graph for reference
+   export       generate a recipe file from labels
+   build        execute a custom configured script
+   run          export and build in a single step
+   release      release a new version of the current block
+   del          deletes a configured setting or a block from local workspace
+
+Management
+   list         print list of all blocks available
+   refresh      sync local markets with their remotes
+   install      grab block from its market for dependency use
+   uninstall    remove block from cache
+   download     grab block from its market for development
+   update       update installed block to be to the latest version
+   show         read further detail about a specified block
+   config       set package manager settings
+   profile      import configurations for scripts, settings, and template
+
+Type 'legohdl help <command>' to read more on entered command.
+
+```
