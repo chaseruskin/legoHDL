@@ -533,14 +533,19 @@ scripts)?", warning=False)
                     next_level = k
                 else:
                     next_level = next_level + ":" + k
+                #print(next_level)
+                #only proceed when importing just scripts
                 if(scripts_only and next_level.startswith('script') == 0):
+                    continue
+                #skip scripts if not explicitly set in argument
+                elif(scripts_only == False and next_level.startswith('script') == 1):
                     continue
                 #go even deeper into the dictionary tree
                 if(isinstance(v, dict)):
                     if(k not in dest.keys()):
                         dest[k] = dict()
                         #log.info("Creating new dictionary "+k+" under "+next_level+"...")
-                    deepMerge(v, dest[k], setting=next_level)
+                    deepMerge(v, dest[k], setting=next_level, scripts_only=scripts_only)
                 #combine all settings except if profiles setting exists in src
                 elif(k != 'profiles'):
                     #log.info("Overloading "+next_level+"...")

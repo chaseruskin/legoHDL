@@ -82,6 +82,7 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 
 
 __Completed__
+- [x] importing scripts will overload script settings, while importing settings will not.
 - [x] also define what market (if applicable) the dependency came from in a block's 'derives' list, like: uf-ece.sample.mux_2x1(v1.0.0)
 - [x] does not rewrite Block.lock if the metadata has not changed on a legohdl call.
 - [x] allow users to simply enter a git remote url for adding a market rather than a key/value pair (name is already handled in the .mrkt file) -> use just `<value>` if its an already existing market to add. use `key/val` to create a new market with that name `key`.
