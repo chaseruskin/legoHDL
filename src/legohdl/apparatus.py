@@ -223,7 +223,7 @@ scripts)?", warning=False)
             cls.SETTINGS['active-workspace'] = None
             return
 
-        cls.WORKSPACE = cls.WORKSPACE+cls.SETTINGS['active-workspace']+"/"
+        cls.WORKSPACE = cls.fs(cls.WORKSPACE+cls.SETTINGS['active-workspace'])
 
         #ensure no dead scripts are populated in 'script' section of settings
         cls.dynamicScripts()

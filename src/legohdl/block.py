@@ -1352,35 +1352,55 @@ derives: []
     
     #search for the projects attached to the external package
     def grabExternalProject(cls, path):
+        '''
+        Uses the file path to determine what block owns this file in the cache.
+        Returns M,L,N (N also has '(v0.0.0)') appended.
+        '''
         #print(path)
-        #use its file to find out what block uses it
+        #break up path into into its parts
         path_parse = apt.fs(path).split('/')
-        #if in cache {library}/{block}/../.vhd
+        #if in cache /cache/{library}/{block}/../.vhd
         if("cache" in path_parse):
             i = path_parse.index("cache")
             pass
         else:
             return '','',''
         M = None
+        #next part is {library}
         L = path_parse[i+1].lower()
+        #next next part is {name}
         N = path_parse[i+2].lower()
-        #if in cache, check what the next folder name is to give clue to what the block name should be
+        #next next next part is either {version #} (for specific version) or {name} (for latest)
         V = path_parse[i+3].lower()
+        
         last_p = ''
-        if(V != N or True):
-            path_to_block_file = ''
-            for p in path_parse:
-                path_to_block_file = path_to_block_file + p + '/'
-                if(p == V and p != N):
-                    break
-                if(p == V and last_p == V):
-                    break
-                last_p = p
-            #open and read what the version number is
-            with open(path_to_block_file+apt.MARKER, 'r') as f:
-                meta = yaml.load(f, Loader=yaml.FullLoader)
-                M = meta['market']
+        #determine when to cut off the path to get to root of block project directory
+        path_to_block_file = ''
+        for p in path_parse:
+            #append next path part
+            path_to_block_file = path_to_block_file + p + '/'
+            #stop if this part is the version # and its not the name
+            if(p == V and p != N):
+                break
+            #stop if this part is the 'version #' and the last part was also the 'vesion #' (name)
+            if(p == V and last_p == V):
+                break
+            #track what the last part appended was
+            last_p = p
+            pass
+
+        #the latest version is found here
+        #determine what the latest market being used is for this block
+        latest_block_path = apt.WORKSPACE+"cache/"+L+"/"+N+"/"+N+"/"
+        with open(latest_block_path+apt.MARKER, 'r') as f:
+            meta = yaml.load(f, Loader=yaml.FullLoader)
+            M = meta['market']
+
+        #open and read what the version number is for this current project
+        with open(path_to_block_file+apt.MARKER, 'r') as f:
+            meta = yaml.load(f, Loader=yaml.FullLoader)
             N = N+"(v"+meta['version']+")"
+        
         return M,L,N
         
     #print helpful port mappings/declarations of a desired entity
