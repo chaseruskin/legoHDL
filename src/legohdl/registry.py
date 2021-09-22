@@ -272,6 +272,7 @@ class Registry:
                         log.info("Refreshing "+mrk.getName()+"... "+mrk.url)
                         rep.remotes.origin.pull(rep.head.reference)
                     except:
+                        print(mrk.url)
                         if(apt.isRemoteBare(mrk.url)):
                              log.info("Skipping "+mrk.getName()+" because it is empty...")
                         else:

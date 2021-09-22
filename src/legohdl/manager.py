@@ -506,7 +506,7 @@ class legoHDL:
         #download from market
         elif(self.db.blockExists(title, "market")):
             blk = self.db.getBlocks("market")[l][n]
-            log.info("Downloading "+blk.getTitle()+" from "+blk.getMeta('market')+' with '+blk.getMeta('remote')+"...")
+            log.info("Downloading "+blk.getTitle()+" from "+str(blk.getMeta('market'))+' with '+blk.getMeta('remote')+"...")
             #use the remote git url to download/clone the block
             blk.downloadFromURL(blk.getMeta("remote"))
         #download from the cache
@@ -1200,7 +1200,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         '''
         #check if we are in a project directory (necessary to run a majority of commands)
         self.blockCWD = Block(path=os.getcwd()+"/")
-   
+        
         command = cmd
         package = pkg
         options = opt
