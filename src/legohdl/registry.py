@@ -187,8 +187,7 @@ class Registry:
         if hasattr(self,"_local_prjs") and not updt:
             return self._local_prjs
         self._local_prjs = dict()
-        folders = glob.glob(apt.getLocal()+"/**/"+apt.MARKER, recursive=True)
-        folders = folders + glob.glob(apt.getLocal()+"/*/"+apt.MARKER, recursive=False)
+        folders = glob.glob(apt.getLocal()+"/**/*/"+apt.MARKER, recursive=True)
 
         for file in folders:
             #print(file)
