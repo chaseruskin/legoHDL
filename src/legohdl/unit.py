@@ -32,7 +32,7 @@ class Unit:
         VHDL = 1,
         VERILOG = 2
 
-    def __init__(self, filepath, dtype, lib, block, unitName):
+    def __init__(self, filepath, dtype, lib, block, unitName, market):
         self._filepath = filepath
         _,ext = os.path.splitext(self.getFile())
         ext = '*'+ext.lower()
@@ -46,6 +46,7 @@ class Unit:
         self._dtype = dtype
         self._lib = lib
         self._block = block
+        self._market = market
         self._unit = unitName
         self._isTB = True
         self._checked = False
@@ -99,6 +100,12 @@ class Unit:
             return self._block.lower()
         else:
             return self._block
+
+    def getMarket(self, low=True):
+        if(low and self._market != None):
+            return self._market.lower()
+        else:
+            return self._market
 
     def getLib(self, low=True):
         if(low):

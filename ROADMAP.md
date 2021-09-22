@@ -3,17 +3,11 @@
 - [ ] add default market for default profile (OpenSquare)
 - [ ] add code to default scripts in profile (modelsim, and xsim)
 
-- [ ] also define what market (if applicable) the dependency came from in a block's 'derives' list, examples: 
-```
-derives:
-- FreeSquare.tmp.testc(v0.3.2) 
-- tmp.testb(v1.0.0)
-- myMarket.basic.mux_2x1(v1.0.1)
-```
-
 - [ ] have ability to set top-level entity on release to avoid maybe auto-selecting a top-level implementation wrapper
 
 - [ ] ? switch behavior of explicitly setting top-level to not try to automatically find top-level testbench associated with the design if the design is passed in (user can always pass in tb)
+
+- [ ] use M now to make sure we are installing the right block and this block exists (the market must exist)
 
 - [ ] perform a "git restore ." on a block in cache to make sure the source code is consistent even if designer
 accidently altered it previously. Will have to add back the .git folder or perform a git init to make a new folder to signal if a file has been altered (indvidiual version folders have their .git/ removed to conserve space)
@@ -51,7 +45,7 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 
 - [ ] ? #5-1. if an already existing market's .mrkt file gets changed, then move to temp dir and have its folder renamed on next legohdl call. Have all blocks that referenced the old market to now reference the correct market in their block.lock?
 
-- [ ] if a user explicitly defines an architecture to use for an instance, only read that architecture?
+- [ ] #3 if a user explicitly defines an architecture to use for an instance, only read that architecture, (vhdl parsing) : mux_2x1(rtl)
 
 - [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
 
@@ -90,6 +84,7 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 
 
 __Completed__
+- [x] also define what market (if applicable) the dependency came from in a block's 'derives' list, like: uf-ece.sample.mux_2x1(v1.0.0)
 - [x] does not rewrite Block.lock if the metadata has not changed on a legohdl call.
 - [x] allow users to simply enter a git remote url for adding a market rather than a key/value pair (name is already handled in the .mrkt file) -> use just `<value>` if its an already existing market to add. use `key/val` to create a new market with that name `key`.
 - [x] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts -> automatically prints the new appended settings by default

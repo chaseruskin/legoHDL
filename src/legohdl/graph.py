@@ -51,7 +51,10 @@ class Graph:
             log.warning("No edges found.")
             for u in self._unit_bank.values():
                 order.append(u)
-                block_order.add(u.getLib(low=False)+"."+u.getBlock(low=False))
+                mrkt_prepend = ''
+                if(u.getMarket() != None):
+                    mrkt_prepend = u.getMarket()+'.'
+                block_order.add(mrkt_prepend+u.getLib(low=False)+"."+u.getBlock(low=False))
   
         #continue until all are transferred
         while len(order) < len(self.__adj_list):
@@ -64,7 +67,10 @@ class Graph:
                         #add actual unit object to list
                         order.append(unit) 
                     #add block name to ordered set
-                    block_order.add(unit.getLib(low=False)+"."+unit.getBlock(low=False))
+                    mrkt_prepend = ''
+                    if(unit.getMarket() != None):
+                        mrkt_prepend = unit.getMarket()+'.'
+                    block_order.add(mrkt_prepend+unit.getLib(low=False)+"."+unit.getBlock(low=False))
                     #will not be recounted
                     nghbr_count[v] = -1 
                     #who all depends on this module?

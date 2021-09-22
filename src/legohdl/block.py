@@ -1034,8 +1034,14 @@ derives: []
         if(v_index > -1):
             V = cls.stdVer(dep[v_index+1:len(dep)-1])
             dep = dep[:v_index]
+        M = ''
+        #is a market inluded in the title?
+        if(dep.count('.') == 2):
+            M = dep[:dep.find('.')]
+            dep = dep[dep.find('.')+1:]
+
         L,N = cls.split(dep, vhdl=False)
-        return L,N,V
+        return M,L,N,V
     
     #split into library.block-name
     @classmethod
@@ -1210,7 +1216,7 @@ derives: []
 
     # :todo: use generateCodeStream
     #return an updated dictionary object with any blank units found in the file (vhdl-style)
-    def skimVHDL(self, designs, filepath, L, N):
+    def skimVHDL(self, designs, filepath, L, N, M):
         with open(filepath, 'r') as file:
             for line in file.readlines():
                 words = line.split()
@@ -1222,16 +1228,16 @@ derives: []
                     designs[L] = dict()
                 #add entity units
                 if(words[0].lower() == "entity"):
-                    designs[L][words[1].lower()] = Unit(filepath,Unit.Type.ENTITY,L,N,words[1].lower())
+                    designs[L][words[1].lower()] = Unit(filepath, Unit.Type.ENTITY, L, N, words[1].lower(), M)
                 #add package units
                 elif((words[0].lower() == "package" and words[1].lower() != 'body')):
-                    designs[L][words[1].lower()] = Unit(filepath,Unit.Type.PACKAGE,L,N,words[1].lower())
+                    designs[L][words[1].lower()] = Unit(filepath, Unit.Type.PACKAGE, L, N, words[1].lower(), M)
         file.close()
         return designs
 
     # :todo: use generateCodeStream
     #return an updated dictionary object with any blank units found in the file (verilog-style)
-    def skimVerilog(self, designs, filepath, L, N):
+    def skimVerilog(self, designs, filepath, L, N, M):
         with open(filepath, 'r') as file:
             for line in file.readlines():
                 words = line.split()
@@ -1256,7 +1262,7 @@ derives: []
                             mod_name = words[i+1]
                         mod_name = mod_name.replace(";","")
                         #keep case sensitivity in unit constructor
-                        designs[L][mod_name.lower()] = Unit(filepath,Unit.Type.ENTITY,L,N,mod_name)
+                        designs[L][mod_name.lower()] = Unit(filepath, Unit.Type.ENTITY, L, N, mod_name, M)
         file.close()
         return designs
 
@@ -1269,22 +1275,22 @@ derives: []
         #locate VHDL cache files
         files = self.gatherSources(apt.VHDL_CODE, apt.WORKSPACE+"cache/")
         for f in files:
-            L,N = self.grabExternalProject(f)
+            M,L,N = self.grabExternalProject(f)
             #do not add the cache files of the current level project
             if(L == self.getLib() and N == self.getName()):
                 continue
             #print(f)
-            self._cache_designs = self.skimVHDL(self._cache_designs, f, L, N)
+            self._cache_designs = self.skimVHDL(self._cache_designs, f, L, N, M)
         
         #locate verilog cache files
         files = self.gatherSources(apt.VERILOG_CODE, apt.WORKSPACE+"cache/")
         for f in files:
-            L,N = self.grabExternalProject(f)
+            M,L,N = self.grabExternalProject(f)
             #do not add the cache files of the current level project
             if(L == self.getLib() and N == self.getName()):
                 continue
             #print(f)
-            self._cache_designs = self.skimVerilog(self._cache_designs, f, L, N)
+            self._cache_designs = self.skimVerilog(self._cache_designs, f, L, N, M)
 
         #print("Cache-Level designs: "+str(self._cache_designs))
 
@@ -1300,6 +1306,7 @@ derives: []
                 f_dir = f.replace(apt.MARKER,"")
                 with open(f, 'r') as file:
                     yml = yaml.load(file, Loader=yaml.FullLoader)
+                M = yml['market']
                 L = yml['library'].lower()
                 N = yml['name'].lower()
                 #skip self block
@@ -1308,11 +1315,11 @@ derives: []
                 #3. open each found source file and insert units into cache design
                 vhd_files = self.gatherSources(apt.VHDL_CODE, path=f_dir)
                 for v in vhd_files:
-                    self._cache_designs = self.skimVHDL(self._cache_designs, v, L, N)
+                    self._cache_designs = self.skimVHDL(self._cache_designs, v, L, N, M)
                 
                 verilog_files = self.gatherSources(apt.VERILOG_CODE, path=f_dir)
                 for v in verilog_files:
-                    self._cache_designs = self.skimVerilog(self._cache_designs, v, L, N)
+                    self._cache_designs = self.skimVerilog(self._cache_designs, v, L, N, M)
         #print("Cache-Level designs: "+str(self._cache_designs))
         return self._cache_designs
 
@@ -1323,19 +1330,20 @@ derives: []
         self._cur_designs = dict()
 
         L,N = self.split(self.getTitle(low=True))
-
+        M = self.getMeta('market')
         #create new library dictionary if DNE
         if(L not in self._cur_designs.keys()):
             self._cur_designs[L] = dict()
         #locate vhdl sources
         files = self.gatherSources(apt.VHDL_CODE)
         for f in files:
-            self._cur_designs = self.skimVHDL(self._cur_designs, f, L, N)
+            self._cur_designs = self.skimVHDL(self._cur_designs, f, L, N, M)
         #locate verilog sources
         files = self.gatherSources(apt.VERILOG_CODE)
         for f in files:
-            self._cur_designs = self.skimVerilog(self._cur_designs, f, L, N)
-        log.debug("Project-Level Designs: "+str(self._cur_designs))
+            self._cur_designs = self.skimVerilog(self._cur_designs, f, L, N, M)
+
+        #print("Project-Level Designs: "+str(self._cur_designs))
         return self._cur_designs
     
     #search for the projects attached to the external package
@@ -1348,7 +1356,8 @@ derives: []
             i = path_parse.index("cache")
             pass
         else:
-            return '',''
+            return '','',''
+        M = None
         L = path_parse[i+1].lower()
         N = path_parse[i+2].lower()
         #if in cache, check what the next folder name is to give clue to what the block name should be
@@ -1366,8 +1375,9 @@ derives: []
             #open and read what the version number is
             with open(path_to_block_file+apt.MARKER, 'r') as f:
                 meta = yaml.load(f, Loader=yaml.FullLoader)
+                M = meta['market']
             N = N+"(v"+meta['version']+")"
-        return L,N
+        return M,L,N
         
     #print helpful port mappings/declarations of a desired entity
     def ports(self, mapp, lib, pure_entity, entity=None, ver=None):

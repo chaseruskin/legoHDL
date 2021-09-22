@@ -100,7 +100,7 @@ class legoHDL:
             if(prereq == block.getTitle() or prereq in required_by):
                 continue
             #split prereq into library, name, and version
-            L,N,verreq = block.splitDetachVer(prereq)
+            M,L,N,verreq = block.splitDetachVer(prereq)
 
             needs_instl = False
             if(self.db.blockExists(prereq, "cache", updt=True) == False):
@@ -320,8 +320,8 @@ class legoHDL:
         latest_defined = dict()
         for blk in block_order:
             spec_path = None
-            #break into library, name, version
-            L,N,V = Block.splitDetachVer(blk)
+            #break into market, library, name, version
+            M,L,N,V = Block.splitDetachVer(blk)
             #reassemble block title
             blk = L+'.'+N
             #assign tmp block to the current block
@@ -1244,7 +1244,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 #read the derives list of this block
                 requirements = self.blockCWD.getMeta('derives')
                 for req in requirements:
-                    L,N,V = Block.splitDetachVer(req)
+                    M,L,N,V = Block.splitDetachVer(req)
                     self.install(L+'.'+N, V)
             else:
                 #install block to cache
