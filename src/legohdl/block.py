@@ -781,15 +781,20 @@ derives: []
 
                     print()
     
-    #open up the block with configured text-editor
     def load(self):
+        '''
+        Opens this block with the configured text-editor.
+        '''
         log.info("Opening "+self.getTitle()+" at... "+self.getPath())
         cmd = apt.SETTINGS['editor']+" "+self.getPath()
         os.system(cmd)
         pass
     
-    #write the values computed for metadata back to the file
     def save(self, meta=None):
+        '''
+        Write the metadata back to the marker file only if the data has changed
+        since initializing this block as an object in python.
+        '''
         #do no rewrite meta data if nothing has changed
         if(self._initial_metadata == self.__metadata):
             return
@@ -809,13 +814,18 @@ derives: []
             file.close()
         pass
 
-    #return true if a remote repository is linked to this block
     def isLinked(self):
+        '''
+        Returns true if a remote repository is linked/attached to this block.
+        '''
         return self.grabGitRemote() != None
 
-    #assumed to be a valid release point before entering function
-    #will copy new folder to cache from base install and update the entities within the block
     def copyVersionCache(self, ver, folder):
+        '''
+        Copies new folder to cache from base installation path and updates
+        entity names within the block to have the correct appened "_v". Assumes
+        to be a valid release point before entering this method.
+        '''
         #checkout version
         self._repo.git.checkout(ver+apt.TAG_ID)  
         #copy files
@@ -878,8 +888,12 @@ derives: []
             self._repo.git.checkout('-')
         pass
 
-    #enter src arg when installing from remote (git clone), else its an install from cache (copy files)
     def install(self, cache_dir, ver=None, src=None):
+        '''
+        Install from cache (copy files) unless 'src' is set to a remote for git
+        cloning. Also updates the parent (major version) if the newly installed
+        version is higher.
+        '''
         #create cache directory
         cache_dir = apt.fs(cache_dir)
         cache_dir = cache_dir+self.getLib()+"/"+self.getName()+"/"
@@ -975,28 +989,11 @@ derives: []
                 log.error("Version "+ver+" is not available to install.")
         pass
 
-    #quickly return all pre-declaration vhdl lines
-    def scanLibHeaders(self, entity):
-        ent = self.grabUnits()[self.getLib()][entity.lower()]
-        filepath = ent.getFile()
-
-        #open top-level file and inspect lines for using libraries
-        lib_headers = list()
-        with open(filepath) as file:
-            for line in file:
-                line = line.lower()
-                words = line.split()
-                if(len(words) == 0):
-                    continue
-                if(words[0] == 'library' or words[0] == 'use'):
-                    lib_headers.append(line)
-                if(words[0] == "entity"):
-                    break
-            file.close()
-        return lib_headers
-
-    #update the metadata section "derives:" for required blocks
     def updateDerivatives(self, block_list):
+        '''
+        Updates the metadata section 'derives' for required blocks needed by
+        the current block.
+        '''
         #print("Derives:",block_list)
         update = False
         if(self.getTitle() in block_list):
@@ -1020,18 +1017,13 @@ derives: []
             srcs = srcs + glob.glob(path+"/**/"+e, recursive=True)
         #print(srcs)
         return srcs
-    
-    @classmethod
-    def getExt(cls, file_path):
-        dot = file_path.rfind('.')
-        if(dot == -1):
-            return ''
-        else:
-            return file_path[dot+1:].lower()
 
-    #return l,n,v from a string found in derives list
     @classmethod
     def splitDetachVer(cls, dep):
+        '''
+        Splits dep string into market,library,name,version. Returns M,L,N,V. M
+        is '' if not found/null.
+        '''
         #split prereq into library, name, and version
         v_index = dep.find("(v")
         V = None
@@ -1047,9 +1039,11 @@ derives: []
         L,N = cls.split(dep, vhdl=False)
         return M,L,N,V
     
-    #split into library.block-name
     @classmethod
     def split(cls, dep, lower=True, vhdl=True):
+        '''
+        Splits dep string by '.' delimiters. Returns two strings: lib,name.
+        '''
         if(dep == None):
             return '',''
         dot = dep.find('.')
@@ -1075,8 +1069,10 @@ derives: []
         else:
             return lib,name
 
-    #auto detect top-level design entity
     def identifyTop(self):
+        '''
+        Auto-detects the top-level design entity. Returns None if not found.
+        '''
         if(hasattr(self, "_top")):
             return self._top
         units = self.grabUnits()
@@ -1116,8 +1112,11 @@ derives: []
 
         return self._top
 
-    #determine what testbench is used for the top-level design entity
     def identifyBench(self, entity_name, save=False):
+        '''
+        Determine what testbench is used for the top-level design entity (if 
+        found). Returns None if not found.
+        '''
         if(hasattr(self, "_bench")):
             return self._bench
         units = self.grabUnits()
@@ -1156,8 +1155,11 @@ derives: []
         #return the entity
         return self._bench
 
-    #determine what unit is utmost highest, whether it be a testbench (if applicable) or entity
     def identifyTopDog(self, top, tb):
+        '''
+        Determine what unit is utmost highest, whether it be a testbench
+        (if applicable) or entity.
+        '''
         #override auto detection
         if(top == None):
             top_ent = self.identifyTop()
@@ -1176,8 +1178,10 @@ derives: []
             top_dog = tb
         return top_dog,top,tb
 
-    #helpful for readable debugging
     def printUnits(self):
+        '''
+        Helpful method for readable design book debugging.
+        '''
         print("===UNIT BOOK===")
         for L in self.grabUnits().keys():
             print("===LIBRARY===",L)
@@ -1186,8 +1190,10 @@ derives: []
         print("===END UNIT BOOK===")
         pass
 
-    #color in all units in design book
     def grabUnits(self, toplevel=None, override=False):
+        '''
+        Color in (fill/complete) all units found in the design book.
+        '''
         if(hasattr(self, "_unit_bank") and not override):
             return self._unit_bank
         elif(override):
@@ -1207,8 +1213,12 @@ derives: []
         #self.printUnits()
         return self._unit_bank
 
-    #return incomplete unit objects from cache and/or current block
     def grabDesigns(self, override, *args):
+        '''
+        Return incomplete (blank) unit objects from current project or cache
+        (not mutually exclusive). Override is passed to the grabCurrent and
+        grabCache methods.
+        '''
         design_book = dict()
         if("current" in args):
             design_book = self.grabCurrentDesigns(override).copy()
@@ -1219,8 +1229,11 @@ derives: []
         return design_book
 
     # :todo: use generateCodeStream
-    #return an updated dictionary object with any blank units found in the file (vhdl-style)
     def skimVHDL(self, designs, filepath, L, N, M):
+        '''
+        Return an updated dictionary object with any blank units found in the
+        file (VHDL syntax).
+        '''
         with open(filepath, 'r') as file:
             for line in file.readlines():
                 words = line.split()
@@ -1240,8 +1253,11 @@ derives: []
         return designs
 
     # :todo: use generateCodeStream
-    #return an updated dictionary object with any blank units found in the file (verilog-style)
     def skimVerilog(self, designs, filepath, L, N, M):
+        '''
+        Return an updated dictionary object with any blank units found in the 
+        file (verilog syntax).
+        '''
         with open(filepath, 'r') as file:
             for line in file.readlines():
                 words = line.split()
@@ -1273,8 +1289,14 @@ derives: []
     #return dictionary of entities with their respective files as values
     #all possible entities or packages to be used in current project
     def grabCacheDesigns(self, override=False):
+        '''
+        Gathers all VHDL and verilog source files found at cache
+        level and skims through them to identify design units. Skips the cache
+        location if it is for the current project.
+        '''
         if(hasattr(self, "_cache_designs") and not override):
             return self._cache_designs
+
         self._cache_designs = dict()
         #locate VHDL cache files
         files = self.gatherSources(apt.VHDL_CODE, apt.WORKSPACE+"cache/")
@@ -1327,10 +1349,14 @@ derives: []
         #print("Cache-Level designs: "+str(self._cache_designs))
         return self._cache_designs
 
-    #all entities or packages found within current project
     def grabCurrentDesigns(self, override=False):
+        '''
+        Gathers all VHDL and verilog source files found at current
+        project level and skims through them to identify design units.
+        '''
         if(hasattr(self, "_cur_designs") and not override):
             return self._cur_designs
+
         self._cur_designs = dict()
 
         L,N = self.split(self.getTitle(low=True))
@@ -1350,7 +1376,6 @@ derives: []
         #print("Project-Level Designs: "+str(self._cur_designs))
         return self._cur_designs
     
-    #search for the projects attached to the external package
     def grabExternalProject(cls, path):
         '''
         Uses the file path to determine what block owns this file in the cache.
@@ -1409,8 +1434,10 @@ derives: []
  
         return M,L,N
         
-    #print helpful port mappings/declarations of a desired entity
     def ports(self, mapp, lib, pure_entity, entity=None, ver=None):
+        '''
+        Print helpful port mappings/declarations of a desired entity.
+        '''
         units = self.grabUnits()
         info = ''
         if(entity == None):
@@ -1426,6 +1453,7 @@ derives: []
         else:
             exit(log.error("Cannot locate "+entity+" (version may not exist or may not be installed)."))
         return info
+
     pass
 
 

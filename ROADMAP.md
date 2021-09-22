@@ -3,8 +3,6 @@
 - [ ] add default market for default profile (OpenSquare)
 - [ ] add code to default scripts in profile (modelsim, and xsim)
 
-- [ ] have ability to set top-level entity on release to avoid maybe auto-selecting a top-level implementation wrapper
-
 - [ ] ? switch behavior of explicitly setting top-level to not try to automatically find top-level testbench associated with the design if the design is passed in (user can always pass in tb)
 
 - [ ] use M now to make sure we are installing the right block and this block exists (the market must exist)
@@ -18,7 +16,8 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 
 - [ ] internal: add docstrings to every function/method
 
-- [ ] improve deciphering when unit calls decipher to also pass in entity name to know when to start parsing if multiple entities exist in same file (also possibly pass architecture name if defined in dependency call). Improve Units and store the data on first decipher of src file so code is only parsed once per file.
+- [ ] #1. improve deciphering when unit calls decipher to also pass in entity name to know when to start parsing if multiple entities exist in same file (also possibly pass architecture name if defined in dependency call). Improve Units and store the data on first decipher of src file so code is only parsed once per file.
+- [ ] cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag on port command. First need to refactor the unit class and improve deciphering. see #1.
 
 - [ ] #9 use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
 
@@ -26,7 +25,6 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 
 - [ ] ambiguity resolution: you can have block's with the same library and name as long as they don't have the same market. If blocks with same L and N exist, then must also prepend the M to determine what block you are referencing in legoHDL commands. like ufl.arith.adder and std.arith.adder. Intellisense will be able to identify which design you instantiated and export the right file accordingly. ? - Use a "cache-2" folder when a conflict arises, so that L+N folder will then exist in cache-2 under an additional market name folder (cache-2/std/arith/adder while the other one lives cache/arith/adder).
 
-- [ ] cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag on port command
 - [ ] support verilog header files, verilog packages
 
 - [ ] add ability to add summary text to .prfl and .mrkt files to then use "show" command to read the description about the given profile/market.
@@ -87,6 +85,7 @@ __Completed__
 - [x] also define what market (if applicable) the dependency came from in a block's 'derives' list, like: uf-ece.sample.mux_2x1(v1.0.0)
 - [x] does not rewrite Block.lock if the metadata has not changed on a legohdl call.
 - [x] allow users to simply enter a git remote url for adding a market rather than a key/value pair (name is already handled in the .mrkt file) -> use just `<value>` if its an already existing market to add. use `key/val` to create a new market with that name `key`.
+- [o] have ability to set top-level entity on release to avoid maybe auto-selecting a top-level implementation wrapper
 - [x] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts -> automatically prints the new appended settings by default
 - [x] if using -ask, and yes to scripts, then overload script settings as well.
 - [x] add code to default scripts (hello-world)
