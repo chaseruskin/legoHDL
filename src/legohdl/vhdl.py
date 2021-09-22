@@ -180,14 +180,14 @@ class Vhdl(Language):
                 # this is ending the architecture section
                 if(isEnding):
                     use_packages = resetNamespace(use_packages)
-                    in_arch = in_true_arch = False
+                    in_arch = in_true_arch = isEnding = False
                 else:
                     pass
             elif(code_word == body_name):
                 # this is ending the package body section
                 if(isEnding):
                     use_packages = resetNamespace(use_packages)
-                    in_body = in_true_body = False
+                    in_body = in_true_body = isEnding = False
                 else:
                     pass
             else:
