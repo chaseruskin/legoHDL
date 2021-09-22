@@ -506,7 +506,7 @@ class legoHDL:
         #download from market
         elif(self.db.blockExists(title, "market")):
             blk = self.db.getBlocks("market")[l][n]
-            log.info("Downloading "+blk.getTitle()+" from "+blk.getMeta('market')+' with '+blk.getMeta('remote')+"...")
+            log.info("Downloading "+blk.getTitle()+" from "+str(blk.getMeta('market'))+' with '+blk.getMeta('remote')+"...")
             #use the remote git url to download/clone the block
             blk.downloadFromURL(blk.getMeta("remote"))
         #download from the cache
