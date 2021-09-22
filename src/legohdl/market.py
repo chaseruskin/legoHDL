@@ -19,10 +19,9 @@ class Market:
         self._name = name
         self.url = url
         self._local_path = apt.fs(apt.MARKETS+self.getName(low=False))
-        
+        valid_remote = False
         #is there not a git repository here? if so, need to init
         if(not os.path.isdir(self.getPath()+"/.git")):
-            valid_remote = False
             #validate if the url is good to connect
             if(url != None):
                 valid_remote = apt.isValidURL(url)
@@ -33,13 +32,19 @@ class Market:
                 #create temp directory to clone market into
                 os.makedirs(tmp_dir, exist_ok=True)
                 git.Git(tmp_dir).clone(url)
-                
-                # :todo: check if it is a valid market (has .mrkt file)
 
                 log.info("Found and linked remote repository to "+self.getName(low=False))
                 #transfer from temp directory into market directory
                 shutil.copytree(tmp_dir+url_name, self.getPath())
                 shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
+                # write mrkt file and push to remote repository if it is bare
+                if(apt.isRemoteBare(url)):
+                    open(self.getPath()+self.getName(low=False)+apt.MRKT_EXT, 'w').close()
+                    self._repo = git.Repo(self.getPath())
+                    self._repo.git.add(update=True)
+                    self._repo.index.add(self._repo.untracked_files)
+                    self._repo.index.commit("Initializes market")
+                    self._repo.git.push("-u","origin",str(self._repo.head.reference))
             else:
                 self.url = None
                 apt.SETTINGS['market'][self.getName(low=False)] = None

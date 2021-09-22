@@ -1200,7 +1200,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         '''
         #check if we are in a project directory (necessary to run a majority of commands)
         self.blockCWD = Block(path=os.getcwd()+"/")
-   
+        
         command = cmd
         package = pkg
         options = opt

@@ -33,7 +33,11 @@ class Block:
         if(path != None):
             if(self.isValid()):
                 if(not excludeGit):
-                    self._repo = git.Repo(self.getPath())
+                    try:
+                        self._repo = git.Repo(self.getPath())
+                    #make git repository if DNE
+                    except git.exc.InvalidGitRepositoryError:
+                        self._repo = git.Repo.init(self.getPath())
                 self.loadMeta()
                 return
         elif(path == None):
