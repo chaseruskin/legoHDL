@@ -226,8 +226,7 @@ class Block:
         if(msg == None):
             msg = "Releases version "+self.getVersion()
         #commit new changes with message
-        self._repo.index.commit(msg)
-
+        self._repo.git.commit('-m',msg)
         #create a tag with this version
         self._repo.create_tag(ver+apt.TAG_ID)
 
@@ -518,6 +517,11 @@ derives: []
                 #delete any previous git repository that was attached to template
                 if(os.path.isdir(self.getPath()+"/.git/")):
                     shutil.rmtree(self.getPath()+"/.git/", onerror=apt.rmReadOnly)
+                #delete all folders that start with '.'
+                dirs = os.listdir(self.getPath())
+                for d in dirs:
+                    if(os.path.isdir(self.getPath()+'/'+d) and d[0] == '.'):
+                        shutil.rmtree(self.getPath()+'/'+d, onerror=apt.rmReadOnly)
             else:
                 os.makedirs(self.getPath(), exist_ok=True)
 
@@ -574,6 +578,8 @@ derives: []
                         write_file.write(line)
                     write_file.close()
                 pass
+            pass
+
         #generate fresh metadata fields
         self.loadMeta() 
         self.__metadata['name'] = self.getName(low=False)
@@ -589,7 +595,8 @@ derives: []
         self.save() 
         #add and commit to new git repository
         self._repo.index.add(self._repo.untracked_files)
-        self._repo.index.commit("Initializes block")
+        self._repo.git.commit('-m','Initializes block')
+
         #set it up to track origin
         if(self.grabGitRemote() != None):
             log.info('Generating new remote repository...')

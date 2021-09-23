@@ -43,7 +43,7 @@ class Market:
                     self._repo = git.Repo(self.getPath())
                     self._repo.git.add(update=True)
                     self._repo.index.add(self._repo.untracked_files)
-                    self._repo.index.commit("Initializes market")
+                    self._repo.git.commit('-m',"Initializes market")
                     self._repo.git.push("-u","origin",str(self._repo.head.reference))
             else:
                 self.url = None
@@ -154,7 +154,7 @@ class Market:
         pass
         
         #commit all releases
-        self._repo.index.commit("Adds "+meta['library']+'.'+meta['name']+" v"+meta['version'])
+        self._repo.git.commit('-m',"Adds "+meta['library']+'.'+meta['name']+" v"+meta['version'])
         #push to remote market repository
         if(self.url != None):
             self._repo.git.push("-u","origin",str(self._repo.head.reference))

@@ -228,7 +228,6 @@ class Registry:
         #print(self._cache_prjs)
         #print("ran2")
         return self._cache_prjs
-        pass
 
     def getProjectsMarket(self, updt=False):
         #go through each remote

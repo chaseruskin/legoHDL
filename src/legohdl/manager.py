@@ -1274,7 +1274,19 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 options.remove("file")
                 if(self.blockCWD.isValid()):
                     if(len(options) == 0):
-                        exit(log.error("Please specify a file from your template to copy from"))
+                        
+                        if(os.path.exists(value) == False):
+                            log.info("Creating new empty file...")
+                            rel_path = value[:value.rfind(os.path.basename(value))]
+                            if(len(rel_path)):
+                                if(rel_path[0] != '.'):
+                                    rel_path = '.' + rel_path
+                                    value = '.' + value
+                                os.makedirs(rel_path, exist_ok=True)
+                            open(value,'w').close()
+                            exit()
+                        else:
+                            exit(log.error("A file of same name already exists here."))
                     self.blockCWD.fillTemplateFile(value, options[0])
                 else:
                     exit(log.error("Cannot create a project file when not inside a project"))
@@ -1284,7 +1296,6 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             if(options.count("open")):
                 startup = True
                 options.remove("open")
-
             git_url,mkt_sync = self.validateMarketAndURL(options)
             self.blockPKG = Block(title=package, new=True, market=mkt_sync, remote=git_url)
 

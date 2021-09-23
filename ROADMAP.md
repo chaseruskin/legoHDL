@@ -1,6 +1,6 @@
 ## Roadmap to Release v1.0.0
 
-- [ ] add default market for default profile (OpenSquare)
+- [ ] add default market for default profile (open-ip)
 - [ ] add code to default scripts in profile (modelsim, and xsim)
 
 - [ ] ? switch behavior of explicitly setting top-level to not try to automatically find top-level testbench associated with the design if the design is passed in (user can always pass in tb)
@@ -82,6 +82,9 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 
 
 __Completed__
+- [x] not adding a `-<rel-template-file-path>` for 	`new -file` command will just create a blank file at the specified location
+- [x] More generally, anything in a '.' directory found at template's root directory will not be copied into new block. (allows for   .skip/ folder directory able to exist in a template folder, these files in there will not be automatically added when creating a new block from a template, BUT can be referenced if needing a new file of that type. For example, to avoid always writing a .py file to every template, add it to .skip/, and when applicable, developer has ability to manually append it to the block if deemed necessary for that block. )
+- [x] fixes wierd OS.system bug info error with git.index.commit() method call
 - [x] importing scripts will overload script settings, while importing settings will not.
 - [x] also define what market (if applicable) the dependency came from in a block's 'derives' list, like: uf-ece.sample.mux_2x1(v1.0.0)
 - [x] does not rewrite Block.lock if the metadata has not changed on a legohdl call.
