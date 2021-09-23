@@ -11,7 +11,7 @@ setuptools.setup(
     version=__version__,
     author="Chase Ruskin",
     author_email="c.ruskin@ufl.edu",
-    description="A complete HDL package manager",
+    description="A complete HDL package manager and development tool",
     long_description=entire_description,
     long_description_content_type="text/markdown",
     url="https://github.com/c-rus/legoHDL",
@@ -22,7 +22,6 @@ setuptools.setup(
         "PyYAML",
         "git-Python",
         "ordered_set",
-        "requests",
     ],
     entry_points='''
             [console_scripts]
@@ -32,4 +31,5 @@ setuptools.setup(
     packages=setuptools.find_packages(where="src"),
     include_package_data=True,
     python_requires=">=3.5",
+    license_files=('LICENSE',),
 )
