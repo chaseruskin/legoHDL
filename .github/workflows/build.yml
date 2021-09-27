@@ -6,8 +6,8 @@ jobs:
     steps:
       - uses: actions/setup-python@v2.2.2
       - uses: actions/checkout@v2
-      - run: git config user.email "GH-Actions@Github.com"
-      - run: git config user.name "GH-Actions"
+      - run: git config --global user.email "GH-Actions@Github.com"
+      - run: git config --global user.name "GH-Actions"
       - run: pip install .
       - run: printf 'y\n\nchase\ngedit\n~/demo/\n' | legohdl
       - run: legohdl new Lib.Prj1
