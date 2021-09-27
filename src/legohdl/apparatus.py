@@ -1050,7 +1050,10 @@ scripts)?", warning=False)
     @classmethod
     def rmReadOnly(cls, func, path, execinfo):
         os.chmod(path, stat.S_IWRITE)
-        func(path)
+        try:
+            func(path)
+        except PermissionError:
+            exit("Failed to remove path due to being open in another process.")
     pass
 
     @classmethod
