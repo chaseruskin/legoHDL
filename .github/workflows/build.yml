@@ -7,4 +7,4 @@ jobs:
       - uses: actions/setup-python@v2.2.2
       - uses: actions/checkout@v2
       - run: pip install .
-      - run: printf 'y\n\n/demo/chase\ngedit\n' | legohdl
+      - run: printf 'y\n\n/demo/\nchase\ngedit\n' | legohdl
