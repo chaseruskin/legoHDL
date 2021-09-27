@@ -6,9 +6,11 @@ jobs:
     steps:
       - uses: actions/setup-python@v2.2.2
       - uses: actions/checkout@v2
-      - run: git config --global user.email "GH-Actions@Github.com"
-      - run: git config --global user.name "GH-Actions"
+      - run: git config --global user.email ""
+      - run: git config --global user.name "chase"
       - run: pip install .
       - run: printf 'y\n\nchase\ngedit\n~/demo/\n' | legohdl
       - run: legohdl new Lib.Prj1
+      - run: legohdl list
+      - run: legohdl config https://github.com/uf-eel4712c/uf-ece.git -market -add
       - run: legohdl list
