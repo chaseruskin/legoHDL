@@ -14,3 +14,7 @@ jobs:
       - run: legohdl list
       - run: legohdl config https://github.com/uf-eel4712c/uf-ece.git -market -add
       - run: legohdl list
+      - run: legohdl install sample.mux_2x1
+      - run: legohdl show sample.mux_2x1
+      - run: legohdl show sample.mux_2x1 -version
+      - run: legohdl port sample.mux_2x1 -map
