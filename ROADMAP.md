@@ -12,11 +12,13 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 
 - [ ] cannot modify markets in settings.yml (can only add/delete from list)
 
-- [ ] thoughts on resolving multiple L.N's spanning different markets (say mA.L.N and mB.L.N): It is a cache, so if mB.L.N were to exist, then user would have to uninstall the other mA.L.N from cache to free up that "address" for the mB.L.N to be installed. Only one L.N could be installed at a time. This allows for multiple blocks of same library and name to technically coexist. However, an issue arises when a block uses both as dependencies, one could be directly but the other could be used indirectly down the dependency tree. Perform this check when generating block order on export/graph, one block should not reference L.N.. A L.N can be identified as same or different based on a variety of things, market name, remote url, but most importantly the first few git commits. If the SHA's match between blocks, then it can be very confident in saying its the same block and no conflict exists. If they don't match, then there are different duplicate L.N's existing.  
+- [ ] thoughts on resolving multiple L.N's spanning different markets (say mA.L.N and mB.L.N): It is a cache, so if mB.L.N were to exist, then user would have to uninstall the other mA.L.N from cache to free up that "address" for the mB.L.N to be installed. Only one L.N could be installed at a time. This allows for multiple blocks of same library and name to technically coexist. However, an issue arises when a block uses both as dependencies, one could be directly but the other could be used indirectly down the dependency tree. Perform this check when generating block order on export/graph, one block should not reference L.N.. A L.N can be identified as same or different based on a variety of things, market name, remote url, but most importantly the first few git commits. If the SHA's match between blocks, then it can be very confident in saying its the same block and no conflict exists. If they don't match, then there are different duplicate L.N's existing. 
 
 ### Future Roadmap
 
 - [ ] internal: add docstrings to every function/method
+
+- [ ] add option in settings to auto-populate dependencies in block.lock (auto = true, auto = false) or allow developer to manually define dependencies (will prompt error if invalid dependencies)
 
 - [ ] #1. improve deciphering when unit calls decipher to also pass in entity name to know when to start parsing if multiple entities exist in same file (also possibly pass architecture name if defined in dependency call). Improve Units and store the data on first decipher of src file so code is only parsed once per file.
 - [ ] cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag on port command. First need to refactor the unit class and improve deciphering. see #1.
