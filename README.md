@@ -1,4 +1,5 @@
 # ![](./docs/legohdl64.png) legoHDL
+![ci-build](https://github.com/c-rus/legohdl/actions/workflows/build.yml/badge.svg)
 ### The simple, lightweight, powerful HDL package manager and development tool.
   
 <br />  
