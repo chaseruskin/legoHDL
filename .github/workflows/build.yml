@@ -1,10 +1,12 @@
 name: build
 on: [push]
 jobs:
-  install:
+  setup:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-python@v2.2.2
       - uses: actions/checkout@v2
       - run: pip install .
       - run: printf 'y\n\nchase\ngedit\n~/demo/\n' | legohdl
+      - run: legohdl new Lib.Prj1
+      - run: legohdl list
