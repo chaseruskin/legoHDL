@@ -4,10 +4,7 @@ jobs:
   install:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Python
-        uses: actions/setup-python@v2.2.2
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: Pip Install
+      - uses: actions/setup-python@v2.2.2
+      - uses: actions/checkout@v2
       - run: pip install .
       - run: legohdl
