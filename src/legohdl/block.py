@@ -1029,8 +1029,9 @@ block:
         '''
         #print("Derives:",block_list)
         update = False
-        if(self.getTitle() in block_list):
-            block_list.remove(self.getTitle())
+        #remove itself from the block list dependencies
+        if(self.getTitle(mrkt=True) in block_list):
+            block_list.remove(self.getTitle(mrkt=True))
         if(len(self.getMeta('derives')) != len(block_list)):
             update = True
         for b in block_list:

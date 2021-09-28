@@ -150,7 +150,7 @@ class Market:
         pass
         
         #commit all releases
-        self._repo.git.commit('-m',"Adds "+meta['library']+'.'+meta['name']+" v"+meta['version'])
+        self._repo.git.commit('-m',"Adds "+block_meta['library']+'.'+block_meta['name']+" v"+block_meta['version'])
         #push to remote market repository
         if(self.url != None):
             self._repo.git.push("-u","origin",str(self._repo.head.reference))
