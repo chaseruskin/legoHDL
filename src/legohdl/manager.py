@@ -447,8 +447,8 @@ class legoHDL:
 
         print('---BLOCK ORDER---')
         #ensure the current block is the last one on order
-        block_order.remove(block.getTitle())
-        block_order.append(block.getTitle())
+        block_order.remove(block.getTitle(mrkt=True))
+        block_order.append(block.getTitle(mrkt=True))
         for i in range(0, len(block_order)):
             b = block_order[i]
             print(b,end='')
@@ -880,7 +880,7 @@ class legoHDL:
     def convert(self, title, value, options=[]):
         '''
         This method performs the init command. It takes an existing project
-        and tries to convert it into a valid block by creating a Block.lock 
+        and tries to convert it into a valid block by creating a Block.yml 
         file, and a git repository if needed.
         '''
         #must look through tags of already established repo
@@ -924,7 +924,7 @@ class legoHDL:
 
         files = os.listdir(cwd)
         if apt.MARKER in files:
-            exit(log.info("This folder already has a Block.lock file."))
+            exit(log.info("This folder already has a Block.yml file."))
 
         log.info("Transforming project into block...")
         #check if we are wanting to initialize from a git url
@@ -1235,7 +1235,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 ver = Block.stdVer(options[0])
             elif(len(options) > 1):
                 exit(log.error("Invalid flags set for install command."))
-            #install directly from Block.lock 'derives' list
+            #install directly from Block.yml 'derives' list
             if(options.count('requirements')):
                 if(self.blockCWD.isValid()):
                     log.info("Installing requirements...")
@@ -1513,7 +1513,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 print(domain[L][N].ports(mapp,inserted_lib,pure_ent,ent_name,ver), end='')
             #could not use this block because it is only available locally
             elif(not within_block and apt.SETTINGS['multi-develop'] == False and self.db.blockExists(package, "local")):
-                exit(log.error("Cannot use "+package+" because it has no release points and multi-develop is set to OFF."))
+                exit(log.error("Cannot use "+package+" because it has no installed release points and multi-develop is set to OFF."))
             #this block does not exist
             else:
                 exit(log.error("No block "+package+" exists in local path or workspace cache."))
@@ -1594,9 +1594,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             printFmt("init","<value>","(-market | -remote | -summary)",quiet=True)
             rollover("""
 If no flags are raised, transform the working directory into a valid block. This will
-create a git repository if not available, and create the Block.lock file. If there is a git
+create a git repository if not available, and create the Block.yml file. If there is a git
 repository and it is linked to a remote, the remote will also automatically be configured within the
-Block.lock file. If there is a supported raised flag for <value>, then the block's respective field
+Block.yml file. If there is a supported raised flag for <value>, then the block's respective field
 will be altered with the <value>. 
             """)
             print('{:<16}'.format("<block>"),"the block's title to be initialized from the current folder")
@@ -1650,7 +1650,7 @@ flag raised, it will open the profile to make edits.
 Creates a valid legohdl release point to be used in other designs. This will auto-detect 
 the toplevel unit, testbench unit, and determine the exact version dependencies required. 
 It will then stage, commit, and tag any changes. If the block has a valid remote, it will 
-push to the remote. If the block has a valid market, the Block.lock file will be updated there.
+push to the remote. If the block has a valid market, the Block.yml file will be updated there.
 If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.
             """)
             print('{:<16}'.format("<message>"),"the message for the release point's tagged commit")
@@ -1732,7 +1732,7 @@ the script named 'master'. If only 1 script is configured, it will default to th
             printFmt("graph","[<toplevel>]")
             rollover("""
 Create the dependency tree for the current design. This command is used as an aide and will not
-alter the Block.lock file. The toplevel and testbench will be auto-detected and ask
+alter the Block.yml file. The toplevel and testbench will be auto-detected and ask
 the user to select one if multiple exist. It helps the user gain a better picture of how the design
 will be ultimately combined. If the toplevel is not a testbench, legohdl will attempt to find its
 respective testbench and add it to the graph.
@@ -1755,7 +1755,7 @@ if it is a repository and has a remote URL.
             printFmt("export","[<toplevel>]")
             rollover("""
 Create the dependency tree for the current design and generate the recipe file. The recipe is stored
-into a clean directory called 'build' on every export. It will update the Block.lock files with the
+into a clean directory called 'build' on every export. It will update the Block.yml files with the
 current dependencies being used to export the design. The toplevel and testbench will be auto-detected and ask
 the user to select one if multiple exist. If the toplevel is not a testbench, legohdl will attempt to find its
 respective testbench and add it to the graph.
@@ -1808,7 +1808,7 @@ entity can be requested by appending it to its block name.
         elif(cmd == "show"):
             printFmt("show","<block>","[-version | -v0.0.0]")
             rollover("""
-Print detailed information (Block.lock) about a block. Can also print a specific
+Print detailed information (Block.yml) about a block. Can also print a specific
 version's information if it is intstalled to the cache. Can also show by major version 
 value (ex: -v1). If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.            
             """)

@@ -196,7 +196,7 @@ class Registry:
             with open(file, 'r') as f:
                 tmp = yaml.load(f, Loader=yaml.FullLoader)
                 #print(tmp)
-                if(tmp['name'] == None):
+                if('block' not in tmp.keys() or tmp['block']['name'] == None):
                     log.warning("Invalid "+apt.MARKER+" file: "+file)
                     continue
             s = file.rfind('/')

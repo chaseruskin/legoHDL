@@ -23,7 +23,7 @@ class Apparatus:
     HIDDEN = os.path.expanduser("~/.legohdl/")
 
     #identify a valid block project within the framework
-    MARKER = "Block.lock"
+    MARKER = "Block.yml"
 
     #identify a valid market and its name
     MRKT_EXT = ".mrkt"
@@ -859,16 +859,19 @@ scripts)?", warning=False)
     def getBlockFile(cls, repo, tag, path="./", in_branch=True):
         #checkout repo to the version tag and dump yaml file
         repo.git.checkout(tag+cls.TAG_ID)
-        #find Block.lock
+        #find Block.yml
         if(os.path.isfile(path+cls.MARKER) == False):
-            #return None if Block.lock DNE at this tag
-            log.warning("Version "+tag+" does not contain a Block.lock file. Invalid version.")
+            #return None if Block.yml DNE at this tag
+            log.warning("Version "+tag+" does not contain a Block.yml file. Invalid version.")
             meta = None
-        #Block.lock exists so read its contents
+        #Block.yml exists so read its contents
         else:
             log.info("Identified valid version "+tag)
             with open(path+cls.MARKER, 'r') as f:
                 meta = yaml.load(f, Loader=yaml.FullLoader)
+                if('block' not in meta.keys()):
+                    log.error("Invalid Block.yml file; no 'block' section")
+                    return None
 
         #revert back to latest release
         if(in_branch == True):
@@ -878,8 +881,8 @@ scripts)?", warning=False)
         else:
             repo.git.checkout('-')
         #perform additional safety measure that this tag matches the 'version' found in meta
-        if(meta['version'] != tag[1:]):
-            log.error("Block.lock file version does not match for: "+tag+". Invalid version.")
+        if(meta['block']['version'] != tag[1:]):
+            log.error("Block.yml file version does not match for: "+tag+". Invalid version.")
             meta = None
         return meta
 

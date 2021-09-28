@@ -114,8 +114,20 @@ class Block:
             self._repo.git.checkout("-b","master")
 
     #return the full block name (library.name)
-    def getTitle(self, low=True):
-        return self.getLib(low=low)+'.'+self.getName(low=low)
+    def getTitle(self, low=True, mrkt=False):
+        '''
+        Returns the L.N of block.
+        
+        Parameters:
+        ---
+        low (bool) : enable case-sensitivity
+        mrkt (bool) : prepend market name, if available
+        '''
+        m = ''
+        if(mrkt and self.getMeta('market') != None):
+            m = self.getMeta('market')+'.'
+            
+        return m+self.getLib(low=low)+'.'+self.getName(low=low)
 
     #return the version as only digit string, ex: 1.2.3
     def getVersion(self):
@@ -153,8 +165,8 @@ class Block:
             if(apt.isValidURL(self.grabGitRemote())):
                 self.setRemote(self.grabGitRemote(), push=False)
             else:
-                log.warning("Invalid remote "+self.grabGitRemote()+" will be removed from Block.lock")
-                self.__metadata['remote'] = None
+                log.warning("Invalid remote "+self.grabGitRemote()+" will be removed from Block.yml")
+                self.setMeta('remote', None)
                 self._remote = None
         if(self._remote != None):
             log.info("Verifying remote origin is up to date...")
@@ -207,13 +219,13 @@ class Block:
                     exit(log.info("Did not release "+ver))
         
         #user decided to proceed with release
-        self.__metadata['version'] = ver[1:]
+        self.setMeta('version', ver[1:])
         self.save()
         #try to allow user to edit changelog before proceeding
         self.waitOnChangelog()
 
         log.info("Saving...")
-        #add only changes made to Block.lock file
+        #add only changes made to Block.yml file
         if(options.count('strict')):
             self._repo.index.add(apt.MARKER)
             if(os.path.exists(self.getPath()+apt.CHANGELOG)):
@@ -241,7 +253,7 @@ class Block:
         #publish on market/bazaar! (also publish all versions not found)
         if(self.__market != None):
             changelog_txt = self.getChangeLog(self.getPath())
-            self.__market.publish(self.__metadata, options, sorted_versions, changelog_txt)
+            self.__market.publish(self.getMeta(every=True), options, sorted_versions, changelog_txt)
         elif(self.getMeta("market") != None):
             log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
@@ -356,18 +368,21 @@ class Block:
             r_patch = 0
         return r_major,r_minor,r_patch
 
-    #return the writing for an empty marker file
-    def lockFile(self):
+    def blockFile(self):
+        '''
+        Returns exact standard string for writing an empty block file.
+        '''
         body = """
-name:
-library:
-version:
-summary:
-toplevel:
-bench:
-remote:
-market:
-derives: []
+block:
+  name:
+  library:
+  version:
+  summary:
+  toplevel:
+  bench:
+  remote:
+  market:
+  derives: []
         """
         return body
 
@@ -380,7 +395,7 @@ derives: []
     def bindMarket(self, mkt):
         if(mkt != None):
             log.info("Tying "+mkt+" as the market for "+self.getTitle(low=False))
-        self.__metadata['market'] = mkt
+        self.setMeta('market', mkt)
         self.save()
         pass
 
@@ -389,7 +404,7 @@ derives: []
             self.grabGitRemote(rem)
         elif(len(self._repo.remotes)):
             self._repo.git.remote("remove","origin")
-        self.__metadata['remote'] = rem
+        self.setMeta('remote', rem)
         self._remote = rem
         self.genRemote(push)
         self.save()
@@ -398,52 +413,52 @@ derives: []
     def getAvailableVers(self):
         return ['v'+self.getHighestTaggedVersion()]
     
-    #load the metadata from the Block.lock file
+    #load the metadata from the Block.yml file
     def loadMeta(self):
         with open(self.metadataPath(), "r") as file:
             self.__metadata = yaml.load(file, Loader=yaml.FullLoader)
             file.close()
 
-        self._initial_metadata = self.__metadata.copy()
+        self._initial_metadata = self.getMeta().copy()
 
         #ensure all pieces are there
         for key in apt.META:
-            if(key not in self.__metadata.keys()):
-                self.__metadata[key] = None
+            if(key not in self.getMeta().keys()):
+                self.setMeta(key, None)
         
         #check if this block is a local block
         if(self.isLocal()):
             #grab list of available versions
             avail_vers = self.getAvailableVers()       
             #dynamically determine the latest valid release point
-            self.__metadata['version'] = avail_vers[0][1:]
+            self.setMeta('version', avail_vers[0][1:])
 
 
         if(self.getMeta('derives') == None):
-            self.__metadata['derives'] = dict()
+            self.setMeta('derives',list())
 
-        if('remote' in self.__metadata.keys()):
+        if('remote' in self.getMeta().keys()):
             #upon every boot up, try to grab the remote from this git repo if it exists
             self.grabGitRemote()
             #set it if it was set by constructor
             if(self._remote != None):
-                self.__metadata['remote'] = self._remote
+                self.setMeta('remote', self._remote)
             #else set it based on the read-in value
             else:
-                self._remote = self.__metadata['remote']
+                self._remote = self.getMeta('remote')
             
-        if('market' in self.__metadata.keys()):
+        if('market' in self.getMeta().keys()):
             #did an actual market object already get passed in?
             if(self.__market != None):
-                self.__metadata['market'] = self.__market.getName()
+                self.setMeta('market', self.__market.getName())
             #see if the market is bound to your workspace
             elif(self.getMeta("market") != None):
                 if self.getMeta("market") in apt.getMarkets().keys():
                     self.__market = Market(self.getMeta('market'), apt.SETTINGS['market'][self.getMeta('market')])
                 else:
                     log.warning("Market "+self.getMeta('market')+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
-                    self.__metadata['market'] = None
-                    self.__market = self.__metadata['market']
+                    self.setMeta('market', None)
+                    self.__market = self.getMeta('market')
         self.save()
         pass
 
@@ -541,7 +556,7 @@ derives: []
                 self._repo.git.pull()
 
         #create the marker file
-        open(self.getPath()+apt.MARKER, 'w').write(self.lockFile())
+        open(self.getPath()+apt.MARKER, 'w').write(self.blockFile())
 
         #run the commands to generate new project from template
         if(fresh):
@@ -582,9 +597,9 @@ derives: []
 
         #generate fresh metadata fields
         self.loadMeta() 
-        self.__metadata['name'] = self.getName(low=False)
-        self.__metadata['library'] = self.getLib(low=False)
-        self.__metadata['version'] = '0.0.0'
+        self.setMeta('name', self.getName(low=False))
+        self.setMeta('library', self.getLib(low=False))
+        self.setMeta('version', '0.0.0')
         #log.info("Remote status: "+self.getMeta("remote"))
         self.identifyTop()
         log.debug(self.getName())
@@ -634,8 +649,8 @@ derives: []
                     self._remote = o.url
                     break
         #make sure to save if it differs
-        if("remote" in self.__metadata.keys() and self.getMeta("remote") != self._remote):
-            self.__metadata['remote'] = self._remote
+        if("remote" in self.getMeta().keys() and self.getMeta("remote") != self._remote):
+            self.setMeta('remote', self._remote)
             self.save()
         return self._remote
 
@@ -696,14 +711,34 @@ derives: []
             return self.__lib
 
     #return the value stored in metadata, else return None if DNE
-    def getMeta(self, key=None):
-        if(key == None):
+    def getMeta(self, key=None, every=False):
+        '''
+        Returns the value stored in the block metadata, else retuns None if
+        DNE.
+
+        Parameters:
+        ---
+        key (str)  : the case-sensitive key to the yaml dictionary
+        all (bool) : return entire dictionary
+        '''
+        #return everything, even things outside the block: scope
+        if(every):
             return self.__metadata
+
+        if(key == None):
+            return self.__metadata['block']
         #check if the key is valid
-        elif(key in self.__metadata.keys()):
-            return self.__metadata[key]
+        elif(key in self.__metadata['block'].keys()):
+            return self.__metadata['block'][key]
         else:
             return None
+
+    def setMeta(self, key, value):
+        '''
+        Updates the block metatdata dictionary.
+        '''
+        self.__metadata['block'][key] = value
+        pass
 
     #return true if the requested project folder is a valid block
     def isValid(self):
@@ -803,21 +838,12 @@ derives: []
         since initializing this block as an object in python.
         '''
         #do no rewrite meta data if nothing has changed
-        if(self._initial_metadata == self.__metadata):
+        if(self._initial_metadata == self.getMeta()):
             return
 
         #write back YAML values with respect to order
         with open(self.metadataPath(), "w") as file:
-            for key in apt.META:
-                #pop off front key/val pair of yaml data
-                single_dict = {}
-                if(meta == None):
-                    single_dict[key] = self.getMeta(key)
-                else:
-                    single_dict[key] = meta[key]
-                yaml.dump(single_dict, file)
-                pass
-            pass
+            yaml.dump(self.getMeta(every=True), file, sort_keys=False)
             file.close()
         pass
 
@@ -880,10 +906,10 @@ derives: []
         #update the metadata file here to reflect changes
         with open(self.getPath()+apt.MARKER, 'r') as f:
             ver_meta = yaml.load(f, Loader=yaml.FullLoader)
-        if(ver_meta['toplevel'] != None):
-            ver_meta['toplevel'] = ver_meta['toplevel']+str_ver
-        if(ver_meta['bench'] != None):
-            ver_meta['bench'] = ver_meta['bench']+str_ver
+        if(ver_meta['block']['toplevel'] != None):
+            ver_meta['block']['toplevel'] = ver_meta['block']['toplevel']+str_ver
+        if(ver_meta['block']['bench'] != None):
+            ver_meta['block']['bench'] = ver_meta['block']['bench']+str_ver
         #save metadata adjustments
         self.save(meta=ver_meta)
 
@@ -956,7 +982,7 @@ derives: []
                 self._repo.git.checkout(ver+apt.TAG_ID)
                 #copy files and move them to correct spot
                 if(ver[1:] == self.getMeta("version")):
-                    meta = self.getMeta()
+                    meta = self.getMeta(every=True)
                 else:
                     meta = apt.getBlockFile(self._repo, ver, specific_cache_dir, in_branch=False)
                 
@@ -985,12 +1011,12 @@ derives: []
                         maj_meta = yaml.load(f, Loader=yaml.FullLoader)
                         f.close()
                         pass
-                    if(self.biggerVer(maj_meta['version'],meta['version']) == meta['version']):
+                    if(self.biggerVer(maj_meta['block']['version'],meta['block']['version']) == meta['block']['version']):
                         log.info("Updating block "+self.getTitle(low=False)+" version "+maj+"...")
                         #remove old king
                         shutil.rmtree(maj_path, onerror=apt.rmReadOnly)
                         #replace with new king for this major version
-                        self.copyVersionCache(ver="v"+meta['version'], folder=maj)
+                        self.copyVersionCache(ver="v"+meta['block']['version'], folder=maj)
                     pass
             else:
                 log.error("Version "+ver+" is not available to install.")
@@ -1005,14 +1031,14 @@ derives: []
         update = False
         if(self.getTitle() in block_list):
             block_list.remove(self.getTitle())
-        if(len(self.__metadata['derives']) != len(block_list)):
+        if(len(self.getMeta('derives')) != len(block_list)):
             update = True
         for b in block_list:
-            if(b not in self.__metadata['derives']):
+            if(b not in self.getMeta('derives')):
                 update = True
                 break
         if(update):
-            self.__metadata['derives'] = list(block_list)
+            self.setMeta('derives', list(block_list))
             self.save()
         pass
 
@@ -1114,7 +1140,7 @@ derives: []
             #break up into src_dir and file name
             #add to metadata, ensure to push meta data if results differ from previously loaded
             if(self._top.getName(low=False) != self.getMeta("toplevel")):
-                self.__metadata['toplevel'] = self._top.getName(low=False)
+                self.setMeta('toplevel', self._top.getName(low=False))
                 self.save()
 
         return self._top
@@ -1155,9 +1181,9 @@ derives: []
         #update the metadata is saving
         if(save):
             if(self._bench == None):
-                self.__metadata['bench'] = self._bench
+                self.setMeta('bench', None)
             else:
-                self.__metadata['bench'] = self._bench.getName(low=False)
+                self.setMeta('bench', self._bench.getName(low=False))
             self.save()
         #return the entity
         return self._bench
@@ -1331,7 +1357,7 @@ derives: []
         #also allow to work with unreleased blocks? -> yes
         if(apt.SETTINGS['multi-develop'] == True):
             log.info("Multi-develop is enabled")
-            #1. first find all Block.lock files (roots of blocks)
+            #1. first find all Block.yml files (roots of blocks)
             files = glob.glob(apt.getLocal()+"**/"+apt.MARKER, recursive=True)
             #print(files)
             #2. go through each recursive search within these roots for vhd files (skip self block root)
@@ -1339,9 +1365,9 @@ derives: []
                 f_dir = f.replace(apt.MARKER,"")
                 with open(f, 'r') as file:
                     yml = yaml.load(file, Loader=yaml.FullLoader)
-                M = yml['market']
-                L = yml['library'].lower()
-                N = yml['name'].lower()
+                M = yml['block']['market']
+                L = yml['block']['library'].lower()
+                N = yml['block']['name'].lower()
                 #skip self block
                 if(L == self.getLib() and N == self.getName()):
                     continue
@@ -1427,15 +1453,15 @@ derives: []
         #open and read what the version number is for this current project
         with open(path_to_block_file+apt.MARKER, 'r') as f:
             meta = yaml.load(f, Loader=yaml.FullLoader)
-            N = N+"(v"+meta['version']+")"
-            cur_M = meta['market']
+            N = N+"(v"+meta['block']['version']+")"
+            cur_M = meta['block']['market']
             if(cur_M != None and cur_M.lower() in apt.getMarketNames().keys()):
                 M = cur_M
 
         #determine what the latest market being used is for this block
         with open(latest_block_path+apt.MARKER, 'r') as f:
             meta = yaml.load(f, Loader=yaml.FullLoader)
-            latest_M = meta['market']
+            latest_M = meta['block']['market']
             if(latest_M != None and latest_M.lower() in apt.getMarketNames().keys()):
                 M = latest_M
  

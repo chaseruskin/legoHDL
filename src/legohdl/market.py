@@ -105,15 +105,17 @@ class Market:
                     log.warning("Remote does not exist for market "+self.getName())
                     self.url = None
 
+        block_meta = meta['block']
+
         active_branch = self._repo.active_branch
         #switch to side branch if '-soft' flag raised
-        tmp_branch = meta['library']+"."+meta['name']+"-"+meta['version']
+        tmp_branch = block_meta['library']+"."+block_meta['name']+"-"+block_meta['version']
         if(self.url != None and options.count("soft")):
             log.info("Checking out new branch '"+tmp_branch+"' to release block to "+self.getName(low=False)+"...")
             self._repo.git.checkout("-b",tmp_branch)
 
         #locate block's directory within market
-        block_dir = apt.fs(self._local_path+"/"+meta['library']+"/"+meta['name']+"/")
+        block_dir = apt.fs(self._local_path+"/"+block_meta['library']+"/"+block_meta['name']+"/")
         os.makedirs(block_dir,exist_ok=True)
 
         #read in all logging info about valid release points
@@ -136,17 +138,11 @@ class Market:
 
         #save yaml file
         with open(block_dir+apt.MARKER, 'w') as file:
-            for key in apt.META:
-                #pop off front key/val pair of yaml data
-                single_dict = {}
-                single_dict[key] = meta[key]
-                yaml.dump(single_dict, file)
-                pass
-            pass
+            yaml.dump(meta, file, sort_keys=False)
             file.close()
             
         #save changes to repository (only add and stage the file that was made)
-        rel_git_path = meta['library']+'/'+meta['name']+'/'
+        rel_git_path = block_meta['library']+'/'+block_meta['name']+'/'
         self._repo.index.add(rel_git_path+apt.MARKER)
         self._repo.index.add(rel_git_path+apt.VER_LOG)
         if(changelog != None):

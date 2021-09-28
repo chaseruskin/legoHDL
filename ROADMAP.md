@@ -18,7 +18,7 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 
 - [ADDED] internal: add docstrings to every function/method
 
-- [ADDED] add option in settings to auto-populate dependencies in block.lock (auto = true, auto = false) or allow developer to manually define dependencies (will prompt error if invalid dependencies)
+- [ADDED] add option in settings to auto-populate dependencies in Block.yml (auto = true, auto = false) or allow developer to manually define dependencies (will prompt error if invalid dependencies)
 
 - [ADDED] #1. improve deciphering when unit calls decipher to also pass in entity name to know when to start parsing if multiple entities exist in same file (also possibly pass architecture name if defined in dependency call). Improve Units and store the data on first decipher of src file so code is only parsed once per file.
 - [ ] cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag on port command. First need to refactor the unit class and improve deciphering. see #1.
@@ -45,7 +45,7 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 
 - [ ] #5. if an already existing profile's .prfl file gets changed, then needs to move to temp directory and have its folder renamed on next legohdl call. 
 
-- [ ] ? #5-1. if an already existing market's .mrkt file gets changed, then move to temp dir and have its folder renamed on next legohdl call. Have all blocks that referenced the old market to now reference the correct market in their block.lock?
+- [ ] ? #5-1. if an already existing market's .mrkt file gets changed, then move to temp dir and have its folder renamed on next legohdl call. Have all blocks that referenced the old market to now reference the correct market in their Block.yml?
 
 - [added] #3 if a user explicitly defines an architecture to use for an instance, only read that architecture, (vhdl parsing) : mux_2x1(rtl)
 
@@ -57,8 +57,8 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 - [ADDED] '-no-clean' option on export ? see #9.
 - [ADDED] '-quiet' option on export ? see #9.
 
-- [ ] add a 'categories' section to a Block.lock? (multiple keywords to help identify the block)
-		OR in more general, allow users to add new fields to the Block.lock file? (will be ignored by legohdl)
+- [ ] add a 'categories' section to a Block.yml? (multiple keywords to help identify the block)
+		OR in more general, allow users to add new fields to the Block.yml file? (will be ignored by legohdl)
 
 - [ADDED] add ability to search by market
 
@@ -91,7 +91,7 @@ __Completed__
 - [x] fixes wierd OS.system bug info error with git.index.commit() method call
 - [x] importing scripts will overload script settings, while importing settings will not.
 - [x] also define what market (if applicable) the dependency came from in a block's 'derives' list, like: uf-ece.sample.mux_2x1(v1.0.0)
-- [x] does not rewrite Block.lock if the metadata has not changed on a legohdl call.
+- [x] does not rewrite Block.yml if the metadata has not changed on a legohdl call.
 - [x] allow users to simply enter a git remote url for adding a market rather than a key/value pair (name is already handled in the .mrkt file) -> use just `<value>` if its an already existing market to add. use `key/val` to create a new market with that name `key`.
 - [o] have ability to set top-level entity on release to avoid maybe auto-selecting a top-level implementation wrapper
 - [x] add -verbose option to profile so user can see exactly what is being overloading/appended/overwritten in settings and scripts -> automatically prints the new appended settings by default
@@ -137,8 +137,8 @@ profiles (bonus)
 - [x] fix writing `work.` for entity map if the entity is actually not in project-level code. `work` will only be the printed library when the command is called with a block directory, else itll be the standard library associated with that entity.
 - [x] see if improvements can be made to "set settings" code (config command) -> users can now directly interact with the settings.yml
 - [x] process to initialize an existing project ("git clone or pull it"), ("run legohdl init `<block.title>`")
-- [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.lock) -> prints warning and removes remote if remote is not bare on 'new' command
-- [x] add additional safety measures to all Block.lock files and settings.yml to ensure all pieces are available
+- [x] test creating a new block from an existing git repository (clone, then run stuff to configure Block.yml) -> prints warning and removes remote if remote is not bare on 'new' command
+- [x] add additional safety measures to all Block.yml files and settings.yml to ensure all pieces are available
 - [x] better formatting and organization for writing settings.yml file
 - [x] recursive labels in cached versions...track what labels have already been added and overwrite them with the highest version used if applicable -> is this desired? (avoids duplicate files)
 See commit d54020e707979 about the work started. Eventually will make it a setting for users to enable/disable duplicate recursive labels. If disabled, then the file found in the highest used version will be written to recipe file with its respective label.
@@ -191,14 +191,14 @@ example: `legohdl release "Fixes clock sync bug" -fix`
 - [x] implement refresh command -> specify market or specify none to refresh all markets tied to workspace
 - [x] investigate whether to use `git checkout tag` then moving files OR continue using `git clone --single-branch` of tag for installation -> would allow for checking if valid legohdl release point and save space in the long run of having many installations -> moves files option
 - [x] implement versioning (folders for each version created on-demand) (installing spec. versions)
-- [x] legohdl will now try to release all versions with valid tag if a Block.lock file exists there to a market, only tries once as a folder will be created for that tag # but may not have a Block.lock for it if invalid
+- [x] legohdl will now try to release all versions with valid tag if a Block.yml file exists there to a market, only tries once as a folder will be created for that tag # but may not have a Block.yml for it if invalid
 - [o] test installing a block, then auto-installs requirements to cache if DNE in cache and if the requirement is found in local path or in market -> already covered by a roadmap mission
 - [o] auto-install to cache when creating a workspace and blocks already exist in that local path (occurs in config/initialize workspace) (does it work when doing it on just a regular block?) (say install block from market and gets requirements installs automatically?)
 - [x] investigate rmdir errors on windows when releasing -> added error catch function for windows permission issues
 - [x] allow renaming of block and/or library name? -> yes
-- [x] allow users to touch Block.lock file? (it gets auto-updated anyway when performing things like release) -> 	   leaning yes
+- [x] allow users to touch Block.yml file? (it gets auto-updated anyway when performing things like release) -> 	   leaning yes
 - [x] let the % % be used on all files in the template, even READMEs
-- [x] change .lego.lock to Block.lock
+- [x] change .lego.lock to Block.yml
 - [x] ensure init command is up to par
 - [x] test having a remote project already (non-block), then running init
 - [x] test init adding a remote already to git repo and then doing legohdl command
