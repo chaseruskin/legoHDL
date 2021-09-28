@@ -838,12 +838,15 @@ block:
         since initializing this block as an object in python.
         '''
         #do no rewrite meta data if nothing has changed
-        if(self._initial_metadata == self.getMeta()):
+        if(self._initial_metadata == self.getMeta() and meta == None):
             return
+        #default is to load the block's metadata
+        if(meta == None):
+            meta = self.getMeta(every=True)
 
         #write back YAML values with respect to order
-        with open(self.metadataPath(), "w") as file:
-            yaml.dump(self.getMeta(every=True), file, sort_keys=False)
+        with open(self.metadataPath(), 'w') as file:
+            yaml.dump(meta, file, sort_keys=False)
             file.close()
         pass
 
@@ -910,6 +913,7 @@ block:
             ver_meta['block']['toplevel'] = ver_meta['block']['toplevel']+str_ver
         if(ver_meta['block']['bench'] != None):
             ver_meta['block']['bench'] = ver_meta['block']['bench']+str_ver
+
         #save metadata adjustments
         self.save(meta=ver_meta)
 
