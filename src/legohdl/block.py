@@ -728,7 +728,7 @@ block:
         if(key == None):
             return self.__metadata['block']
         #check if the key is valid
-        elif(key in self.__metadata['block'].keys()):
+        elif('block' in self.__metadata.keys() and key in self.__metadata['block'].keys()):
             return self.__metadata['block'][key]
         else:
             return None
