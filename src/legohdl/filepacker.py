@@ -11,8 +11,12 @@ import logging as log
 
 class Filepacker:
 
-    COMMENT = ';'
+    COMMENT = ';','#'
     TAB = ' '*4
+
+    HEADER = '[]'
+    VAR = '='
+    LIST = '[]'
 
     @classmethod
     def load(cls, datafile):
@@ -46,8 +50,8 @@ class Filepacker:
             Parse through an assigned list. Returns the bracket count and
             running list variable.
             '''
-            cnt += val.count('[') - val.count(']')
-            val = val.replace('[','').replace(']','')
+            cnt += val.count(cls.LIST[0]) - val.count(cls.LIST[1])
+            val = val.replace(cls.LIST[0],'').replace(cls.LIST[1],'')
             items = val.split(',')
             for i in items:
                 if(len(i)):
@@ -58,14 +62,13 @@ class Filepacker:
         tmp = [] # temporary list used to store an assigned list
         line_cnt = 0 # track the current line being read
         bracket_cnt = 0 # count if we are inside a list
-        lvl = 0 # count how far in scope we are
-
         lines = datafile.readlines()
         for line in lines:
             line_cnt += 1
-            #trim line from comment marker
-            if(line.count(cls.COMMENT)):
-                line = line[:line.find(cls.COMMENT)]
+            #trim line from comment markers
+            for C in cls.COMMENT:
+                if(line.count(C)):
+                    line = line[:line.find(C)]
             pass
             #skip blank lines
             if(len(line.strip()) == 0):
@@ -73,37 +76,37 @@ class Filepacker:
             
             #determine how far in scope by # of 4-space groups
             c = line[0]
-            line_lvl = 0
+            lvl = 0
             while c == ' ':
-                line_lvl += 1
-                c = line[line_lvl]
-            line_lvl = int(line_lvl/len(cls.TAB))
+                lvl += 1
+                c = line[lvl]
+            lvl = int(lvl/len(cls.TAB))
 
             #identify headers
-            if(line.strip().startswith('[') and line.strip().endswith(']')):
+            if(line.strip().startswith(cls.HEADER[0]) and line.strip().endswith(cls.HEADER[1])):
                 key = line.strip()[1:len(line.strip())-1]
                 
                 #pop off scopes
-                diff = lvl - line_lvl
-                for i in range(diff):
-                    scope.pop()
+                scope = scope[0:lvl]
                     
                 #create new dictionary spot scoped to specific location
                 map = tunnel(map, key, scope)
                 #append to scope
                 scope.append(key)
-
-                lvl = len(scope)
                 continue
 
             #identify assignments
-            sep = line.find('=')
+            sep = line.find(cls.VAR)
             if(sep > -1):
                 key = line[:sep].strip()
                 #strip excessive whitespace
                 value = line[sep+1:].strip()
+
+                #update what scope the assignment is located in
+                scope = scope[0:lvl]
+
                 #determine if its a list
-                if(value.startswith('[')):
+                if(value.startswith(cls.LIST[0])):
                     tmp = []
                     bracket_cnt, tmp = collectList(bracket_cnt, value, tmp)
                 else:
@@ -122,7 +125,7 @@ class Filepacker:
                     value = tmp
                     map = tunnel(map, key, scope, value)
             else:
-                exit(log.error("Invalid file! Error on line "+str(line_cnt)))
+                exit(log.error("Syntax: Line "+str(line_cnt)))
 
         return map
 
@@ -133,29 +136,34 @@ class Filepacker:
 
         Parameters:
         ---
-        comments: a dictionary of strings where the keys are headers where
-                  the comments will be placed before that header/assignment
+        data : a python dictionary object
+        datafile : a python file object
+        comments : a dictionary of strings where the keys are headers where
+                   the comments will be placed before that header/assignment
         '''
-        def write_comment(c_str, spacing):
+        def write_comment(c_str, spacing, isHeader):
             # add proper indentation for the said comment
-            lines = c_str.split('\n')
-            for l in lines:
-                datafile.write(spacing+l+"\n")
+            if((c_str[0] == Filepacker.HEADER and isHeader) or 
+                (c_str[0] == Filepacker.VAR and not isHeader)):
+                lines = c_str[1].split('\n')
+                for l in lines:
+                    datafile.write(spacing+l+"\n")
 
         def write_dictionary(mp, lvl=0):
             #determine proper indentation
             indent = cls.TAB*lvl
             if(isinstance(mp, dict)):
                 for k in mp.keys():
+                    isHeader = isinstance(mp[k], dict)
                     #write helpful comments if available
                     if(k in comments.keys()):
-                        write_comment(comments[k], indent)
+                        write_comment(comments[k], indent, isHeader)
                     #write a header
-                    if (isinstance(mp[k], dict)):
-                        datafile.write(indent+'['+k+']\n')
+                    if(isHeader):
+                        datafile.write(indent+cls.HEADER[0]+k+cls.HEADER[1]+'\n')
                     #write the beginning of an assignment
                     else:
-                        datafile.write(indent+k+' = ')
+                        datafile.write(indent+k+' '+cls.VAR+' ')
                     #recursively proceed to next level
                     write_dictionary(mp[k], lvl+1)
             #write a value (rhs of assignment)
@@ -164,15 +172,15 @@ class Filepacker:
                 if(isinstance(mp, list)):
                     if(len(mp)):
                         #write beginning of list
-                        datafile.write('[\n')
+                        datafile.write(cls.LIST[0]+'\n')
                         #write items of the list
                         for i in mp:
                             datafile.write(indent+i+',\n')
                         #close off the list
-                        datafile.write(cls.TAB*(lvl-1)+']\n')
+                        datafile.write(cls.TAB*(lvl-1)+cls.LIST[1]+'\n')
                     #write empty list
                     else:
-                        datafile.write('[]\n')
+                        datafile.write(cls.LIST+'\n')
                 #else, store value directly as is
                 else:
                     datafile.write(mp+'\n')
@@ -186,15 +194,15 @@ class Filepacker:
 
 c = {}
 
-c['active-workspace'] = \
+c['active-workspace'] = (Filepacker.VAR,\
 '''
 ; description:
 ;   What workspace listed under [workspace] currently being used.
 ;   If an empty assignment, a lot of functionality will be unavailable.
 ; value: 
-;   string'''
+;   string''')
 
-c['general'] = \
+c['general'] = (Filepacker.HEADER,\
 '''; ---
 ; settings.dat
 ; ---
@@ -205,33 +213,33 @@ c['general'] = \
 
 ; --- General settings ---
 ; description:
-;   Various assignments related to the tool in general.'''
+;   Various assignments related to the tool in general.''')
 
-c['author'] = \
+c['author'] = (Filepacker.VAR,\
 '''
 ; description:
 ;   Your name! (or code-name, code-names are cool too)
 ; value: 
-;   string'''
+;   string''')
 
-c['label'] = \
+c['label'] = (Filepacker.HEADER,\
 '''
 ; --- Label settings ---
 ; description:
 ;   User-defined groupings of filetypes, to be collected and written to the
 ;   recipe file on export. Labels help bridge a custom workflow with the user's
-;   backend tool.'''
+;   backend tool.''')
 
-c['script'] = \
+c['script'] = (Filepacker.HEADER,\
 '''
 ; --- Script settings ---
 ; description:
 ;   User-defined aliases to execute backend scripts/tools. Assignments can
 ;   be either a string or list of strings separated by commas.
 ; value:
-;   assignments of string'''
+;   assignments of string''')
 
-c['workspace'] = \
+c['workspace'] = (Filepacker.HEADER,\
 '''
 ; --- Workspace settings ---
 ; description:
@@ -242,9 +250,9 @@ c['workspace'] = \
 ;   of another workspace.
 ; value:
 ;   headers with 'path' assignment of string and 'market' assignment of list 
-;   of strings'''
+;   of strings''')
 
-c['market'] = \
+c['market'] = (Filepacker.HEADER,\
 '''
 ; --- Market settings ---
 ; description:
@@ -253,4 +261,25 @@ c['market'] = \
 ;   across machines. If a market is not configured to a remote repository, its
 ;   assignment is empty.
 ; value:
-;   assignments of string'''
+;   assignments of string''')
+
+c['recursive'] = (Filepacker.HEADER,\
+'''
+; description:
+;   Find these files throughout all blocks used in the current design.
+; value:
+;   assignments of string''')
+
+c['shallow'] = (Filepacker.HEADER,\
+'''
+; description:
+;   Find these files only throughout the current block.
+; value:
+;   assignments of string''')
+
+data = None
+with open('./settings.properties','r') as f:
+    dat = Filepacker.load(f)
+
+with open('./tmp.properties','w') as f:
+    Filepacker.save(dat, f, c)
