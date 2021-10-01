@@ -8,13 +8,14 @@
 ################################################################################
 
 from enum import Enum
-import git,yaml
+import git
 import logging as log
 import shutil
 import os,glob
 from collections import OrderedDict
 from .block import Block
 from .apparatus import Apparatus as apt
+from .cfgfile import CfgFile as cfg
 from .market import Market
 
 class Registry:
@@ -194,7 +195,7 @@ class Registry:
             #read .lock to get information
             file = apt.fs(file)
             with open(file, 'r') as f:
-                tmp = yaml.load(f, Loader=yaml.FullLoader)
+                tmp = cfg.load(f)
                 #print(tmp)
                 if('block' not in tmp.keys() or tmp['block']['name'] == None):
                     log.warning("Invalid "+apt.MARKER+" file: "+file)

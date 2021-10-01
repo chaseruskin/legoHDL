@@ -11,7 +11,7 @@
 import os,shutil,git
 import logging as log
 from .apparatus import Apparatus as apt
-import yaml
+from .cfgfile import CfgFile as cfg
 
 class Market:
 
@@ -136,9 +136,9 @@ class Market:
                 f.close()
                 pass
 
-        #save yaml file
+        #save cfg file
         with open(block_dir+apt.MARKER, 'w') as file:
-            yaml.dump(meta, file, sort_keys=False)
+            cfg.save(meta, file)
             file.close()
             
         #save changes to repository (only add and stage the file that was made)

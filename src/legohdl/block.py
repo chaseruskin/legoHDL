@@ -8,11 +8,12 @@
 #   root folder.
 ################################################################################
 
-import os, yaml, shutil
+import os, shutil
 from datetime import date
 import glob, git
 import logging as log
 from .market import Market
+from .cfgfile import CfgFile as cfg
 from .apparatus import Apparatus as apt
 from .graph import Graph 
 from .unit import Unit
@@ -55,7 +56,7 @@ class Block:
 
         #is this block already existing?
         if(self.isValid()):
-            #load in metadata from YML
+            #load in metadata from cfg
             self.loadMeta()
         #create a new block
         elif(new):
@@ -165,7 +166,7 @@ class Block:
             if(apt.isValidURL(self.grabGitRemote())):
                 self.setRemote(self.grabGitRemote(), push=False)
             else:
-                log.warning("Invalid remote "+self.grabGitRemote()+" will be removed from Block.yml")
+                log.warning("Invalid remote "+self.grabGitRemote()+" will be removed from Block.cfg")
                 self.setMeta('remote', None)
                 self._remote = None
         if(self._remote != None):
@@ -225,7 +226,7 @@ class Block:
         self.waitOnChangelog()
 
         log.info("Saving...")
-        #add only changes made to Block.yml file
+        #add only changes made to Block.cfg file
         if(options.count('strict')):
             self._repo.index.add(apt.MARKER)
             if(os.path.exists(self.getPath()+apt.CHANGELOG)):
@@ -413,10 +414,10 @@ block:
     def getAvailableVers(self):
         return ['v'+self.getHighestTaggedVersion()]
     
-    #load the metadata from the Block.yml file
+    #load the metadata from the Block.cfg file
     def loadMeta(self):
         with open(self.metadataPath(), "r") as file:
-            self.__metadata = yaml.load(file, Loader=yaml.FullLoader)
+            self.__metadata = cfg.load(file)
             file.close()
 
         self._initial_metadata = self.getMeta().copy()
@@ -606,7 +607,7 @@ block:
         #set the remote if not None
         if(remote != None):
             self.setRemote(remote, push=False)
-        #save current progress into yaml
+        #save current progress into cfg
         self.save() 
         #add and commit to new git repository
         self._repo.index.add(self._repo.untracked_files)
@@ -718,7 +719,7 @@ block:
 
         Parameters:
         ---
-        key (str)  : the case-sensitive key to the yaml dictionary
+        key (str)  : the case-sensitive key to the cfg dictionary
         all (bool) : return entire dictionary
         '''
         #return everything, even things outside the block: scope
@@ -844,9 +845,9 @@ block:
         if(meta == None):
             meta = self.getMeta(every=True)
 
-        #write back YAML values with respect to order
+        #write back cfg values with respect to order
         with open(self.metadataPath(), 'w') as file:
-            yaml.dump(meta, file, sort_keys=False)
+            cfg.save(meta, file)
             file.close()
         pass
 
@@ -908,7 +909,7 @@ block:
 
         #update the metadata file here to reflect changes
         with open(self.getPath()+apt.MARKER, 'r') as f:
-            ver_meta = yaml.load(f, Loader=yaml.FullLoader)
+            ver_meta = cfg.load(f)
         if(ver_meta['block']['toplevel'] != None):
             ver_meta['block']['toplevel'] = ver_meta['block']['toplevel']+str_ver
         if(ver_meta['block']['bench'] != None):
@@ -1012,7 +1013,7 @@ block:
                 #check the version that is living in this folder
                 else:
                     with open(maj_path+apt.MARKER,'r') as f:
-                        maj_meta = yaml.load(f, Loader=yaml.FullLoader)
+                        maj_meta = cfg.load(f)
                         f.close()
                         pass
                     if(self.biggerVer(maj_meta['block']['version'],meta['block']['version']) == meta['block']['version']):
@@ -1362,17 +1363,17 @@ block:
         #also allow to work with unreleased blocks? -> yes
         if(apt.SETTINGS['multi-develop'] == True):
             log.info("Multi-develop is enabled")
-            #1. first find all Block.yml files (roots of blocks)
+            #1. first find all Block.cfg files (roots of blocks)
             files = glob.glob(apt.getLocal()+"**/"+apt.MARKER, recursive=True)
             #print(files)
             #2. go through each recursive search within these roots for vhd files (skip self block root)
             for f in files:
                 f_dir = f.replace(apt.MARKER,"")
                 with open(f, 'r') as file:
-                    yml = yaml.load(file, Loader=yaml.FullLoader)
-                M = yml['block']['market']
-                L = yml['block']['library'].lower()
-                N = yml['block']['name'].lower()
+                    cfg_data = cfg.load(file)
+                M = cfg_data['block']['market']
+                L = cfg_data['block']['library'].lower()
+                N = cfg_data['block']['name'].lower()
                 #skip self block
                 if(L == self.getLib() and N == self.getName()):
                     continue
@@ -1457,7 +1458,7 @@ block:
 
         #open and read what the version number is for this current project
         with open(path_to_block_file+apt.MARKER, 'r') as f:
-            meta = yaml.load(f, Loader=yaml.FullLoader)
+            meta = cfg.load(f)
             N = N+"(v"+meta['block']['version']+")"
             cur_M = meta['block']['market']
             if(cur_M != None and cur_M.lower() in apt.getMarketNames().keys()):
@@ -1465,7 +1466,7 @@ block:
 
         #determine what the latest market being used is for this block
         with open(latest_block_path+apt.MARKER, 'r') as f:
-            meta = yaml.load(f, Loader=yaml.FullLoader)
+            meta = cfg.load(f)
             latest_M = meta['block']['market']
             if(latest_M != None and latest_M.lower() in apt.getMarketNames().keys()):
                 M = latest_M

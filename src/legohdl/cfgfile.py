@@ -1,15 +1,15 @@
 ################################################################################
 #   Project: legohdl
-#   Script: filepacker.py
+#   Script: cfgfile.py
 #   Author: Chase Ruskin
 #   Description:
-#       This script handles reading/writing the custom properties files used
+#       This script handles reading/writing the custom configuration files used
 #   for settings and blocks.
 ################################################################################
 
 import logging as log
 
-class Filepacker:
+class CfgFile:
 
     COMMENT = ';','#'
     TAB = ' '*4
@@ -130,7 +130,7 @@ class Filepacker:
         return map
 
     @classmethod
-    def save(cls, data, datafile, comments={}):
+    def save(cls, data, datafile):
         '''
         Write python dictionary to data file.
 
@@ -143,8 +143,8 @@ class Filepacker:
         '''
         def write_comment(c_str, spacing, isHeader):
             # add proper indentation for the said comment
-            if((c_str[0] == Filepacker.HEADER and isHeader) or 
-                (c_str[0] == Filepacker.VAR and not isHeader)):
+            if((c_str[0] == cls.HEADER and isHeader) or 
+                (c_str[0] == cls.VAR and not isHeader)):
                 lines = c_str[1].split('\n')
                 for l in lines:
                     datafile.write(spacing+l+"\n")
@@ -183,28 +183,22 @@ class Filepacker:
                         datafile.write(cls.LIST+'\n')
                 #else, store value directly as is
                 else:
-                    datafile.write(mp+'\n')
+                    if(mp == None):
+                        mp = ''
+                    datafile.write(str(mp)+'\n')
+        
+        comments = {}
+        if(datafile.name.endswith("settings.cfg")):
+            comments = cls.SETTINGS_COMMENTS
         
         #recursively call method to write all dictionary key/values
         write_dictionary(data)
-
         return True
 
-    pass
-
-c = {}
-
-c['active-workspace'] = (Filepacker.VAR,\
-'''
-; description:
-;   What workspace listed under [workspace] currently being used.
-;   If an empty assignment, a lot of functionality will be unavailable.
-; value: 
-;   string''')
-
-c['general'] = (Filepacker.HEADER,\
+    SETTINGS_COMMENTS = {
+        'general' : (HEADER,\
 '''; ---
-; settings.dat
+; settings.cfg
 ; ---
 ; description:
 ;   A properties file to manually configure the packaging and development tool.
@@ -213,33 +207,119 @@ c['general'] = (Filepacker.HEADER,\
 
 ; --- General settings ---
 ; description:
-;   Various assignments related to the tool in general.''')
+;   Various assignments related to the tool in general.'''),
 
-c['author'] = (Filepacker.VAR,\
+
+    'active-workspace' : (VAR,\
+'''
+; description:
+;   What workspace listed under [workspace] currently being used.
+;   If an empty assignment, a lot of functionality will be unavailable.
+; value: 
+;   string'''),
+
+
+    'author' : (VAR,\
 '''
 ; description:
 ;   Your name! (or code-name, code-names are cool too)
 ; value: 
-;   string''')
+;   string'''),
 
-c['label'] = (Filepacker.HEADER,\
+
+    'editor' : (VAR,\
+'''
+; description:
+;   The command to call your preferred text editor.
+; value: 
+;   string'''),
+
+
+    'template' : (VAR,\
+'''
+; description:
+;   The path of where to copy a template folder from when making a new 
+;   block. If an empty assignment, it will use the built-in template folder.
+; value: 
+;   string'''),
+
+
+    'profiles' : (VAR,\
+'''
+; description:
+;   A list of profiles to import settings, templates, and/or scripts.
+; value: 
+;   list of strings'''),
+
+
+    'multi-develop' : (VAR,\
+'''
+; description:
+;   When enabled, it will reference blocks found in the workspace path over
+;   block's found in the cache. This would be beneficial for simulataneously 
+;   working on multiple related blocks. When done, be sure to release the
+;   block's as new versions so the modifications are in stone.
+; value: 
+;   boolean (true or false)'''),
+
+
+    'refresh-rate' : (VAR,\
+'''
+; description: 
+;   How often to synchronize markets with their remote every day.
+;   set to -1 to disable. Max value is 1440 (every minute). Evenly divides
+;   the refresh points throughout the 24-hour day.
+; value: 
+;   integer (-1 to 1440)'''),
+
+
+    'overlap-recursive' : (VAR,\
+'''
+; description:
+;   When enabled, on export the labels to be gathered can be the same file
+;   from the same project even if they are different versions (overlap).
+;   If disabled, it will not write multiple labels for the same file, even
+;   across different versioned blocks.
+; value:
+;   boolean (true or false)'''),
+
+
+    'label' : (HEADER,\
 '''
 ; --- Label settings ---
 ; description:
 ;   User-defined groupings of filetypes, to be collected and written to the
 ;   recipe file on export. Labels help bridge a custom workflow with the user's
-;   backend tool.''')
+;   backend tool.'''),
 
-c['script'] = (Filepacker.HEADER,\
+
+    'shallow' : (HEADER,\
+'''
+; description:
+;   Find these files only throughout the current block.
+; value:
+;   assignments of string'''),
+
+
+    'recursive' : (HEADER,\
+'''
+; description:
+;   Find these files throughout all blocks used in the current design.
+; value:
+;   assignments of string'''),
+
+
+    'script' : (HEADER,\
 '''
 ; --- Script settings ---
 ; description:
 ;   User-defined aliases to execute backend scripts/tools. Assignments can
 ;   be either a string or list of strings separated by commas.
 ; value:
-;   assignments of string''')
+;   assignments of string'''),
 
-c['workspace'] = (Filepacker.HEADER,\
+
+    'workspace' : (HEADER,\
 '''
 ; --- Workspace settings ---
 ; description:
@@ -250,9 +330,10 @@ c['workspace'] = (Filepacker.HEADER,\
 ;   of another workspace.
 ; value:
 ;   headers with 'path' assignment of string and 'market' assignment of list 
-;   of strings''')
+;   of strings'''),
 
-c['market'] = (Filepacker.HEADER,\
+
+    'market' : (HEADER,\
 '''
 ; --- Market settings ---
 ; description:
@@ -261,25 +342,6 @@ c['market'] = (Filepacker.HEADER,\
 ;   across machines. If a market is not configured to a remote repository, its
 ;   assignment is empty.
 ; value:
-;   assignments of string''')
-
-c['recursive'] = (Filepacker.HEADER,\
-'''
-; description:
-;   Find these files throughout all blocks used in the current design.
-; value:
-;   assignments of string''')
-
-c['shallow'] = (Filepacker.HEADER,\
-'''
-; description:
-;   Find these files only throughout the current block.
-; value:
-;   assignments of string''')
-
-data = None
-with open('./settings.properties','r') as f:
-    dat = Filepacker.load(f)
-
-with open('./tmp.properties','w') as f:
-    Filepacker.save(dat, f, c)
+;   assignments of string'''),
+    }
+    pass

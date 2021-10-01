@@ -9,10 +9,11 @@
 ################################################################################
 
 from posixpath import basename
-import yaml,stat,glob,git
+import stat,glob,git
 from datetime import datetime
 import logging as log
 from subprocess import check_output
+from .cfgfile import CfgFile as cfg
 import os,shutil,copy,platform
 
 
@@ -22,13 +23,15 @@ class Apparatus:
     #path to hidden legohdl folder
     HIDDEN = os.path.expanduser("~/.legohdl/")
 
-    #identify a valid block project within the framework
-    MARKER = "Block.yml"
-
     #identify a valid market and its name
     MRKT_EXT = ".mrkt"
     #identify a valid profile and its name
     PRFL_EXT = ".prfl"
+    #identify custom configuration files
+    CFG_EXT = ".cfg"
+
+    #identify a valid block project within the framework
+    MARKER = "Block"+CFG_EXT
 
     #looks for this file upon a release to ask user to update changelog
     CHANGELOG = "CHANGELOG.md"
@@ -47,6 +50,23 @@ class Apparatus:
                'active-workspace', 'workspace',\
                'refresh-rate','market']
 
+    LAYOUT = { 'general' : {
+                    'active-workspace' : '', 
+                    'author' : '', 
+                    'editor' : '',
+                    'template' : '', 
+                    'profiles' : '', 
+                    'multi-develop' : '', 
+                    'refresh-rate' : '',
+                    'overlap-recursive' : ''},
+                'label' : {
+                    'shallow' : {}, 
+                    'recursive' : {}},
+                'script' : {},
+                'workspace' : {},
+                'market' : {}
+                }   
+
     META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', \
             'remote', 'market', 'derives']
     
@@ -58,10 +78,10 @@ class Apparatus:
     #file kept in registry base folder to remember when last refresh
     #based on refresh-rate it will store that many times
     REFRESH_LOG = "refresh.log"
-
     #used to track which profile was last imported
     PRFL_LOG = "import.log"
 
+    #high and low values for setting refresh-rate setting
     MAX_RATE = 1440
     MIN_RATE = -1
 
@@ -85,19 +105,11 @@ class Apparatus:
         os.makedirs(cls.TEMPLATE, exist_ok=True)
         os.makedirs(cls.HIDDEN+"profiles/", exist_ok=True)
 
-        #create bare settings.yml if DNE
-        if(not os.path.isfile(cls.HIDDEN+"settings.yml")):
-            settings_file = open(cls.HIDDEN+"settings.yml", 'w')
-            structure = ''
-            for opt in cls.OPTIONS:
-                structure = structure + opt
-                if(opt == 'label'):
-                    structure = structure + ":\n  recursive: {}\n"
-                    structure = structure + "  shallow: {}\n"
-                else:
-                    structure = structure + ": null\n"
-
-            settings_file.write(structure)
+        #create bare settings.cfg if DNE
+        if(not os.path.isfile(cls.HIDDEN+"settings.cfg")):
+            settings_file = open(cls.HIDDEN+"settings.cfg", 'w')
+            #save default settings layout
+            cfg.save(cls.LAYOUT, settings_file)
             settings_file.close()
         
         return ask_for_setup
@@ -163,8 +175,12 @@ scripts)?", warning=False)
         ask_for_setup = cls.initialize()
 
         #load dictionary data in variable
-        with open(cls.HIDDEN+"settings.yml", "r") as file:
-            cls.SETTINGS = yaml.load(file, Loader=yaml.FullLoader)
+        with open(cls.HIDDEN+"settings.cfg", "r") as file:
+            cls.SETTINGS = cfg.load(file)
+        
+        #merge bare_settings into loaded settings to ensure all keys are present
+        cls.SETTINGS = cls.fullMerge(cls.SETTINGS, cls.LAYOUT)
+
         #create any missing options
         for opt in cls.OPTIONS:
             if(opt not in cls.SETTINGS.keys()):
@@ -274,7 +290,7 @@ scripts)?", warning=False)
     def dynamicProfiles(cls):
         #identify valid profiles in the hidden direcotory
         found_prfls = cls.getProfiles()
-        #identify potential profiles in the setting.yml
+        #identify potential profiles in the setting.cfg
         listed_prfls = cls.SETTINGS['profiles']
         #target deletions
         for prfl in found_prfls:
@@ -342,7 +358,7 @@ scripts)?", warning=False)
             #try to initialize workspace
             cls.initializeWorkspace(ws, cls.fs(val['local']))
 
-        #remove any hidden workspace folders that are no longer in the settings.yml
+        #remove any hidden workspace folders that are no longer in the settings.cfg
         for ws in cls.getWorkspaceNames().values():
             if(ws not in cls.SETTINGS['workspace'].keys()):
                 #delete if found a directory type
@@ -576,12 +592,12 @@ scripts)?", warning=False)
 
         prfl_path = cls.getProfiles()[prfl_name]
         #overload available settings
-        if(cls.isInProfile(prfl_name, 'settings.yml')):
-            act = not explicit or cls.confirmation("Import settings.yml?", warning=False)
+        if(cls.isInProfile(prfl_name, 'settings.cfg')):
+            act = not explicit or cls.confirmation("Import settings.cfg?", warning=False)
             if(act):
-                log.info('Overloading settings.yml...')
-                with open(prfl_path+'settings.yml', 'r') as f:
-                    prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
+                log.info('Overloading settings.cfg...')
+                with open(prfl_path+'settings.cfg', 'r') as f:
+                    prfl_settings = cfg.load(f)
                     
                     dest_settings = copy.deepcopy(cls.SETTINGS)
                     dest_settings = deepMerge(prfl_settings, dest_settings)
@@ -615,9 +631,9 @@ scripts)?", warning=False)
                         copied_script.close()
                         pass
                     pass
-                log.info('Overloading scripts in settings.yml...')
-                with open(prfl_path+'settings.yml', 'r') as f:
-                    prfl_settings = yaml.load(f, Loader=yaml.FullLoader)
+                log.info('Overloading scripts in settings.cfg...')
+                with open(prfl_path+'settings.cfg', 'r') as f:
+                    prfl_settings = cfg.load(f)
                     dest_settings = copy.deepcopy(cls.SETTINGS)
                     dest_settings = deepMerge(prfl_settings, dest_settings, scripts_only=True)
                     cls.SETTINGS = dest_settings
@@ -670,7 +686,7 @@ scripts)?", warning=False)
     @classmethod
     def isInProfile(cls, name, loc):
         if(name in cls.getProfiles()):
-            if(loc == 'settings.yml'):
+            if(loc == 'settings.cfg'):
                 return os.path.isfile(cls.getProfiles()[name]+loc)
             else:
                 return os.path.isdir(cls.getProfiles()[name]+loc+"/")
@@ -713,7 +729,7 @@ scripts)?", warning=False)
             log.info("Creating new path... "+local_path)
             os.makedirs(local_path)
 
-        #create YAML structure for workspace settings 'local' and 'market'
+        #create cfg structure for workspace settings 'local' and 'market'
         if(name not in cls.SETTINGS['workspace'].keys()):
             cls.SETTINGS['workspace'][name] = {'local' : local_path, 'market' : None}
         #make sure market is a list
@@ -824,9 +840,9 @@ scripts)?", warning=False)
     
     @classmethod
     def save(cls):
-        with open(cls.HIDDEN+"settings.yml", "w") as file:
+        with open(cls.HIDDEN+"settings.cfg", "w") as file:
             for key in cls.OPTIONS:
-                #pop off front key/val pair of yaml data
+                #pop off front key/val pair of cfg data
                 single_dict = {}
                 single_dict[key] = cls.SETTINGS[key]
 
@@ -841,7 +857,7 @@ scripts)?", warning=False)
                 elif(key == 'refresh-rate'):
                     file.write("#market configurations\n")
 
-                yaml.dump(single_dict, file)
+                cfg.save(single_dict, file)
                 pass
             pass
         pass
@@ -857,20 +873,20 @@ scripts)?", warning=False)
     #if returned none then it is an invalid legohdl release point
     @classmethod
     def getBlockFile(cls, repo, tag, path="./", in_branch=True):
-        #checkout repo to the version tag and dump yaml file
+        #checkout repo to the version tag and dump cfg file
         repo.git.checkout(tag+cls.TAG_ID)
-        #find Block.yml
+        #find Block.cfg
         if(os.path.isfile(path+cls.MARKER) == False):
-            #return None if Block.yml DNE at this tag
-            log.warning("Version "+tag+" does not contain a Block.yml file. Invalid version.")
+            #return None if Block.cfg DNE at this tag
+            log.warning("Version "+tag+" does not contain a Block.cfg file. Invalid version.")
             meta = None
-        #Block.yml exists so read its contents
+        #Block.cfg exists so read its contents
         else:
             log.info("Identified valid version "+tag)
             with open(path+cls.MARKER, 'r') as f:
-                meta = yaml.load(f, Loader=yaml.FullLoader)
+                meta = cfg.load(f)
                 if('block' not in meta.keys()):
-                    log.error("Invalid Block.yml file; no 'block' section")
+                    log.error("Invalid Block.cfg file; no 'block' section")
                     return None
 
         #revert back to latest release
@@ -882,7 +898,7 @@ scripts)?", warning=False)
             repo.git.checkout('-')
         #perform additional safety measure that this tag matches the 'version' found in meta
         if(meta['block']['version'] != tag[1:]):
-            log.error("Block.yml file version does not match for: "+tag+". Invalid version.")
+            log.error("Block.cfg file version does not match for: "+tag+". Invalid version.")
             meta = None
         return meta
 
@@ -1008,15 +1024,21 @@ scripts)?", warning=False)
             return False
         return True
 
-    #returns true if the current workspace has some markets listed
     @classmethod
     def linkedMarket(cls):
+        '''
+        Returns true if the current workspace has some markets listed.
+        '''
         rem = cls.SETTINGS['workspace'][cls.__active_workspace]['market']
         return (rem != None and len(rem))
 
-    #forward-slash fixer
     @classmethod
     def fs(cls, path):
+        '''
+        Fixes all \ slashes to become / slashes in path strings. Will also
+        append an extra '/' if the ending of the path is not a file (has no
+        file extension).
+        '''
         if(path == None or path.lower().startswith('http') or path.lower().startswith('git@')):
             return path
 
@@ -1034,19 +1056,47 @@ scripts)?", warning=False)
         
         return path
 
-    #merge: place1 <- place2 (place2 has precedence)
+    @classmethod
+    def castBoolean(cls, str_val):
+        str_val = str_val.lower()
+        return (str_val == 'true' or str_val == 't' or str_val == '1' or str_val == 'yes' or str_val == 'on')
+
+    @classmethod
+    def fullMerge(cls, dest, src):
+        print(src)
+        for k, v in src.items():
+            if(k not in dest.keys()):
+                dest[k] = v
+            elif(isinstance(k, dict)):
+                dest = cls.fullMerge(dest[k], src[k])
+            else:
+                dest[k] = v
+
+        return dest
+
     @classmethod
     def merge(cls, place1, place2):
+        '''
+        Perform a 2-level python dictionary object merge. Any place2 key's and
+        values will be merged into place1's dictionary. Place2 has precedence
+        over Place1. Returns the final merged dictionary. 
+        
+        Parameters
+        ---
+        place1 : python dictionary object
+        place2 : python dictionary object
+        '''
         tmp = copy.deepcopy(place1)
         for lib in place1.keys(): #go through each current lib
             if lib in place2.keys(): #is this lib already in merging lib?
                 for prj in place2[lib]:
                     tmp[lib][prj] = place2[lib][prj]
-        
+
         for lib in place2.keys(): #go through all libs not in current lib
             if not lib in place1.keys():
                 tmp[lib] = dict()
                 for prj in place2[lib]:
+                    print(lib,prj)
                     tmp[lib][prj] = place2[lib][prj]
         return tmp
 
@@ -1093,9 +1143,9 @@ scripts)?", warning=False)
         }
         def_settings['workspace'] = dict()
         def_settings['workspace']['primary'] = {'local' : None, 'market' : None}
-        #create default settings.yml
-        with open(prfl_path+"settings.yml", 'w') as f:
-            yaml.dump(def_settings, f)
+        #create default settings.cfg
+        with open(prfl_path+"settings.cfg", 'w') as f:
+            cfg.save(def_settings, f)
             pass
 
         #create default template

@@ -8,12 +8,13 @@
 ################################################################################
 
 import os, sys, shutil
-import yaml,git
+import git
 import logging as log
 from .block import Block
 from .__version__ import __version__
 from .registry import Registry
 from .apparatus import Apparatus as apt
+from .cfgfile import CfgFile as cfg
 from .market import Market
 from .unit import Unit
 
@@ -43,9 +44,9 @@ class legoHDL:
             print(__version__)
             exit()
 
-        #load settings.yml
+        #load settings.cfg
         apt.load()
-        #dyamincally manage any registries that were added to settings.yml
+        #dyamincally manage any registries that were added to settings.cfg
         Registry.dynamicLoad(apt.getMarkets(workspace_level=False))
         apt.save()
 
@@ -200,7 +201,7 @@ class legoHDL:
                 if(os.path.isdir(base_cache_dir+parent_ver+"/")):
                     parent_meta = dict()
                     with open(base_cache_dir+parent_ver+"/"+apt.MARKER, 'r') as tmp_f:
-                        parent_meta = yaml.load(tmp_f, Loader=yaml.FullLoader)
+                        parent_meta = cfg.load(tmp_f)
                         tmp_f.close()
                     #will have to try to revert down a version if its being used in parent version
                     rm_parent = (parent_meta['version'] == ver[1:])
@@ -597,7 +598,7 @@ class legoHDL:
         if(eq == -1):
             val = None
             key = choice
-        #chosen to delete setting from settings.yml
+        #chosen to delete setting from settings.cfg
         if(delete):
             possibles = ['label', 'workspace', 'market', 'script', 'profile']
             st = options[0].lower()
@@ -664,7 +665,7 @@ class legoHDL:
             log.info("Setting saved successfully.")
             return
 
-        #chosen to config a setting in settings.yml
+        #chosen to config a setting in settings.cfg
         if(options[0] == 'active-workspace'):
             if(choice not in apt.SETTINGS['workspace'].keys()):
                 exit(log.error("Workspace "+choice+" not found!"))
@@ -880,7 +881,7 @@ class legoHDL:
     def convert(self, title, value, options=[]):
         '''
         This method performs the init command. It takes an existing project
-        and tries to convert it into a valid block by creating a Block.yml 
+        and tries to convert it into a valid block by creating a Block.cfg 
         file, and a git repository if needed.
         '''
         #must look through tags of already established repo
@@ -924,7 +925,7 @@ class legoHDL:
 
         files = os.listdir(cwd)
         if apt.MARKER in files:
-            exit(log.info("This folder already has a Block.yml file."))
+            exit(log.info("This folder already has a Block.cfg file."))
 
         log.info("Transforming project into block...")
         #check if we are wanting to initialize from a git url
@@ -1090,13 +1091,13 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         prfls = apt.getProfiles()
         last_prfl = open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'r').readline()
         # :todo: also indicate if an update is available
-        print('{:<16}'.format("Profile"),'{:<12}'.format("Last Import"),'{:<16}'.format("settings.yml"),'{:<12}'.format("template/"),'{:<12}'.format("scripts/"))
+        print('{:<16}'.format("Profile"),'{:<12}'.format("Last Import"),'{:<16}'.format("settings.cfg"),'{:<12}'.format("template/"),'{:<12}'.format("scripts/"))
         print("-"*16+" "+"-"*12+" "+"-"*16+" "+"-"*12+" "+"-"*12)
         for prfl in prfls:
             last_import = 'yes' if(last_prfl == prfl) else '-'
             has_template = 'yes' if(apt.isInProfile(prfl, 'template')) else '-'
             has_scripts = 'yes' if(apt.isInProfile(prfl, 'scripts')) else '-'
-            has_settings = 'yes' if(apt.isInProfile(prfl, 'settings.yml')) else '-'
+            has_settings = 'yes' if(apt.isInProfile(prfl, 'settings.cfg')) else '-'
             #check if it has a remote
             # prfl_path = apt.getProfiles()[prfl]
             # if(os.path.exists(prfl_path+".git")):
@@ -1235,7 +1236,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 ver = Block.stdVer(options[0])
             elif(len(options) > 1):
                 exit(log.error("Invalid flags set for install command."))
-            #install directly from Block.yml 'derives' list
+            #install directly from Block.cfg 'derives' list
             if(options.count('requirements')):
                 if(self.blockCWD.isValid()):
                     log.info("Installing requirements...")
@@ -1419,8 +1420,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                     log.error("No profile exists as "+value)
             #open settings
             elif(options.count("settings")):
-                log.info("Opening settings YAML file at... "+apt.fs(apt.HIDDEN+"settings.yml"))
-                os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/settings.yml\"")
+                log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+"settings.cfg"))
+                os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/settings.cfg\"")
             #open block
             elif(valid):
                 self.blockPKG.load()
@@ -1594,9 +1595,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             printFmt("init","<value>","(-market | -remote | -summary)",quiet=True)
             rollover("""
 If no flags are raised, transform the working directory into a valid block. This will
-create a git repository if not available, and create the Block.yml file. If there is a git
+create a git repository if not available, and create the Block.cfg file. If there is a git
 repository and it is linked to a remote, the remote will also automatically be configured within the
-Block.yml file. If there is a supported raised flag for <value>, then the block's respective field
+Block.cfg file. If there is a supported raised flag for <value>, then the block's respective field
 will be altered with the <value>. 
             """)
             print('{:<16}'.format("<block>"),"the block's title to be initialized from the current folder")
@@ -1642,7 +1643,7 @@ flag raised, it will open the profile to make edits.
             print('{:<16}'.format("-template"),"open the template folder")
             print('{:<16}'.format("-script"),"open the built-in script folder if no script specified")
             print('{:<16}'.format("-profile"),"open the specified profile to edit")
-            print('{:<16}'.format("-settings"),"open the settings YAML file")
+            print('{:<16}'.format("-settings"),"open the settings CFG file")
             pass
         elif(cmd == "release"):
             printFmt("release","[<message>]","(-v0.0.0 | -maj | -min | -fix) [-strict -soft]")
@@ -1650,7 +1651,7 @@ flag raised, it will open the profile to make edits.
 Creates a valid legohdl release point to be used in other designs. This will auto-detect 
 the toplevel unit, testbench unit, and determine the exact version dependencies required. 
 It will then stage, commit, and tag any changes. If the block has a valid remote, it will 
-push to the remote. If the block has a valid market, the Block.yml file will be updated there.
+push to the remote. If the block has a valid market, the Block.cfg file will be updated there.
 If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.
             """)
             print('{:<16}'.format("<message>"),"the message for the release point's tagged commit")
@@ -1732,7 +1733,7 @@ the script named 'master'. If only 1 script is configured, it will default to th
             printFmt("graph","[<toplevel>]")
             rollover("""
 Create the dependency tree for the current design. This command is used as an aide and will not
-alter the Block.yml file. The toplevel and testbench will be auto-detected and ask
+alter the Block.cfg file. The toplevel and testbench will be auto-detected and ask
 the user to select one if multiple exist. It helps the user gain a better picture of how the design
 will be ultimately combined. If the toplevel is not a testbench, legohdl will attempt to find its
 respective testbench and add it to the graph.
@@ -1755,7 +1756,7 @@ if it is a repository and has a remote URL.
             printFmt("export","[<toplevel>]")
             rollover("""
 Create the dependency tree for the current design and generate the recipe file. The recipe is stored
-into a clean directory called 'build' on every export. It will update the Block.yml files with the
+into a clean directory called 'build' on every export. It will update the Block.cfg files with the
 current dependencies being used to export the design. The toplevel and testbench will be auto-detected and ask
 the user to select one if multiple exist. If the toplevel is not a testbench, legohdl will attempt to find its
 respective testbench and add it to the graph.
@@ -1808,7 +1809,7 @@ entity can be requested by appending it to its block name.
         elif(cmd == "show"):
             printFmt("show","<block>","[-version | -v0.0.0]")
             rollover("""
-Print detailed information (Block.yml) about a block. Can also print a specific
+Print detailed information (Block.cfg) about a block. Can also print a specific
 version's information if it is intstalled to the cache. Can also show by major version 
 value (ex: -v1). If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.            
             """)
@@ -1822,7 +1823,7 @@ value (ex: -v1). If the -v0.0.0 flag is not properly working, -v0_0_0 is also va
             printFmt("config","<key>="+'"<value>"',"(-script [-link] | -label [-recursive] | -workspace | -market [-add | -remove])",quiet=True)
             rollover("""
 Configure settings for legoHDL. This is the command-line alternative to opening 
-the settings.yml file for visual editing. If only a market name is given as <value>, then it will
+the settings.cfg file for visual editing. If only a market name is given as <value>, then it will
 be used as a reference to either -add or -remove the market from the current workspace. If raising
 -template, it requests the path to a folder to create new blocks from. If the <value> is empty, it will
 reference the built-in template folder. Valid <value> for -multi-develop and -overlap-recursive flags are either
