@@ -619,7 +619,7 @@ class legoHDL:
                 choice = choice.lower()
                 if(choice in apt.getProfiles()):
                     #remove directory
-                    shutil.rmtree(apt.getProfiles()[choice])
+                    shutil.rmtree(apt.getProfiles()[choice], onerror=apt.rmReadOnly)
                     #remove from settings
                     apt.SETTINGS['general'][st+'s'].remove(choice)
                 else:

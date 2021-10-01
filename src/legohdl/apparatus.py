@@ -110,7 +110,11 @@ class Apparatus:
             #save default settings layout
             cfg.save(cls.LAYOUT, settings_file)
             settings_file.close()
-        
+
+        #create empty import.log file for profiles if DNE
+        if(os.path.isfile(cls.HIDDEN+"profiles/"+cls.PRFL_LOG) == False):
+            open(cls.HIDDEN+"profiles/"+cls.PRFL_LOG, 'w').close()
+            
         return ask_for_setup
 
     @classmethod
@@ -148,10 +152,10 @@ scripts)?", warning=False)
 
         #ask for name to store in settings
         feedback = input("Enter your name: ")
-        cls.SETTINGS['author'] = cls.SETTINGS['author'] if(feedback.strip() == '') else feedback.strip()
+        cls.SETTINGS['general']['author'] = cls.SETTINGS['general']['author'] if(feedback.strip() == cfg.NULL) else feedback.strip()
         #ask for test-editor to store in settings
         feedback = input("Enter your text-editor: ")
-        cls.SETTINGS['editor'] = cls.SETTINGS['editor'] if(feedback.strip() == '') else feedback.strip()
+        cls.SETTINGS['general']['editor'] = cls.SETTINGS['general']['editor'] if(feedback.strip() == cfg.NULL) else feedback.strip()
         pass
 
     @classmethod
@@ -281,12 +285,13 @@ scripts)?", warning=False)
     def dynamicProfiles(cls):
         #identify valid profiles in the hidden direcotory
         found_prfls = cls.getProfiles()
+        #print(found_prfls)
         #identify potential profiles in the setting.cfg
         listed_prfls = cls.SETTINGS['general']['profiles']
         #target deletions
         for prfl in found_prfls:
             if(prfl not in listed_prfls):
-                shutil.rmtree(cls.getProfiles()[prfl])
+                shutil.rmtree(cls.getProfiles()[prfl], onerror=cls.rmReadOnly)
         
         #target additions
         for prfl in listed_prfls:
@@ -522,6 +527,10 @@ scripts)?", warning=False)
         #perform backend operation to overload settings, template, and scripts
         if(append == False):
             cls.importProfile(sel_prfl, explicit=explicit)
+
+        # add to settings if not already existing
+        if(sel_prfl not in cls.SETTINGS['general']['profiles']):
+            cls.SETTINGS['general']['profiles'].append(sel_prfl)
         return True
 
     #perform backend operation to overload settings, template, and scripts
