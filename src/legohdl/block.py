@@ -851,9 +851,10 @@ class Block:
             meta = self.getMeta(every=True)
 
         if(self._initial_metadata != self.getMeta()):
-            print("its different!")
-            print(self._initial_metadata)
-            print(self.getMeta())
+            #print("its different!")
+            #print(self._initial_metadata)
+            #print(self.getMeta())
+            pass
 
         #write back cfg values with respect to order
         with open(self.metadataPath(), 'w') as file:
