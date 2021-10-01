@@ -8,7 +8,6 @@
 #   functions that are used throughout other scripts.
 ################################################################################
 
-from posixpath import basename
 import stat,glob,git
 from datetime import datetime
 import logging as log
@@ -51,14 +50,14 @@ class Apparatus:
                'refresh-rate','market']
 
     LAYOUT = { 'general' : {
-                    'active-workspace' : '', 
-                    'author' : '', 
-                    'editor' : '',
-                    'template' : '', 
-                    'profiles' : '', 
-                    'multi-develop' : '', 
-                    'refresh-rate' : '',
-                    'overlap-recursive' : ''},
+                    'active-workspace' : cfg.NULL, 
+                    'author' : cfg.NULL, 
+                    'editor' : cfg.NULL,
+                    'template' : cfg.NULL, 
+                    'profiles' : cfg.NULL, 
+                    'multi-develop' : cfg.NULL, 
+                    'refresh-rate' : cfg.NULL,
+                    'overlap-recursive' : cfg.NULL},
                 'label' : {
                     'shallow' : {}, 
                     'recursive' : {}},
@@ -156,17 +155,22 @@ scripts)?", warning=False)
         pass
 
     @classmethod
-    def generateDefault(cls, t, *args):
+    def generateDefault(cls, t, *args, header=None):
         for a in args:
-            if(isinstance(cls.SETTINGS[a], t) == False):
+            if(header == None):
+                sett = cls.SETTINGS
+            else:
+                sett = cls.SETTINGS[header]
+            if(isinstance(sett[a], t) == False):
+                val = sett[a]
                 if(t == dict):
-                    cls.SETTINGS[a] = {}
+                    sett[a] = {}
                 elif(t == bool):
-                    cls.SETTINGS[a] = False
+                    sett[a] = cls.castBool(val)
                 elif(t == int):
-                    cls.SETTINGS[a] = 0
+                    sett[a] = cls.castInt(val)
                 elif(t == list):
-                    cls.SETTINGS[a] = []
+                    sett[a] = []
 
     @classmethod
     def load(cls):
@@ -181,65 +185,52 @@ scripts)?", warning=False)
         #merge bare_settings into loaded settings to ensure all keys are present
         cls.SETTINGS = cls.fullMerge(cls.SETTINGS, cls.LAYOUT)
 
-        #create any missing options
-        for opt in cls.OPTIONS:
-            if(opt not in cls.SETTINGS.keys()):
-                cls.SETTINGS[opt] = None
-            #make sure label section is set up correctly
-            if(opt == 'label'):
-                if(cls.SETTINGS[opt] == None):
-                    cls.SETTINGS[opt] = dict()
-                if('recursive' not in cls.SETTINGS[opt].keys() or \
-                    isinstance(cls.SETTINGS[opt]['recursive'], dict) == False):
-                    cls.SETTINGS[opt]['recursive'] = {}
-                if('shallow' not in cls.SETTINGS[opt].keys() or \
-                    isinstance(cls.SETTINGS[opt]['shallow'], dict) == False):
-                    cls.SETTINGS[opt]['shallow'] = {}
-
         #ensure all pieces of settings are correct
-        cls.generateDefault(dict,"market","script","workspace")
-        cls.generateDefault(bool,"multi-develop","overlap-recursive")
-        cls.generateDefault(int,"refresh-rate")
-        cls.generateDefault(list,"profiles")
+        cls.generateDefault(dict,"shallow","recursive",header="label")
+        cls.generateDefault(dict,"market","script","workspace",header=None)
+        cls.generateDefault(bool,"multi-develop","overlap-recursive",header="general")
+        cls.generateDefault(int,"refresh-rate",header="general")
+        cls.generateDefault(list,"profiles",header="general")
 
         #run setup here
         if(ask_for_setup):
             cls.runSetup()
 
         #ensure all pieces of settings are correct
-        cls.generateDefault(dict,"market","script","workspace")
-        cls.generateDefault(bool,"multi-develop","overlap-recursive")
-        cls.generateDefault(int,"refresh-rate")
-        cls.generateDefault(list,"profiles")
+        cls.generateDefault(dict,"shallow","recursive",header="label")
+        cls.generateDefault(dict,"market","script","workspace",header=None,)
+        cls.generateDefault(bool,"multi-develop","overlap-recursive",header="general")
+        cls.generateDefault(int,"refresh-rate",header="general")
+        cls.generateDefault(list,"profiles",header="general")
 
-        if(cls.SETTINGS['refresh-rate'] > cls.MAX_RATE):
-            cls.SETTINGS['refresh-rate'] = cls.MAX_RATE
-        elif(cls.SETTINGS['refresh-rate'] < cls.MIN_RATE):
-            cls.SETTINGS['refresh-rate'] = cls.MIN_RATE
+        if(cls.SETTINGS['general']['refresh-rate'] > cls.MAX_RATE):
+            cls.SETTINGS['general']['refresh-rate'] = cls.MAX_RATE
+        elif(cls.SETTINGS['general']['refresh-rate'] < cls.MIN_RATE):
+            cls.SETTINGS['general']['refresh-rate'] = cls.MIN_RATE
 
         cls.dynamicProfiles()
         cls.dynamicWorkspace()
 
         #determine current workspace currently being used
-        cls.__active_workspace = cls.SETTINGS['active-workspace']
+        cls.__active_workspace = cls.SETTINGS['general']['active-workspace']
 
         if(not cls.inWorkspace()):
             log.warning("Active workspace not found!")
             return False
 
-        if(cls.SETTINGS['template'] != None and os.path.isdir(cls.SETTINGS['template'])):
-            cls.SETTINGS['template'] = cls.fs(cls.SETTINGS['template'])
+        if(cls.SETTINGS['general']['template'] != None and os.path.isdir(cls.SETTINGS['general']['template'])):
+            cls.SETTINGS['general']['template'] = cls.fs(cls.SETTINGS['general']['template'])
             cls.TEMPLATE = cls.SETTINGS['template']
             pass
         
         if(cls.getLocal() == None):
             log.error("Please specify a workspace path for "\
-                +cls.SETTINGS['active-workspace']\
+                +cls.SETTINGS['general']['active-workspace']\
                 +". See \'legohdl help config\' for more details.")
-            cls.SETTINGS['active-workspace'] = None
+            cls.SETTINGS['general']['active-workspace'] = None
             return
 
-        cls.WORKSPACE = cls.fs(cls.WORKSPACE+cls.SETTINGS['active-workspace'])
+        cls.WORKSPACE = cls.fs(cls.WORKSPACE+cls.SETTINGS['general']['active-workspace'])
 
         #ensure no dead scripts are populated in 'script' section of settings
         cls.dynamicScripts()
@@ -253,12 +244,12 @@ scripts)?", warning=False)
         This method directly accesses the settings for the active workspace as a
         dictionary. It allows for modification and accessing. Set modify=True to
         write the value parameter to the key within the current workspace's
-        settings. Key can be 'local' or 'market'.
+        settings. Key can be 'path' or 'market'.
         '''
         if(not modify):
-            return cls.SETTINGS['workspace'][cls.SETTINGS['active-workspace']][key]
+            return cls.SETTINGS['workspace'][cls.SETTINGS['general']['active-workspace']][key]
         else:
-            cls.SETTINGS['workspace'][cls.SETTINGS['active-workspace']][key] = value
+            cls.SETTINGS['workspace'][cls.SETTINGS['general']['active-workspace']][key] = value
             return True
 
     @classmethod
@@ -291,7 +282,7 @@ scripts)?", warning=False)
         #identify valid profiles in the hidden direcotory
         found_prfls = cls.getProfiles()
         #identify potential profiles in the setting.cfg
-        listed_prfls = cls.SETTINGS['profiles']
+        listed_prfls = cls.SETTINGS['general']['profiles']
         #target deletions
         for prfl in found_prfls:
             if(prfl not in listed_prfls):
@@ -303,7 +294,7 @@ scripts)?", warning=False)
                 #check if there is a conflict with trying to make a new profile
                 if(os.path.exists(cls.HIDDEN+"profiles/"+prfl)):
                     log.error("A profile already exists for "+prfl+".")
-                    cls.SETTINGS['profiles'].remove(prfl)
+                    cls.SETTINGS['general']['profiles'].remove(prfl)
                     continue
                 log.info("Creating empty profile "+prfl+"...")
                 os.makedirs(cls.HIDDEN+"profiles/"+prfl, exist_ok=True)
@@ -333,7 +324,7 @@ scripts)?", warning=False)
         This method automatically creates local paths for workspaces and 
         deletes data from stale workspaces.
         '''
-        acting_ws = cls.SETTINGS['active-workspace']
+        acting_ws = cls.SETTINGS['general']['active-workspace']
         coupled_ws = tuple(cls.SETTINGS['workspace'].items())
         all_mrkts = list(cls.getMarkets(workspace_level=False).keys())
         for ws,val in coupled_ws:
@@ -344,9 +335,8 @@ scripts)?", warning=False)
             if(isinstance(val, dict) == False):
                 val = dict()
                 cls.SETTINGS['workspace'][ws] = dict()
-            if('local' not in val.keys() or isinstance(val['local'],str) == False):
-                val['local'] = None
-                cls.SETTINGS['workspace'][ws]['local'] = None
+            if('path' not in val.keys()):
+                cls.SETTINGS['workspace'][ws]['path'] = cfg.NULL
             if('market' not in val.keys() or isinstance(val['market'],list) == False):
                 val['market'] = list()
                 cls.SETTINGS['workspace'][ws]['market'] = list()
@@ -356,7 +346,7 @@ scripts)?", warning=False)
                 if mrkt not in all_mrkts:
                     cls.SETTINGS['workspace'][ws]['market'].remove(mrkt)
             #try to initialize workspace
-            cls.initializeWorkspace(ws, cls.fs(val['local']))
+            cls.initializeWorkspace(ws, cls.fs(val['path']))
 
         #remove any hidden workspace folders that are no longer in the settings.cfg
         for ws in cls.getWorkspaceNames().values():
@@ -368,8 +358,8 @@ scripts)?", warning=False)
                 else:
                     os.remove(cls.HIDDEN+"workspaces/"+ws)
 
-        if(acting_ws != None):
-            cls.SETTINGS['active-workspace'] = acting_ws
+        if(acting_ws != cfg.NULL):
+            cls.SETTINGS['general']['active-workspace'] = acting_ws
         
         pass
     
@@ -398,8 +388,8 @@ scripts)?", warning=False)
     @classmethod
     def inWorkspace(cls):
         #determine current workspace currently being used
-        cls.__active_workspace = cls.SETTINGS['active-workspace']
-        if(cls.__active_workspace == None or cls.__active_workspace not in cls.SETTINGS['workspace'].keys() or \
+        cls.__active_workspace = cls.SETTINGS['general']['active-workspace']
+        if(cls.__active_workspace == cfg.NULL or cls.__active_workspace not in cls.SETTINGS['workspace'].keys() or \
            os.path.isdir(cls.HIDDEN+"workspaces/"+cls.__active_workspace) == False):
             return False
         else:
@@ -494,7 +484,7 @@ scripts)?", warning=False)
                 pass
             elif(append):
                 #add to settings
-                cls.SETTINGS['profiles'].append(value)
+                cls.SETTINGS['general']['profiles'].append(value)
                 #create new directories if applicable
                 cls.dynamicProfiles()
                 return True
@@ -539,8 +529,8 @@ scripts)?", warning=False)
     def importProfile(cls, prfl_name, explicit=False):
         with open(cls.HIDDEN+"profiles/"+cls.PRFL_LOG, 'w') as f:
             f.write(prfl_name)
-        if(prfl_name not in cls.SETTINGS['profiles']):
-            cls.SETTINGS['profiles'] += [prfl_name]
+        if(prfl_name not in cls.SETTINGS['general']['profiles']):
+            cls.SETTINGS['general']['profiles'] += [prfl_name]
         #merge all values found in src override dest into a new dictionary
         def deepMerge(src, dest, setting="", scripts_only=False):
             for k,v in src.items():
@@ -548,7 +538,7 @@ scripts)?", warning=False)
                 if(setting == ""):
                     next_level = k
                 else:
-                    next_level = next_level + ":" + k
+                    next_level = next_level + " : " + k
                 #print(next_level)
                 #only proceed when importing just scripts
                 if(scripts_only and next_level.startswith('script') == 0):
@@ -583,7 +573,7 @@ scripts)?", warning=False)
                         if(isinstance(v,str)):
                             v = v.replace("%LEGOHDL%", cls.HIDDEN[:len(cls.HIDDEN)-1])
                         #do not allow a null workspace path to overwrite an already established workspace path
-                        if(k in dest.keys() and k == 'local' and v == None):
+                        if(k in dest.keys() and k == 'path' and v == cfg.NULL):
                             continue
                         dest[k] = v
                     #print to console the overloaded settings
@@ -672,7 +662,7 @@ scripts)?", warning=False)
         else:
             #must add to setting if default not found
             if(reload_default):
-                cls.SETTINGS['profiles'].append('default')
+                cls.SETTINGS['general']['profiles'].append('default')
                 cls.save()
             else:
                 log.error("Profile "+name+" does not exist.")
@@ -717,13 +707,13 @@ scripts)?", warning=False)
         
         #ask to create paths for workspace's with invalid paths
         ws_path = local_path
-        if(ws_path == None):
+        if(ws_path == cfg.NULL):
             ws_path = input("Enter workspace "+name+"'s path: ")
             while(len(ws_path) <= 0):
                 ws_path = input()
 
-        cls.SETTINGS['workspace'][name]['local'] = cls.fs(ws_path)
-        local_path = cls.SETTINGS['workspace'][name]['local']
+        cls.SETTINGS['workspace'][name]['path'] = cls.fs(ws_path)
+        local_path = cls.SETTINGS['workspace'][name]['path']
         
         if(os.path.exists(local_path) == False):
             log.info("Creating new path... "+local_path)
@@ -731,22 +721,19 @@ scripts)?", warning=False)
 
         #create cfg structure for workspace settings 'local' and 'market'
         if(name not in cls.SETTINGS['workspace'].keys()):
-            cls.SETTINGS['workspace'][name] = {'local' : local_path, 'market' : None}
+            cls.SETTINGS['workspace'][name] = {'path' : local_path, 'market' : None}
         #make sure market is a list
         if(isinstance(cls.SETTINGS['workspace'][name]['market'],list) == False):
             cls.SETTINGS['workspace'][name]['market'] = []
-        #make sure local is a string 
-        if(isinstance(cls.SETTINGS['workspace'][name]['local'],str) == False):
-            cls.SETTINGS['workspace'][name]['local'] = None
 
         #cannot be active workspace if a workspace path is null
-        if(cls.SETTINGS['workspace'][name]['local'] == None and cls.__active_workspace == name):
+        if(cls.SETTINGS['workspace'][name]['path'] == None and cls.__active_workspace == name):
             cls.__active_workspace = None
             return
 
         #if no active-workspace then set it as active
         if(not cls.inWorkspace()):
-            cls.SETTINGS['active-workspace'] = name
+            cls.SETTINGS['general']['active-workspace'] = name
             cls.__active_workspace = name
         pass
 
@@ -776,7 +763,7 @@ scripts)?", warning=False)
             return time_fmt
             
         rf_log_path = cls.WORKSPACE+cls.REFRESH_LOG
-        rate = cls.SETTINGS['refresh-rate']
+        rate = cls.SETTINGS['general']['refresh-rate']
         
         #never perform an automatic refresh
         if(rate == 0):
@@ -841,31 +828,31 @@ scripts)?", warning=False)
     @classmethod
     def save(cls):
         with open(cls.HIDDEN+"settings.cfg", "w") as file:
-            for key in cls.OPTIONS:
-                #pop off front key/val pair of cfg data
-                single_dict = {}
-                single_dict[key] = cls.SETTINGS[key]
+            cfg.save(cls.SETTINGS, file)
+            # for key in cls.OPTIONS:
+            #     #pop off front key/val pair of cfg data
+            #     single_dict = {}
+            #     single_dict[key] = cls.SETTINGS[key]
 
-                if(key == 'author'):
-                    file.write("#general configurations\n")
-                elif(key == 'overlap-recursive'):
-                    file.write("#label configurations\n")
-                elif(key == 'script'):
-                    file.write("#script configurations\n")
-                elif(key == 'active-workspace'):
-                    file.write("#workspace configurations\n")
-                elif(key == 'refresh-rate'):
-                    file.write("#market configurations\n")
+            #     if(key == 'author'):
+            #         file.write("#general configurations\n")
+            #     elif(key == 'overlap-recursive'):
+            #         file.write("#label configurations\n")
+            #     elif(key == 'script'):
+            #         file.write("#script configurations\n")
+            #     elif(key == 'active-workspace'):
+            #         file.write("#workspace configurations\n")
+            #     elif(key == 'refresh-rate'):
+            #         file.write("#market configurations\n")
 
-                cfg.save(single_dict, file)
-                pass
+                # cfg.save(single_dict, file)
             pass
         pass
 
     @classmethod
     def getLocal(cls):
         if(cls.inWorkspace()):
-            return cls.fs(cls.SETTINGS['workspace'][cls.__active_workspace]['local'])
+            return cls.fs(cls.SETTINGS['workspace'][cls.__active_workspace]['path'])
         else:
             return ''
 
@@ -1057,20 +1044,34 @@ scripts)?", warning=False)
         return path
 
     @classmethod
-    def castBoolean(cls, str_val):
+    def castBool(cls, str_val):
+        if(isinstance(str_val, bool)):
+            return str_val
         str_val = str_val.lower()
         return (str_val == 'true' or str_val == 't' or str_val == '1' or str_val == 'yes' or str_val == 'on')
+    
+    @classmethod
+    def castInt(cls, str_int):
+        if(isinstance(str_int, int)):
+            return str_int
+        if(str_int.isdigit()):
+            return int(str_int)
+        else:
+            return 0
 
     @classmethod
     def fullMerge(cls, dest, src):
-        print(src)
-        for k, v in src.items():
-            if(k not in dest.keys()):
+        '''
+        Recursively moves keys/vals from src dictionary into destination
+        dictionary if they don't exist. Returns dest.
+        '''
+
+        for k,v in src.items():
+            #does the destination have this key?
+            if(k not in dest.keys()): 
                 dest[k] = v
-            elif(isinstance(k, dict)):
-                dest = cls.fullMerge(dest[k], src[k])
-            else:
-                dest[k] = v
+            if(isinstance(v, dict)):
+                dest[k] = cls.fullMerge(dest[k], src[k])
 
         return dest
 
@@ -1096,7 +1097,6 @@ scripts)?", warning=False)
             if not lib in place1.keys():
                 tmp[lib] = dict()
                 for prj in place2[lib]:
-                    print(lib,prj)
                     tmp[lib][prj] = place2[lib][prj]
         return tmp
 
@@ -1142,7 +1142,7 @@ scripts)?", warning=False)
             'hello'  : 'python %LEGOHDL%/scripts/hello_world.py',
         }
         def_settings['workspace'] = dict()
-        def_settings['workspace']['primary'] = {'local' : None, 'market' : None}
+        def_settings['workspace']['primary'] = {'path' : None, 'market' : None}
         #create default settings.cfg
         with open(prfl_path+"settings.cfg", 'w') as f:
             cfg.save(def_settings, f)

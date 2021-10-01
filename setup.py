@@ -19,7 +19,6 @@ setuptools.setup(
         "",
     ],
     install_requires=[
-        "PyYAML",
         "git-Python",
         "ordered_set",
     ],

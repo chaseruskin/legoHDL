@@ -153,7 +153,7 @@ class Block:
                 f.write("## v"+self.getVersion()+'\n\n'+data)
                 f.close()
             print(change_file)
-            os.system(apt.SETTINGS['editor']+" "+change_file)
+            os.system(apt.SETTINGS['general']['editor']+" "+change_file)
             resp = input("Enter 'k' when done writing CHANGELOG.md to proceed...")
             while resp.lower() != 'k':
                 resp = input()
@@ -426,7 +426,13 @@ block:
         for key in apt.META:
             if(key not in self.getMeta().keys()):
                 self.setMeta(key, None)
-        
+
+        if(self.getMeta("remote") == cfg.NULL):
+            self.setMeta("remote", None) 
+
+        if(self.getMeta("market") == cfg.NULL):
+             self.setMeta("market", None) 
+
         #check if this block is a local block
         if(self.isLocal()):
             #grab list of available versions
@@ -435,7 +441,7 @@ block:
             self.setMeta('version', avail_vers[0][1:])
 
 
-        if(self.getMeta('derives') == None):
+        if(self.getMeta('derives') == cfg.NULL):
             self.setMeta('derives',list())
 
         if('remote' in self.getMeta().keys()):
@@ -492,7 +498,7 @@ block:
         #generate today's date
         today = date.today().strftime("%B %d, %Y")
         #write blank if no author configured
-        author = apt.SETTINGS["author"]
+        author = apt.SETTINGS['general']["author"]
         if(author == None):
             author = ''
 
@@ -567,7 +573,7 @@ block:
                 if(os.path.isfile(f)):
                     os.rename(f, f.replace('template', self.getName(low=False)))
             #determine the author
-            author = apt.SETTINGS["author"]
+            author = apt.SETTINGS['general']["author"]
             if(author == None):
                 author = ''
             #determie the data
@@ -759,7 +765,7 @@ block:
 
     #print out the metadata for this block
     def show(self, listVers=False, ver=None, dispChange=False):
-        cache_path = apt.HIDDEN+"workspaces/"+apt.SETTINGS['active-workspace']+"/cache/"+self.getLib()+"/"+self.getName()+"/"
+        cache_path = apt.HIDDEN+"workspaces/"+apt.SETTINGS['general']['active-workspace']+"/cache/"+self.getLib()+"/"+self.getName()+"/"
         install_vers = []
         #display the changelog if available
         if(dispChange):
@@ -829,7 +835,7 @@ block:
         Opens this block with the configured text-editor.
         '''
         log.info("Opening "+self.getTitle()+" at... "+self.getPath())
-        cmd = apt.SETTINGS['editor']+" "+self.getPath()
+        cmd = apt.SETTINGS['general']['editor']+" "+self.getPath()
         os.system(cmd)
         pass
     
@@ -1361,7 +1367,7 @@ block:
 
         #if multi-develop is enabled, overwrite the units with those found in the local path
         #also allow to work with unreleased blocks? -> yes
-        if(apt.SETTINGS['multi-develop'] == True):
+        if(apt.SETTINGS['general']['multi-develop'] == True):
             log.info("Multi-develop is enabled")
             #1. first find all Block.cfg files (roots of blocks)
             files = glob.glob(apt.getLocal()+"**/"+apt.MARKER, recursive=True)

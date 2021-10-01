@@ -17,6 +17,7 @@ class CfgFile:
     HEADER = '[]'
     VAR = '='
     LIST = '[]'
+    NULL = ''
 
     @classmethod
     def load(cls, datafile):

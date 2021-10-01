@@ -93,7 +93,6 @@ class legoHDL:
             block = self.db.getBlocks("market")[l][n]
         else:
             exit(log.error(title+" cannot be found anywhere."))
-
         #append to required_by list used to prevent cyclic recursive nature
         required_by.append(block.getTitle()+'('+block.getVersion()+')')
         #see if all cache blocks are available by looking at block's derives list
@@ -329,7 +328,7 @@ class legoHDL:
             if(block.getTitle() == blk):
                 tmp = block
             #assign tmp block to block in downloads if multi-develop enabled and version is none
-            elif(V == None and self.db.blockExists(blk, "local") and apt.SETTINGS['multi-develop']):
+            elif(V == None and self.db.blockExists(blk, "local") and apt.SETTINGS['general']['multi-develop']):
                 tmp = self.db.getBlocks("local")[L][N]
             #assign tmp block to the cache block
             elif(self.db.blockExists(blk, "cache")):
@@ -384,7 +383,7 @@ class legoHDL:
                         latest_defined[blk][1][basename] = lbl
                         pass
         #determine if to write all recursive labels or not
-        if(not apt.SETTINGS['overlap-recursive']):
+        if(not apt.SETTINGS['general']['overlap-recursive']):
             labels = []
             for blk in latest_defined.keys():
                 for lbl in latest_defined[blk][1].values():
@@ -587,9 +586,6 @@ class legoHDL:
             log.error("No setting was flagged to as an option")
             return
         
-        if(choice == 'null'):
-            choice = ''
-        
         choice = choice.replace("%LEGOHDL%",apt.HIDDEN[:len(apt.HIDDEN)-1])
 
         eq = choice.find("=")
@@ -625,7 +621,7 @@ class legoHDL:
                     #remove directory
                     shutil.rmtree(apt.getProfiles()[choice])
                     #remove from settings
-                    apt.SETTINGS[st+'s'].remove(choice)
+                    apt.SETTINGS['general'][st+'s'].remove(choice)
                 else:
                     exit(log.error("Profile "+choice+" does not exist."))
             #delete a key/value pair from the scripts or workspaces
@@ -634,8 +630,8 @@ class legoHDL:
                     #print("delete")
                     #update active workspace if user deleted the current workspace
                     if(st == 'workspace'):
-                        if(apt.SETTINGS['active-workspace'] == choice):
-                            apt.SETTINGS['active-workspace'] = None
+                        if(apt.SETTINGS['general']['active-workspace'] == choice):
+                            apt.SETTINGS['general']['active-workspace'] = None
                             #prompt user to verify to delete active workspace
                             verify = apt.confirmation("Are you sure you want to delete the active workspace?")
                             if(not verify):
@@ -671,7 +667,7 @@ class legoHDL:
                 exit(log.error("Workspace "+choice+" not found!"))
 
         #invalid option flag
-        if(not options[0] in apt.SETTINGS.keys() and options[0] != 'profile'):
+        if(options[0] not in apt.OPTIONS and options[0] != 'profile'):
             exit(log.error("No setting exists under that flag"))
         elif(options[0] == 'market'):
             #try to link existing market into markets
@@ -685,7 +681,7 @@ class legoHDL:
                 else:
                     key = apt.getMarketNames()[key]
             else:
-                if(val == ''):
+                if(val == cfg.NULL):
                     val = None
                 if(key.lower() in apt.getMarketNames().keys()):
                     if(key != apt.getMarketNames()[key.lower()]):
@@ -726,32 +722,28 @@ class legoHDL:
                 #ensure there is no conflict with making this workspace key/val pair
                 if(apt.isConflict(apt.getWorkspaceNames(), key) == True):
                     exit(log.error("Setting not saved."))
-                #initialize the workspace folders and structure
-                apt.initializeWorkspace(key)
                 #create new workspace profile
                 for lp in apt.SETTINGS[options[0]].values():
-                    if(lp['local'] != None and lp['local'].lower() == apt.fs(val).lower()):
+                    if(lp['path'] != cfg.NULL and lp['path'].lower() == apt.fs(val).lower()):
                         exit(log.error("A workspace already exists with this path."))
-                #now insert value
-                apt.SETTINGS[options[0]][key]['local'] = apt.fs(val)
-                #will make new directories if needed when setting local path
-                if(not os.path.isdir(apt.SETTINGS[options[0]][key]['local'])):
-                    log.info("Making new local directory... "+apt.SETTINGS[options[0]][key]['local'])
-                    os.makedirs(apt.fs(val), exist_ok=True)
-                #otherwise that directory already exists, are there any blocks already there?
-                else:
-                    #go through all the found blocks in this already existing path and see if any are "released"
-                    blks = self.db.getBlocks("local")
-                    for sects in blks.values():
-                        for blk in sects.values():
-                            #temporarily set the workspace path to properly install any found blocks to cache
-                            apt.WORKSPACE = apt.HIDDEN+"workspaces/"+key+"/"
-                            if(Block.biggerVer(blk.getVersion(),'0.0.0') != '0.0.0'):
-                                #install to cache
-                                log.info("Found "+blk.getTitle()+" as an already a released block.")
-                                self.install(blk.getTitle())
-                        pass
-                    pass
+                #initialize the workspace folders and structure
+                apt.initializeWorkspace(key, apt.fs(val))
+                
+                # :todo: needs to override local path as the newly configured path to perform this functionality
+                #are there any blocks already there at local path?
+                # print(apt.getLocal())
+                # #go through all the found blocks in this already existing path and see if any are "released"
+                # blks = self.db.getBlocks("local")
+                # print(blks)
+                # for sects in blks.values():
+                #     for blk in sects.values():
+                #         #temporarily set the workspace path to properly install any found blocks to cache
+                #         apt.WORKSPACE = apt.HIDDEN+"workspaces/"+key+"/"
+                #         if(Block.biggerVer(blk.getVersion(),'0.0.0') != '0.0.0'):
+                #             #install to cache
+                #             log.info("Found "+blk.getTitle()+" as an already a released block.")
+                #             self.install(blk.getTitle())
+                #    pass
                 for rem in options:
                     if rem == options[0]:
                         continue
@@ -828,20 +820,12 @@ class legoHDL:
                 except:
                     pass
             pass
-        elif(options[0] == 'multi-develop' or options[0] == 'duplicate-recursive'):
-            if(choice == '1' or choice.lower() == 'true'):
-                choice = True
-            elif(choice == '0' or choice.lower() == 'false'):
-                choice = False
-            else:
-                exit(log.error("Setting takes true or false values"))
-            apt.SETTINGS[options[0]] = choice
+        elif(options[0] == 'multi-develop' or options[0] == 'overlap-recursive'):
+            apt.SETTINGS['general'][options[0]] = apt.castBoolean(choice)
             pass
         elif(options[0] == 'template'):
-            if(choice == ''):
-                apt.SETTINGS[options[0]] = None
-            else:
-                apt.SETTINGS[options[0]] = apt.fs(choice)
+            apt.SETTINGS['general'][options[0]] = apt.fs(choice)
+            pass
         elif(options[0] == 'refresh-rate'):
             if(choice.isdecimal()):
                 digit_choice = int(choice)
@@ -870,7 +854,7 @@ class legoHDL:
             pass
         # ALL OTHER CONFIGURATION
         else:
-            apt.SETTINGS[options[0]] = choice
+            apt.SETTINGS['general'][options[0]] = choice
         
         apt.save()
         log.info("Setting saved successfully.")
@@ -1124,9 +1108,9 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             rems = ''
             for r in val['market']:
                 rems = rems + r + ','
-            if(key == apt.SETTINGS['active-workspace']):
+            if(key == apt.SETTINGS['general']['active-workspace']):
                 act = 'yes'
-            print('{:<16}'.format(key),'{:<6}'.format(act),'{:<40}'.format(val['local']),'{:<14}'.format(rems))
+            print('{:<16}'.format(key),'{:<6}'.format(act),'{:<40}'.format(val['path']),'{:<14}'.format(rems))
             pass
         pass
 
@@ -1383,12 +1367,12 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             pass
 
         elif(command == "open"):
-            if(apt.SETTINGS['editor'] == None):
+            if(apt.SETTINGS['general']['editor'] == cfg.NULL):
                 exit(log.error("No text-editor configured!"))
             #open template
             if(options.count("template")):
                 log.info("Opening block template folder at... "+apt.fs(apt.TEMPLATE))
-                os.system(apt.SETTINGS['editor']+" \""+apt.fs(apt.TEMPLATE)+"\"")
+                os.system(apt.SETTINGS['general']['editor']+" \""+apt.fs(apt.TEMPLATE)+"\"")
             #open scripts
             elif(options.count("script")):
                 #want to open the specified script?
@@ -1409,19 +1393,19 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 else:
                     exit(log.error("Script "+value+" does not exist"))
 
-                os.system(apt.SETTINGS['editor']+" "+script_path)
+                os.system(apt.SETTINGS['general']['editor']+" "+script_path)
             #open profile
             elif(options.count("profile")):
                 if(value.lower() in apt.getProfileNames().keys()):
                     value = apt.getProfileNames()[value.lower()]
                     log.info("Opening profile "+value+" at... "+apt.getProfiles()[value])
-                    os.system(apt.SETTINGS['editor']+" "+apt.getProfiles()[value])
+                    os.system(apt.SETTINGS['general']['editor']+" "+apt.getProfiles()[value])
                 else:
                     log.error("No profile exists as "+value)
             #open settings
             elif(options.count("settings")):
                 log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+"settings.cfg"))
-                os.system(apt.SETTINGS['editor']+" \""+apt.HIDDEN+"/settings.cfg\"")
+                os.system(apt.SETTINGS['general']['editor']+" \""+apt.HIDDEN+"/settings.cfg\"")
             #open block
             elif(valid):
                 self.blockPKG.load()
@@ -1452,8 +1436,11 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
 
         elif(command == "update"):
             if(options.count('profile')):
-                if(value.lower() in apt.getProfileNames().keys()):
-                    value = apt.getProfileNames()[value.lower()]
+                if(value.lower() in apt.getProfileNames().keys() or value.lower() == 'default'):
+                    if(value.lower() != 'default'):
+                        value = apt.getProfileNames()[value.lower()]
+                    else:
+                        value = value.lower()
                     #update this profile if it has a remote repository
                     apt.updateProfile(value)
                 else:
@@ -1496,11 +1483,11 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             if(within_block): 
                 inserted_lib = 'work'
 
-            carry_on = (within_block) or (self.db.blockExists(package, "local") and apt.SETTINGS['multi-develop'])
+            carry_on = (within_block) or (self.db.blockExists(package, "local") and apt.SETTINGS['general']['multi-develop'])
             
             if(carry_on or self.db.blockExists(package, "cache")):
                 #allow blocks to be from local path as well if using multi-develop
-                if(apt.SETTINGS['multi-develop']):
+                if(apt.SETTINGS['general']['multi-develop']):
                     domain = self.db.getBlocks("local","cache")
                     if(self.db.blockExists(package, "local") and ver == None):
                         log.warning("Using this block may be unstable as ports are locally referenced.")
@@ -1513,7 +1500,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 #print the port mapping/listing to the console for user aide
                 print(domain[L][N].ports(mapp,inserted_lib,pure_ent,ent_name,ver), end='')
             #could not use this block because it is only available locally
-            elif(not within_block and apt.SETTINGS['multi-develop'] == False and self.db.blockExists(package, "local")):
+            elif(not within_block and apt.SETTINGS['general']['multi-develop'] == False and self.db.blockExists(package, "local")):
                 exit(log.error("Cannot use "+package+" because it has no installed release points and multi-develop is set to OFF."))
             #this block does not exist
             else:
