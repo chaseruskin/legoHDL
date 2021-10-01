@@ -267,10 +267,11 @@ class CfgFile:
     'refresh-rate' : (VAR,\
 '''
 ; description: 
-;   How often to synchronize markets with their remote every day.
-;   set to -1 to disable. Max value is 1440 (every minute). Evenly divides
-;   the refresh points throughout the 24-hour day.
-; value: 
+;   How often to synchronize markets with their remote every day. set to 
+;   -1 to refresh on every call. Max value is 1440 (every minute). Evenly divides
+;   the refresh points throughout the 24-hour day. This setting simply
+;   is automation for the 'refresh' command.
+; value:
 ;   integer (-1 to 1440)'''),
 
 

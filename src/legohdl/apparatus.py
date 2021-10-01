@@ -535,16 +535,23 @@ scripts)?", warning=False)
         def deepMerge(src, dest, setting="", scripts_only=False):
             for k,v in src.items():
                 next_level = setting
+                isHeader = isinstance(v, dict)
                 if(setting == ""):
-                    next_level = k
+                    if(isHeader):
+                        next_level = cfg.HEADER[0]+k+cfg.HEADER[1]+" "
+                    else:
+                        next_level = k
                 else:
-                    next_level = next_level + " : " + k
+                    if(isHeader):
+                        next_level = next_level + cfg.HEADER[0] + k + cfg.HEADER[1]+" "
+                    else:
+                        next_level = next_level + k
                 #print(next_level)
                 #only proceed when importing just scripts
-                if(scripts_only and next_level.startswith('script') == 0):
+                if(scripts_only and next_level.startswith(cfg.HEADER[0]+'script'+cfg.HEADER[1]) == 0):
                     continue
                 #skip scripts if not explicitly set in argument
-                elif(scripts_only == False and next_level.startswith('script') == 1):
+                elif(scripts_only == False and next_level.startswith(cfg.HEADER[0]+'script'+cfg.HEADER[1]) == 1):
                     continue
                 #go even deeper into the dictionary tree
                 if(isinstance(v, dict)):
