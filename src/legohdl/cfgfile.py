@@ -78,10 +78,13 @@ class CfgFile:
             #determine how far in scope by # of 4-space groups
             c = line[0]
             lvl = 0
-            while c == ' ':
+            tabs = 0
+            while c == ' ' or c == '\t':
+                if(c == '\t'):
+                    tabs += 1
                 lvl += 1
                 c = line[lvl]
-            lvl = int(lvl/len(cls.TAB))
+            lvl = int((lvl-tabs)/len(cls.TAB))+tabs
 
             #identify headers
             if(line.strip().startswith(cls.HEADER[0]) and line.strip().endswith(cls.HEADER[1])):
