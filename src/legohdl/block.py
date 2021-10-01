@@ -413,17 +413,24 @@ class Block:
             self.__metadata = cfg.load(file)
             file.close()
 
-        self._initial_metadata = self.getMeta().copy()
+        #this variable is only evaluated in the save() method
+        self._initial_metadata = None
 
         #ensure all pieces are there
         for key in apt.META:
             if(key not in self.getMeta().keys()):
+                #will force to save the changed file
+                self._initial_metadata = self.getMeta().copy()
                 self.setMeta(key, None)
+                
 
         #cast blank values '' -> None
-        blanks_to_none = ['remote', 'name', 'market', 'library']
+        blanks_to_none = ['remote', 'name', 'market', 'library', 'bench', 'toplevel']
         for field in blanks_to_none:
-            self.setMeta(field, apt.castNone(self.getMeta(field))) 
+            self.setMeta(field, apt.castNone(self.getMeta(field)))
+            
+        if(self._initial_metadata == None):
+            self._initial_metadata = self.getMeta().copy()
 
         #check if this block is a local block
         if(self.isLocal()):
@@ -431,7 +438,6 @@ class Block:
             avail_vers = self.getAvailableVers()       
             #dynamically determine the latest valid release point
             self.setMeta('version', avail_vers[0][1:])
-
 
         if(self.getMeta('derives') == cfg.NULL):
             self.setMeta('derives',list())
@@ -843,6 +849,11 @@ class Block:
         #default is to load the block's metadata
         if(meta == None):
             meta = self.getMeta(every=True)
+
+        if(self._initial_metadata != self.getMeta()):
+            print("its different!")
+            print(self._initial_metadata)
+            print(self.getMeta())
 
         #write back cfg values with respect to order
         with open(self.metadataPath(), 'w') as file:
