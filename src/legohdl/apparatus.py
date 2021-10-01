@@ -64,7 +64,7 @@ class Apparatus:
                 'script' : {},
                 'workspace' : {},
                 'market' : {}
-                }   
+             }   
 
     META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', \
             'remote', 'market', 'derives']
@@ -1057,6 +1057,13 @@ scripts)?", warning=False)
         str_val = str_val.lower()
         return (str_val == 'true' or str_val == 't' or str_val == '1' or str_val == 'yes' or str_val == 'on')
     
+    @classmethod
+    def castNone(cls, str_blank):
+        if(str_blank == cfg.NULL):
+            return None
+        else:
+            return str_blank
+            
     @classmethod
     def castInt(cls, str_int):
         if(isinstance(str_int, int)):

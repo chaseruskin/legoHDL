@@ -22,11 +22,22 @@ from .unit import Unit
 #a Block is a package/module that is signified by having the marker file
 class Block:
 
+    LAYOUT = {'block' : {
+                'name' : cfg.NULL,
+                'library' : cfg.NULL,
+                'version' : cfg.NULL,
+                'summary' : cfg.NULL,
+                'toplevel' : cfg.NULL,
+                'bench' : cfg.NULL,
+                'remote' : cfg.NULL,
+                'market' : cfg.NULL,
+                'derives' : []}
+            }
+
     def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False, market=None):
         self.__metadata = dict()
         #split title into library and block name
         self.__lib,self.__name = Block.split(title, lower=False)
-
         self._remote = remote
         self.__market = market
 
@@ -369,24 +380,6 @@ class Block:
             r_patch = 0
         return r_major,r_minor,r_patch
 
-    def blockFile(self):
-        '''
-        Returns exact standard string for writing an empty block file.
-        '''
-        body = """
-block:
-  name:
-  library:
-  version:
-  summary:
-  toplevel:
-  bench:
-  remote:
-  market:
-  derives: []
-        """
-        return body
-
     def isMarket(self):
         return apt.isSubPath(apt.MARKETS, self.getPath())
 
@@ -427,11 +420,10 @@ block:
             if(key not in self.getMeta().keys()):
                 self.setMeta(key, None)
 
-        if(self.getMeta("remote") == cfg.NULL):
-            self.setMeta("remote", None) 
-
-        if(self.getMeta("market") == cfg.NULL):
-             self.setMeta("market", None) 
+        #cast blank values '' -> None
+        blanks_to_none = ['remote', 'name', 'market', 'library']
+        for field in blanks_to_none:
+            self.setMeta(field, apt.castNone(self.getMeta(field))) 
 
         #check if this block is a local block
         if(self.isLocal()):
@@ -563,7 +555,8 @@ block:
                 self._repo.git.pull()
 
         #create the marker file
-        open(self.getPath()+apt.MARKER, 'w').write(self.blockFile())
+        with open(self.getPath()+apt.MARKER, 'w') as f:
+            cfg.save(self.LAYOUT, f)
 
         #run the commands to generate new project from template
         if(fresh):
