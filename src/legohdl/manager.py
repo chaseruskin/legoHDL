@@ -1118,17 +1118,16 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         '''
         This method perfoms the list command for scripts.
         '''
-        print('{:<12}'.format("Name"),'{:<12}'.format("Command"),'{:<54}'.format("Path"))
-        print("-"*12+" "+"-"*12+" "+"-"*54)
+        print('{:<12}'.format("Name"),'{:<12}'.format("Command"))
+        print("-"*12+" "+"-"*64)
         for key,val in apt.SETTINGS['script'].items():
-            spce = val.find(' ')
-            cmd = val[0:spce]
-            path = val[spce:].strip()
-            #command not found
-            if(spce == -1): 
-                path = cmd
-                cmd = ''
-            print('{:<12}'.format(key),'{:<12}'.format(cmd),'{:<54}'.format(path))
+            cmd = ''
+            if(isinstance(val,list)):
+                for v in val:
+                    cmd = cmd + v + ' '
+            else:
+                cmd = val
+            print('{:<12}'.format(key),'{:<12}'.format(cmd))
             pass
         pass
 

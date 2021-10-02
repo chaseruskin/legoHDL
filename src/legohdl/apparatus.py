@@ -375,7 +375,10 @@ scripts)?", warning=False)
         deletions = []
         for key,val in cls.SETTINGS['script'].items():
             exists = False
-            parsed = val.split()
+            if(isinstance(val, list)):
+                parsed = val
+            else:
+                parsed = val.split()
             #try every part of the value as a path
             for pt in parsed:
                 pt = pt.replace("\"","").replace("\'","")
