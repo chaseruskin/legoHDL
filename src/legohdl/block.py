@@ -1226,6 +1226,8 @@ class Block:
             #print(bench_ent)
             tb = bench_ent.getName()
             top_dog = tb
+        
+        # :todo: save appropiate changes to Block.cfg file?
         return top_dog,top,tb
 
     def printUnits(self):
