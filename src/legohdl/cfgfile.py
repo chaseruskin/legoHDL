@@ -278,6 +278,27 @@ class CfgFile:
         else:
             return 0
 
+    @classmethod
+    def getAllFields(cls, data):
+        '''
+        Return a list of all field names found within the python dictionary
+        object.
+
+        Parameters
+        ---
+        data : python dictionary object
+        '''
+        def fieldSearch(map, fields=[]):
+            for k in map.keys():
+                if(isinstance(map[k], dict)):
+                    fields = fieldSearch(map[k],fields)
+                else:
+                    fields += [k]
+            return fields
+
+        return fieldSearch(data)
+
+
     SETTINGS_COMMENTS = {
         'general' : (HEADER,\
 '''; ---

@@ -583,7 +583,7 @@ class legoHDL:
         setting settings through the command-line interface.
         '''
         if(len(options) == 0):
-            log.error("No setting was flagged to as an option")
+            log.error("No field was flagged to as an option to modify.")
             return
         
         choice = choice.replace("%LEGOHDL%",apt.HIDDEN[:len(apt.HIDDEN)-1])
@@ -668,7 +668,7 @@ class legoHDL:
 
         #invalid option flag
         if(options[0] not in apt.OPTIONS and options[0] != 'profile'):
-            exit(log.error("No setting exists under that flag"))
+            exit(log.error("No field exists as '"+options[0]+"' that can be modified."))
         elif(options[0] == 'market'):
             #try to link existing market into markets
             if(val == None):

@@ -44,11 +44,9 @@ class Apparatus:
     #path to current workspace within legohdl (is updated on intialization)
     WORKSPACE = HIDDEN+"workspaces/"
 
-    OPTIONS = ['author', 'editor', 'template', 'multi-develop', 'profiles',\
-               'overlap-recursive', 'label',\
-               'script',\
-               'active-workspace', 'workspace',\
-               'refresh-rate','market']
+    #all available options allowed to be edited within the settings.cfg
+    #append all non-field options here (editable dictionaries)
+    OPTIONS = ['label', 'script', 'workspace', 'market']
 
     LAYOUT = { 'general' : {
                     'active-workspace' : cfg.NULL, 
@@ -115,6 +113,9 @@ class Apparatus:
         #create empty import.log file for profiles if DNE
         if(os.path.isfile(cls.HIDDEN+"profiles/"+cls.PRFL_LOG) == False):
             open(cls.HIDDEN+"profiles/"+cls.PRFL_LOG, 'w').close()
+
+        #generate list of all available fields/options
+        cls.OPTIONS = cls.OPTIONS + cfg.getAllFields(cls.LAYOUT)
             
         return ask_for_setup
 
