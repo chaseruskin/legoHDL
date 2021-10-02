@@ -214,14 +214,22 @@ class CfgFile:
                     if(cls.NEAT):
                         #write over to new line on overflow (exceed 80 chars)
                         cursor = 0
+                        first_word = True
                         words = mp.split()
                         for w in words:
+                            if(first_word):
+                                datafile.write(w+' ')
                             cursor += len(w+' ')
                             #evaluate before writing
                             if(cursor+l_len >= 80):
-                                datafile.write('\n'+' '*l_len)
+                                datafile.write('\n')
+                                if(w != words[-1]):
+                                    datafile.write(' '*l_len)
                                 cursor = 0
-                            datafile.write(w+' ')
+                            if(not first_word):
+                                datafile.write(w+' ')
+                            
+                            first_word = (cursor == 0)
 
                         if(cursor != 0 or len(mp) == 0):
                             datafile.write('\n')
