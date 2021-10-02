@@ -849,7 +849,7 @@ scripts)?", warning=False)
     @classmethod
     def save(cls):
         with open(cls.HIDDEN+"settings.cfg", "w") as file:
-            cfg.save(cls.SETTINGS, file)
+            cfg.save(cls.SETTINGS, file, cls.getComments())
             pass
         pass
 
@@ -1476,3 +1476,148 @@ else:
         if(importing):
             cls.importProfile("default")
         pass
+    
+    @classmethod
+    def getComments(cls):
+        if(hasattr(cls, "SETTINGS_COMMENTS")):
+            return cls.SETTINGS_COMMENTS
+
+        cls.SETTINGS_COMMENTS = {
+    'general' : (cfg.HEADER,\
+'''; ---
+; settings.cfg
+; ---
+; description:
+;   A properties file to manually configure the packaging and development tool.
+; help:
+;   For more information, read the documentation at ___.
+
+; --- General settings ---
+; description:
+;   Various assignments related to the tool in general.'''),
+
+    'active-workspace' : (cfg.VAR,\
+'''
+; description:
+;   What workspace listed under [workspace] currently being used.
+;   If an empty assignment, a lot of functionality will be unavailable.
+; value: 
+;   string'''),
+
+    'author' : (cfg.VAR,\
+'''
+; description:
+;   Your name! (or code-name, code-names are cool too)
+; value: 
+;   string'''),
+
+    'editor' : (cfg.VAR,\
+'''
+; description:
+;   The command to call your preferred text editor.
+; value: 
+;   string'''),
+
+    'template' : (cfg.VAR,\
+'''
+; description:
+;   The path of where to copy a template folder from when making a new 
+;   block. If an empty assignment, it will use the built-in template folder.
+; value: 
+;   string'''),
+
+    'profiles' : (cfg.VAR,\
+'''
+; description:
+;   A list of profiles to import settings, templates, and/or scripts.
+; value: 
+;   list of strings'''),
+
+    'multi-develop' : (cfg.VAR,\
+'''
+; description:
+;   When enabled, it will reference blocks found in the workspace path over
+;   block's found in the cache. This would be beneficial for simulataneously 
+;   working on multiple related blocks. When done, be sure to release the
+;   block's as new versions so the modifications are in stone.
+; value: 
+;   boolean (true or false)'''),
+
+    'refresh-rate' : (cfg.VAR,\
+'''
+; description: 
+;   How often to synchronize markets with their remote every day. set to 
+;   -1 to refresh on every call. Max value is 1440 (every minute). Evenly divides
+;   the refresh points throughout the 24-hour day. This setting simply
+;   is automation for the 'refresh' command.
+; value:
+;   integer (-1 to 1440)'''),
+
+    'overlap-recursive' : (cfg.VAR,\
+'''
+; description:
+;   When enabled, on export the labels to be gathered can be the same file
+;   from the same project even if they are different versions (overlap).
+;   If disabled, it will not write multiple labels for the same file, even
+;   across different versioned blocks.
+; value:
+;   boolean (true or false)'''),
+
+    'label' : (cfg.HEADER,\
+'''
+; --- Label settings ---
+; description:
+;   User-defined groupings of filetypes, to be collected and written to the
+;   recipe file on export. Labels help bridge a custom workflow with the user's
+;   backend tool.'''),
+
+    'shallow' : (cfg.HEADER,\
+'''
+; description:
+;   Find these files only throughout the current block.
+; value:
+;   assignments of string'''),
+
+    'recursive' : (cfg.HEADER,\
+'''
+; description:
+;   Find these files throughout all blocks used in the current design.
+; value:
+;   assignments of string'''),
+
+    'script' : (cfg.HEADER,\
+'''
+; --- Script settings ---
+; description:
+;   User-defined aliases to execute backend scripts/tools. Assignments can
+;   be either a string or list of strings separated by commas.
+; value:
+;   assignments of string'''),
+
+    'workspace' : (cfg.HEADER,\
+'''
+; --- Workspace settings ---
+; description:
+;   User-defined spaces for working with blocks. Blocks must appear in the 
+;   workspace's path to be recognized as downloaded. Multiple markets can be
+;   configured to one workspace and markets can be shared across workspaces.
+;   Block downloads and installations in one workspace are separate from those 
+;   of another workspace.
+; value:
+;   headers with 'path' assignment of string and 'market' assignment of list 
+;   of strings'''),
+
+    'market' : (cfg.HEADER,\
+'''
+; --- Market settings ---
+; description:
+;   The list of available markets to be connected to workspaces. A market allows
+;   blocks to be visible from remote repositories and downloaded/installed 
+;   across machines. If a market is not configured to a remote repository, its
+;   assignment is empty.
+; value:
+;   assignments of string'''),
+        }
+        return cls.SETTINGS_COMMENTS
+
+    pass
