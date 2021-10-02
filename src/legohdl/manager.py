@@ -586,7 +586,7 @@ class legoHDL:
             log.error("No field was flagged to as an option to modify.")
             return
         
-        choice = choice.replace("%LEGOHDL%",apt.HIDDEN[:len(apt.HIDDEN)-1])
+        choice = choice.replace(apt.ENV_NAME,apt.HIDDEN[:len(apt.HIDDEN)-1])
 
         eq = choice.find("=")
         key = choice[:eq]

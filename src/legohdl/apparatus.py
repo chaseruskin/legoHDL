@@ -41,6 +41,9 @@ class Apparatus:
     #path to markets within legohdl
     MARKETS = HIDDEN+"markets/"
 
+    #replace this name with HIDDEN path to the tool when found in paths
+    ENV_NAME = "%LEGOHDL%"
+
     #path to current workspace within legohdl (is updated on intialization)
     WORKSPACE = HIDDEN+"workspaces/"
 
@@ -584,15 +587,15 @@ scripts)?", warning=False)
                             dest[k] = []
                         if(isinstance(dest[k], list)):   
                             for i in v:
-                                #find replace all parts of string with %LEGOHDL%
+                                #find replace all parts of string with ENV_NAME
                                 if(isinstance(v,str)):
-                                    v = v.replace("%LEGOHDL%", cls.HIDDEN[:len(cls.HIDDEN)-1])
+                                    v = v.replace(cls.ENV_NAME, cls.HIDDEN[:len(cls.HIDDEN)-1])
                                 if(i not in dest[k]):
                                     dest[k] += [i]
                     #otherwise normal overwrite
                     else:
                         if(isinstance(v,str)):
-                            v = v.replace("%LEGOHDL%", cls.HIDDEN[:len(cls.HIDDEN)-1])
+                            v = v.replace(cls.ENV_NAME, cls.HIDDEN[:len(cls.HIDDEN)-1])
                         #do not allow a null workspace path to overwrite an already established workspace path
                         if(k in dest.keys() and k == 'path' and v == cfg.NULL):
                             continue
@@ -1053,7 +1056,7 @@ scripts)?", warning=False)
         if(path == None or path.lower().startswith('http') or path.lower().startswith('git@')):
             return path
 
-        path = path.replace("%LEGOHDL%", cls.HIDDEN[:len(cls.HIDDEN)-1])
+        path = path.replace(cls.ENV_NAME, cls.HIDDEN[:len(cls.HIDDEN)-1])
 
         path = os.path.expanduser(path)
         path = path.replace('\\','/')
@@ -1147,7 +1150,7 @@ scripts)?", warning=False)
         def_settings = dict()
         def_settings['script'] = \
         {
-            'hello'  : 'python %LEGOHDL%/scripts/hello_world.py',
+            'hello'  : 'python '+cls.ENV_NAME+'/scripts/hello_world.py',
         }
         def_settings['workspace'] = dict()
         def_settings['workspace']['primary'] = {'path' : None, 'market' : None}
