@@ -821,7 +821,7 @@ class legoHDL:
                     pass
             pass
         elif(options[0] == 'multi-develop' or options[0] == 'overlap-recursive'):
-            apt.SETTINGS['general'][options[0]] = apt.castBoolean(choice)
+            apt.SETTINGS['general'][options[0]] = cfg.castBoolean(choice)
             pass
         elif(options[0] == 'template'):
             apt.SETTINGS['general'][options[0]] = apt.fs(choice)

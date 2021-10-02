@@ -245,6 +245,39 @@ class CfgFile:
         write_dictionary(data)
         return True
 
+    @classmethod
+    def castBool(cls, str_val):
+        '''
+        Return boolean converted from string data type.
+        '''
+        if(isinstance(str_val, bool)):
+            return str_val
+        str_val = str_val.lower()
+        return (str_val == 'true' or str_val == '1' or 
+                str_val == 'yes' or str_val == 'on' or str_val == 'enable')
+    
+    @classmethod
+    def castNone(cls, str_blank):
+        '''
+        Return if string is of type None (empty '') (else return string).
+        '''
+        if(str_blank == cls.NULL):
+            return None
+        else:
+            return str_blank
+            
+    @classmethod
+    def castInt(cls, str_int):
+        '''
+        Return integer if string is an integer (else return 0).
+        '''
+        if(isinstance(str_int, int)):
+            return str_int
+        if(str_int.isdigit()):
+            return int(str_int)
+        else:
+            return 0
+
     SETTINGS_COMMENTS = {
         'general' : (HEADER,\
 '''; ---

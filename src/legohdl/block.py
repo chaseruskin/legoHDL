@@ -428,7 +428,7 @@ class Block:
         #cast blank values '' -> None
         blanks_to_none = ['remote', 'name', 'market', 'library', 'bench', 'toplevel']
         for field in blanks_to_none:
-            self.setMeta(field, apt.castNone(self.getMeta(field)))
+            self.setMeta(field, cfg.castNone(self.getMeta(field)))
             
         if(self._initial_metadata == None):
             self._initial_metadata = self.getMeta().copy()

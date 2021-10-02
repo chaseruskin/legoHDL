@@ -171,9 +171,9 @@ scripts)?", warning=False)
                 if(t == dict):
                     sett[a] = {}
                 elif(t == bool):
-                    sett[a] = cls.castBool(val)
+                    sett[a] = cfg.castBool(val)
                 elif(t == int):
-                    sett[a] = cls.castInt(val)
+                    sett[a] = cfg.castInt(val)
                 elif(t == list):
                     sett[a] = []
 
@@ -1065,29 +1065,6 @@ scripts)?", warning=False)
             path = path + '/'
         
         return path
-
-    @classmethod
-    def castBool(cls, str_val):
-        if(isinstance(str_val, bool)):
-            return str_val
-        str_val = str_val.lower()
-        return (str_val == 'true' or str_val == 't' or str_val == '1' or str_val == 'yes' or str_val == 'on')
-    
-    @classmethod
-    def castNone(cls, str_blank):
-        if(str_blank == cfg.NULL):
-            return None
-        else:
-            return str_blank
-            
-    @classmethod
-    def castInt(cls, str_int):
-        if(isinstance(str_int, int)):
-            return str_int
-        if(str_int.isdigit()):
-            return int(str_int)
-        else:
-            return 0
 
     @classmethod
     def fullMerge(cls, dest, src):
