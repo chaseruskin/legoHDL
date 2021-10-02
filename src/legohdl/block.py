@@ -8,7 +8,7 @@
 #   root folder.
 ################################################################################
 
-import os, shutil
+import os, shutil, stat
 from datetime import date
 import glob, git
 import logging as log
@@ -885,6 +885,8 @@ class Block:
         shutil.rmtree(version_path+"/.git/", onerror=apt.rmReadOnly)
         #temp set local path to be inside version
         self.__local_path = version_path
+        #enable write permissions
+        self.modWritePermissions(enable=True)
         #now get project sources, rename the entities and packages
         prj_srcs = self.grabCurrentDesigns(override=True)
         #create the string version of the version
@@ -921,13 +923,16 @@ class Block:
         #update the metadata file here to reflect changes
         with open(self.getPath()+apt.MARKER, 'r') as f:
             ver_meta = cfg.load(f)
-        if(ver_meta['block']['toplevel'] != None):
+        if(ver_meta['block']['toplevel'] != cfg.NULL):
             ver_meta['block']['toplevel'] = ver_meta['block']['toplevel']+str_ver
-        if(ver_meta['block']['bench'] != None):
+        if(ver_meta['block']['bench'] != cfg.NULL):
             ver_meta['block']['bench'] = ver_meta['block']['bench']+str_ver
 
         #save metadata adjustments
         self.save(meta=ver_meta)
+
+        #disable write permissions
+        self.modWritePermissions(enable=False)
 
         #change local path back to base install
         self.__local_path = base_path
@@ -935,6 +940,36 @@ class Block:
         #switch back to latest version in cache
         if(ver[1:] != self.getMeta("version")):
             self._repo.git.checkout('-')
+        pass
+
+    def modWritePermissions(self, enable, path=None):
+        '''
+        Disable modification/write permissions of all files specified on this
+        block's path.
+
+        Parameters
+        ---
+        path : path to file or directory to change (default = block's path)
+        '''
+        if(path == None):
+            path = self.getPath()
+        else:
+            path = apt.fs(path)
+
+        all_files = glob.glob(path+"**/*.*", recursive=True)
+
+        for f in all_files:
+            #get current file permissions
+            cur_permissions = stat.S_IMODE(os.lstat(f).st_mode)
+            if(enable):
+                #get write masks and OR with current permissions
+                w_permissions = stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
+                os.chmod(f, cur_permissions | w_permissions)
+            else:
+                #flip write masks and AND with current permissions
+                w_permissions = ~stat.S_IWUSR & ~stat.S_IWGRP & ~stat.S_IWOTH
+                os.chmod(f, cur_permissions & w_permissions)
+            pass
         pass
 
     def install(self, cache_dir, ver=None, src=None):
@@ -987,8 +1022,13 @@ class Block:
             self.__local_path = specific_cache_dir+"/"
             base_installed = True
 
+            # :todo: 1a. modify all project files to become read-only
+            self.modWritePermissions(enable=False)
+ 
         self._repo = git.Repo(self.getPath())
         self.loadMeta()
+
+
 
         #2. now perform install from cache
         instl_vers = os.listdir(base_cache_dir)       
@@ -1027,7 +1067,7 @@ class Block:
                         maj_meta = cfg.load(f)
                         f.close()
                         pass
-                    if(self.biggerVer(maj_meta['block']['version'],meta['block']['version']) == meta['block']['version']):
+                    if(self.biggerVer(maj_meta['block']['version'], meta['block']['version']) == meta['block']['version']):
                         log.info("Updating block "+self.getTitle(low=False)+" version "+maj+"...")
                         #remove old king
                         shutil.rmtree(maj_path, onerror=apt.rmReadOnly)
@@ -1474,14 +1514,14 @@ class Block:
             meta = cfg.load(f)
             N = N+"(v"+meta['block']['version']+")"
             cur_M = meta['block']['market']
-            if(cur_M != None and cur_M.lower() in apt.getMarketNames().keys()):
+            if(cur_M != cfg.NULL and cur_M.lower() in apt.getMarketNames().keys()):
                 M = cur_M
 
         #determine what the latest market being used is for this block
         with open(latest_block_path+apt.MARKER, 'r') as f:
             meta = cfg.load(f)
             latest_M = meta['block']['market']
-            if(latest_M != None and latest_M.lower() in apt.getMarketNames().keys()):
+            if(latest_M != cfg.NULL and latest_M.lower() in apt.getMarketNames().keys()):
                 M = latest_M
  
         return M,L,N
