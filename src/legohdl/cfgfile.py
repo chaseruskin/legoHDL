@@ -103,8 +103,8 @@ class CfgFile:
             sep = line.find(cls.VAR)
             if(sep > -1):
                 key = line[:sep].strip()
-                #strip excessive whitespace
-                value = line[sep+1:].strip()
+                #strip excessive whitespace and quotes
+                value = line[sep+1:].strip().replace('\'', '').replace('\"', '')
 
                 #update what scope the assignment is located in
                 scope = scope[0:lvl]
@@ -122,7 +122,9 @@ class CfgFile:
                     map = tunnel(map, key, scope, value)
                     
             elif(bracket_cnt):
-                value = line.strip()
+                #strip excessive whitesapce and quotes
+                value = line.strip().replace('\'', '').replace('\"', '')
+                #update the bracket count and other temporary value for the current variable
                 bracket_cnt, tmp = collectList(bracket_cnt, value, tmp)
                 #finalize into dictionary
                 if(bracket_cnt == 0):
