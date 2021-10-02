@@ -849,23 +849,6 @@ scripts)?", warning=False)
     def save(cls):
         with open(cls.HIDDEN+"settings.cfg", "w") as file:
             cfg.save(cls.SETTINGS, file)
-            # for key in cls.OPTIONS:
-            #     #pop off front key/val pair of cfg data
-            #     single_dict = {}
-            #     single_dict[key] = cls.SETTINGS[key]
-
-            #     if(key == 'author'):
-            #         file.write("#general configurations\n")
-            #     elif(key == 'overlap-recursive'):
-            #         file.write("#label configurations\n")
-            #     elif(key == 'script'):
-            #         file.write("#script configurations\n")
-            #     elif(key == 'active-workspace'):
-            #         file.write("#workspace configurations\n")
-            #     elif(key == 'refresh-rate'):
-            #         file.write("#market configurations\n")
-
-                # cfg.save(single_dict, file)
             pass
         pass
 

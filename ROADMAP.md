@@ -5,8 +5,6 @@
 
 - [ ] add option for auto-align equal signs for Block.cfg files
 
-- [ ] cfg file, if there is no equal sign and no brackets, then the values belong
-		to previous variable
 - [ ] cannot modify markets in settings.cfg (can only add/delete from list)
 
 ### Future Roadmap
@@ -18,6 +16,10 @@
 - [ ] If two blocks (same titles) exist in separate markets (A and B) and market A is added (good) and then market B is added (conflict), ask user what block to use. The other block will be effectively ignored in the workspace. User should have the ability to later change decision at any point. Problem arises when same title yet different git urls. -> This is no longer being pursued. see #10.
 
 - [ ] cross check version tags with the hidden version.log (in case a legohdl tag was manually created by a user) -> delete the tag if not valid
+
+- [ ] add option to enable-profile update notifier. If enabled, then everytime a 
+		`list -profile` command occurs, it will fetch any profiles that are remote and
+		see if the remote is out of sync/needs update.
 
 - [ ] allow users to edit/add a README to a market through command-line? or just open the market repository?
 
@@ -49,6 +51,8 @@
 
 
 __Completed__
+- [x] cfg file, if there is no equal sign and no brackets, then the values belong
+		to previous variable
 - [x] add a 'categories' section to a Block.yml? (multiple keywords to help identify the block)
 		OR in more general, allow users to add new fields to the Block.yml file? (will be ignored by legohdl, implemented)
 - [x] investigate if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design) -> I believe it does not (it does if using modelsim, tested)
