@@ -163,8 +163,9 @@ class Block:
                 f.seek(0)
                 f.write("## v"+self.getVersion()+'\n\n'+data)
                 f.close()
-            print(change_file)
-            os.system(apt.SETTINGS['general']['editor']+" "+change_file)
+            #print(change_file)
+            #open the changelog and wait for the developer to finish writing changes
+            apt.execute(apt.SETTINGS['general']['editor'], change_file)
             resp = input("Enter 'k' when done writing CHANGELOG.md to proceed...")
             while resp.lower() != 'k':
                 resp = input()
@@ -834,8 +835,7 @@ class Block:
         Opens this block with the configured text-editor.
         '''
         log.info("Opening "+self.getTitle()+" at... "+self.getPath())
-        cmd = apt.SETTINGS['general']['editor']+" "+self.getPath()
-        os.system(cmd)
+        apt.execute(apt.SETTINGS['general']['editor'], self.getPath())
         pass
     
     def save(self, meta=None):

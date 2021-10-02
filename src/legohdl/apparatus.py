@@ -12,6 +12,7 @@ import stat,glob,git
 from datetime import datetime
 import logging as log
 from subprocess import check_output
+import subprocess
 from .cfgfile import CfgFile as cfg
 import os,shutil,copy,platform
 
@@ -222,7 +223,7 @@ scripts)?", warning=False)
             log.warning("Active workspace not found!")
             return False
 
-        if(cls.SETTINGS['general']['template'] != None and os.path.isdir(cls.SETTINGS['general']['template'])):
+        if(cls.SETTINGS['general']['template'] != cfg.NULL and os.path.isdir(cls.SETTINGS['general']['template'])):
             cls.SETTINGS['general']['template'] = cls.fs(cls.SETTINGS['general']['template'])
             cls.TEMPLATE = cls.SETTINGS['template']
             pass
@@ -1029,6 +1030,26 @@ scripts)?", warning=False)
         except:
             return False
         return True
+    
+    @classmethod
+    def execute(cls, *code, subproc=True, quiet=True):
+        '''
+        Execute the command and runs it as subprocess.
+        '''
+        code_line = ''
+        for c in code:
+            code_line = code_line + c + ' '
+        
+        if(quiet == False):
+            log.info(code_line)
+
+        if(subproc):
+            rc = subprocess.call(code_line.split())
+        else:
+            rc = os.system(code_line)
+        #immediately stop script upon a bad return code
+        if(rc):
+            exit(rc)
 
     @classmethod
     def linkedMarket(cls):

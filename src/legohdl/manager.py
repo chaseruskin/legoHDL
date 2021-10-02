@@ -283,8 +283,8 @@ class legoHDL:
                 continue
             else:
                 cmd = cmd + " " + arg
-        log.info(cmd)
-        os.system(cmd)
+        
+        apt.execute(cmd, quiet=False)
 
     #! === EXPORT/GRAPH COMMAND ===
 
@@ -1371,7 +1371,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             #open template
             if(options.count("template")):
                 log.info("Opening block template folder at... "+apt.fs(apt.TEMPLATE))
-                os.system(apt.SETTINGS['general']['editor']+" \""+apt.fs(apt.TEMPLATE)+"\"")
+                apt.execute(apt.SETTINGS['general']['editor'], apt.fs(apt.TEMPLATE))
             #open scripts
             elif(options.count("script")):
                 #want to open the specified script?
@@ -1392,19 +1392,19 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 else:
                     exit(log.error("Script "+value+" does not exist"))
 
-                os.system(apt.SETTINGS['general']['editor']+" "+script_path)
+                apt.execute(apt.SETTINGS['general']['editor'],script_path)
             #open profile
             elif(options.count("profile")):
                 if(value.lower() in apt.getProfileNames().keys()):
                     value = apt.getProfileNames()[value.lower()]
                     log.info("Opening profile "+value+" at... "+apt.getProfiles()[value])
-                    os.system(apt.SETTINGS['general']['editor']+" "+apt.getProfiles()[value])
+                    apt.execute(apt.SETTINGS['general']['editor'], apt.getProfiles()[value])
                 else:
                     log.error("No profile exists as "+value)
             #open settings
             elif(options.count("settings")):
                 log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+"settings.cfg"))
-                os.system(apt.SETTINGS['general']['editor']+" \""+apt.HIDDEN+"/settings.cfg\"")
+                apt.execute(apt.SETTINGS['general']['editor'], apt.fs(apt.HIDDEN+"/settings.cfg"))
             #open block
             elif(valid):
                 self.blockPKG.load()
