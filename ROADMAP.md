@@ -3,33 +3,13 @@
 - [ ] add default market for default profile (open-ip)
 - [ ] add code to default scripts in profile (modelsim, and xsim)
 
-- [ADDED] ? switch behavior of explicitly setting top-level to not try to automatically find top-level testbench associated with the design if the design is passed in (user can always pass in tb)
+- [ ] add option for auto-align equal signs for Block.cfg files
 
-- [ADDED] use M now to make sure we are installing the right block and this block exists (the market must exist)
-
-- [ADDED] perform a "git restore ." on a block in cache to make sure the source code is consistent even if designer
-accidently altered it previously. Will have to add back the .git folder or perform a git init to make a new folder to signal if a file has been altered (indvidiual version folders have their .git/ removed to conserve space)
-
-- [ ] cannot modify markets in settings.yml (can only add/delete from list)
-
-- [ADDED] thoughts on resolving multiple L.N's spanning different markets (say mA.L.N and mB.L.N): It is a cache, so if mB.L.N were to exist, then user would have to uninstall the other mA.L.N from cache to free up that "address" for the mB.L.N to be installed. Only one L.N could be installed at a time. This allows for multiple blocks of same library and name to technically coexist. However, an issue arises when a block uses both as dependencies, one could be directly but the other could be used indirectly down the dependency tree. Perform this check when generating block order on export/graph, one block should not reference L.N.. A L.N can be identified as same or different based on a variety of things, market name, remote url, but most importantly the first few git commits. If the SHA's match between blocks, then it can be very confident in saying its the same block and no conflict exists. If they don't match, then there are different duplicate L.N's existing. 
+- [ ] cfg file, if there is no equal sign and no brackets, then the values belong
+		to previous variable
+- [ ] cannot modify markets in settings.cfg (can only add/delete from list)
 
 ### Future Roadmap
-
-- [ADDED] internal: add docstrings to every function/method
-
-- [ADDED] add option in settings to auto-populate dependencies in Block.yml (auto = true, auto = false) or allow developer to manually define dependencies (will prompt error if invalid dependencies)
-
-- [ADDED] #1. improve deciphering when unit calls decipher to also pass in entity name to know when to start parsing if multiple entities exist in same file (also possibly pass architecture name if defined in dependency call). Improve Units and store the data on first decipher of src file so code is only parsed once per file.
-- [ ] cross-over for vhdl to verilog and verilog to vhdl using '-vhdl' flag or '-verilog' flag on port command. First need to refactor the unit class and improve deciphering. see #1.
-
-- [ADDED] #9 use a -args flag to indicate all following arguments are to be passed to the build script? -> this would enable lots of flags available for export, build, and run commands (possibly also then get rid of run command by adding an '-export' flag to build command) (flag examples: -no-clean, -quiet, ...?)
-
-- [ADDED] intelligent component recognition (intellisense): Multiple entities can share the same exact name, but legoHDL will be able to identify which entity you are referencing in your design based on factors like port names and port list size within the instantiation. Although some EDA tools don't support having multiple units with same name, we can have multiple units with same name as long as they are not being used in the same current project dependency tree. *Won't export if identifies using 2 different entities of same name, will prompt to change the entity name in the current project.
-
-- [ADDED] ambiguity resolution: you can have block's with the same library and name as long as they don't have the same market. If blocks with same L and N exist, then must also prepend the M to determine what block you are referencing in legoHDL commands. like ufl.arith.adder and std.arith.adder. Intellisense will be able to identify which design you instantiated and export the right file accordingly. ? - Use a "cache-2" folder when a conflict arises, so that L+N folder will then exist in cache-2 under an additional market name folder (cache-2/std/arith/adder while the other one lives cache/arith/adder).
-
-- [ADDED] support verilog header files, verilog packages
 
 - [ ] add ability to add summary text to .prfl and .mrkt files to then use "show" command to read the description about the given profile/market.
 
@@ -47,20 +27,9 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 
 - [ ] ? #5-1. if an already existing market's .mrkt file gets changed, then move to temp dir and have its folder renamed on next legohdl call. Have all blocks that referenced the old market to now reference the correct market in their Block.yml?
 
-- [added] #3 if a user explicitly defines an architecture to use for an instance, only read that architecture, (vhdl parsing) : mux_2x1(rtl)
-
 - [ ] 'update' command idea; (have -all flag to update all installs, otherwise update by block name?)
 
-- [ADDED] design question: remove 'run' command and instead have a positional argument for build command? '-e'. see #9.
 - [ ] allow option to print a .log file on export so a record of graph can be kept? This alludes to having a -quiet flag (silences output) and then a -log flag to reroute output away from console. See #9.
-- [ADDED] '-all' option on graph/export to grab all project-level code. see #9.
-- [ADDED] '-no-clean' option on export ? see #9.
-- [ADDED] '-quiet' option on export ? see #9.
-
-- [ ] add a 'categories' section to a Block.yml? (multiple keywords to help identify the block)
-		OR in more general, allow users to add new fields to the Block.yml file? (will be ignored by legohdl)
-
-- [ADDED] add ability to search by market
 
 - [ ] #2. graph command but -upstream option (returns all blocks that are effected/use this block) -> to add on to this, a big end goal is the ability to make a change in a low-level design, then automatically have ability to test all designs that would update to using this improved design and if tests pass out, it can use this version, else it locks to the previous validated version
 
@@ -75,17 +44,16 @@ accidently altered it previously. Will have to add back the .git folder or perfo
 - [ ] for list command, highlight if a profile is available to be updated (bonus)
 
 - [ ] add cool logging
-- [ ] allow scripts/alias to be stored as a list
-- [ ] editor can be stored as a list too
-
-- [ADDED] #4. add -cherry-pick option to loading a profile which will ask user when giving conflict on overwritting every single change to a setting or script
 
 - [ ] if going from already installed to download, ensure all requirements are installed else give an error stating the missing installations 
 
-- [ ] investigate if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design) -> I believe it does not (it does if using modelsim, tested)
-
 
 __Completed__
+- [x] add a 'categories' section to a Block.yml? (multiple keywords to help identify the block)
+		OR in more general, allow users to add new fields to the Block.yml file? (will be ignored by legohdl, implemented)
+- [x] investigate if component declaration does not require library usage call for VHDL (like using a verilog module into a VHDL design) -> I believe it does not (it does if using modelsim, tested)
+- [x] allow scripts/alias to be stored as a list
+- [x] editor can be stored as a list too
 - [x] not adding a `-<rel-template-file-path>` for 	`new -file` command will just create a blank file at the specified location
 - [x] More generally, anything in a '.' directory found at template's root directory will not be copied into new block. (allows for   .skip/ folder directory able to exist in a template folder, these files in there will not be automatically added when creating a new block from a template, BUT can be referenced if needing a new file of that type. For example, to avoid always writing a .py file to every template, add it to .skip/, and when applicable, developer has ability to manually append it to the block if deemed necessary for that block. )
 - [x] fixes wierd OS.system bug info error with git.index.commit() method call

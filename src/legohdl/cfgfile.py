@@ -19,6 +19,8 @@ class CfgFile:
     LIST = '[]'
     NULL = ''
 
+    NEAT = True
+
     @classmethod
     def load(cls, datafile):
         '''
@@ -63,6 +65,9 @@ class CfgFile:
         tmp = [] # temporary list used to store an assigned list
         line_cnt = 0 # track the current line being read
         bracket_cnt = 0 # count if we are inside a list
+        #store the last variable's name and value
+        last_var = {'key' : None, 'val' : None} 
+
         lines = datafile.readlines()
         for line in lines:
             line_cnt += 1
@@ -119,6 +124,8 @@ class CfgFile:
                 if(bracket_cnt == 0):
                     value = tmp
                     #print(value)
+                    last_var['key'] = key
+                    last_var['val'] = value
                     map = tunnel(map, key, scope, value)
                     
             elif(bracket_cnt):
@@ -130,6 +137,14 @@ class CfgFile:
                 if(bracket_cnt == 0):
                     value = tmp
                     map = tunnel(map, key, scope, value)
+            #evaluate if no '=' sign is on this line and not a header line
+            elif(last_var['key'] != None):
+                #extended line string
+                ext_value = line.strip().replace('\'', '').replace('\"', '')
+                if(len(ext_value)):
+                    #automatically insert space between the different lines
+                    last_var['val'] = last_var['val'] + ' ' +ext_value
+                    map = tunnel(map, last_var['key'], scope, last_var['val'])
             else:
                 exit(log.error("Syntax: Line "+str(line_cnt)))
 
@@ -155,7 +170,7 @@ class CfgFile:
                 for l in lines:
                     datafile.write(spacing+l+"\n")
 
-        def write_dictionary(mp, lvl=0):
+        def write_dictionary(mp, lvl=0, l_len=0):
             #determine proper indentation
             indent = cls.TAB*lvl
             if(isinstance(mp, dict)):
@@ -169,9 +184,11 @@ class CfgFile:
                         datafile.write(indent+cls.HEADER[0]+k+cls.HEADER[1]+'\n')
                     #write the beginning of an assignment
                     else:
-                        datafile.write(indent+k+' '+cls.VAR+' ')
+                        var_assign = indent+k+' '+cls.VAR+' '
+                        l_len = len(var_assign)
+                        datafile.write(var_assign)
                     #recursively proceed to next level
-                    write_dictionary(mp[k], lvl+1)
+                    write_dictionary(mp[k], lvl+1, l_len)
             #write a value (rhs of assignment)
             else:
                 #if its a list, use brackets
@@ -191,7 +208,26 @@ class CfgFile:
                 else:
                     if(mp == None):
                         mp = ''
-                    datafile.write(str(mp)+'\n')
+                    mp = str(mp)
+                    
+                    #try to write the value in a 'nice' format
+                    if(cls.NEAT):
+                        #write over to new line on overflow (exceed 80 chars)
+                        cursor = 0
+                        words = mp.split()
+                        for w in words:
+                            cursor += len(w+' ')
+                            #evaluate before writing
+                            if(cursor+l_len >= 80):
+                                datafile.write('\n'+' '*l_len)
+                                cursor = 0
+                            datafile.write(w+' ')
+
+                        if(cursor != 0 or len(mp) == 0):
+                            datafile.write('\n')
+                    #write the value as-is
+                    else:
+                        datafile.write(mp+'\n')
         
         comments = {}
         if(datafile.name.endswith("settings.cfg")):
