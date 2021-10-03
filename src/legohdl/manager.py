@@ -1043,11 +1043,11 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
     #! === LIST COMMAND ===
 
-    def inventory(self, search_for, options):
+    def inventory(self, M, N, L, options):
         '''
         This method perfoms the list command for blocks.
         '''
-        self.db.listBlocks(search_for.lower(), options)
+        self.db.listBlocks(M, N, L, options)
         print()
         pass
 
@@ -1378,8 +1378,13 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 self.listWorkspace()
             elif(options.count("profile")):
                 self.listProfiles()
+            # :todo: add ability to list all files in current template
+            elif(options.count("template")):
+                print("Prints all files found within template")
+                #categorize by hidden files (skipped)
+                #and visible files (files that are copied in on using template)
             else:
-                self.inventory(package,options)
+                self.inventory(M,L,N,options)
             pass
 
         elif(command == "init"):
@@ -1683,7 +1688,7 @@ If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.
             print('{:<16}'.format("-soft"),"push a side branch to the linked market for merge")
             pass
         elif(cmd == "list"):
-            printFmt("list","[[<search>]","[-alpha]] [-script | -label | -market | -workspace | -profile]")
+            printFmt("list","[[<search>]","[-alpha -install -download]] [-script | -label | -market | -workspace | -profile]")
             rollover("""
 Provide a formatted view for a variety of groups. The default is to list the active
 workspace's blocks. When listing blocks, you can also search by providing a partial block 

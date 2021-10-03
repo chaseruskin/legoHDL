@@ -62,19 +62,24 @@ class Registry:
                 else:
                     os.remove(apt.MARKETS+r)
 
-    def listBlocks(self, search_for, options):
-        i_dot = search_for.find('.')
-        search_blk = ''
-        search_lib = search_for          
-        if(i_dot > -1):
-            search_lib = search_for[:i_dot]
-            search_blk = search_for[i_dot+1:]
+    def listBlocks(self, M, L, N, options):
+        '''
+        Print list of available blocks to console.
 
+        Parameters
+        ---
+        M : market to restrict list to
+        L : library to restrict list to
+        N : name to restrict list to
+        options : list of cli arguments (download, install, alpha)
+        '''     
         reg = None
-        # market_search = []
-    
-        #adding more flags to see various block levels
-        if(options.count("download")):
+
+        #show blocks downloaded and installed
+        if(options.count("download") and options.count("install")):
+            reg = self.getBlocks("local","cache")
+        #only show blocks downloaded
+        elif(options.count("download")):
             reg = self.getBlocks("local")
         #only show blocks that are installed
         elif(options.count("install")):
@@ -83,18 +88,7 @@ class Registry:
         else:
             reg = self.getBlocks("local","cache","market")
 
-        #search blocks available by market
-        # if(apt.linkedMarket()):
-        #     for opt in options:
-        #         if(opt in apt.getMarkets()):
-        #             market_search.append(opt)
-        #         pass
-        #     if(len(market_search)):
-        #         reg = self.getBlocks("market")
-        #     else:
-        #         log.info("No blocks exist in the given market.")
-        
-        #alpha sort
+        #alpha sort done by library then name
         if(options.count('alpha')):
             lib_list = list()
             name_dict = dict()
@@ -120,43 +114,53 @@ class Registry:
         print('{:<12}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<8}'.format("Version"),'{:<16}'.format("Market"))
         print("-"*12+" "+"-"*20+" "+"-"*8+" "+"-"*8+" "+"-"*16)
         for lib,prjs in reg.items():
-            for name,blk in prjs.items():
-                if(not (lib.startswith(search_lib) and name.startswith(search_blk))):
-                    continue
+            for blk in prjs.values():
                 status = '-'
                 ver = ''
-                info = None
-                _,L,N,_ = Block.snapTitle(blk.getTitle())
-                #only display the blocks listed in the targeted market
-                # if(len(market_search) and self.getBlocks("market")[L][N].getMeta("market") not in market_search):
-                #     continue
+                info = ''
+                _,l,n,_ = Block.snapTitle(blk.getTitle())
+                #this block does not fulfill the search requirements for L and N
+                if(not (l.startswith(L) and n.startswith(N))):
+                    continue
 
                 if(self.blockExists(blk.getTitle(), "local")):
                     status = 'dnld'
-                    ver = self.getProjectsLocal()[L][N].getMeta("version")
-                    info = self.getProjectsLocal()[L][N].getMeta("market")
+                    ver = self.getProjectsLocal()[l][n].getMeta("version")
+                    info = self.getProjectsLocal()[l][n].getMeta("market")
                 elif(self.blockExists(blk.getTitle(), "cache")):
                     status = 'instl'
-                    ver = self.getProjectsCache()[L][N].getMeta("version")
-                    info = self.getProjectsCache()[L][N].getMeta("market")
+                    ver = self.getProjectsCache()[l][n].getMeta("version")
+                    info = self.getProjectsCache()[l][n].getMeta("market")
                 elif(self.blockExists(blk.getTitle(), "market")):
-                    ver = self.getBlocks("market")[L][N].getMeta("version")
-                    info = self.getBlocks("market")[L][N].getMeta("market")
+                    ver = self.getBlocks("market")[l][n].getMeta("version")
+                    info = self.getBlocks("market")[l][n].getMeta("market")
                 else:
                     continue
 
+                #this block does not fulfill the search requirements for M
+                if(M == '_'):
+                    #only include all blocks without a market
+                    if(info != None):
+                        continue
+                #only include blocks with markets starting with what was requested
+                elif(str(info).lower().startswith(M.lower()) == False):
+                    continue
+
+                #check if this block has an update available (newer version)
                 if(self.blockExists(blk.getTitle(), "market")):
-                    rem_ver = self.getBlocks("market")[L][N].getMeta("version")
+                    rem_ver = self.getBlocks("market")[l][n].getMeta("version")
                     #indicate update if the market has a higher version
                     if(Block.biggerVer(ver,rem_ver) == rem_ver and rem_ver != ver):
                         info = '(update)-> '+rem_ver
                     pass
-                
+                #format info text
                 if(info == None):
                     info = ''
-                    
                 info = info.lower()
+                #format version text
                 ver = '' if (ver == '0.0.0') else ver
+
+                #display to console
                 print('{:<12}'.format(blk.getLib(low=False)),'{:<20}'.format(blk.getName(low=False)),'{:<8}'.format(status),'{:<8}'.format(ver),info)
         pass
 
