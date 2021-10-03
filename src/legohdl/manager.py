@@ -873,7 +873,7 @@ class legoHDL:
         m,l,n,_ = Block.snapTitle(value, lower=False)
         if((l == '' or n == '') and len(options) == 0):
             exit(log.error("Must provide a block title <library>.<block-name>"))
-        
+        #get the current directory where its specified to initialize
         cwd = apt.fs(os.getcwd())
         #make sure this path is witin our workspace's path before making it a block
         if(apt.isSubPath(apt.getLocal(), cwd) == False):
@@ -881,45 +881,50 @@ class legoHDL:
 
         block = None
         #check if we are trying to init something other than an actual project to block
-        if(self.blockCWD.isValid() and options.count("market")):
-            if(value.lower() != ""):
-                if(value not in apt.SETTINGS['market'].keys()):
+        if(self.blockCWD.isValid()):
+            #alter market name
+            if(options.count("market")):
+                #try to validate market
+                mkt_obj = self.identifyMarket(value)
+                if(mkt_obj == None):
                     exit(log.error("No market is recognized under "+value))
-                if(value not in apt.getWorkspace('market')):
-                    exit(log.error("The current workspace does not have "+value+" configured as a market"))
-            else:
-                value = None
-            self.blockCWD.bindMarket(value)
+                #pass the market name to set in metadata
+                self.blockCWD.bindMarket(mkt_obj.getName(low=False))
+            #alter remote repository link
+            elif(options.count("remote")):
+                #link to this remote if its valid
+                if(apt.isValidURL(value)):
+                    self.blockCWD.setRemote(value)
+                #remove a remote if value is blank
+                elif(value == ''):
+                    log.info("Removing any possible linkage to a remote...")
+                    self.blockCWD.setRemote(None)
+                #else display error
+                else:
+                    exit(log.error("Invalid git url."))
+            #alter summary description
+            elif(options.count("summary")):
+                self.blockCWD.setMeta('summary', value)
+                self.blockCWD.save()
+            #no other flags are currently supported
+            elif(len(options)):
+                    exit(log.error("Could not fulfill init option flag '"+options[0]+"'"))
+            #done initializing this already existing block
             return
-        elif(self.blockCWD.isValid() and options.count("remote")):
-            if(apt.isValidURL(value)):
-                self.blockCWD.setRemote(value)
-                return
-            elif(value == ''):
-                self.blockCWD.setRemote(None)
-                return
-            else:
-                exit(log.error("Invalid git url."))
-        elif(self.blockCWD.isValid() and options.count("summary")):
-            self.blockCWD.getMeta()['summary'] = value
-            self.blockCWD.save()
-            return
-        elif(len(options)):
-            if(l == '' or n == ''):
-                exit(log.error("Could not fulfill init option flag '"+options[0]+"'"))
 
+        #proceed with initializing current files/folder into a block format
+
+        #check if a block already exists at this folder
         files = os.listdir(cwd)
         if apt.MARKER in files:
             exit(log.info("This folder already has a Block.cfg file."))
-
-        log.info("Transforming project into block...")
-        #check if we are wanting to initialize from a git url
-        #option to create a new block
-
-        startup = False
-        if(options.count("open")):
-            startup = True
-            options.remove("open")
+        else:
+            log.info("Transforming project into block...")
+       
+        #determine if the project should be opened after creation
+        startup = options.count("open")
+        #determine if the repository used to initialize should be kept or removed
+        fork = options.count("fork")
 
         #try to find a valid git url
         git_url = None
@@ -927,11 +932,13 @@ class legoHDL:
             if(apt.isValidURL(opt)):
                 git_url = opt
                 break
-        
+
+        #check if wanting to initialize from a git url
         #is this remote bare? If not, clone from it
         if(git_url != None and apt.isRemoteBare(git_url) == False):
             #clone the repository if it is not bare, then add metadata
             git.Git(cwd).clone(git_url)
+            #replace url_name with given name
             url_name = git_url[git_url.rfind('/')+1:git_url.rfind('.git')]
             cwd = apt.fs(cwd + '/' + url_name)
             files = os.listdir(cwd)
@@ -969,7 +976,7 @@ class legoHDL:
         block = Block(title=l+'.'+n, path=cwdb1, remote=git_url, market=mkt_obj)
         block.genRemote(push=False)
         log.info("Creating "+apt.MARKER+" file...")
-        block.create(fresh=False, git_exists=git_exists)
+        block.create(fresh=False, git_exists=git_exists, fork=fork)
 
         if(startup):
             block.load()
@@ -1307,6 +1314,11 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             for opt in options:
                 if(apt.isValidURL(opt)):
                     git_url = opt
+
+            #if this remote is bare, we cannot create a blank project from it.
+            if(git_url != None and apt.isRemoteBare(git_url) == False):
+                exit(log.error("Cannot configure with remote because it is not empty! Try using the 'init' command"))
+                pass
 
             #try to validate market
             mkt_obj = self.identifyMarket(M)

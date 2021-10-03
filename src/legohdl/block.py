@@ -530,9 +530,19 @@ class Block:
             file_out.close()
         pass
 
-    #create new block using template and try to set up a remote
-    def create(self, fresh=True, git_exists=False, remote=None):
+    def create(self, fresh=True, git_exists=False, remote=None, fork=False):
+        '''
+        Create a new block using the template and attempt to set up a remote.
+
+        Parameters
+        ---
+        fresh : if creating a block from scratch (no existing files)
+        git_exists : if the current folder already has a git repository
+        remote : the url to the remote repository (None if DNE)
+        fork : if wanting to not attach the remote that was used to initialize
+        '''
         log.info('Initializing new block...')
+        #copy template folder to new location if its a fresh project
         if(fresh):
             if(os.path.isdir(apt.TEMPLATE)):
                 #copy all files from template project
@@ -567,7 +577,7 @@ class Block:
         with open(self.getPath()+apt.MARKER, 'w') as f:
             cfg.save(self.LAYOUT, f)
 
-        #run the commands to generate new project from template
+        #search through all templated files and fill in placeholders
         if(fresh):
             #replace all file names that contain the word 'template'
             replacements = glob.glob(self.getPath()+"/**/*template*", recursive=True)
@@ -578,7 +588,7 @@ class Block:
             author = apt.SETTINGS['general']["author"]
             if(author == None):
                 author = ''
-            #determie the data
+            #determie the date
             today = date.today().strftime("%B %d, %Y")
 
             #go through all files and update with special placeholders
@@ -618,7 +628,6 @@ class Block:
         #save current progress into cfg
         self.save() 
         #add and commit to new git repository
-        #print(self._repo.untracked_files)
         self._repo.git.add('.') #self._repo.index.add(self._repo.untracked_files)
         try:
             self._repo.git.commit('-m','Initializes block')
@@ -627,12 +636,19 @@ class Block:
 
         #set it up to track origin
         if(self.grabGitRemote() != None):
-            log.info('Pushing to remote repository...')
-            try:
-                self._repo.git.push("-u","origin",str(self._repo.head.reference))
-            except git.exc.GitCommandError:
-                log.warning("Cannot configure remote origin because it is not empty!")
-                #remove remote url from existing areas
+            #sync with remote repository if not forking
+            if(fork == False):
+                log.info('Pushing to remote repository...')
+                try:
+                    self._repo.git.push("-u","origin",str(self._repo.head.reference))
+                except git.exc.GitCommandError:
+                    log.warning("Cannot configure remote origin because it is not empty!")
+                    #remove remote url from existing areas
+                    self._repo.delete_remote('origin')
+                    self.setRemote(None, push=False)
+                    self.save()
+            else:
+                log.info("Detaching remote from block...")
                 self._repo.delete_remote('origin')
                 self.setRemote(None, push=False)
                 self.save()
