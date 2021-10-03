@@ -92,6 +92,10 @@ class Apparatus:
 
     SRC_CODE = VHDL_CODE + VERILOG_CODE
 
+    #this character can be used on the CLI proceeding a block's title to specify
+    #an entity
+    ENTITY_DELIM = ':'
+
     __active_workspace = None
 
     @classmethod

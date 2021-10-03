@@ -27,6 +27,7 @@ class legoHDL:
         Initialize the legoHDL tool. This method specifically parses the command
         line arguments, loads tool-wide settings, and initializes the registry.
         '''
+
         command = package = ""
         options = []
         #store args accordingly from command-line
@@ -69,7 +70,7 @@ class legoHDL:
         'required_by' argument. If ver=None, it will install the latest version.
         Title consists of a block's L and N.
         '''
-        l,n = Block.split(title, vhdl=False)
+        _,l,n,_ = Block.snapTitle(title)
         block = None
         cache_path = apt.WORKSPACE+"cache/"
         verify_url = False
@@ -100,7 +101,7 @@ class legoHDL:
             if(prereq == block.getTitle() or prereq in required_by):
                 continue
             #split prereq into library, name, and version
-            M,L,N,verreq = block.splitDetachVer(prereq)
+            M,L,N,verreq = block.snapTitle(prereq)
 
             needs_instl = False
             if(self.db.blockExists(prereq, "cache", updt=True) == False):
@@ -156,7 +157,7 @@ class legoHDL:
         replacement for being the highest major version.
         '''
         #remove from cache
-        l,n = Block.split(blk)
+        _,l,n,_ = Block.snapTitle(blk)
         base_cache_dir = apt.WORKSPACE+"cache/"+l+"/"+n+"/"
         if(self.db.blockExists(blk, "cache")):
             vers_instl = os.listdir(base_cache_dir)
@@ -321,7 +322,7 @@ class legoHDL:
         for blk in block_order:
             spec_path = None
             #break into market, library, name, version
-            M,L,N,V = Block.splitDetachVer(blk)
+            M,L,N,V = Block.snapTitle(blk)
             #reassemble block title
             blk = L+'.'+N
             #assign tmp block to the current block
@@ -496,7 +497,7 @@ class legoHDL:
         clone from a git repository if available, else it will clone from the
         cache.
         '''
-        l,n = Block.split(title)
+        _,l,n,_ = Block.snapTitle(title)
         #1. download
         #update local block if it has a remote
         if(self.db.blockExists(title, "local")):
@@ -869,7 +870,7 @@ class legoHDL:
         file, and a git repository if needed.
         '''
         #must look through tags of already established repo
-        l,n = Block.split(title, lower=False)
+        _,l,n,_ = Block.snapTitle(title, lower=False)
         if((l == '' or n == '') and len(options) == 0):
             exit(log.error("Must provide a block title <library>.<block-name>"))
         
@@ -1141,7 +1142,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         market anymore to perform re-installation. Update will perform git pull
         on the cache and update the cache's main/master git commit line.
         '''
-        l,n = Block.split(title)
+        _,l,n,_ = Block.snapTitle(title)
         #check if market version is bigger than the installed version
         c_ver = '0.0.0'
         if(self.db.blockExists(title, "cache")):
@@ -1191,8 +1192,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         
         value = package
         package = package.replace("-", "_")
-        #by leaving VHDL true, it may split up groups of three commas
-        L,N = Block.split(package, vhdl=True)
+        
+        _,L,N,_ = Block.snapTitle(package)
 
         if(apt.inWorkspace()):
             if(self.db.blockExists(package,"local")):
@@ -1228,7 +1229,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
                 #read the derives list of this block
                 requirements = self.blockCWD.getMeta('derives')
                 for req in requirements:
-                    M,L,N,V = Block.splitDetachVer(req)
+                    M,L,N,V = Block.snapTitle(req)
                     self.install(L+'.'+N, V)
             else:
                 #install block to cache
@@ -1464,9 +1465,10 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             #show direct entity instantiation?
             pure_ent = (len(options) and 'instance' in options)
             #if provided an extra identifier, it is the entity in this given block
-            if(package.count('.') == 2): 
-                ent_name = package[package.rfind('.')+1:]
-                package = package[:package.rfind('.')]
+            e_index = package.rfind(apt.ENTITY_DELIM)
+            if(e_index > -1):
+                ent_name = package[e_index+1:]
+                package = package[:e_index]
             #grab the version number if it was in flags
             ver = None
             for o in options:
@@ -1780,7 +1782,7 @@ will not be deleted from its path.
             print('{:<16}'.format("-workspace"),"keeps local path, but remove from settings")
             print('{:<16}'.format("-profile"),"remove the folder found in legoHDL containing this profile")
         elif(cmd == "port"):
-            printFmt("port","<block>[.<entity>]","[-map -instance]")
+            printFmt("port","<block>[:<entity>]","[-map -instance]")
             rollover("""
 Print component information needed by an upper-level design to instantiate an entity. The output is
 designed to be copied and pasted into a source file with little-to-no modification. A specific

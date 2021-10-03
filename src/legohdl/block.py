@@ -37,7 +37,7 @@ class Block:
     def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False, market=None):
         self.__metadata = dict()
         #split title into library and block name
-        self.__lib,self.__name = Block.split(title, lower=False)
+        _,self.__lib,self.__name,_ = Block.snapTitle(title, lower=False)
         self._remote = remote
         self.__market = market
 
@@ -1100,6 +1100,15 @@ class Block:
         pass
 
     def gatherSources(self, ext=apt.SRC_CODE, path=None):
+        '''
+        Return all files associated with the given extensions from the specified
+        path.
+
+        Parameters
+        ---
+        ext : a list of extensions (use * to signify all files of given ext)
+        path : where to begin searching for files
+        '''
         srcs = []
         if(path == None):
             path = self.getPath()
@@ -1109,55 +1118,52 @@ class Block:
         return srcs
 
     @classmethod
-    def splitDetachVer(cls, dep):
+    def snapTitle(cls, title, lower=True):
         '''
-        Splits dep string into market,library,name,version. Returns M,L,N,V. M
-        is '' if not found/null.
-        '''
-        #split prereq into library, name, and version
-        v_index = dep.find("(v")
-        V = None
-        if(v_index > -1):
-            V = cls.stdVer(dep[v_index+1:len(dep)-1])
-            dep = dep[:v_index]
-        M = ''
-        #is a market inluded in the title?
-        if(dep.count('.') == 2):
-            M = dep[:dep.find('.')]
-            dep = dep[dep.find('.')+1:]
+        Break a title into its 4 components, if possible. Returns M,L,N,V as
+        strings.
 
-        L,N = cls.split(dep, vhdl=False)
-        return M,L,N,V
-    
-    @classmethod
-    def split(cls, dep, lower=True, vhdl=True):
+        Parameters
+        ---
+        title : the string to be parsed into title components
+        lower : return components as all lower-case (true) or normal (false)
         '''
-        Splits dep string by '.' delimiters. Returns two strings: lib,name.
-        '''
-        if(dep == None):
-            return '',''
-        dot = dep.find('.')
-        lib = dep[:dot]
-        if(dot == -1):
-            lib = ''
-        dot2 = dep[dot+1:].find('.')
-        if(dot2 == -1):
-            #use semi-colon if only 1 dot is marked
-            dot2 = dep[dot+1:].find(';')
-        if(dot2 == -1):
-            dot2 = len(dep)
-        #return in vhdl-style way if in VHDL
-        if(vhdl):
-            name = dep[dot+1:dot+1+dot2]
-        #return if trying to separate a block title
-        else:
-            name = dep[dot+1:]
-        #necessary for title comparison
+        delimiter = '.'
+        def parseDelimiter(t):
+            '''
+            Returns component, remaining string.
+            '''
+            tmp = ''
+            #locate right-most delimiter
+            d_i = t.rfind(delimiter)
+            #if it exists, split and return value
+            if(d_i > -1):
+                tmp = t[d_i+1:]
+                t = t[:d_i]
+                return tmp,t
+            else:
+                return t,''
+
+        if(title == None):
+            return '','','',''
+        V = ''
+        #find version label if possible
+        v_index = title.find('(v')
+        if(v_index > -1):
+            V = cls.stdVer(title[v_index+1:-1])
+            title = title[:v_index]
+        #cut off if found entity delimter (used to identify entity/module name)
+        e_index = title.rfind(apt.ENTITY_DELIM)
+        if(e_index > -1):
+            title = title[:e_index]
+
+        #trim title and assign components from right to left
+        N, title = parseDelimiter(title)
+        L, title = parseDelimiter(title)
+        M, title = parseDelimiter(title)
         if(lower):
-            return lib.lower(),name.lower()
-        #nice for user-end naming conventions
-        else:
-            return lib,name
+            return M.lower(),L.lower(),N.lower(),V.lower()
+        return M,L,N,V
 
     def identifyTop(self):
         '''
@@ -1451,7 +1457,7 @@ class Block:
 
         self._cur_designs = dict()
 
-        L,N = self.split(self.getTitle(low=True))
+        _,L,N,_ = self.snapTitle(self.getTitle(low=True))
         M = self.getMeta('market')
         #create new library dictionary if DNE
         if(L not in self._cur_designs.keys()):

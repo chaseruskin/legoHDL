@@ -126,7 +126,7 @@ class Registry:
                 status = '-'
                 ver = ''
                 info = None
-                L,N = Block.split(blk.getTitle())
+                _,L,N,_ = Block.snapTitle(blk.getTitle())
                 #only display the blocks listed in the targeted market
                 # if(len(market_search) and self.getBlocks("market")[L][N].getMeta("market") not in market_search):
                 #     continue
@@ -244,7 +244,7 @@ class Registry:
                 path = apt.fs(x.replace(apt.MARKER,""))
                 block = Block(path=path, excludeGit=True)
 
-                L,N = Block.split(block.getTitle())
+                _,L,N,_ = Block.snapTitle(block.getTitle())
                 if(L not in self._remote_prjs.keys()):
                     self._remote_prjs[L] = dict()
                 if(N not in self._remote_prjs[L].keys()):
@@ -289,7 +289,7 @@ class Registry:
     #use title="lib.*" to check if library exists
     def blockExists(self, title, place, updt=False):
         folder = None
-        l,n = Block.split(title)
+        _,l,n,_ = Block.snapTitle(title)
         if(place == "local"):
             folder = self.getProjectsLocal(updt)
         elif(place == "cache"):
