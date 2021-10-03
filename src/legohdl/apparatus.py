@@ -1023,7 +1023,7 @@ scripts)?", warning=False)
         return True
     
     @classmethod
-    def execute(cls, *code, subproc=True, quiet=True):
+    def execute(cls, *code, subproc=False, quiet=True):
         '''
         Execute the command and runs it as subprocess.
         '''
