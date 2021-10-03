@@ -928,11 +928,8 @@ class legoHDL:
                 git_url = opt
                 break
         
-        #is this remote bare?
-        isBare = True
-        if(git_url != None):
-            isBare = apt.isRemoteBare(git_url)
-        if(not isBare):
+        #is this remote bare? If not, clone from it
+        if(git_url != None and apt.isRemoteBare(git_url) == False):
             #clone the repository if it is not bare, then add metadata
             git.Git(cwd).clone(git_url)
             url_name = git_url[git_url.rfind('/')+1:git_url.rfind('.git')]
