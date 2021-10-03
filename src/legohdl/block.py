@@ -35,10 +35,11 @@ class Block:
             }
 
     def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False, market=None):
-        self.__metadata = dict()
+        self.__metadata = {'block' : {}}
         #split title into library and block name
         _,self.__lib,self.__name,_ = Block.snapTitle(title, lower=False)
-        self._remote = remote
+        if(remote != None):
+            self._remote = remote
         self.__market = market
 
         self.__local_path = apt.fs(path)
@@ -446,6 +447,7 @@ class Block:
         if('remote' in self.getMeta().keys()):
             #upon every boot up, try to grab the remote from this git repo if it exists
             self.grabGitRemote()
+            #print(self.getName(),"REMOTE:",self._remote)
             #set it if it was set by constructor
             if(self._remote != None):
                 self.setMeta('remote', self._remote)
@@ -616,12 +618,14 @@ class Block:
         #save current progress into cfg
         self.save() 
         #add and commit to new git repository
-        self._repo.index.add(self._repo.untracked_files)
+        #print(self._repo.untracked_files)
+        self._repo.git.add('.')
+        #self._repo.index.add(self._repo.untracked_files)
         self._repo.git.commit('-m','Initializes block')
 
         #set it up to track origin
         if(self.grabGitRemote() != None):
-            log.info('Generating new remote repository...')
+            log.info('Pushing to remote repository...')
             try:
                 self._repo.git.push("-u","origin",str(self._repo.head.reference))
             except git.exc.GitCommandError:
