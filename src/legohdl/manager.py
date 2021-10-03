@@ -863,14 +863,14 @@ class legoHDL:
 
     #! === INIT COMMAND ===
     
-    def convert(self, title, value, options=[]):
+    def convert(self, value, options=[]):
         '''
         This method performs the init command. It takes an existing project
         and tries to convert it into a valid block by creating a Block.cfg 
         file, and a git repository if needed.
         '''
         #must look through tags of already established repo
-        _,l,n,_ = Block.snapTitle(title, lower=False)
+        m,l,n,_ = Block.snapTitle(value, lower=False)
         if((l == '' or n == '') and len(options) == 0):
             exit(log.error("Must provide a block title <library>.<block-name>"))
         
@@ -921,21 +921,39 @@ class legoHDL:
             startup = True
             options.remove("open")
 
-        git_url,mrkt_sync = self.validateMarketAndURL(options)
+        #try to find a valid git url
+        git_url = None
+        for opt in options:
+            if(apt.isValidURL(opt)):
+                git_url = opt
+                break
+        
+        #is this remote bare?
+        isBare = True
+        if(git_url != None):
+            isBare = apt.isRemoteBare(git_url)
+        if(not isBare):
+            #clone the repository if it is not bare, then add metadata
+            git.Git(cwd).clone(git_url)
+            url_name = git_url[git_url.rfind('/')+1:git_url.rfind('.git')]
+            cwd = apt.fs(cwd + '/' + url_name)
+            files = os.listdir(cwd)
+            #print(cwd)
 
         #rename current folder to the name of library.project
         last_slash = cwd.rfind('/')
+        #maybe go one additional slash back to get past name
         if(last_slash == len(cwd)-1):
             last_slash = cwd[:cwd.rfind('/')].rfind('/')
 
         cwdb1 = cwd[:last_slash]+"/"+n+"/"
-        cwdb1 = cwd
+        #print(cwdb1)
         try:
             os.rename(cwd, cwdb1)
         except PermissionError:
+            log.warning("Could not rename project folder to "+cwdb1+".")
             pass
 
-        #print(cwd,cwdb1)
         git_exists = False
         #see if there is a .git folder
         if(".git" in files):
@@ -947,8 +965,11 @@ class legoHDL:
             git_exists = True
             pass
 
+        #try to validate market
+        mkt_obj = self.identifyMarket(m)
+
         #create marker file
-        block = Block(title=title, path=cwdb1, remote=git_url, market=mrkt_sync)
+        block = Block(title=l+'.'+n, path=cwdb1, remote=git_url, market=mkt_obj)
         block.genRemote(push=False)
         log.info("Creating "+apt.MARKER+" file...")
         block.create(fresh=False, git_exists=git_exists)
@@ -957,34 +978,22 @@ class legoHDL:
             block.load()
         pass
 
-    def validateMarketAndURL(self, options):
+    def identifyMarket(self, m):
         '''
-        This method helps validate if an option passed from command-line is
-        indeed a valid market and also if there is a valid git url found in the
-        options. If found, they are removed from the options. Returns 'None' for
-        a market or url if not found. Returns the market object if found and the
-        git url if found.
+        Return a market object if the market name is found within the workspace.
+
+        Parameters
+        ---
+        m : market name
         '''
-        mkt_sync = None
-        git_url = None
-        #try to find a valid market being used
+        #try to attach a market
         for mkt in self.db.getMarkets():
-            for opt in options:
-                if(mkt.getName(low=True) == opt.lower()):
-                    log.info("Tying market "+mkt.getName()+" to this initialized block...")
-                    mkt_sync = mkt
-                    options.remove(opt)
-                    break
-            if(mkt_sync != None):
-                break
-        else:
-            log.warning("No valid market is attached.")
-        #now try to find a valid git url
-        for opt in options:
-            if(apt.isValidURL(opt)):
-                git_url = opt
-            
-        return git_url,mkt_sync
+            if(mkt.getName(low=True) == m.lower()):
+                log.info("Identified "+mkt.getName()+" as block's market.")
+                return mkt
+        if(len(m)):
+            log.warning("No market "+m+" can be configured for this block.")
+        return None
 
     #! === DEL COMMAND ===
 
@@ -997,10 +1006,10 @@ class legoHDL:
         if(not block.isValid()):
             log.info('Block '+block.getName()+' does not exist locally.')
             return
-        
-        if(not block.isLinked() and (force or block.getVersion() == '0.0.0')):
-            confirmed = apt.confirmation('No market is configured for '+block.getTitle()+', if it\'s deleted and uninstalled \
-it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
+        #ask to confirm if it has no releases OR its not linked and we are forcing it to be uninstalled too
+        if(block.getVersion() == '0.0.0' or (not block.isLinked() and force)):
+            confirmed = apt.confirmation('No market is configured or any released versions for '+block.getTitle()+'. \
+If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         
             if(not confirmed):
                 exit(log.info("Did not remove nor uninstall "+block.getTitle()+'.'))
@@ -1197,14 +1206,14 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             package = package[:e_index]
 
         value = package
+        M,L,N,_ = Block.snapTitle(package)
+
         package = package.replace("-", "_")
-        
-        _,L,N,_ = Block.snapTitle(package)
 
         #is the user trying to shortcut?
-        if(L == '' and cmd != 'new' and self.db.canShortcut(N) ):
+        if(L == '' and cmd != 'new' and self.db.canShortcut(N)):
             #rewrite MLNV based on shortcut if possible
-            _,L,N,_ = self.db.shortcut(N)
+            M,L,N,_ = self.db.shortcut(N)
             package = L+'.'+N
 
         if(apt.inWorkspace()):
@@ -1295,8 +1304,17 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             if(options.count("open")):
                 startup = True
                 options.remove("open")
-            git_url,mkt_sync = self.validateMarketAndURL(options)
-            self.blockPKG = Block(title=package, new=True, market=mkt_sync, remote=git_url)
+
+            #try to find a valid git url
+            git_url = None
+            for opt in options:
+                if(apt.isValidURL(opt)):
+                    git_url = opt
+
+            #try to validate market
+            mkt_obj = self.identifyMarket(M)
+
+            self.blockPKG = Block(title=L+'.'+N, new=True, market=mkt_obj, remote=git_url)
 
             if(startup):
                 self.blockPKG.load()
@@ -1358,7 +1376,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         elif(command == "init"):
             if(exists):
                 exit(log.error("A block already exists as "+package))
-            self.convert(package, value, options)
+            self.convert(value, options)
             pass
 
         elif(command == "refresh"):
@@ -1585,38 +1603,36 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         if(cmd == ''):
             return
         elif(cmd == "init"):
-            printFmt("init", "<block>","[-<market> -<remote>]")
+            printFmt("init", "<block>","[-<remote>]")
             printFmt("init","<value>","(-market | -remote | -summary)",quiet=True)
             rollover("""
 If no flags are raised, transform the working directory into a valid block. This will
 create a git repository if not available, and create the Block.cfg file. If there is a git
 repository and it is linked to a remote, the remote will also automatically be configured within the
-Block.cfg file. If there is a supported raised flag for <value>, then the block's respective field
-will be altered with the <value>. 
+Block.cfg file. If providing a market name, prepend it to the block's title. If there is a supported 
+raised flag for <value>, then the block's respective field will be altered with the <value>. 
             """)
             print('{:<16}'.format("<block>"),"the block's title to be initialized from the current folder")
             print('{:<16}'.format("<value>"),"value to be given to current block based on the flag raised")
             print()
-            print('{:<16}'.format("-<market>"),"tie a market available from the workspace to this block")
             print('{:<16}'.format("-<remote>"),"an empty git url to set for this block")
             print('{:<16}'.format("-market"),"provide a market name as <value> available from the workspace")
             print('{:<16}'.format("-remote"),"provide a valid git URL as <value> to set for this block")
             print('{:<16}'.format("-summary"),"provide a string as <value> to set for this block's summary")
             pass
         elif(cmd == "new"):
-            printFmt("new","<block>","[-open -<remote> -<market>]")
+            printFmt("new","<block>","[-open -<remote>]")
             rollover("""
 Create a new block into the base of the workspace's local path. The block's default 
 created path is <workspace-path>/<block-library>/<block-name>. The template folder 
 will be copied and a git repository will be created. If providing a remote git URL, make sure
 it is an empty repository. If you have a nonempty repository, try the 'init' command. If
-providing a market name, make sure the market is listed under the current workspace.
+providing a market name, prepend it to the block's title.
             """)
             print('{:<16}'.format("<block>"),"the block's title to be created")
             print()
             print('{:<16}'.format("-open"),"open the new block upon creation")
             print('{:<16}'.format("-<remote>"),"provide a blank git URL to be configured")
-            print('{:<16}'.format("-<market>"),"provide a market name that's available in this workspace")
             pass
         elif(cmd == "open"):
             printFmt("open","<block>")

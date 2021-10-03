@@ -619,9 +619,11 @@ class Block:
         self.save() 
         #add and commit to new git repository
         #print(self._repo.untracked_files)
-        self._repo.git.add('.')
-        #self._repo.index.add(self._repo.untracked_files)
-        self._repo.git.commit('-m','Initializes block')
+        self._repo.git.add('.') #self._repo.index.add(self._repo.untracked_files)
+        try:
+            self._repo.git.commit('-m','Initializes block')
+        except git.exc.GitCommandError:
+            log.warning("Nothing new to commit.")
 
         #set it up to track origin
         if(self.grabGitRemote() != None):
@@ -1165,6 +1167,9 @@ class Block:
         N, title = parseDelimiter(title)
         L, title = parseDelimiter(title)
         M, title = parseDelimiter(title)
+        #libraries and names cannot contain hyphens
+        N = N.replace("-", "_")
+        L = L.replace("-", "_")
         if(lower):
             return M.lower(),L.lower(),N.lower(),V.lower()
         return M,L,N,V

@@ -145,14 +145,14 @@ class Registry:
                 else:
                     continue
 
-                if(self.blockExists(blk.getTitle(), "market") and info != None):
+                if(self.blockExists(blk.getTitle(), "market")):
                     rem_ver = self.getBlocks("market")[L][N].getMeta("version")
-                    
                     #indicate update if the market has a higher version
                     if(Block.biggerVer(ver,rem_ver) == rem_ver and rem_ver != ver):
                         info = '(update)-> '+rem_ver
                     pass
-                else:
+                
+                if(info == None):
                     info = ''
                     
                 info = info.lower()
