@@ -1192,7 +1192,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         #try to locate an entity name (used in port command)
         ent_name = None
         e_index = package.rfind(apt.ENTITY_DELIM)
-        if(e_index > -1):
+        if(cmd == 'port' and e_index > -1):
             ent_name = package[e_index+1:]
             package = package[:e_index]
 
