@@ -35,7 +35,7 @@ class legoHDL:
             if(i == 0):
                 continue
             elif(i == 1):
-                command = arg
+                command = arg.lower()
             elif(len(arg) and arg[0] == '-'):
                 options.append(arg[1:])
             elif(package == ''):
@@ -1189,11 +1189,23 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         command = cmd
         package = pkg
         options = opt
-        
+        #try to locate an entity name (used in port command)
+        ent_name = None
+        e_index = package.rfind(apt.ENTITY_DELIM)
+        if(e_index > -1):
+            ent_name = package[e_index+1:]
+            package = package[:e_index]
+
         value = package
         package = package.replace("-", "_")
         
         _,L,N,_ = Block.snapTitle(package)
+
+        #is the user trying to shortcut?
+        if(L == '' and cmd != 'new' and self.db.canShortcut(N) ):
+            #rewrite MLNV based on shortcut if possible
+            _,L,N,_ = self.db.shortcut(N)
+            package = L+'.'+N
 
         if(apt.inWorkspace()):
             if(self.db.blockExists(package,"local")):
@@ -1252,6 +1264,8 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             pass
 
         elif(command == "new" and len(package)):
+            if(L == ''):
+                exit(log.error("A block must have a library as part of its title."))
             if(exists):
                 exit(log.error("A block already exists as "+package))
             #option to create a new file
@@ -1459,26 +1473,18 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
             pass
 
         elif(command == "port"):
-            ent_name = None
             #show component instantiation?
             mapp = (len(options) and 'map' in options)
             #show direct entity instantiation?
             pure_ent = (len(options) and 'instance' in options)
-            #if provided an extra identifier, it is the entity in this given block
-            e_index = package.rfind(apt.ENTITY_DELIM)
-            if(e_index > -1):
-                ent_name = package[e_index+1:]
-                package = package[:e_index]
             #grab the version number if it was in flags
             ver = None
             for o in options:
                 if(Block.validVer(o) or Block.validVer(o, maj_place=True)):
                     ver = Block.stdVer(o)
                     break
-
             #trying to reference a unit from the current block for internal usage
             within_block = (self.blockCWD.isValid() and self.blockCWD.getLib() == L and self.blockCWD.getName() == N)
-            
             #swap the library name from its original to using 'work'
             inserted_lib = L
             if(within_block): 
@@ -1514,7 +1520,7 @@ it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
         
         elif(command == "help" or command == ''):
             #list all of command details
-            self.commandHelp(package)
+            self.commandHelp(package.lower())
             print('USAGE: \
             \n\tlegohdl <command> [argument] [flags]\
             \n')

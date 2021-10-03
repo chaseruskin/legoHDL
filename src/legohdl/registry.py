@@ -286,6 +286,67 @@ class Registry:
     def availableLibs(self):
         return list(self.getBlocks("local","cache","market").keys())
 
+    def getTitleShortcutter(self):
+        if(hasattr(self, "_title_tracker")):
+            return self._title_tracker
+        #name and library has keys = name of found library
+        self._title_tracker = {'name' : {}, 'library' : {}}
+        db = self.getBlocks("local","cache","market")
+        for library in db.keys():
+            #print('l:',library)
+            for name in db[library].keys():
+                #print('n:',name)
+                if(name not in self._title_tracker['name'].keys()):
+                    self._title_tracker['name'][name] = [library]
+                else:
+                    self._title_tracker['name'][name] += [library]
+            # :todo: count conflicts with library name
+            # if(library not in title_tracker['library'].keys()):
+            #     title_tracker['library'][library] = 0
+            # else:
+            #     title_tracker['library'][library] += 1
+            pass     
+        return self._title_tracker
+
+    def canShortcut(self, n):
+        '''
+        Returns true if a block title's library can be determined from just a 
+        name.
+
+        Parameters
+        ---
+        n : block's name
+        '''
+        #get map of names and libraries
+        others = self.getTitleShortcutter()
+        #name must appear in title_tracker map
+        if(n != None and n in others['name'].keys()):
+            #how many blocks use this name?
+            unique_cnt = len(others['name'][n])
+            #prompt user to resolve ambiguity on next call
+            if(unique_cnt > 1):
+                #print all titles in conflict
+                err_msg = "\n\n"
+                for l in others['name'][n]:
+                    err_msg = err_msg + '\t'+l+'.'+n+'\n'
+                #print error message
+                exit(log.error("Ambiguous title; blocks are:"+err_msg))
+            #can shortcut if name is found only once throughout workspace
+            return (unique_cnt == 1)
+        else:
+            return False
+        
+    def shortcut(self, n):
+        '''
+        Returns M,L,N,V from just a block's name.
+
+        Parameters
+        ---
+        n : block's name
+        '''
+        others = self.getTitleShortcutter()
+        return '',others['name'][n][0],n,''
+
     #use title="lib.*" to check if library exists
     def blockExists(self, title, place, updt=False):
         folder = None

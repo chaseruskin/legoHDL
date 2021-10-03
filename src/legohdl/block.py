@@ -1549,7 +1549,7 @@ class Block:
         if(entity.lower() in units[self.getLib()].keys()):
             info = units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)
         else:
-            exit(log.error("Cannot locate "+entity+" (version may not exist or may not be installed)."))
+            exit(log.error("Cannot locate entity "+entity+" in block "+self.getTitle(low=False)))
         return info
 
     pass
