@@ -1550,6 +1550,9 @@ class Block:
             info = units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)
         else:
             exit(log.error("Cannot locate entity "+entity+" in block "+self.getTitle(low=False)))
+        
+        if(len(info.strip()) == 0):
+            exit(log.error("Empty ports list for entity "+entity+"!"))
         return info
 
     pass
