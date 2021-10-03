@@ -89,7 +89,7 @@ class Graph:
         print('---DEPENDENCY TREE---')
         for v in self.__adj_list.keys():
             if(not self._unit_bank[v].isPKG()):
-                print("vertex: [",v,"]",end=' <-- ')
+                print("[",v,"]",end=' <-- ')
                 for u in self.__adj_list[v]:
                     if(not self._unit_bank[u].isPKG()):
                         print(u,end=' ')
