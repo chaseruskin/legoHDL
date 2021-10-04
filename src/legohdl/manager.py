@@ -1218,7 +1218,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         if(L == '' and cmd != 'new' and self.db.canShortcut(N)):
             #rewrite MLNV based on shortcut if possible
             M,L,N,_ = self.db.shortcut(N)
-            package = L+'.'+N
+            if(cmd != 'export' and cmd != 'graph' and cmd != 'run' and cmd != 'build'):
+                package = L+'.'+N
 
         if(apt.inWorkspace()):
             if(self.db.blockExists(package,"local")):
@@ -1340,6 +1341,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         #a visual aide to help a developer see what package's are at the ready to use
         elif(command == 'graph' and self.blockCWD.isValid()):
             top = package.lower()
+            print(top)
             if(top == ''):
                 top = None
             top_dog,_,_ = self.blockCWD.identifyTopDog(top, None)
