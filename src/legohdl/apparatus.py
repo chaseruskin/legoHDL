@@ -30,6 +30,8 @@ class Apparatus:
     #identify custom configuration files
     CFG_EXT = ".cfg"
 
+    SETTINGS_FILE = "legohdl"+CFG_EXT
+
     #identify a valid block project within the framework
     MARKER = "Block"+CFG_EXT
 
@@ -47,7 +49,7 @@ class Apparatus:
     #path to current workspace within legohdl (is updated on intialization)
     WORKSPACE = HIDDEN+"workspaces/"
 
-    #all available options allowed to be edited within the settings.cfg
+    #all available options allowed to be edited within the legohdl.cfg
     #append all non-field options here (editable dictionaries)
     OPTIONS = ['label', 'script', 'workspace', 'market']
 
@@ -66,7 +68,7 @@ class Apparatus:
                 'script' : {},
                 'workspace' : {},
                 'market' : {}
-             }   
+            }   
 
     META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', \
             'remote', 'market', 'derives']
@@ -110,9 +112,9 @@ class Apparatus:
         os.makedirs(cls.TEMPLATE, exist_ok=True)
         os.makedirs(cls.HIDDEN+"profiles/", exist_ok=True)
 
-        #create bare settings.cfg if DNE
-        if(not os.path.isfile(cls.HIDDEN+"settings.cfg")):
-            settings_file = open(cls.HIDDEN+"settings.cfg", 'w')
+        #create bare legohdl.cfg if DNE
+        if(not os.path.isfile(cls.HIDDEN+cls.SETTINGS_FILE)):
+            settings_file = open(cls.HIDDEN+cls.SETTINGS_FILE, 'w')
             #save default settings layout
             cfg.save(cls.LAYOUT, settings_file)
             settings_file.close()
@@ -192,7 +194,7 @@ scripts)?", warning=False)
         ask_for_setup = cls.initialize()
 
         #load dictionary data in variable
-        with open(cls.HIDDEN+"settings.cfg", "r") as file:
+        with open(cls.HIDDEN+cls.SETTINGS_FILE, "r") as file:
             cls.SETTINGS = cfg.load(file)
         
         #merge bare_settings into loaded settings to ensure all keys are present
@@ -362,7 +364,7 @@ scripts)?", warning=False)
             #try to initialize workspace
             cls.initializeWorkspace(ws, cls.fs(val['path']))
 
-        #remove any hidden workspace folders that are no longer in the settings.cfg
+        #remove any hidden workspace folders that are no longer in the legohdl.cfg
         for ws in cls.getWorkspaceNames().values():
             if(ws not in cls.SETTINGS['workspace'].keys()):
                 #delete if found a directory type
@@ -610,11 +612,11 @@ scripts)?", warning=False)
 
         prfl_path = cls.getProfiles()[prfl_name]
         #overload available settings
-        if(cls.isInProfile(prfl_name, 'settings.cfg')):
-            act = not explicit or cls.confirmation("Import settings.cfg?", warning=False)
+        if(cls.isInProfile(prfl_name, cls.SETTINGS_FILE)):
+            act = not explicit or cls.confirmation("Import "+cls.SETTINGS_FILE+"?", warning=False)
             if(act):
-                log.info('Overloading settings.cfg...')
-                with open(prfl_path+'settings.cfg', 'r') as f:
+                log.info('Overloading '+cls.SETTINGS_FILE+'...')
+                with open(prfl_path+cls.SETTINGS_FILE, 'r') as f:
                     prfl_settings = cfg.load(f)
                     
                     dest_settings = copy.deepcopy(cls.SETTINGS)
@@ -649,8 +651,8 @@ scripts)?", warning=False)
                         copied_script.close()
                         pass
                     pass
-                log.info('Overloading scripts in settings.cfg...')
-                with open(prfl_path+'settings.cfg', 'r') as f:
+                log.info('Overloading scripts in '+cls.SETTINGS_FILE+'...')
+                with open(prfl_path+cls.SETTINGS_FILE, 'r') as f:
                     prfl_settings = cfg.load(f)
                     dest_settings = copy.deepcopy(cls.SETTINGS)
                     dest_settings = deepMerge(prfl_settings, dest_settings, scripts_only=True)
@@ -704,7 +706,7 @@ scripts)?", warning=False)
     @classmethod
     def isInProfile(cls, name, loc):
         if(name in cls.getProfiles()):
-            if(loc == 'settings.cfg'):
+            if(loc == cls.SETTINGS_FILE):
                 return os.path.isfile(cls.getProfiles()[name]+loc)
             else:
                 return os.path.isdir(cls.getProfiles()[name]+loc+"/")
@@ -861,7 +863,7 @@ scripts)?", warning=False)
     
     @classmethod
     def save(cls):
-        with open(cls.HIDDEN+"settings.cfg", "w") as file:
+        with open(cls.HIDDEN+cls.SETTINGS_FILE, "w") as file:
             cfg.save(cls.SETTINGS, file, cls.getComments())
             pass
         pass
@@ -1164,8 +1166,8 @@ scripts)?", warning=False)
         }
         def_settings['workspace'] = dict()
         def_settings['workspace']['primary'] = {'path' : None, 'market' : None}
-        #create default settings.cfg
-        with open(prfl_path+"settings.cfg", 'w') as f:
+        #create default legohdl.cfg
+        with open(prfl_path+cls.SETTINGS_FILE, 'w') as f:
             cfg.save(def_settings, f)
             pass
 
@@ -1498,7 +1500,7 @@ else:
         cls.SETTINGS_COMMENTS = {
     'general' : (cfg.HEADER,\
 '''; ---
-; settings.cfg
+; legohdl.cfg
 ; ---
 ; description:
 ;   A properties file to manually configure the packaging and development tool.

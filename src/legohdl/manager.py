@@ -45,9 +45,9 @@ class legoHDL:
             print(__version__)
             exit()
 
-        #load settings.cfg
+        #load legohdl.cfg
         apt.load()
-        #dyamincally manage any registries that were added to settings.cfg
+        #dyamincally manage any registries that were added to legohdl.cfg
         Registry.dynamicLoad(apt.getMarkets(workspace_level=False))
         apt.save()
 
@@ -595,7 +595,7 @@ class legoHDL:
         if(eq == -1):
             val = None
             key = choice
-        #chosen to delete setting from settings.cfg
+        #chosen to delete setting from legohdl.cfg
         if(delete):
             possibles = ['label', 'workspace', 'market', 'script', 'profile']
             st = options[0].lower()
@@ -662,7 +662,7 @@ class legoHDL:
             log.info("Setting saved successfully.")
             return
 
-        #chosen to config a setting in settings.cfg
+        #chosen to config a setting in legohdl.cfg
         if(options[0] == 'active-workspace'):
             if(choice not in apt.SETTINGS['workspace'].keys()):
                 exit(log.error("Workspace "+choice+" not found!"))
@@ -1089,13 +1089,13 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         prfls = apt.getProfiles()
         last_prfl = open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'r').readline()
         # :todo: also indicate if an update is available
-        print('{:<16}'.format("Profile"),'{:<12}'.format("Last Import"),'{:<16}'.format("settings.cfg"),'{:<12}'.format("template/"),'{:<12}'.format("scripts/"))
+        print('{:<16}'.format("Profile"),'{:<12}'.format("Last Import"),'{:<16}'.format(apt.SETTINGS_FILE),'{:<12}'.format("template/"),'{:<12}'.format("scripts/"))
         print("-"*16+" "+"-"*12+" "+"-"*16+" "+"-"*12+" "+"-"*12)
         for prfl in prfls:
             last_import = 'yes' if(last_prfl == prfl) else '-'
             has_template = 'yes' if(apt.isInProfile(prfl, 'template')) else '-'
             has_scripts = 'yes' if(apt.isInProfile(prfl, 'scripts')) else '-'
-            has_settings = 'yes' if(apt.isInProfile(prfl, 'settings.cfg')) else '-'
+            has_settings = 'yes' if(apt.isInProfile(prfl, apt.SETTINGS_FILE)) else '-'
             #check if it has a remote
             # prfl_path = apt.getProfiles()[prfl]
             # if(os.path.exists(prfl_path+".git")):
@@ -1452,8 +1452,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                     log.error("No profile exists as "+value)
             #open settings
             elif(options.count("settings")):
-                log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+"settings.cfg"))
-                apt.execute(apt.SETTINGS['general']['editor'], apt.fs(apt.HIDDEN+"/settings.cfg"))
+                log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
+                apt.execute(apt.SETTINGS['general']['editor'], apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
             #open block
             elif(valid):
                 self.blockPKG.load()
@@ -1849,7 +1849,7 @@ value (ex: -v1). If the -v0.0.0 flag is not properly working, -v0_0_0 is also va
             printFmt("config","<key>="+'"<value>"',"(-script [-link] | -label [-recursive] | -workspace | -market [-add | -remove])",quiet=True)
             rollover("""
 Configure settings for legoHDL. This is the command-line alternative to opening 
-the settings.cfg file for visual editing. If only a market name is given as <value>, then it will
+the legohdl.cfg file for visual editing. If only a market name is given as <value>, then it will
 be used as a reference to either -add or -remove the market from the current workspace. If raising
 -template, it requests the path to a folder to create new blocks from. If the <value> is empty, it will
 reference the built-in template folder. Valid <value> for -multi-develop and -overlap-recursive flags are either
