@@ -49,12 +49,14 @@ class legoHDL:
         apt.load()
         #dyamincally manage any registries that were added to legohdl.cfg
         Registry.dynamicLoad(apt.getMarkets(workspace_level=False))
+        #save all legohdl.cfg changes
         apt.save()
-
+        
         self.blockPKG = None
         self.blockCWD = None
-        #defines path to dir of remote code base
-        self.db = Registry(apt.getMarkets())
+        #initialize registry with the workspace-level markets
+        self.db = Registry(apt.getMarkets()) 
+        #limit functionality if not in a workspace
         if(not apt.inWorkspace() and (command != '' and command != 'config' and command != 'help' and (command != 'open' or ("settings" not in options and "template" not in options)))):
             exit()
         self.parse(command, package, options)
@@ -1214,6 +1216,10 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
         package = package.replace("-", "_")
 
+        #first identify if automatic-refresh should occur on markets
+        if(apt.inWorkspace() and apt.readyForRefresh() and apt.linkedMarket()):
+            self.db.sync('')
+
         #is the user trying to shortcut?
         if(L == '' and cmd != 'new' and self.db.canShortcut(N)):
             #rewrite MLNV based on shortcut if possible
@@ -1234,9 +1240,6 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                     self.db.blockExists(package,"market")
         else:
             exists = False
-
-        if(apt.inWorkspace() and apt.readyForRefresh() and apt.linkedMarket()):
-            self.db.sync('')
         
         #branching through possible commands
         if(command == "install"):
