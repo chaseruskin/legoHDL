@@ -770,14 +770,20 @@ scripts)?", warning=False)
         if(warning):
             log.warning(prompt+" [y/n]")
         else:
-            log.info(prompt+" [y/n]")
+            try:
+                log.info(prompt+" [y/n]")
+            except KeyboardInterrupt:
+                exit("\nExited prompt.")
         verify = input().lower()
         while True:
             if(verify == 'y'):
                 return True
             elif(verify == 'n'):
                 return False
-            verify = input("[y/n]").lower()
+            try:
+                verify = input("[y/n]").lower()
+            except KeyboardInterrupt:
+                exit("\nExited prompt.")
 
     @classmethod
     def readyForRefresh(cls):

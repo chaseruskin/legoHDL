@@ -167,9 +167,15 @@ class Block:
             #print(change_file)
             #open the changelog and wait for the developer to finish writing changes
             apt.execute(apt.SETTINGS['general']['editor'], change_file)
-            resp = input("Enter 'k' when done writing CHANGELOG.md to proceed...")
+            try:
+                resp = input("Enter 'k' when done writing CHANGELOG.md to proceed...")
+            except KeyboardInterrupt:
+                exit('\nExited prompt.')
             while resp.lower() != 'k':
-                resp = input()
+                try:
+                    resp = input()
+                except KeyboardInterrupt:
+                    exit('\nExited prompt.')
         return
 
     #release the block as a new version
@@ -231,10 +237,11 @@ class Block:
                 #user decided that is not OKAY, exiting release
                 if(cont == False):
                     exit(log.info("Did not release "+ver))
-        
+
         #user decided to proceed with release
         self.setMeta('version', ver[1:])
         self.save()
+
         #try to allow user to edit changelog before proceeding
         self.waitOnChangelog()
 
@@ -1215,9 +1222,15 @@ class Block:
             log.warning("No top level detected.")
         elif(len(top_contenders) > 1):
             log.warning("Multiple top levels detected. "+str(top_contenders))
-            validTop = input("Enter a valid toplevel entity: ").lower()
-            while validTop not in top_contenders:
+            try:
                 validTop = input("Enter a valid toplevel entity: ").lower()
+            except KeyboardInterrupt:
+                exit("\nExited prompt.")
+            while validTop not in top_contenders:
+                try:
+                    validTop = input("Enter a valid toplevel entity: ").lower()
+                except KeyboardInterrupt:
+                    exit("\nExited prompt.")
             
             top_contenders = [validTop]
         if(len(top_contenders) == 1):
@@ -1255,10 +1268,16 @@ class Block:
             for b in benches:
                 top_contenders.append(b.getName())
             log.warning("Multiple top level testbenches detected. "+str(top_contenders))
-            validTop = input("Enter a valid toplevel testbench: ").lower()
+            try:
+                validTop = input("Enter a valid toplevel testbench: ").lower()
+            except KeyboardInterrupt:
+                exit("\nExited prompt.")
             #force ask for the required testbench choice
             while validTop not in top_contenders:
-                validTop = input("Enter a valid toplevel testbench: ").lower()
+                try:
+                    validTop = input("Enter a valid toplevel testbench: ").lower()
+                except KeyboardInterrupt:
+                    exit("\nExited prompt.")
             #assign the testbench entered by the user
             self._bench = units[self.getLib()][validTop]
         #print what the detected testbench is
