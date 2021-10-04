@@ -1326,8 +1326,12 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
             #try to validate market
             mkt_obj = self.identifyMarket(M)
+            #option to skip the template?
+            use_template = (not options.count('no-template'))
 
-            self.blockPKG = Block(title=L+'.'+N, new=True, market=mkt_obj, remote=git_url)
+            self.blockPKG = Block(title=L+'.'+N, market=mkt_obj, remote=git_url)
+            #create new block
+            self.blockPKG.create(fresh=True, remote=git_url, inc_template=use_template)
 
             if(startup):
                 self.blockPKG.load()
@@ -1640,7 +1644,7 @@ raised flag for <value>, then the block's respective field will be altered with 
             print('{:<16}'.format("-summary"),"provide a string as <value> to set for this block's summary")
             pass
         elif(cmd == "new"):
-            printFmt("new","<block>","[-open -<remote>]")
+            printFmt("new","<block>","[-open -<remote> -no-template]")
             rollover("""
 Create a new block into the base of the workspace's local path. The block's default 
 created path is <workspace-path>/<block-library>/<block-name>. The template folder 
@@ -1652,6 +1656,7 @@ providing a market name, prepend it to the block's title.
             print()
             print('{:<16}'.format("-open"),"open the new block upon creation")
             print('{:<16}'.format("-<remote>"),"provide a blank git URL to be configured")
+            print('{:<16}'.format("-no-template"),"do not import configured template")
             pass
         elif(cmd == "open"):
             printFmt("open","<block>")

@@ -34,7 +34,7 @@ class Block:
                 'derives' : []}
             }
 
-    def __init__(self, title=None, path=None, remote=None, new=False, excludeGit=False, market=None):
+    def __init__(self, title=None, path=None, remote=None, excludeGit=False, market=None):
         self.__metadata = {'block' : {}}
         #split title into library and block name
         _,self.__lib,self.__name,_ = Block.snapTitle(title, lower=False)
@@ -70,10 +70,6 @@ class Block:
         if(self.isValid()):
             #load in metadata from cfg
             self.loadMeta()
-        #create a new block
-        elif(new):
-            #create the repo and directory structure
-            self.create(remote=remote) 
         pass
 
     #return the block's root path
@@ -537,7 +533,7 @@ class Block:
             file_out.close()
         pass
 
-    def create(self, fresh=True, git_exists=False, remote=None, fork=False):
+    def create(self, fresh=True, git_exists=False, remote=None, fork=False, inc_template=True):
         '''
         Create a new block using the template and attempt to set up a remote.
 
@@ -552,16 +548,20 @@ class Block:
         #copy template folder to new location if its a fresh project
         if(fresh):
             if(os.path.isdir(apt.TEMPLATE)):
-                #copy all files from template project
-                shutil.copytree(apt.TEMPLATE, self.getPath())
-                #delete any previous git repository that was attached to template
-                if(os.path.isdir(self.getPath()+"/.git/")):
-                    shutil.rmtree(self.getPath()+"/.git/", onerror=apt.rmReadOnly)
-                #delete all folders that start with '.'
-                dirs = os.listdir(self.getPath())
-                for d in dirs:
-                    if(os.path.isdir(self.getPath()+'/'+d) and d[0] == '.'):
-                        shutil.rmtree(self.getPath()+'/'+d, onerror=apt.rmReadOnly)
+                if(inc_template):
+                    log.info("Copying template...")
+                    #copy all files from template project
+                    shutil.copytree(apt.TEMPLATE, self.getPath())
+                    #delete any previous git repository that was attached to template
+                    if(os.path.isdir(self.getPath()+"/.git/")):
+                        shutil.rmtree(self.getPath()+"/.git/", onerror=apt.rmReadOnly)
+                    #delete all folders that start with '.'
+                    dirs = os.listdir(self.getPath())
+                    for d in dirs:
+                        if(os.path.isdir(self.getPath()+'/'+d) and d[0] == '.'):
+                            shutil.rmtree(self.getPath()+'/'+d, onerror=apt.rmReadOnly)
+                else:
+                    log.info("Skipping template...")
             else:
                 os.makedirs(self.getPath(), exist_ok=True)
 
