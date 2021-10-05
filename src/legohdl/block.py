@@ -85,7 +85,9 @@ class Block:
         if(in_place):
             self._repo = git.Repo(self.getPath())
             self.pull()
-            return
+            return True
+
+        success = True
 
         rem = apt.fs(rem)
         #new path is default to local/library/
@@ -110,8 +112,12 @@ class Block:
             shutil.copytree(tmp_dir+url_name, self.getPath())
         #remove a folder that exists here because its not a block!
         except(OSError, FileExistsError):
-            shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
-            shutil.copytree(tmp_dir+url_name, self.getPath())
+            try:
+                shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
+                shutil.copytree(tmp_dir+url_name, self.getPath())
+            except:
+                log.error("Download failed. A block is blocking the download path "+self.getPath()+".")
+                success = False
 
         #assign the repo of the newly downloaded block
         self._repo = git.Repo(self.getPath())
@@ -121,6 +127,8 @@ class Block:
         #if downloaded from cache, make a master branch if no remote  
         if(len(self._repo.heads) == 0):
             self._repo.git.checkout("-b","master")
+
+        return success
 
     #return the full block name (library.name)
     def getTitle(self, low=True, mrkt=False):

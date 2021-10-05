@@ -500,6 +500,7 @@ class legoHDL:
         cache.
         '''
         _,l,n,_ = Block.snapTitle(title)
+        success = True
         #1. download
         #update local block if it has a remote
         if(self.db.blockExists(title, "local")):
@@ -511,7 +512,7 @@ class legoHDL:
             blk = self.db.getBlocks("market")[l][n]
             log.info("Downloading "+blk.getTitle()+" from "+str(blk.getMeta('market'))+' with '+blk.getMeta('remote')+"...")
             #use the remote git url to download/clone the block
-            blk.downloadFromURL(blk.getMeta("remote"))
+            success = blk.downloadFromURL(blk.getMeta("remote"))
         #download from the cache
         elif(self.db.blockExists(title, "cache")):
             blk = self.db.getBlocks("cache")[l][n]
@@ -520,14 +521,14 @@ class legoHDL:
                 dwnld_path = blk.grabGitRemote()
             log.info("Downloading "+blk.getTitle()+" from cache with "+dwnld_path+"...")
             #use the cache directory to download/clone the block
-            blk.downloadFromURL(dwnld_path)
+            success = blk.downloadFromURL(dwnld_path)
             #now return the block if wanting to open it with -o option
-            return
+            return success
         else:
             exit(log.error('Block \''+title+'\' does not exist in any linked market for this workspace'))
         
         if(not reinstall):
-            return
+            return success
         #2. perform re-install
         cache_block = None
         in_cache = self.db.blockExists(blk.getTitle(), "cache")
@@ -540,8 +541,8 @@ class legoHDL:
                 pass
             #update cache installation if a new version is available
             self.install(title, None)
-  
-        pass
+        
+        return success
 
     #! === RELEASE COMMAND ===
 
@@ -1337,9 +1338,16 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
         elif(command == "download"):
             #download is used if a developer wishes to contribtue and improve to an existing package
-            self.download(package)
+            success = self.download(package)
             if('open' in options):
-                self.db.getBlocks("local", updt=True)[L][N].load()
+                local_blocks = self.db.getBlocks("local", updt=True)
+                if(success):
+                    if(L in local_blocks.keys() and N in local_blocks[L].keys()):
+                        local_blocks[L][N].load()
+                    else:
+                        log.warning(L+"."+N+" is no longer identified by this title.")
+                else:
+                    log.error("Could not open block due to failed download.")
             pass
 
         elif(command == 'del'):
