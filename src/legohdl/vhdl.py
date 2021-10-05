@@ -200,6 +200,12 @@ class Vhdl(Language):
                     in_body = in_true_body = isEnding = False
                 else:
                     pass
+            elif(code_word == config_name):
+                # this is ending the configuration section
+                if(isEnding):
+                    in_config = isEnding = False
+                else:
+                    pass
             else:
                 #look for a full package call
                 if(in_entity or in_arch or in_pkg or in_body):
