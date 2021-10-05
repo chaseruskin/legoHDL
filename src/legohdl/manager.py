@@ -1333,7 +1333,6 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         #a visual aide to help a developer see what package's are at the ready to use
         elif(command == 'graph' and self.blockCWD.isValid()):
             top = package.lower()
-            print(top)
             if(top == ''):
                 top = None
             top_dog,_,_ = self.blockCWD.identifyTopDog(top, None)
