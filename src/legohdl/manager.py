@@ -1162,12 +1162,12 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         #check if market version is bigger than the installed version
         c_ver = '0.0.0'
         if(self.db.blockExists(title, "cache")):
-            cache_block = self.db.getBlocks("cache")[l][n]
+            cache_block = self.db.getBlocks("cache", updt=True)[l][n]
             c_ver = cache_block.getVersion()
 
         m_ver = ver
         if(not bypassMrkt and self.db.blockExists(title, "market")):
-            mrkt_block = self.db.getBlocks("market")[l][n]
+            mrkt_block = self.db.getBlocks("market", updt=True)[l][n]
             m_ver = mrkt_block.getVersion()
         elif(ver == None):
             exit(log.error(title+" cannot be updated from any of the workspace's markets."))
