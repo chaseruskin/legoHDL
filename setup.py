@@ -20,7 +20,6 @@ setuptools.setup(
     ],
     install_requires=[
         "git-Python",
-        "ordered_set",
     ],
     entry_points='''
             [console_scripts]

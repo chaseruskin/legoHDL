@@ -3,6 +3,5 @@ requires = [
     "setuptools",
     "wheel",
     "Git-Python",
-    "ordered_set",
 ]
 build-backend = "setuptools.build_meta"
