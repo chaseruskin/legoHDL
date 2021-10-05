@@ -43,8 +43,8 @@ class Vhdl(Language):
         components_on_standby = dict()
 
         in_pkg = in_body = in_true_body = False
-        in_entity = in_arch = in_true_arch = False
-        unit_name = arch_name = body_name =  None
+        in_entity = in_arch = in_true_arch = in_config = False
+        unit_name = arch_name = body_name = config_name =  None
         isEnding = False
 
         def resetNamespace(uses):
@@ -99,6 +99,16 @@ class Vhdl(Language):
                         if(U in design_book[L].keys()):
                             use_packages.append(design_book[L][U])
                     pass
+                pass
+            elif(code_word == 'configuration'):
+                #exiting the configuration section
+                if(isEnding):
+                    in_config = isEnding = False
+                #this is a configuration declaration
+                elif(not in_config):
+                    in_config = True
+                    config_name = cs[i+1]
+                    design_book[cur_lib][unit_name].setConfig(config_name)
                 pass
             elif(code_word == 'port'):
                 #this entity has a ports list and therefore is not a testbench

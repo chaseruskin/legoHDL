@@ -410,7 +410,12 @@ class legoHDL:
                 line = line+"VHDL"
             elif(tb.getLanguageType() == Unit.Language.VERILOG):
                 line = line+"VLOG"
-            output.write(line+"-SIM-TOP "+tb.getName(low=False)+" "+tb.getFile()+"\n")
+            #set simulation design unit by its entity name by default
+            tb_name = tb.getName(low=False)
+            #set top bench design unit name by its configuration if exists
+            if(tb.getConfig() != None):
+                tb_name = tb.getConfig()
+            output.write(line+"-SIM-TOP "+tb_name+" "+tb.getFile()+"\n")
         if(top != None):
             line = '@'
             if(top.getLanguageType() == Unit.Language.VHDL):

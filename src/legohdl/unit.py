@@ -50,6 +50,7 @@ class Unit:
         self._unit = unitName
         self._isTB = True
         self._checked = False
+        self._config = None
         pass
     pass
 
@@ -124,6 +125,12 @@ class Unit:
 
     def unsetTB(self):
         self._isTB = False
+
+    def setConfig(self, config_name):
+        self._config = config_name
+
+    def getConfig(self):
+        return self._config
 
     def isTB(self):
         return (self._dtype == self.Type.ENTITY and self._isTB)
