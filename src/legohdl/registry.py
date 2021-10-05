@@ -199,9 +199,9 @@ class Registry:
             #read .lock to get information
             file = apt.fs(file)
             with open(file, 'r') as f:
-                tmp = cfg.load(f)
+                tmp = cfg.load(f, ignore_depth=True)
                 #print(tmp)
-                if('block' not in tmp.keys() or tmp['block']['name'] == None):
+                if('block' not in tmp.keys() or tmp['block']['name'] == cfg.NULL):
                     log.warning("Invalid "+apt.MARKER+" file: "+file)
                     continue
             s = file.rfind('/')

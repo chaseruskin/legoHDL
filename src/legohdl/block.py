@@ -415,7 +415,8 @@ class Block:
     #load the metadata from the Block.cfg file
     def loadMeta(self):
         with open(self.metadataPath(), "r") as file:
-            self.__metadata = cfg.load(file)
+            self.__metadata = cfg.load(file, ignore_depth=True)
+            #print(self.__metadata)
             file.close()
 
         #this variable is only evaluated in the save() method
@@ -813,6 +814,7 @@ class Block:
 
         #print out the block's current metadata (found in local path)
         if(listVers == False and ver == None):
+            #print(self.getMeta(every=True))
             with open(self.metadataPath(), 'r') as file:
                 for line in file:
                     print(line,sep='',end='')
@@ -951,7 +953,7 @@ class Block:
 
         #update the metadata file here to reflect changes
         with open(self.getPath()+apt.MARKER, 'r') as f:
-            ver_meta = cfg.load(f)
+            ver_meta = cfg.load(f, ignore_depth=True)
         if(ver_meta['block']['toplevel'] != cfg.NULL):
             ver_meta['block']['toplevel'] = ver_meta['block']['toplevel']+str_ver
         if(ver_meta['block']['bench'] != cfg.NULL):
@@ -1093,7 +1095,7 @@ class Block:
                 #check the version that is living in this folder
                 else:
                     with open(maj_path+apt.MARKER,'r') as f:
-                        maj_meta = cfg.load(f)
+                        maj_meta = cfg.load(f, ignore_depth=True)
                         f.close()
                         pass
                     if(self.biggerVer(maj_meta['block']['version'], meta['block']['version']) == meta['block']['version']):
@@ -1473,7 +1475,7 @@ class Block:
             for f in files:
                 f_dir = f.replace(apt.MARKER,"")
                 with open(f, 'r') as file:
-                    cfg_data = cfg.load(file)
+                    cfg_data = cfg.load(file, ignore_depth=True)
                 M = cfg_data['block']['market']
                 L = cfg_data['block']['library'].lower()
                 N = cfg_data['block']['name'].lower()
@@ -1561,7 +1563,7 @@ class Block:
 
         #open and read what the version number is for this current project
         with open(path_to_block_file+apt.MARKER, 'r') as f:
-            meta = cfg.load(f)
+            meta = cfg.load(f, ignore_depth=True)
             N = N+"(v"+meta['block']['version']+")"
             cur_M = meta['block']['market']
             if(cur_M != cfg.NULL and cur_M.lower() in apt.getMarketNames().keys()):
@@ -1569,7 +1571,7 @@ class Block:
 
         #determine what the latest market being used is for this block
         with open(latest_block_path+apt.MARKER, 'r') as f:
-            meta = cfg.load(f)
+            meta = cfg.load(f, ignore_depth=True)
             latest_M = meta['block']['market']
             if(latest_M != cfg.NULL and latest_M.lower() in apt.getMarketNames().keys()):
                 M = latest_M

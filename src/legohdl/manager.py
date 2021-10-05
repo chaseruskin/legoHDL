@@ -203,7 +203,7 @@ class legoHDL:
                 if(os.path.isdir(base_cache_dir+parent_ver+"/")):
                     parent_meta = dict()
                     with open(base_cache_dir+parent_ver+"/"+apt.MARKER, 'r') as tmp_f:
-                        parent_meta = cfg.load(tmp_f)
+                        parent_meta = cfg.load(tmp_f, ignore_depth=True)
                         tmp_f.close()
                     #will have to try to revert down a version if its being used in parent version
                     rm_parent = (parent_meta['version'] == ver[1:])

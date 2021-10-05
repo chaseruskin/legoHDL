@@ -23,13 +23,15 @@ class CfgFile:
     NEAT = True
 
     @classmethod
-    def load(cls, datafile):
+    def load(cls, datafile, ignore_depth=False):
         '''
         Return the python dictionary of all key/value pairs.
 
         Parameters
         ---
         datafile : a python file object
+        ignore_depth : all headers are seen at first level and each variable
+                       is assigned to previous header
         '''
         map = dict()
 
@@ -69,9 +71,11 @@ class CfgFile:
         #store the last variable's name and value
         last_var = {'key' : None, 'val' : None} 
 
+        #read each line
         lines = datafile.readlines()
         for line in lines:
             line_cnt += 1
+
             #trim line from comment markers
             for C in cls.COMMENT:
                 if(line.count(C)):
@@ -95,6 +99,10 @@ class CfgFile:
 
             #identify headers
             if(line.strip().startswith(cls.HEADER[0]) and line.strip().endswith(cls.HEADER[1])):
+                #every header is 1-deep if ignore scopes
+                if(ignore_depth):
+                    lvl = 0
+                
                 key = line.strip()[1:len(line.strip())-1]
                 
                 #pop off scopes
@@ -112,6 +120,9 @@ class CfgFile:
                 key = line[:sep].strip()
                 #strip excessive whitespace and quotes
                 value = line[sep+1:].strip().replace('\'', '').replace('\"', '')
+
+                if(ignore_depth and len(scope)):
+                    lvl = 1
 
                 #update what scope the assignment is located in
                 scope = scope[0:lvl]

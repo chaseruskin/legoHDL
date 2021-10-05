@@ -890,9 +890,9 @@ scripts)?", warning=False)
         else:
             log.info("Identified valid version "+tag)
             with open(path+cls.MARKER, 'r') as f:
-                meta = cfg.load(f)
+                meta = cfg.load(f, ignore_depth=True)
                 if('block' not in meta.keys()):
-                    log.error("Invalid Block.cfg file; no 'block' section")
+                    log.error("Invalid "+cls.MARKER+" file; no 'block' section.")
                     return None
 
         #revert back to latest release
