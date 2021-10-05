@@ -164,7 +164,7 @@ class CfgFile:
         return map
 
     @classmethod
-    def save(cls, data, datafile, comments=dict()):
+    def save(cls, data, datafile, comments=dict(), ignore_depth=False, space_headers=False):
         '''
         Write python dictionary to data file.
 
@@ -183,9 +183,14 @@ class CfgFile:
                 for l in lines:
                     datafile.write(spacing+l+"\n")
 
+        another_header = False
         def write_dictionary(mp, lvl=0, l_len=0):
+            nonlocal another_header
             #determine proper indentation
             indent = cls.TAB*lvl
+            #do not indent if ignoring depth
+            if(ignore_depth):
+                indent = ''
             if(isinstance(mp, dict)):
                 for k in mp.keys():
                     isHeader = isinstance(mp[k], dict)
@@ -194,7 +199,11 @@ class CfgFile:
                         write_comment(comments[k], indent, isHeader)
                     #write a header
                     if(isHeader):
+                        #write a separating new-line
+                        if(another_header and space_headers):
+                            datafile.write('\n')
                         datafile.write(indent+cls.HEADER[0]+k+cls.HEADER[1]+'\n')
+                        another_header = True
                     #write the beginning of an assignment
                     else:
                         var_assign = indent+k+' '+cls.VAR+' '

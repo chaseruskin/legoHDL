@@ -583,7 +583,7 @@ class Block:
 
         #create the marker file
         with open(self.getPath()+apt.MARKER, 'w') as f:
-            cfg.save(self.LAYOUT, f)
+            cfg.save(self.LAYOUT, f, ignore_depth=True, space_headers=True)
 
         #search through all templated files and fill in placeholders
         if(fresh):
@@ -889,7 +889,7 @@ class Block:
 
         #write back cfg values with respect to order
         with open(self.metadataPath(), 'w') as file:
-            cfg.save(meta, file)
+            cfg.save(meta, file, ignore_depth=True, space_headers=True)
             file.close()
         pass
 

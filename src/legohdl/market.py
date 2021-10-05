@@ -138,7 +138,7 @@ class Market:
 
         #save cfg file
         with open(block_dir+apt.MARKER, 'w') as file:
-            cfg.save(meta, file)
+            cfg.save(meta, file, ignore_depth=True, space_headers=True)
             file.close()
             
         #save changes to repository (only add and stage the file that was made)
