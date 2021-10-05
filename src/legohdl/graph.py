@@ -39,8 +39,24 @@ class Graph:
         pass
 
     def topologicalSort(self):
-        order = list()
-        block_order = OrderedSet()
+        order = []
+
+        block_order = []
+        block_tracker = []
+
+        def addBlock(m, l, n):
+            nonlocal block_order, block_tracker
+
+            mrkt_prepend = ''
+            if(m != None):
+                mrkt_prepend = m+'.'
+            #check if block has already been added
+            title = mrkt_prepend+l+'.'+n
+            if(title.lower() in block_tracker):
+                return
+            block_tracker.append(title.lower())
+            block_order.append(title)
+
         nghbr_count = dict()
         #print(len(self.__adj_list))
         #determine number of dependencies a vertex has
@@ -51,10 +67,7 @@ class Graph:
             log.warning("No edges found.")
             for u in self._unit_bank.values():
                 order.append(u)
-                mrkt_prepend = ''
-                if(u.getMarket() != None):
-                    mrkt_prepend = u.getMarket()+'.'
-                block_order.add(mrkt_prepend+u.getLib(low=False)+"."+u.getBlock(low=False))
+                addBlock(u.getMarket(), u.getLib(low=False), u.getBlock(low=False))
   
         #continue until all are transferred
         while len(order) < len(self.__adj_list):
@@ -66,11 +79,8 @@ class Graph:
                         #print(unit)
                         #add actual unit object to list
                         order.append(unit) 
-                    #add block name to ordered set
-                    mrkt_prepend = ''
-                    if(unit.getMarket() != None):
-                        mrkt_prepend = unit.getMarket()+'.'
-                    block_order.add(mrkt_prepend+unit.getLib(low=False)+"."+unit.getBlock(low=False))
+                    #add block name to list
+                    addBlock(unit.getMarket(), unit.getLib(low=False), unit.getBlock(low=False))
                     #will not be recounted
                     nghbr_count[v] = -1 
                     #who all depends on this module?

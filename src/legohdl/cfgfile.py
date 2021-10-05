@@ -218,9 +218,15 @@ class CfgFile:
                     if(len(mp)):
                         #write beginning of list
                         datafile.write(cls.LIST[0]+'\n')
+                        #indent lists by 1 tab in ignore depth
+                        if(ignore_depth):
+                            indent = cls.TAB
                         #write items of the list
                         for i in mp:
                             datafile.write(indent+i+',\n')
+                        #ensure closing bracket is farthest left
+                        if(ignore_depth or lvl == 0):
+                            lvl = 1
                         #close off the list
                         datafile.write(cls.TAB*(lvl-1)+cls.LIST[1]+'\n')
                     #write empty list
