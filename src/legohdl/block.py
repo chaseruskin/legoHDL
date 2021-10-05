@@ -1215,7 +1215,11 @@ class Block:
         '''
         if(hasattr(self, "_top")):
             return self._top
-        units = self.grabUnits()
+        #first fill out all data on each unit
+        self.grabUnits()
+        #constrain to only using the current block's design units
+        units = self.grabCurrentDesigns()
+        #only grab from project-level design units
         top_contenders = list(units[self.getLib()].keys())
 
         self._top = None
