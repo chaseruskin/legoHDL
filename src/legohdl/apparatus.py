@@ -8,6 +8,7 @@
 #   functions that are used throughout other scripts.
 ################################################################################
 
+from genericpath import isfile
 import stat,glob,git
 from datetime import datetime
 import logging as log
@@ -722,6 +723,30 @@ scripts)?", warning=False)
                 profiles[plc] = path
 
         return profiles
+
+    @classmethod
+    def getTemplateFiles(cls):
+        '''
+        Returns a list of all available files within the template, excluding the
+        .git folder (if exists). Paths are relative to the template base path.
+        '''
+        #get all files
+        log.info("All available files in the current template:")
+        cls.TEMPLATE = cls.fs(cls.TEMPLATE)
+        files = glob.glob(cls.TEMPLATE+"/**/*", recursive=True)
+        for f in files:
+            f = cls.fs(f)
+            #skip all hidden git files
+            if(f.lower().count('/.git/')):
+                continue
+            #only print files
+            if(os.path.isfile(f)):
+                #it is an invisible file
+                if(f.count('/.')):
+                    pass
+                print('\t',f.replace(cls.TEMPLATE, '/'))
+
+        pass
 
     @classmethod
     def initializeWorkspace(cls, name, local_path=None):

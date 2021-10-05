@@ -482,14 +482,14 @@ class Block:
         
         #ensure this file doesn't already exist
         if(os.path.isfile(newfile)):
-            log.info("File already exists")
+            log.info("File "+newfile+" already exists.")
             return
-        log.info("Creating new file...")
+        log.info("Creating new file "+newfile+" from "+templateFile+"...")
 
         replacements = glob.glob(apt.TEMPLATE+"**/"+templateFile, recursive=True)
         #copy the template file into the proper location
         if(len(replacements) < 1):
-            exit(log.error("Could not find "+templateFile+" file in template project"))
+            exit(log.error("Could not find "+templateFile+" file in current template."))
         else:
             templateFile = replacements[0]
         #make any necessary directories
@@ -532,6 +532,8 @@ class Block:
             for line in lines:
                 file_out.write(line)
             file_out.close()
+
+        log.info("success")
         pass
 
     def create(self, fresh=True, git_exists=False, remote=None, fork=False, inc_template=True):

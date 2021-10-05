@@ -1285,28 +1285,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 exit(log.error("A block must have a library as part of its title."))
             if(exists):
                 exit(log.error("A block already exists as "+package))
-            #option to create a new file
-            if(options.count("file")):
-                options.remove("file")
-                if(self.blockCWD.isValid()):
-                    if(len(options) == 0):
-                        
-                        if(os.path.exists(value) == False):
-                            log.info("Creating new empty file...")
-                            rel_path = value[:value.rfind(os.path.basename(value))]
-                            if(len(rel_path)):
-                                if(rel_path[0] != '.'):
-                                    rel_path = '.' + rel_path
-                                    value = '.' + value
-                                os.makedirs(rel_path, exist_ok=True)
-                            open(value,'w').close()
-                            exit()
-                        else:
-                            exit(log.error("A file of same name already exists here."))
-                    self.blockCWD.fillTemplateFile(value, options[0])
-                else:
-                    exit(log.error("Cannot create a project file when not inside a project"))
-                return
+
             #option to create a new block
             startup = False
             if(options.count("open")):
@@ -1389,7 +1368,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 self.listProfiles()
             # :todo: add ability to list all files in current template
             elif(options.count("template")):
-                print("Prints all files found within template")
+                apt.getTemplateFiles()
                 #categorize by hidden files (skipped)
                 #and visible files (files that are copied in on using template)
             else:
@@ -1397,6 +1376,31 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
 
         elif(command == "init"):
+            #option to create a new file
+            if(options.count("file")):
+                options.remove("file")
+                if(self.blockCWD.isValid()):
+                    if(len(options) == 0):
+                        #no template file was specified
+                        log.info("No template file was specified.")
+                        if(os.path.exists(value) == False):
+                            log.info("Creating new empty file "+value+"...")
+                            rel_path = value[:value.rfind(os.path.basename(value))]
+                            if(len(rel_path)):
+                                if(rel_path[0] != '.'):
+                                    rel_path = '.' + rel_path
+                                    value = '.' + value
+                                os.makedirs(rel_path, exist_ok=True)
+                            open(value,'w').close()
+                        else:
+                            exit(log.error("A file of same name already exists here."))
+                        return
+                    # a template file was specified to be used
+                    else:
+                        self.blockCWD.fillTemplateFile(value, options[0])
+                else:
+                    exit(log.error("Cannot create a project file when not inside a project!"))
+                return
             if(exists):
                 exit(log.error("A block already exists as "+package))
             self.convert(value, options)
@@ -1628,6 +1632,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         elif(cmd == "init"):
             printFmt("init", "<block>","[-<remote>]")
             printFmt("init","<value>","(-market | -remote | -summary)",quiet=True)
+            printFmt("init","<file>","-file [-<template-file>]",quiet=True)
             rollover("""
 If no flags are raised, transform the working directory into a valid block. This will
 create a git repository if not available, and create the Block.cfg file. If there is a git
@@ -1637,11 +1642,14 @@ raised flag for <value>, then the block's respective field will be altered with 
             """)
             print('{:<16}'.format("<block>"),"the block's title to be initialized from the current folder")
             print('{:<16}'.format("<value>"),"value to be given to current block based on the flag raised")
+            print('{:<16}'.format("<file>"),"file path to create new file within block")
             print()
             print('{:<16}'.format("-<remote>"),"an empty git url to set for this block")
             print('{:<16}'.format("-market"),"provide a market name as <value> available from the workspace")
             print('{:<16}'.format("-remote"),"provide a valid git URL as <value> to set for this block")
             print('{:<16}'.format("-summary"),"provide a string as <value> to set for this block's summary")
+            print('{:<16}'.format("-file"),"create a new file for the current block")
+            print('{:<16}'.format("-<template-file>"),"define template file to use upon file creation")
             pass
         elif(cmd == "new"):
             printFmt("new","<block>","[-open -<remote> -no-template]")
@@ -1698,7 +1706,7 @@ If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.
             print('{:<16}'.format("-soft"),"push a side branch to the linked market for merge")
             pass
         elif(cmd == "list"):
-            printFmt("list","[[<search>]","[-alpha -install -download]] [-script | -label | -market | -workspace | -profile]")
+            printFmt("list","[[<search>]","[-alpha -install -download]] [-script | -label | -market | -workspace | -profile | -template]")
             rollover("""
 Provide a formatted view for a variety of groups. The default is to list the active
 workspace's blocks. When listing blocks, you can also search by providing a partial block 
@@ -1713,6 +1721,7 @@ label, market, or workspace, will print their respective group found within the 
             print('{:<16}'.format("-market"),"view markets as market, url, linked to workspace")
             print('{:<16}'.format("-workspace"),"view workspaces as workspace, active, path, markets")
             print('{:<16}'.format("-profile"),"view available profiles to overload configurations")
+            print('{:<16}'.format("-template"),"list all available files found in current template")
             pass
         elif(cmd == "install"):
             printFmt("install","((<block>","[-v0.0.0]) | -requirements)")
