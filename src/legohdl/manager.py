@@ -1534,6 +1534,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             mapp = (len(options) and 'map' in options)
             #show direct entity instantiation?
             pure_ent = (len(options) and 'instance' in options)
+            
+            show_arc = (len(options) and 'arch' in options)
             #grab the version number if it was in flags
             ver = None
             for o in options:
@@ -1562,7 +1564,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                     else:
                         domain = self.db.getBlocks("cache")
                 #print the port mapping/listing to the console for user aide
-                print(domain[L][N].ports(mapp,inserted_lib,pure_ent,ent_name,ver), end='')
+                print(domain[L][N].ports(mapp,inserted_lib,pure_ent,ent_name,ver,show_arc), end='')
             #could not use this block because it is only available locally
             elif(not within_block and apt.SETTINGS['general']['multi-develop'] == False and self.db.blockExists(package, "local")):
                 exit(log.error("Cannot use "+package+" because it has no installed release points and multi-develop is set to OFF."))

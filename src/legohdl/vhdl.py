@@ -146,7 +146,12 @@ class Vhdl(Language):
                 # this is the architecture naming
                 else:
                     in_arch = True
-                    arch_name = cs[i+1]
+                    arch_name = cs[i+1] 
+                    #who's architecture is this?
+                    #ex: architecture rtl of entity1
+                    #skip 'of' keyword and identify entity name
+                    whos_arch = cs[i+3]
+                    design_book[cur_lib][whos_arch].addArchitecture(arch_name)
                 pass
             elif(code_word == "component"):
                 # :todo: - component declarations from within shallow architecture

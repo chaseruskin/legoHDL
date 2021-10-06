@@ -1592,7 +1592,7 @@ class Block:
  
         return M,L,N
         
-    def ports(self, mapp, lib, pure_entity, entity=None, ver=None):
+    def ports(self, mapp, lib, pure_entity, entity=None, ver=None, showArc=False):
         '''
         Print helpful port mappings/declarations of a desired entity.
         '''
@@ -1607,7 +1607,12 @@ class Block:
             entity = entity+"_"+ver.replace(".","_")
             
         if(entity.lower() in units[self.getLib()].keys()):
-            info = units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)
+            #use regular printing
+            if(showArc == False):
+                info = units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)
+            #print available architectures
+            else:
+                info = units[self.getLib()][entity.lower()].writeArchitectures()
         else:
             exit(log.error("Cannot locate entity "+entity+" in block "+self.getTitle(low=False)))
         

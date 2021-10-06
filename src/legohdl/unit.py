@@ -39,9 +39,11 @@ class Unit:
         if(ext in apt.VHDL_CODE):
             self._language = self.Language.VHDL
             self._lang = Vhdl(filepath)
+            self._arcs = []
         elif(ext in apt.VERILOG_CODE):
             self._language = self.Language.VERILOG
             self._lang = Verilog(filepath)
+            self._arcs = ['rtl'] #default to just rtl architecture
 
         self._dtype = dtype
         self._lib = lib
@@ -84,8 +86,20 @@ class Unit:
                 report = report + "\n"
         return report
 
+    def writeArchitectures(self):
+        if(len(self.getArchitectures())):
+            txt = "Defined architectures for "+self.getFull()+":\n"
+            for arc in self.getArchitectures():
+                txt = txt+'\t'+arc+'\n'
+        else:
+            txt = "No architectures are defined for "+self.getFull()+"!\n"
+        return txt
+
     def getLanguageType(self):
         return self._language
+
+    def getArchitectures(self):
+        return self._arcs
 
     def getLang(self):
         return self._lang
@@ -134,6 +148,9 @@ class Unit:
 
     def isTB(self):
         return (self._dtype == self.Type.ENTITY and self._isTB)
+
+    def addArchitecture(self, a):
+        self._arcs.append(a)
 
     #add a unit as a requirement for itself
     def addRequirement(self, u):
