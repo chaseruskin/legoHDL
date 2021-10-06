@@ -57,7 +57,7 @@ class legoHDL:
         #initialize registry with the workspace-level markets
         self.db = Registry(apt.getMarkets()) 
         #limit functionality if not in a workspace
-        if(not apt.inWorkspace() and (command != '' and command != 'config' and command != 'help' and (command != 'open' or ("settings" not in options and "template" not in options)))):
+        if(not apt.inWorkspace() and (command != '' and command != 'config' and command != 'profile' and command != 'help' and (command != 'open' or ("settings" not in options and "template" not in options)))):
             exit()
         self.parse(command, package, options)
         pass
