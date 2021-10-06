@@ -1609,7 +1609,10 @@ class Block:
         if(entity.lower() in units[self.getLib()].keys()):
             #display the various defined architectures
             if(showArc):
-                info = units[self.getLib()][entity.lower()].writeArchitectures()
+                #fill out decipher to get architectures
+                u = units[self.getLib()][entity.lower()]
+                self._unit_bank = u.getLang().decipher(self._unit_bank, self.getLib(), False)
+                info = u.writeArchitectures()
             #display the port interface
             else:
                 info = units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)      

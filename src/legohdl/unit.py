@@ -150,7 +150,8 @@ class Unit:
         return (self._dtype == self.Type.ENTITY and self._isTB)
 
     def addArchitecture(self, a):
-        self._arcs.append(a)
+        if(a not in self.getArchitectures()):
+            self._arcs.append(a)
 
     #add a unit as a requirement for itself
     def addRequirement(self, u):

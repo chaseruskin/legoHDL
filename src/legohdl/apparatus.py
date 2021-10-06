@@ -219,15 +219,17 @@ scripts)?", warning=False)
         cls.generateDefault(int,"refresh-rate",header="general")
         cls.generateDefault(list,"profiles",header="general")
 
+        #constrain the refresh-rate
         if(cls.SETTINGS['general']['refresh-rate'] > cls.MAX_RATE):
             cls.SETTINGS['general']['refresh-rate'] = cls.MAX_RATE
         elif(cls.SETTINGS['general']['refresh-rate'] < cls.MIN_RATE):
             cls.SETTINGS['general']['refresh-rate'] = cls.MIN_RATE
-
+        #dynamically add profiles to the hidden folder
         cls.dynamicProfiles()
+        #dynamically create new workspace directories
         cls.dynamicWorkspace()
 
-        #determine current workspace currently being used
+        #determine current workspace being used
         cls.__active_workspace = cls.SETTINGS['general']['active-workspace']
 
         if(not cls.inWorkspace()):
