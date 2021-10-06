@@ -1607,12 +1607,11 @@ class Block:
             entity = entity+"_"+ver.replace(".","_")
             
         if(entity.lower() in units[self.getLib()].keys()):
-            #use regular printing
-            if(showArc == False):
-                info = units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)
-            #print available architectures
-            else:
+            #display the various defined architectures
+            if(showArc):
                 info = units[self.getLib()][entity.lower()].writeArchitectures()
+            #display the 
+            info = info + units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)      
         else:
             exit(log.error("Cannot locate entity "+entity+" in block "+self.getTitle(low=False)))
         

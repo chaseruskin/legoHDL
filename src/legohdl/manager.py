@@ -1851,7 +1851,7 @@ will not be deleted from its path.
             print('{:<16}'.format("-workspace"),"keeps local path, but remove from settings")
             print('{:<16}'.format("-profile"),"remove the folder found in legoHDL containing this profile")
         elif(cmd == "port"):
-            printFmt("port","<block>[:<entity>]","[-map -instance]")
+            printFmt("port","<block>[:<entity>]","[-map -instance -arch]")
             rollover("""
 Print component information needed by an upper-level design to instantiate an entity. The output is
 designed to be copied and pasted into a source file with little-to-no modification. A specific
