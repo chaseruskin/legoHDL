@@ -1610,8 +1610,9 @@ class Block:
             #display the various defined architectures
             if(showArc):
                 info = units[self.getLib()][entity.lower()].writeArchitectures()
-            #display the 
-            info = info + units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)      
+            #display the port interface
+            else:
+                info = units[self.getLib()][entity.lower()].writePortMap(mapp, lib, pure_entity)      
         else:
             exit(log.error("Cannot locate entity "+entity+" in block "+self.getTitle(low=False)))
         

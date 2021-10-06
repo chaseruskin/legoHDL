@@ -93,7 +93,7 @@ class Unit:
                 txt = txt+'\t'+arc+'\n'
         else:
             txt = "No architectures are defined for "+self.getFull()+"!\n"
-        return txt
+        return txt+'\n'
 
     def getLanguageType(self):
         return self._language
