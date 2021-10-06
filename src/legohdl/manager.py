@@ -291,7 +291,7 @@ class legoHDL:
 
     #! === EXPORT/GRAPH COMMAND ===
 
-    def export(self, block, top=None):
+    def export(self, block, top=None, options=[]):
         '''
         This method performs the export command. The requirements are organized 
         into a topologically sorted graph and written to the recipe file. It
@@ -307,12 +307,15 @@ class legoHDL:
             shutil.rmtree(build_dir, onerror=apt.rmReadOnly)
         os.mkdir(build_dir)
 
+        inc_sim = (options.count('ignore-tb') == 0)
+
         log.info("Finding toplevel design...")
 
-        top_dog,top,tb = block.identifyTopDog(top)
-        print(top_dog,top,tb)
+        #get the Unit objects for the top_dog, top design, and top testbench
+        top_dog,top,tb = block.identifyTopDog(top, inc_sim=inc_sim)
+        #print(top_dog,top,tb)
         
-        output = open(build_dir+"recipe", 'w')    
+        output = open(build_dir+"recipe", 'w')   
 
         #mission: recursively search through every src VHD file for what else needs to be included
         unit_order,block_order = self.formGraph(block, top_dog)
@@ -392,19 +395,13 @@ class legoHDL:
             for blk in latest_defined.keys():
                 for lbl in latest_defined[blk][1].values():
                     labels.append(lbl)
-        
-        #register what files the top levels originate from (transform variables in unit objects)
-        if(tb != None):
-            tb = block.grabCurrentDesigns()[block.getLib()][tb]
-        if(top != None):
-            top = block.grabCurrentDesigns()[block.getLib()][top]
 
         for l in labels:
             output.write(l+"\n")
         for f in file_order:
             output.write(f+"\n")
 
-        #write current test dir where all testbench files are
+        #write top-level testbench entity label
         if(tb != None):
             line = '@'
             if(tb.getLanguageType() == Unit.Language.VHDL):
@@ -417,6 +414,8 @@ class legoHDL:
             if(tb.getConfig() != None):
                 tb_name = tb.getConfig()
             output.write(line+"-SIM-TOP "+tb_name+" "+tb.getFile()+"\n")
+
+        #write top-level design entity label
         if(top != None):
             line = '@'
             if(top.getLanguageType() == Unit.Language.VHDL):
@@ -573,6 +572,7 @@ class legoHDL:
         if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == None):
             exit(log.error(err_msg))
         #ensure top has been identified for release
+        # :todo: allow user to specify what is top level explictly?
         top_dog,_,_ = block.identifyTopDog(None)
         #update block requirements
         _,block_order = self.formGraph(block, top_dog)
@@ -1336,7 +1336,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             top = package.lower()
             if(top == ''):
                 top = None
-            top_dog,_,_ = self.blockCWD.identifyTopDog(top)
+            inc_sim = (options.count('ignore-tb') == 0)
+            top_dog,_,_ = self.blockCWD.identifyTopDog(top, inc_sim=inc_sim)
             #generate dependency tree
             self.formGraph(self.blockCWD, top_dog)
             pass
@@ -1430,11 +1431,11 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             top = package.lower()
             if(top == ''):
                 top = None
-            self.export(self.blockCWD, top)
+            self.export(self.blockCWD, top, options)
             pass
 
         elif(command == "run" and self.blockCWD.isValid()):
-            self.export(self.blockCWD)
+            self.export(self.blockCWD, options)
             self.build(value)
             pass
 

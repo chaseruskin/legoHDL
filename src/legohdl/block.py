@@ -1273,7 +1273,6 @@ class Block:
         units = self.grabCurrentDesigns()
         benches = []
         for unit in units[self.getLib()].values():
-            print(unit)
             for dep in unit.getRequirements():
                 if(dep.getLib() == self.getLib() and dep.getName() == entity_name and unit.isTB()):
                     benches.append(unit)
@@ -1325,16 +1324,18 @@ class Block:
         self.grabUnits()
 
         tb = top = None
-        top_dog = top_entity.getName()
+        top_dog = top_entity
         if(top_entity.isTB()):
             tb = top_dog
         else:
             top = top_dog
             if(inc_sim):
-                tb = self.identifyBench(top)
+                tb = self.identifyBench(top.getName())
                 if(tb != None):
-                    tb = tb.getName()
-        
+                    top_dog = tb
+        #return the name of the top entity
+        if(isinstance(top_dog, Unit)):
+            top_dog = top_dog.getName()
         # :todo: save appropiate changes to Block.cfg file?
         return top_dog,top,tb
 
