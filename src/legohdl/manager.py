@@ -1227,7 +1227,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             self.db.sync('')
 
         #is the user trying to shortcut?
-        if(L == '' and cmd != 'new' and self.db.canShortcut(N)):
+        if(apt.inWorkspace() and L == '' and cmd != 'new' and self.db.canShortcut(N)):
             #rewrite MLNV based on shortcut if possible
             M,L,N,_ = self.db.shortcut(N)
             if(cmd != 'export' and cmd != 'graph' and cmd != 'run' and cmd != 'build'):
