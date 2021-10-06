@@ -18,6 +18,6 @@ jobs:
       - run: legohdl show mux_2x1
       - run: legohdl show sample.mux_2x1 -version
       - run: legohdl port sample.mux_2x1 -map
-      - run: legohdl config "/bin/bash cd" -editor
+      - run: legohdl config "/bin/bash" -editor
       - run: legohdl open prj1
       - run: legohdl graph
