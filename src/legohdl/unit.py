@@ -170,7 +170,7 @@ class Unit:
 
     def __repr__(self):
         report = f'''
-{self._lib}.{self._block}:{self._unit} | {self._filepath} | {self._dtype} | {self._language}
+{self._lib}.{self._block}:{self._unit} | {self._filepath} | {self._dtype} | {self._language} | {self._arcs} | TB: {self.isTB()}
 requires:\n'''
         for dep in self.getRequirements():
             report = report + '-'+dep.getLib()+'.'+dep.getBlock()+'.'+dep.getName()+"\n"

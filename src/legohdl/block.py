@@ -1269,10 +1269,11 @@ class Block:
         '''
         if(hasattr(self, "_bench")):
             return self._bench
-        units = self.grabUnits()
+        self.grabUnits()
+        units = self.grabCurrentDesigns()
         benches = []
         for unit in units[self.getLib()].values():
-            #print(unit)
+            print(unit)
             for dep in unit.getRequirements():
                 if(dep.getLib() == self.getLib() and dep.getName() == entity_name and unit.isTB()):
                     benches.append(unit)
@@ -1311,27 +1312,28 @@ class Block:
         #return the entity
         return self._bench
 
-    def identifyTopDog(self, top, tb):
+    def identifyTopDog(self, top, inc_sim=True):
         '''
         Determine what unit is utmost highest, whether it be a testbench
         (if applicable) or entity.
         '''
-        #override auto detection
-        if(top == None):
-            top_ent = self.identifyTop()
-            if(top_ent != None):
-                top = top_ent.getName()
-        top_dog = top
-        #find the top's testbench
-        bench_ent = self.identifyBench(top)
-        #override auto detection if manually set testbench
-        if(tb != None):
-            top_dog = tb
-        #set auto detected testbench
-        elif(bench_ent != None):
-            #print(bench_ent)
-            tb = bench_ent.getName()
-            top_dog = tb
+        cur_lib = self.grabCurrentDesigns()[self.getLib()]
+        if(top.lower() not in cur_lib.keys()):
+            exit(log.error("Entity "+top+" not found in current block."))
+        
+        top_entity = cur_lib[top.lower()]
+        self.grabUnits()
+
+        tb = top = None
+        top_dog = top_entity.getName()
+        if(top_entity.isTB()):
+            tb = top_dog
+        else:
+            top = top_dog
+            if(inc_sim):
+                tb = self.identifyBench(top)
+                if(tb != None):
+                    tb = tb.getName()
         
         # :todo: save appropiate changes to Block.cfg file?
         return top_dog,top,tb

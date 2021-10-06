@@ -309,7 +309,8 @@ class legoHDL:
 
         log.info("Finding toplevel design...")
 
-        top_dog,top,tb = block.identifyTopDog(top, None)
+        top_dog,top,tb = block.identifyTopDog(top)
+        print(top_dog,top,tb)
         
         output = open(build_dir+"recipe", 'w')    
 
@@ -572,7 +573,7 @@ class legoHDL:
         if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == None):
             exit(log.error(err_msg))
         #ensure top has been identified for release
-        top_dog,_,_ = block.identifyTopDog(None, None)
+        top_dog,_,_ = block.identifyTopDog(None)
         #update block requirements
         _,block_order = self.formGraph(block, top_dog)
         block.updateDerivatives(block_order)
@@ -1335,7 +1336,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             top = package.lower()
             if(top == ''):
                 top = None
-            top_dog,_,_ = self.blockCWD.identifyTopDog(top, None)
+            top_dog,_,_ = self.blockCWD.identifyTopDog(top)
             #generate dependency tree
             self.formGraph(self.blockCWD, top_dog)
             pass
