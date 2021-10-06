@@ -1317,10 +1317,18 @@ class Block:
         (if applicable) or entity.
         '''
         cur_lib = self.grabCurrentDesigns()[self.getLib()]
-        if(top.lower() not in cur_lib.keys()):
+
+        if(top == None):
+            top = self.identifyTop()
+            if(top != None):
+                top = top.getName()
+        
+        if(top == None or top.lower() not in cur_lib.keys()):
             exit(log.error("Entity "+top+" not found in current block."))
         
+        #get the unit from the currently available project-level blocks
         top_entity = cur_lib[top.lower()]
+        #fill in all unit data
         self.grabUnits()
 
         tb = top = None
