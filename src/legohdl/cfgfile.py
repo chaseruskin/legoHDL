@@ -14,6 +14,7 @@ class CfgFile:
     COMMENT = ';','#'
     SPACES = ' '*4
     TAB = '\t'
+    QUOTES = '\'\"'
 
     HEADER = '[]'
     VAR = '='
@@ -68,6 +69,7 @@ class CfgFile:
         tmp = [] # temporary list used to store an assigned list
         line_cnt = 0 # track the current line being read
         bracket_cnt = 0 # count if we are inside a list
+        in_quote = False # stay in assignment if in quote
         #store the last variable's name and value
         last_var = {'key' : None, 'val' : None} 
 
@@ -78,8 +80,13 @@ class CfgFile:
 
             #trim line from comment markers
             for C in cls.COMMENT:
-                if(line.count(C)):
-                    line = line[:line.find(C)]
+                if(line.count(C) and in_quote == False):
+                    #trim line only if before a quote
+                    c_i = line.find(C)
+                    q1_i = line.find(cls.QUOTES[0])
+                    q2_i = line.find(cls.QUOTES[1])
+                    if((q1_i == -1 or c_i < q1_i) and (q2_i == -1 or c_i < q2_i)):
+                        line = line[:line.find(C)]
             pass
             #skip blank lines
             if(len(line.strip()) == 0):
@@ -98,7 +105,7 @@ class CfgFile:
             lvl = int((lvl-tabs)/len(cls.SPACES))+tabs
 
             #identify headers
-            if(line.strip().startswith(cls.HEADER[0]) and line.strip().endswith(cls.HEADER[1])):
+            if(not in_quote and line.strip().startswith(cls.HEADER[0]) and line.strip().endswith(cls.HEADER[1])):
                 #every header is 1-deep if ignore scopes
                 if(ignore_depth):
                     lvl = 0
@@ -118,8 +125,10 @@ class CfgFile:
             sep = line.find(cls.VAR)
             if(sep > -1):
                 key = line[:sep].strip()
-                #strip excessive whitespace and quotes
-                value = line[sep+1:].strip().replace('\'', '').replace('\"', '')
+                #strip excessive whitespaces
+                value = line[sep+1:].strip()
+                #update if we are in quotes
+                in_quote = in_quote ^ (value.count(cls.QUOTES[0]) + value.count(cls.QUOTES[1])) % 2 == 1
 
                 if(ignore_depth and len(scope)):
                     lvl = 1
@@ -142,8 +151,10 @@ class CfgFile:
                     map = tunnel(map, key, scope, value)
                     
             elif(bracket_cnt):
-                #strip excessive whitesapce and quotes
-                value = line.strip().replace('\'', '').replace('\"', '')
+                #strip excessive whitespae and quotes
+                value = line.strip()
+                #update if we are in quotes
+                in_quote = in_quote ^ (value.count(cls.QUOTES[0]) + value.count(cls.QUOTES[1])) % 2 == 1
                 #update the bracket count and other temporary value for the current variable
                 bracket_cnt, tmp = collectList(bracket_cnt, value, tmp)
                 #finalize into dictionary
@@ -153,8 +164,9 @@ class CfgFile:
             #evaluate if no '=' sign is on this line and not a header line
             elif(last_var['key'] != None):
                 #extended line string
-                ext_value = line.strip().replace('\'', '').replace('\"', '')
+                ext_value = line.strip()
                 if(len(ext_value)):
+                    in_quote = in_quote ^ (ext_value.count(cls.QUOTES[0]) + ext_value.count(cls.QUOTES[1])) % 2 == 1
                     #automatically insert space between the different lines
                     last_var['val'] = last_var['val'] + ' ' +ext_value
                     map = tunnel(map, last_var['key'], scope, last_var['val'])
@@ -243,6 +255,7 @@ class CfgFile:
                         #write over to new line on overflow (exceed 80 chars)
                         cursor = 0
                         first_word = True
+                        exceeded = False
                         words = mp.split()
                         for w in words:
                             if(first_word):
@@ -250,9 +263,9 @@ class CfgFile:
                             cursor += len(w+' ')
                             #evaluate before writing
                             if(cursor+l_len >= 80):
+                                exceeded = True
                                 datafile.write('\n')
-                                if(w != words[-1]):
-                                    datafile.write(' '*l_len)
+                                datafile.write(' '*l_len)
                                 cursor = 0
                             if(not first_word):
                                 datafile.write(w+' ')
@@ -260,6 +273,8 @@ class CfgFile:
                             first_word = (cursor == 0)
 
                         if(cursor != 0 or len(mp) == 0):
+                            datafile.write('\n')
+                        if(exceeded):
                             datafile.write('\n')
                     #write the value as-is
                     else:
