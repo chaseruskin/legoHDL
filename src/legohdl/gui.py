@@ -15,6 +15,7 @@ from .apparatus import Apparatus as apt
 import_success = True
 try:
     import tkinter as tk
+    from tkinter.ttk import *
 except ModuleNotFoundError:
     import_success = False
 
@@ -69,8 +70,8 @@ class GUI:
 
         #create the main divisions
         menu_frame = tk.PanedWindow(self._window, width=menu_width, height=self.getH())
-        self._field_frame = tk.Frame(self._window, bg=self._field_bg, width=field_width, height=field_height,relief=tk.RAISED)
-        bar_frame = tk.Frame(self._window, width=field_width, height=bar_height)
+        self._field_frame = tk.LabelFrame(self._window, text='test', bg=self._field_bg, width=field_width, height=field_height, relief=tk.RAISED, padx=20, pady=20)
+        bar_frame = tk.Frame(self._window, width=field_width, height=bar_height, relief=tk.SUNKEN)
         # don't resize frames to fit content
         bar_frame.grid_propagate(0)
         self._field_frame.grid_propagate(0)
@@ -86,7 +87,7 @@ class GUI:
         # --- menu pane ---
         #configure side menu
         items = tk.StringVar(value=list(apt.SETTINGS.keys()))
-        self._menu_list = tk.Listbox(self._window, listvariable=items, selectmode='single')
+        self._menu_list = tk.Listbox(self._window, listvariable=items, selectmode='single', relief=tk.SUNKEN)
         #configure actions when pressing a menu item
         self._menu_list.bind('<Double-1>', self.select)
         #add to the pane
@@ -152,57 +153,112 @@ class GUI:
         #clear all widgets from the frame
         self.clrFieldFrame()
         #re-write section title widget
-        self._field_title = tk.Label(self._field_frame, text=section, bg=self._field_bg)
-        self._field_title.place(x=self.offsetW(0.45,w))
-        i = 0.12
+        self._field_frame.config(text=section)
+        #self._field_title = tk.Label(self._field_frame, text=section, bg=self._field_bg, bd=5)
+        #self._field_title.grid(row=0, column=0)
 
-        def display_fields(field_map, i=0.1):
+        def display_fields(field_map, i=0):
             for field,value in field_map.items():
                 #create widgets
                 widg = tk.Label(self._field_frame, text=field, bg=self._field_bg)
-                widg.place(x=self.offsetW(0.1,w), y=self.offsetH(i,h))
+                widg.grid(row=i, column=0, padx=10, pady=10)
+                #widg.place(x=self.offsetW(0.1,w), y=self.offsetH(i,h))
                 
                 if(isinstance(value, str) or value == None):
-                    entry = tk.Entry(self._field_frame, background='white', width=40)
-                    if(value == None):
-                        value = ''
-                    entry.insert(tk.END, str(value))
-                    entry.place(x=self.offsetW(0.3,w), y=self.offsetH(i,h))
+                    #special case for 'active-workspace'
+                    if(field == 'active-workspace'):
+                        sel = tk.StringVar()
+                        sel.set(apt.SETTINGS['general']['active-workspace'])
+                        entry = tk.ttk.Combobox(self._field_frame, textvariable=sel, values=list(apt.SETTINGS['workspace'].keys()))
+                    else:
+                        entry = tk.Entry(self._field_frame, width=40, relief=tk.RIDGE, background='white', bd=1)
+                        if(value == None):
+                            value = ''
+                        entry.insert(tk.END, str(value))
+                    entry.grid(row=i, column=2, columnspan=2, padx=10, pady=10)
+                    #entry.place(x=self.offsetW(0.3,w), y=self.offsetH(i,h))
                 elif(isinstance(value, bool)):
                     swt_var = tk.IntVar()
                     swt_var.set(1)
                     
-                    box = tk.Radiobutton(self._field_frame, indicatoron=0, text='on', variable=swt_var, value=1, width=8)
-                    box2 = tk.Radiobutton(self._field_frame, indicatoron=0, text='off', variable=swt_var, value=0, width=8)
+                    box = tk.Radiobutton(self._field_frame, indicatoron=0, text='on', variable=swt_var, value=1, width=8, bd=1)
+                    box2 = tk.Radiobutton(self._field_frame, indicatoron=0, text='off', variable=swt_var, value=0, width=8, bd=1)
                     
-                    box.place(x=self.offsetW(0.3,w), y=self.offsetH(i,h))
-                    box2.place(x=self.offsetW(0.45,w), y=self.offsetH(i,h))
-                i += 0.1
+                    box.grid(row=i, column=2, padx=10, pady=10)
+                    box2.grid(row=i, column=3, padx=10, pady=10)
+                elif(isinstance(value, int)):
+                    #
+                    wheel = tk.ttk.Spinbox(self._field_frame, from_=-1, to=1440, textvariable=value, wrap=True, )
+                    wheel.grid(row=i, column=2, columnspan=2, padx=10, pady=10)
+                i += 1
                 if(isinstance(value,dict)):
                     #print(value)
                     i = display_fields(value, i)
-                    #entry = tk.Entry(self._field_frame, background='white', width=40)
-                    #entry.insert(tk.END, str(value))
-                    #entry.place(x=self.offsetW(0.1,w), y=self.offsetH(i,h))
             return i
-            pass
-
-        display_fields(apt.SETTINGS[section])
+        
+        def labelTable(sect):
+            table = tk.ttk.Treeview(self._field_frame, column=("c1", "c2"), show='headings')
+            table.column("#1", anchor=tk.CENTER)
+            table.heading("#1", text="Label Name (@)")
+            table.column("#2", anchor=tk.CENTER)
+            table.heading("#2", text="File extension")
+            i = 0
+            for key,value in apt.SETTINGS[section][sect].items():
+                table.insert(parent='', index='end', iid=i, text='', values=(key,value))
+                i+=1
+            return table
 
         if(section == 'general'):
-            #addition = tk.Button(self._field_frame, text='+', relief=tk.RAISED, bg=self._field_bg)
             #map widgets
+            display_fields(apt.SETTINGS[section])
             
-            #addition.place(x=self.offsetW(0.8,w), y=self.offsetH(0.3,h))
             pass
         elif(section == 'label'):
             #create widgets
-            #entry = tk.Entry(self._field_frame, background='white')
-            #map widgets
-            #entry.place(x=self.offsetW(0.1,w), y=self.offsetH(0.8,h))
+            #create table for shallow field
+            self._field_frame.columnconfigure(3, minsize=9)
+            #incorporate into table
+            #scrollbar = tk.Scrollbar(self._window)
+            #scrollbar.grid(row=0, column=2)
+
+            # -- LEFT SIDE FRAME FOR TABLE OPTIONS -- 
+            side_frame = tk.Frame(self._field_frame)
+            #place side frame within field frame
+            side_frame.grid(row=1,column=0)
+
+            #'shallow' text
+            widg = tk.Label(self._field_frame, text='shallow', bg=self._field_bg, relief=tk.RAISED)
+            widg.grid(row=0, column=0, padx=10, pady=10)
+            #addition button
+            widg = tk.Label(side_frame, text=' + ', bg=self._field_bg, relief=tk.RAISED)
+            widg.pack()
+            #deletion button
+            widg = tk.Label(side_frame, text=' - ', bg=self._field_bg, relief=tk.RAISED)
+            widg.pack()
+
+            #create data table for 'shallow'
+            table = labelTable('shallow')
+            table.grid(row=1, column=1, columnspan=2)
+
+            #'recursive' text
+            widg = tk.Label(self._field_frame, text='recursive', bg=self._field_bg, relief=tk.RAISED)
+            widg.grid(row=2, column=0, padx=10, pady=10)
+
+            #create data table for 'recursive'
+            table = labelTable('recursive')
+            table.grid(row=3, column=1, columnspan=2)
             pass
         elif(section == 'script'):
-
+            table = tk.ttk.Treeview(self._field_frame, column=("c1", "c2"), show='headings',)
+            table.column("#1", anchor=tk.W, width=100)
+            table.heading("#1", text="Alias")
+            table.column("#2", anchor=tk.W, width=w-100-40)
+            table.heading("#2", text="Command")
+            i = 0
+            for key,value in apt.SETTINGS[section].items():
+                table.insert(parent='', index='end', iid=i, text='', values=(key,value))
+                i+=1
+            table.pack(fill='both', expand=1)
             pass
         elif(section == 'workspace'):
 
