@@ -9,11 +9,11 @@
 
 import logging as log
 import os
+from .apparatus import Apparatus as apt
 
 import_success = True
 try:
     import tkinter as tk
-    from tkinter.messagebox import showinfo
 except ModuleNotFoundError:
     import_success = False
 
@@ -84,7 +84,7 @@ class GUI:
     
         # --- menu pane ---
         #configure side menu
-        items = tk.StringVar(value=['general','label','script','workspace','market'])
+        items = tk.StringVar(value=list(apt.SETTINGS.keys()))
         self._menu_list = tk.Listbox(self._window, listvariable=items, selectmode='single')
         #configure actions when pressing a menu item
         self._menu_list.bind('<Double-1>', self.select)
@@ -157,10 +157,15 @@ class GUI:
         if(section == 'general'):
             #create widgets
             entry = tk.Entry(self._field_frame, background='white')
-            entry.insert(tk.END, "code")
+            entry.insert(tk.END, 'code')
+            i = 0
+            for field in apt.SETTINGS[section].keys():
+                widg = tk.Label(self._field_frame, text=field, bg=self._field_bg)
+                widg.place(x=self.offsetW(0.1,w), y=self.offsetH(i,h))
+                i += 0.1
             addition = tk.Button(self._field_frame, text='+', relief=tk.RAISED, bg=self._field_bg)
             #map widgets
-            entry.place(x=self.offsetW(0.1,w), y=self.offsetH(0.3,h))
+            entry.place(x=self.offsetW(0.5,w), y=self.offsetH(0.1,h))
             addition.place(x=self.offsetW(0.8,w), y=self.offsetH(0.3,h))
             pass
         elif(section == 'label'):
