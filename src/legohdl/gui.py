@@ -42,7 +42,10 @@ class GUI:
 
         self.initPanes()
         #enter main loop
-        self._window.mainloop()
+        try:
+            self._window.mainloop()
+        except KeyboardInterrupt:
+            log.info("Exiting GUI...")
         pass
 
     def getW(self):
