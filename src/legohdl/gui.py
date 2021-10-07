@@ -8,7 +8,7 @@
 ################################################################################
 
 import logging as log
-
+import os
 
 import_success = True
 try:
@@ -29,7 +29,9 @@ class GUI:
         
         self._window = tk.Tk()
         #add icon
-        img = tk.Image("photo", file='./docs/legohdl_icon.gif')
+        file_path = os.path.realpath(__file__)
+        head,_ = os.path.split(file_path)
+        img = tk.Image("photo", file=head+'/data/icon.gif')
         self._window.tk.call('wm','iconphoto', self._window._w, img)
         #set the window size
         self._width,self._height = 800,600
