@@ -8,6 +8,7 @@
 ################################################################################
 
 import os, sys, shutil
+import subprocess
 import git
 import logging as log
 from .block import Block
@@ -17,6 +18,7 @@ from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
 from .market import Market
 from .unit import Unit
+from .gui import GUI
 
 class legoHDL:
 
@@ -1477,8 +1479,10 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                     log.error("No profile exists as "+value)
             #open settings
             elif(options.count("settings")):
-                log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
-                apt.execute(apt.SETTINGS['general']['editor'], apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
+                settings_gui = GUI()
+                if(settings_gui.initialized() == False):
+                    log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
+                    apt.execute(apt.SETTINGS['general']['editor'], apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
             #open block
             elif(valid):
                 self.blockPKG.load()
@@ -1789,7 +1793,7 @@ the script named 'master'. If only 1 script is configured, it will default to th
             print()
             print('{:<16}'.format("..."),"arguments to be passed to the called script")
         elif(cmd == "graph"):
-            printFmt("graph","[<toplevel>]")
+            printFmt("graph","[<toplevel>] [-ignore-tb]")
             rollover("""
 Create the dependency tree for the current design. This command is used as an aide and will not
 alter the Block.cfg file. The toplevel and testbench will be auto-detected and ask
@@ -1798,6 +1802,8 @@ will be ultimately combined. If the toplevel is not a testbench, legohdl will at
 respective testbench and add it to the graph.
             """)
             print('{:<16}'.format("<toplevel>"),"explicitly set the toplevel entity/module")
+            print()
+            print('{:<16}'.format("-ignore-tb"),"do not include toplevel testbenchs")
         elif(cmd == "update"):
             printFmt("update","<block>")
             printFmt("update","<profile> -profile",quiet=True)
@@ -1812,7 +1818,7 @@ if it is a repository and has a remote URL.
             print('{:<16}'.format("-profile"),"indicate that a profile is being targeted for an update")
             pass
         elif(cmd == "export"):
-            printFmt("export","[<toplevel>]")
+            printFmt("export","[<toplevel>] [-ignore-tb]")
             rollover("""
 Create the dependency tree for the current design and generate the recipe file. The recipe is stored
 into a clean directory called 'build' on every export. It will update the Block.cfg files with the
@@ -1821,6 +1827,8 @@ the user to select one if multiple exist. If the toplevel is not a testbench, le
 respective testbench and add it to the graph.
             """)
             print('{:<16}'.format("<toplevel>"),"explicitly set the toplevel entity/module")
+            print()
+            print('{:<16}'.format("-ignore-tb"),"do not include toplevel testbenchs")
             pass
         elif(cmd == "build"):
             printFmt("build","[+<script-name>]","[...]")
