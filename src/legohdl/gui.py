@@ -28,7 +28,9 @@ class GUI:
             return None
         
         self._window = tk.Tk()
-
+        #add icon
+        img = tk.Image("photo", file='./docs/legohdl_icon.gif')
+        self._window.tk.call('wm','iconphoto', self._window._w, img)
         #set the window size
         self._width,self._height = 800,600
         self._window.geometry(str(self.getW())+"x"+str(self.getH()))
@@ -68,9 +70,18 @@ class GUI:
         #configure field section
         self._fields = tk.Label(m1, text='general')
 
+        #configure save button
+        btn_save = tk.Button(m1, text='apply', command=self.save)
+        btn_save.pack()
+
         #add to the pane
         m1.add(self._menu_list, minsize=menu_width)
         m1.add(self._fields, minsize=field_width, padx=-100, pady=-200)
+        m1.add(btn_save)
+        pass
+
+    def save(self):
+        log.info("Settings saved.")
         pass
 
     def select(self, event):
@@ -78,6 +89,7 @@ class GUI:
         Based on button click, select which section to present in the fields
         area of the window.
         '''
+        print(event)
         i = self._menu_list.curselection()
         if i != ():
             sect = self._menu_list.get(i)  
