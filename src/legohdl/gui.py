@@ -56,32 +56,75 @@ class GUI:
 
     def initPanes(self):
         #divide window into 2 sections
-        m1 = tk.PanedWindow(self._window, orient='horizontal', sashrelief=tk.RAISED)
-        m1.pack(fill=tk.BOTH, expand=1)
+        #m1 = tk.PanedWindow(self._window, orient='horizontal', sashrelief=tk.RAISED)
         #configure size for both sections
         menu_width = int(self.getW()/4)
         field_width = self.getW() - menu_width
+        bar_height = int(self.getH()/10)
+        field_height = self.getH() - bar_height
+        field_bg = '#CCCCCC'
 
+        #create the main divisions
+        menu_frame = tk.PanedWindow(self._window, width=menu_width, height=self.getH())
+        field_frame = tk.Frame(self._window, bg=field_bg, width=field_width, height=field_height,relief=tk.RAISED)
+        bar_frame = tk.Frame(self._window, width=field_width, height=bar_height)
+        # don't resize frames to fit content
+        bar_frame.grid_propagate(0)
+        field_frame.grid_propagate(0)
+
+        #layout all of the frames
+        self._window.grid_rowconfigure(1, weight=1)
+        self._window.grid_columnconfigure(0, weight=1)
+
+        menu_frame.grid(row=1, sticky='w')
+        field_frame.grid(row=1, sticky='nse')
+        bar_frame.grid(row=2, sticky='nsew')
+    
+        # --- menu pane ---
         #configure side menu
         items = tk.StringVar(value=['general','label','script','workspace','market'])
         self._menu_list = tk.Listbox(self._window, listvariable=items, selectmode='single')
-        self._menu_list.pack(side=tk.LEFT)
-
         #configure actions when pressing a menu item
         self._menu_list.bind('<Double-1>', self.select)
-
-        #configure field section
-        self._fields = tk.Label(m1, text='general')
-
-        #configure save button
-        btn_save = tk.Button(m1, text='apply', command=self.save)
-        btn_save.pack()
-
         #add to the pane
-        m1.add(self._menu_list, minsize=menu_width)
-        m1.add(self._fields, minsize=field_width, padx=-100, pady=-200)
-        m1.add(btn_save)
+        menu_frame.add(self._menu_list)
+
+        # --- field frame ---
+        #configure field frame widgets
+        self._field_title = tk.Label(field_frame, text='general', bg=field_bg)
+        entry = tk.Entry(field_frame, background='white')
+        addition = tk.Button(field_frame, text='+', relief=tk.RAISED, bg=field_bg)
+
+        #place on field frame
+        self._field_title.place(x=self.offsetW(0.45,field_width))
+        entry.place(x=self.offsetW(0.1,field_width), y=self.offsetH(0.3,field_height))
+        addition.place(x=self.offsetW(0.8,field_width), y=self.offsetH(0.3,field_height))
+
+        # --- bar frame ---
+        #configure bar frame widgets
+        btn_save = tk.Button(bar_frame, text='apply', command=self.save, relief=tk.RAISED)
+        btn_cancel = tk.Button(bar_frame, text='cancel', command=self._window.quit, relief=tk.RAISED)
+
+        #place on bar frame
+        btn_save.place(x=self.offsetW(-0.3),y=self.offsetH(0.2, bar_height))
+        btn_cancel.place(x=self.offsetW(-0.18),y=self.offsetH(0.2, bar_height))
         pass
+
+    def offsetW(self, f, w=None):
+        if(w == None):
+            w = self.getW()
+        if(f < 0):
+            return w+int(w*f)
+        else:
+            return int(w*f)
+
+    def offsetH(self, f, h=None):
+        if(h == None):
+            h = self.getH()
+        if(f < 0):
+            return h-int(h*f)
+        else:
+            return int(h*f)
 
     def save(self):
         log.info("Settings saved.")
@@ -92,12 +135,12 @@ class GUI:
         Based on button click, select which section to present in the fields
         area of the window.
         '''
-        print(event)
+        #print(event)
         i = self._menu_list.curselection()
         if i != ():
             sect = self._menu_list.get(i)  
             print('selected:',sect)
-            self._fields.config(text=sect)
+            self._field_title.config(text=sect)
             self.load(section=sect)
         #sample of using showinfo
         #showinfo(title='info',message='selected')
