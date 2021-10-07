@@ -62,22 +62,22 @@ class GUI:
         field_width = self.getW() - menu_width
         bar_height = int(self.getH()/10)
         field_height = self.getH() - bar_height
-        field_bg = '#CCCCCC'
+        self._field_bg = '#CCCCCC'
 
         #create the main divisions
         menu_frame = tk.PanedWindow(self._window, width=menu_width, height=self.getH())
-        field_frame = tk.Frame(self._window, bg=field_bg, width=field_width, height=field_height,relief=tk.RAISED)
+        self._field_frame = tk.Frame(self._window, bg=self._field_bg, width=field_width, height=field_height,relief=tk.RAISED)
         bar_frame = tk.Frame(self._window, width=field_width, height=bar_height)
         # don't resize frames to fit content
         bar_frame.grid_propagate(0)
-        field_frame.grid_propagate(0)
+        self._field_frame.grid_propagate(0)
 
         #layout all of the frames
         self._window.grid_rowconfigure(1, weight=1)
         self._window.grid_columnconfigure(0, weight=1)
 
         menu_frame.grid(row=1, sticky='w')
-        field_frame.grid(row=1, sticky='nse')
+        self._field_frame.grid(row=1, sticky='nse')
         bar_frame.grid(row=2, sticky='nsew')
     
         # --- menu pane ---
@@ -91,14 +91,9 @@ class GUI:
 
         # --- field frame ---
         #configure field frame widgets
-        self._field_title = tk.Label(field_frame, text='general', bg=field_bg)
-        entry = tk.Entry(field_frame, background='white')
-        addition = tk.Button(field_frame, text='+', relief=tk.RAISED, bg=field_bg)
-
-        #place on field frame
-        self._field_title.place(x=self.offsetW(0.45,field_width))
-        entry.place(x=self.offsetW(0.1,field_width), y=self.offsetH(0.3,field_height))
-        addition.place(x=self.offsetW(0.8,field_width), y=self.offsetH(0.3,field_height))
+        self._field_title = tk.Label(self._field_frame, text='general', bg=self._field_bg)
+        self._cur_widgets = []
+        self.load('general')
 
         # --- bar frame ---
         #configure bar frame widgets
@@ -109,6 +104,10 @@ class GUI:
         btn_save.place(x=self.offsetW(-0.3),y=self.offsetH(0.2, bar_height))
         btn_cancel.place(x=self.offsetW(-0.18),y=self.offsetH(0.2, bar_height))
         pass
+
+    def clrFieldFrame(self):
+        for widgets in self._field_frame.winfo_children():
+            widgets.destroy()
 
     def offsetW(self, f, w=None):
         if(w == None):
@@ -135,24 +134,38 @@ class GUI:
         Based on button click, select which section to present in the fields
         area of the window.
         '''
-        #print(event)
         i = self._menu_list.curselection()
         if i != ():
             sect = self._menu_list.get(i)  
-            print('selected:',sect)
-            self._field_title.config(text=sect)
             self.load(section=sect)
-        #sample of using showinfo
-        #showinfo(title='info',message='selected')
         pass
 
     def load(self, section):
         print('Loading',section+'...')
-        if(section == 'general'):
+        #refresh to get w and h
+        self._window.update_idletasks()
+        w = self._field_frame.winfo_width()
+        h = self._field_frame.winfo_height()
+        #clear all widgets from the frame
+        self.clrFieldFrame()
+        #re-write section title widget
+        self._field_title = tk.Label(self._field_frame, text=section, bg=self._field_bg)
+        self._field_title.place(x=self.offsetW(0.45,w))
 
+        if(section == 'general'):
+            #create widgets
+            entry = tk.Entry(self._field_frame, background='white')
+            entry.insert(tk.END, "code")
+            addition = tk.Button(self._field_frame, text='+', relief=tk.RAISED, bg=self._field_bg)
+            #map widgets
+            entry.place(x=self.offsetW(0.1,w), y=self.offsetH(0.3,h))
+            addition.place(x=self.offsetW(0.8,w), y=self.offsetH(0.3,h))
             pass
         elif(section == 'label'):
-
+            #create widgets
+            entry = tk.Entry(self._field_frame, background='white')
+            #map widgets
+            entry.place(x=self.offsetW(0.1,w), y=self.offsetH(0.8,h))
             pass
         elif(section == 'script'):
 
