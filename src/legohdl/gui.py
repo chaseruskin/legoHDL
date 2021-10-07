@@ -9,6 +9,7 @@
 
 import logging as log
 import os
+from tkinter.constants import ON
 from .apparatus import Apparatus as apt
 
 import_success = True
@@ -153,26 +154,52 @@ class GUI:
         #re-write section title widget
         self._field_title = tk.Label(self._field_frame, text=section, bg=self._field_bg)
         self._field_title.place(x=self.offsetW(0.45,w))
+        i = 0.12
 
-        if(section == 'general'):
-            #create widgets
-            entry = tk.Entry(self._field_frame, background='white')
-            entry.insert(tk.END, 'code')
-            i = 0
-            for field in apt.SETTINGS[section].keys():
+        def display_fields(field_map, i=0.1):
+            for field,value in field_map.items():
+                #create widgets
                 widg = tk.Label(self._field_frame, text=field, bg=self._field_bg)
                 widg.place(x=self.offsetW(0.1,w), y=self.offsetH(i,h))
+                
+                if(isinstance(value, str) or value == None):
+                    entry = tk.Entry(self._field_frame, background='white', width=40)
+                    if(value == None):
+                        value = ''
+                    entry.insert(tk.END, str(value))
+                    entry.place(x=self.offsetW(0.3,w), y=self.offsetH(i,h))
+                elif(isinstance(value, bool)):
+                    swt_var = tk.IntVar()
+                    swt_var.set(1)
+                    
+                    box = tk.Radiobutton(self._field_frame, indicatoron=0, text='on', variable=swt_var, value=1, width=8)
+                    box2 = tk.Radiobutton(self._field_frame, indicatoron=0, text='off', variable=swt_var, value=0, width=8)
+                    
+                    box.place(x=self.offsetW(0.3,w), y=self.offsetH(i,h))
+                    box2.place(x=self.offsetW(0.45,w), y=self.offsetH(i,h))
                 i += 0.1
-            addition = tk.Button(self._field_frame, text='+', relief=tk.RAISED, bg=self._field_bg)
+                if(isinstance(value,dict)):
+                    #print(value)
+                    i = display_fields(value, i)
+                    #entry = tk.Entry(self._field_frame, background='white', width=40)
+                    #entry.insert(tk.END, str(value))
+                    #entry.place(x=self.offsetW(0.1,w), y=self.offsetH(i,h))
+            return i
+            pass
+
+        display_fields(apt.SETTINGS[section])
+
+        if(section == 'general'):
+            #addition = tk.Button(self._field_frame, text='+', relief=tk.RAISED, bg=self._field_bg)
             #map widgets
-            entry.place(x=self.offsetW(0.5,w), y=self.offsetH(0.1,h))
-            addition.place(x=self.offsetW(0.8,w), y=self.offsetH(0.3,h))
+            
+            #addition.place(x=self.offsetW(0.8,w), y=self.offsetH(0.3,h))
             pass
         elif(section == 'label'):
             #create widgets
-            entry = tk.Entry(self._field_frame, background='white')
+            #entry = tk.Entry(self._field_frame, background='white')
             #map widgets
-            entry.place(x=self.offsetW(0.1,w), y=self.offsetH(0.8,h))
+            #entry.place(x=self.offsetW(0.1,w), y=self.offsetH(0.8,h))
             pass
         elif(section == 'script'):
 
