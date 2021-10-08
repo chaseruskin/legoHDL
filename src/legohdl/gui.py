@@ -97,9 +97,6 @@ class GUI:
         #add to the pane
         menu_frame.add(self._menu_list)
 
-        # always start label section with shallow labels begin displayed
-        self._tgl_labels = tk.IntVar(value=1)
-
         # --- field frame ---
         #configure field frame widgets
         self.loadFields('general')
@@ -133,9 +130,33 @@ class GUI:
                         apt.SETTINGS[key][name] = field.get()
                     except:
                         pass
+                elif(key == 'script'):
+                    #load records directly from table for scripts
+                    self._tk_vars[key] = {}
+                    for record in self._tb.getAllValues():
+                        self._tk_vars[key][record[0]] = record[1]
+                    #copy dictionary back to settings
+                    apt.SETTINGS[key] = self._tk_vars[key].copy()
+                    #print('save dictionary values!')
                 #save all others
-                else:
+                elif(isinstance(field, dict) == False):
                     apt.SETTINGS[key][name] = field.get()
+                else:
+                    if(key == 'label'):
+                        #load records directly from table for recursive
+                        if(self._tgl_labels.get() == 0):
+                            self._tk_vars[key]['recursive'] = {}
+                            for record in self._tb.getAllValues():
+                                self._tk_vars[key]['recursive'][record[0]] = record[1]
+                        #load records directly from table for shallow
+                        else:
+                            self._tk_vars[key]['shallow'] = {}
+                            for record in self._tb.getAllValues():
+                                self._tk_vars[key]['shallow'][record[0]] = record[1]
+                        #copy dictionaries back to settings
+                        apt.SETTINGS[key]['shallow'] = self._tk_vars[key]['shallow'].copy()
+                        apt.SETTINGS[key]['recursive'] = self._tk_vars[key]['recursive'].copy()
+                        pass
 
         apt.save()
         log.info("Settings saved.")
@@ -165,7 +186,9 @@ class GUI:
         #clear tk vars dictionary
         self._tk_vars = {section : {}}
         #re-write section title widget
-        self._field_frame.config(text=section)
+        self._field_frame.config(text=section)        
+        # always start label section with shallow labels begin displayed
+        self._tgl_labels = tk.IntVar(value=1)
 
         # [!] load in legohdl.cfg variables
 
@@ -221,43 +244,57 @@ class GUI:
             display_fields(apt.SETTINGS[section])
             pass
         elif(section == 'label'):
+            #store 1-level dicionaries
+            self._tk_vars[section]['shallow'] = apt.SETTINGS[section]['shallow'].copy()
            
             def loadShallowTable(event=None):
+                #store recursive table
+                #print(self._tb.getAllValues())
+                self._tk_vars[section]['recursive'] = {}
+                for record in self._tb.getAllValues():
+                    self._tk_vars[section]['recursive'][record[0]] = record[1]
                 #clear all records
-                tb.clearRecords()
+                self._tb.clearRecords()
                 #load labels from shallow list
-                for key,val in apt.SETTINGS['label']['shallow'].items():
-                    tb.insertRecord([key,val])
+                for key,val in self._tk_vars[section]['shallow'].items():
+                    self._tb.insertRecord([key,val])
 
             def loadRecursiveTable(event=None):
+                #store shallow label
+                #print(self._tb.getAllValues())
+                self._tk_vars[section]['shallow'] = {}
+                for record in self._tb.getAllValues():
+                    self._tk_vars[section]['shallow'][record[0]] = record[1]
                 #clear all records
-                tb.clearRecords()
+                self._tb.clearRecords()
                 #load labels from recursive list
-                for key,val in apt.SETTINGS['label']['recursive'].items():
-                    tb.insertRecord([key,val])
+                for key,val in self._tk_vars[section]['recursive'].items():
+                    self._tb.insertRecord([key,val])
             
             ToggleSwitch(self._field_frame, 'shallow', 'recursive', row=0, col=0, state_var=self._tgl_labels, offCmd=loadRecursiveTable, onCmd=loadShallowTable)
             #create the table object
-            tb = Table(self._field_frame, 'Name (@)', 'File extension', row=1, col=0)
-            tb.mapPeripherals(self._field_frame)
+            self._tb = Table(self._field_frame, 'Name (@)', 'File extension', row=1, col=0)
+            self._tb.mapPeripherals(self._field_frame)
 
             #load the table elements from the settings
             loadShallowTable()
+            self._tk_vars[section]['recursive'] = apt.SETTINGS[section]['recursive'].copy()
             
             pass
         elif(section == 'script'):
+            self._tk_vars[section] = apt.SETTINGS[section].copy()
             #create the table object
-            tb = Table(self._field_frame, 'alias', 'command', row=0, col=0)
-            tb.mapPeripherals(self._field_frame)
+            self._tb = Table(self._field_frame, 'alias', 'command', row=0, col=0)
+            self._tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
-            for key,val in apt.SETTINGS['script'].items():
-                tb.insertRecord([key,val])
+            for key,val in self._tk_vars[section].items():
+                self._tb.insertRecord([key,val])
             pass
         elif(section == 'workspace'):
            
             #create the table object
-            tb = Table(self._field_frame, 'name', 'path', 'markets', row=0, col=0, rules=Table.workspaceRules)
-            tb.mapPeripherals(self._field_frame)
+            self._tb = Table(self._field_frame, 'name', 'path', 'markets', row=0, col=0, rules=Table.workspaceRules)
+            self._tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in apt.SETTINGS['workspace'].items():
                 fields = [key]+list(val.values())
@@ -269,15 +306,15 @@ class GUI:
                             str_list = str_list + str(f) + ','
                         fields[ii] = str_list
 
-                tb.insertRecord(fields)
+                self._tb.insertRecord(fields)
             pass
         elif(section == 'market'):
             #create the table object
-            tb = Table(self._field_frame, 'name', 'remote connection', row=0, col=0, rules=Table.marketRules)
-            tb.mapPeripherals(self._field_frame)
+            self._tb = Table(self._field_frame, 'name', 'remote connection', row=0, col=0, rules=Table.marketRules)
+            self._tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in apt.SETTINGS['market'].items():
-                tb.insertRecord([key,val])
+                self._tb.insertRecord([key,val])
             pass
 
     def center(self, win):
@@ -416,6 +453,16 @@ class Table:
         for value in self._tv.item(index)['values']:
             fields += [value]
         return fields
+
+    def getAllValues(self):
+        '''
+        Returns a list of data values for each index from the table.
+        '''
+        records = []
+        for i in self._tv.get_children():
+            records += [self.getValues(i)]
+        return records
+
 
     def mapPeripherals(self, field_frame, editable=True):
         #create frame for buttons to go into
