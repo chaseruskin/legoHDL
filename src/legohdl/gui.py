@@ -224,7 +224,7 @@ class GUI:
         elif(section == 'workspace'):
            
             #create the table object
-            tb = Table(self._field_frame, 'name', 'path', 'markets', row=0, col=0)
+            tb = Table(self._field_frame, 'name', 'path', 'markets', row=0, col=0, rules=Table.workspaceRules)
             tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in apt.SETTINGS['workspace'].items():
@@ -241,7 +241,7 @@ class GUI:
             pass
         elif(section == 'market'):
             #create the table object
-            tb = Table(self._field_frame, 'name', 'remote connection', row=0, col=0)
+            tb = Table(self._field_frame, 'name', 'remote connection', row=0, col=0, rules=Table.marketRules)
             tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in apt.SETTINGS['market'].items():
@@ -280,14 +280,18 @@ class GUI:
 
 class Table:
 
-    def __init__(self, tk_frame, *headers, row=0, col=0):
+    def __init__(self, tk_frame, *headers, row=0, col=0, rules=None):
         '''
         Create an editable tkinter treeview object as a table containing records.
         '''
          #create a new frame for the scripts table
         tb_frame = tk.Frame(tk_frame)
-        tb_frame.grid(row=row, column=col, columnspan=10, sticky='nsew')
+        tb_frame.grid(row=row, column=col, sticky='nsew')
         self._initial_row = row
+        #store the method in a variable that handles extra conditions for saving valid records
+        self._rules = rules
+        #tk.Label to print status of current command if necessary
+        self._status = None
 
         scroll_y = tk.Scrollbar(tb_frame)
         scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
@@ -297,8 +301,6 @@ class Table:
 
         self._tv = tk.ttk.Treeview(tb_frame, column=tuple(headers), show='headings', xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set, selectmode='browse')
         self._tv.pack(fill='both', expand=1)
-
-        self._tv.tag_configure('gray', background='#dddddd')
 
         scroll_y.config(command=self._tv.yview)
         scroll_x.config(command=self._tv.xview)
@@ -344,8 +346,7 @@ class Table:
         '''
         if(index == -1):
             index = self.getSize()
-        tag = 'white' if(self.getSize() % 2 == 0) else 'gray'
-        self._tv.insert(parent='', index=index, iid=self.assignID(), text='', values=tuple(data), tag=tag)
+        self._tv.insert(parent='', index=index, iid=self.assignID(), text='', values=tuple(data))
         self._size += 1
         pass
 
@@ -404,13 +405,16 @@ class Table:
         #delete button
         button = tk.Button(button_frame, text=' - ', command=self.handleRemove)
         button.pack(side=tk.LEFT, anchor='w', padx=2)
+
+        self._status = tk.Label(button_frame, text='')
+        self._status.pack(side=tk.RIGHT, anchor='e', padx=2)
         #divide up the entries among the frame width
         #text entries for editing
         entry_frame = tk.Frame(field_frame)
         entry_frame.grid(row=self._initial_row+1, column=0, sticky='ew')
         for ii in range(len(self.getHeaders())):
             if(ii == 0):
-                self._entries.append(tk.Entry(entry_frame, text='', width=20))
+                self._entries.append(tk.Entry(entry_frame, text='', width=12))
                 self._entries[-1].pack(side=tk.LEFT, fill='both')
             else:
                 self._entries.append(tk.Entry(entry_frame, text=''))
@@ -419,10 +423,111 @@ class Table:
         #return the next availble row for the field_frame
         return self._initial_row+3
 
+    def getAllRows(self, col, lower=True):
+        '''
+        This method returns a list of all the elements for a specific column.
+        '''
+        elements = []
+        for it in (self._tv.get_children()):
+            val = str(self.getValues(it)[col])
+            val = val.lower() if(lower) else val
+            elements += [val]
+        
+        print(elements)
+        return elements
 
-    def validEntry(self, data):
-        # :todo: define table data rules
-        return True
+    @classmethod
+    def marketRules(cls, self, data, new):
+        '''
+        Extra rules for adding/updating a market record.
+
+        Parameters
+        ---
+        self : table object instance using this method
+        data : list of the new record
+        new  : boolean if the record is trying to be appended (True) or inserted
+        '''
+        rename_atmpt = False
+        duplicate_remote = False
+        valid_remote = True
+
+        #cannot rename a market
+        if(new == False):
+            rename_atmpt = (data[0].lower() not in self.getAllRows(col=0, lower=True))
+            if(data[1] != ''):
+                data[1] = apt.fs(data[1])  
+                valid_remote = apt.isValidURL(data[1])
+
+        #cannot have duplicate remote connections
+        if(new == True and data[1] != ''):
+            data[1] = apt.fs(data[1])
+            duplicate_remote = (data[1].lower() in self.getAllRows(col=1, lower=True))
+            #try to link to remote
+            if(duplicate_remote == False):
+                valid_remote = apt.isValidURL(data[1])
+           
+        if(valid_remote == False):
+            tk.messagebox.showerror(title='Invalid Remote', message='This git remote repository does not exist.')
+        elif(rename_atmpt):
+            tk.messagebox.showerror(title='Failed Rename', message='A market cannot be renamed.')
+        elif(duplicate_remote):
+            tk.messagebox.showerror(title='Duplicate Remote', message='This market is already configured.')
+
+        return (not rename_atmpt) and (not duplicate_remote) and valid_remote
+
+    @classmethod
+    def workspaceRules(cls, self, data, new):
+        '''
+        Extra rules for adding/updating a workspace record.
+
+        Parameters
+        ---
+        self : table object instance using this method
+        data : list of the new record
+        new  : boolean if the record is trying to be appended (True) or inserted
+        '''
+        #must have a path
+        valid_path = data[1] != ''
+        rename_atmpt = False
+        
+        #cannot rename a workspace
+        if(new == False):
+            rename_atmpt = (data[0].lower() not in self.getAllRows(col=0, lower=True))
+        
+        if(valid_path == False):
+            tk.messagebox.showerror(title='Invalid Path', message='A workspace cannot have an empty path.')
+        elif(rename_atmpt):
+            tk.messagebox.showerror(title='Failed Rename', message='A workspace cannot be renamed.')
+        #print('workspace rules')
+        return valid_path and (not rename_atmpt)
+
+    def validEntry(self, data, new):
+        data = list(data)
+        all_blank = True
+        duplicate = False
+        extra_valid = True
+        #ensure the data has some fields completed
+        for d in data:
+            if(d != ''):
+                all_blank = False
+                break
+        #ensure the data is not a duplicate key
+        if(new == True):
+            col = 0
+            elements = self.getAllRows(col=col, lower=True)
+            duplicate = elements.count(data[col].lower())
+        
+        #define table data rules
+        if(self._rules != None):
+            extra_valid = self._rules(self, data, new)
+
+        if(extra_valid == False):
+            pass
+        elif(all_blank):
+            tk.messagebox.showerror(title='Empty Record', message='Cannot add an empty record.')
+        elif(duplicate):
+            tk.messagebox.showerror(title='Duplicate Key', message='A record already has that key.')
+        return (not all_blank) and (not duplicate) and extra_valid
 
     def handleUpdate(self):
         #get what record is selected
@@ -434,13 +539,15 @@ class Table:
         for ii in range(len(self.getEntries())):
             data += [self.getEntries()[ii].get()]
 
-        # :todo: define rules for updating data fields
-        if(self.validEntry(data)):
-            #now plug into selected space
-            self.replaceRecord(data, index=sel)
-            self.clearEntries()
-        else:
-            tk.messagebox.showerror(title='Invalid Entry', message='go gators')
+        #define rules for updating data fields
+        if(self.validEntry(data, new=False)):
+            #cannot reconfigure a market's remote connection if it already is established
+            if(self._rules != self.marketRules or self.getValues(sel)[1] == ''):
+                #now plug into selected space
+                self.replaceRecord(data, index=sel)
+                self.clearEntries()
+            else:
+                tk.messagebox.showerror(title='Market Configured', message='This market\'s remote configuration is locked.')
         pass
 
     def handleAppend(self):
@@ -449,7 +556,7 @@ class Table:
         for ii in range(len(self.getEntries())):
             data += [self.getEntries()[ii].get()]
 
-        if(self.validEntry(data)):
+        if(self.validEntry(data, new=True)):
             #now add to new space at end
             self.insertRecord(data)
             self.clearEntries()
@@ -460,12 +567,6 @@ class Table:
         if(sel == ''): return
         #delete the selected record
         self.removeRecord(int(sel))
-        #now reapply the toggle colors
-        i = 0
-        for it in list(self._tv.get_children()):
-            tag = 'white' if (i % 2 == 0) else 'gray'
-            self._tv.item(it, tag=tag)
-            i += 1
         pass
 
     def handleEdit(self):
@@ -475,9 +576,13 @@ class Table:
         data = self.getValues(sel)
         #clear any old values from entry boxes
         self.clearEntries()
-        #load the values into the entry boxes
-        for ii in range(len(data)):
-            self.getEntries()[ii].insert(0,str(data[ii]))
+        #ensure it is able to be edited (only for markets)
+        if(self._rules != self.marketRules or data[1] == ''):
+            #load the values into the entry boxes
+            for ii in range(len(data)):
+                self.getEntries()[ii].insert(0,str(data[ii]))
+        else:
+            tk.messagebox.showerror(title='Invalid Edit', message='This market cannot be edited.')
         pass
 
     def getTreeview(self):
