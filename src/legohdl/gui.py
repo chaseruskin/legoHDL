@@ -9,13 +9,13 @@
 
 import logging as log
 import os
-from tkinter.constants import ON
 from .apparatus import Apparatus as apt
 
 import_success = True
 try:
     import tkinter as tk
     from tkinter.ttk import *
+    from tkinter import messagebox
 except ModuleNotFoundError:
     import_success = False
 
@@ -378,10 +378,7 @@ class Table:
         '''
         if(index == -1):
             index = self.getSize()
-        if(self.getSize() % 2 == 0):
-            tag = 'white'
-        else:
-            tag = 'gray'
+        tag = 'white' if(self.getSize() % 2 == 0) else 'gray'
         self._tv.insert(parent='', index=index, iid=self.assignID(), text='', values=tuple(data), tag=tag)
         self._size += 1
         pass
@@ -422,34 +419,41 @@ class Table:
         return fields
 
     def mapPeripherals(self, field_frame, table_row, editable=True):
-        padx = 10
-        pady = 10
+        #create frame for buttons to go into
+        button_frame = tk.Frame(field_frame)
+        button_frame.grid(row=table_row+1, column=0, columnspan=10, sticky='ew')
         #addition button
-        button = tk.Button(field_frame, text='+', command=self.handleAppend)
-        button.grid(row=table_row+1, column=0, padx=padx, pady=pady, sticky='w')
+        button = tk.Button(button_frame, text='+', command=self.handleAppend)
+        button.pack(side=tk.LEFT, anchor='w')
 
         if(editable):
             #update button
-            button = tk.Button(field_frame, text='update', command=self.handleUpdate)
-            button.grid(row=table_row+1, column=1, padx=padx, pady=pady, sticky='w')
+            button = tk.Button(button_frame, text='update', command=self.handleUpdate)
+            button.pack(side=tk.LEFT, anchor='w')
             #edit button
-            button = tk.Button(field_frame, text='edit', command=self.handleEdit)
-            button.grid(row=table_row+1, column=2, padx=padx, pady=pady, sticky='w')
+            button = tk.Button(button_frame, text='edit', command=self.handleEdit)
+            button.pack(side=tk.LEFT, anchor='w')
+
         #delete button
-        button = tk.Button(field_frame, text='-', command=self.handleRemove)
-        button.grid(row=table_row+1, column=3, padx=padx, pady=pady, sticky='w')
+        button = tk.Button(button_frame, text='-', command=self.handleRemove)
+        button.pack(side=tk.LEFT, anchor='w')
         #divide up the entries among the frame width
         #text entries for editing
         for ii in range(len(self.getHeaders())):
             columnspan = 1
             if(ii == len(self.getHeaders())-1):
-                columnspan = 10
+                columnspan = 1
             
             self._entries.append(tk.Entry(field_frame, text=''))
             self._entries[-1].grid(row=table_row+2, column=ii, columnspan=columnspan, sticky='ew')
 
         #return the next availble row for the field_frame
         return table_row+3
+
+
+    def validEntry(self, data):
+        # :todo: define table data rules
+        return True
 
     def handleUpdate(self):
         #get what record is selected
@@ -460,12 +464,14 @@ class Table:
         data = []
         for ii in range(len(self.getEntries())):
             data += [self.getEntries()[ii].get()]
-            # :todo: define rules for updating data fields
 
-        #print(data,int(sel[0]))
-        #now plug into selected space
-        self.replaceRecord(data, index=sel)
-        self.clearEntries()
+        # :todo: define rules for updating data fields
+        if(self.validEntry(data)):
+            #now plug into selected space
+            self.replaceRecord(data, index=sel)
+            self.clearEntries()
+        else:
+            tk.messagebox.showerror(title='Invalid Entry', message='go gators')
         pass
 
     def handleAppend(self):
@@ -473,35 +479,36 @@ class Table:
         data = []
         for ii in range(len(self.getEntries())):
             data += [self.getEntries()[ii].get()]
-        self.insertRecord(data)
-        self.clearEntries()
+
+        if(self.validEntry(data)):
+            #now add to new space at end
+            self.insertRecord(data)
+            self.clearEntries()
+        pass
 
     def handleRemove(self):
         sel = self._tv.focus()
         if(sel == ''): return
+        #delete the selected record
         self.removeRecord(int(sel))
         #now reapply the toggle colors
         i = 0
         for it in list(self._tv.get_children()):
-            if(i % 2 == 0):
-                tag = 'white'
-            else:
-                tag = 'gray'
+            tag = 'white' if (i % 2 == 0) else 'gray'
             self._tv.item(it, tag=tag)
             i += 1
+        pass
 
     def handleEdit(self):
         sel = self._tv.focus()
         if(sel == ''): return
-
+        #grab the data available at the selected table element
         data = self.getValues(sel)
         #clear any old values from entry boxes
         self.clearEntries()
         #load the values into the entry boxes
         for ii in range(len(data)):
             self.getEntries()[ii].insert(0,str(data[ii]))
-            pass
-        
         pass
 
     def getTreeview(self):
