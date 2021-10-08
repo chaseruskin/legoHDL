@@ -62,7 +62,7 @@ class GUI:
         #divide window into 2 sections
         #m1 = tk.PanedWindow(self._window, orient='horizontal', sashrelief=tk.RAISED)
         #configure size for both sections
-        menu_width = int(self.getW()/4)
+        menu_width = int(self.getW()/6)
         field_width = self.getW() - menu_width
         bar_height = int(self.getH()/10)
         field_height = self.getH() - bar_height
@@ -97,7 +97,7 @@ class GUI:
         #configure field frame widgets
         self._field_title = tk.Label(self._field_frame, text='general', bg=self._field_bg)
         self._cur_widgets = []
-        self.load('general')
+        self.load('market')
 
         # --- bar frame ---
         #configure bar frame widgets
@@ -195,76 +195,75 @@ class GUI:
                     #print(value)
                     i = display_fields(value, i)
             return i
-        
-        def labelTable(sect):
-            table = tk.ttk.Treeview(self._field_frame, column=("c1", "c2"), show='headings')
-            table.column("#1", anchor=tk.CENTER)
-            table.heading("#1", text="Label Name (@)")
-            table.column("#2", anchor=tk.CENTER)
-            table.heading("#2", text="File extension")
-            i = 0
-            for key,value in apt.SETTINGS[section][sect].items():
-                table.insert(parent='', index='end', iid=i, text='', values=(key,value))
-                i+=1
-            return table
 
         if(section == 'general'):
             #map widgets
             display_fields(apt.SETTINGS[section])
-            
             pass
         elif(section == 'label'):
-            #create widgets
-            #create table for shallow field
-            self._field_frame.columnconfigure(3, minsize=9)
-            #incorporate into table
-            #scrollbar = tk.Scrollbar(self._window)
-            #scrollbar.grid(row=0, column=2)
+            #shallow table
+            #create a new frame for the scripts table
+            m_frame = tk.Frame(self._field_frame)
+            m_frame.grid(row=0,column=0, columnspan=100)
+            #create the table object
+            tb = Table(m_frame, 'Name (@)', 'File extension')
+            next_row = tb.mapPeripherals(self._field_frame, 0)
+            #load the table elements from the settings
+            for key,val in apt.SETTINGS['label']['shallow'].items():
+                tb.insertRecord([key,val])
 
-            # -- LEFT SIDE FRAME FOR TABLE OPTIONS -- 
-            side_frame = tk.Frame(self._field_frame)
-            #place side frame within field frame
-            side_frame.grid(row=1,column=0)
-
-            #'shallow' text
-            widg = tk.Label(self._field_frame, text='shallow', bg=self._field_bg, relief=tk.RAISED)
-            widg.grid(row=0, column=0, padx=10, pady=10)
-            #addition button
-            widg = tk.Label(side_frame, text=' + ', bg=self._field_bg, relief=tk.RAISED)
-            widg.pack()
-            #deletion button
-            widg = tk.Label(side_frame, text=' - ', bg=self._field_bg, relief=tk.RAISED)
-            widg.pack()
-
-            #create data table for 'shallow'
-            table = labelTable('shallow')
-            table.grid(row=1, column=1, columnspan=2)
-
-            #'recursive' text
-            widg = tk.Label(self._field_frame, text='recursive', bg=self._field_bg, relief=tk.RAISED)
-            widg.grid(row=2, column=0, padx=10, pady=10)
-
-            #create data table for 'recursive'
-            table = labelTable('recursive')
-            table.grid(row=3, column=1, columnspan=2)
+            #recursive table
+            #create a new frame for the scripts table
+            m_frame = tk.Frame(self._field_frame)
+            m_frame.grid(row=next_row,column=0, columnspan=100)
+            #create the table object
+            tb = Table(m_frame, 'Name (@)', 'File extension')
+            tb.mapPeripherals(self._field_frame, next_row)
+            #load the table elements from the settings
+            for key,val in apt.SETTINGS['label']['recursive'].items():
+                tb.insertRecord([key,val])
             pass
         elif(section == 'script'):
-            table = tk.ttk.Treeview(self._field_frame, column=("c1", "c2"), show='headings',)
-            table.column("#1", anchor=tk.W, width=100)
-            table.heading("#1", text="Alias")
-            table.column("#2", anchor=tk.W, width=w-100-40)
-            table.heading("#2", text="Command")
-            i = 0
-            for key,value in apt.SETTINGS[section].items():
-                table.insert(parent='', index='end', iid=i, text='', values=(key,value))
-                i+=1
-            table.pack(fill='both', expand=1)
+            #create a new frame for the scripts table
+            m_frame = tk.Frame(self._field_frame)
+            m_frame.grid(row=0,column=0, columnspan=100)
+            #create the table object
+            tb = Table(m_frame, 'alias', 'command')
+            tb.mapPeripherals(self._field_frame, 0)
+            #load the table elements from the settings
+            for key,val in apt.SETTINGS['script'].items():
+                tb.insertRecord([key,val])
             pass
         elif(section == 'workspace'):
+            #create a new frame for the scripts table
+            m_frame = tk.Frame(self._field_frame)
+            m_frame.grid(row=0,column=0, columnspan=100)
+            #create the table object
+            tb = Table(m_frame, 'name', 'path', 'markets')
+            tb.mapPeripherals(self._field_frame, 0)
+            #load the table elements from the settings
+            for key,val in apt.SETTINGS['workspace'].items():
+                fields = [key]+list(val.values())
+                #convert any lists to strings seperated by commas
+                for ii in range(len(fields)):
+                    if isinstance(fields[ii], list):
+                        str_list = ''
+                        for f in fields[ii]:
+                            str_list = str_list + str(f) + ','
+                        fields[ii] = str_list
 
+                tb.insertRecord(fields)
             pass
         elif(section == 'market'):
-            
+            #create a new frame for the scripts table
+            m_frame = tk.Frame(self._field_frame)
+            m_frame.grid(row=0,column=0, columnspan=100)
+            #create the table object
+            tb = Table(m_frame, 'name', 'remote connection')
+            tb.mapPeripherals(self._field_frame, 0)
+            #load the table elements from the settings
+            for key,val in apt.SETTINGS['market'].items():
+                tb.insertRecord([key,val])
             pass
 
     def center(self, win):
@@ -298,4 +297,167 @@ class GUI:
         Return true if the GUI object has a tkinter object.
         '''
         return hasattr(self, "_window")
+    pass
+
+
+class Table:
+
+    def __init__(self, tk_frame, *headers):
+        '''
+        Create an editable tkinter treeview object as a table containing records.
+        '''
+        scroll_y = tk.Scrollbar(tk_frame)
+        scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
+
+        scroll_x = tk.Scrollbar(tk_frame, orient='horizontal')
+        scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
+
+        self._tv = tk.ttk.Treeview(tk_frame, column=tuple(headers), show='headings', xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
+        self._tv.pack(fill='both',expand=1)
+
+        scroll_y.config(command=self._tv.yview)
+        scroll_x.config(command=self._tv.xview)
+
+        #define columns
+        self._tv.column("#0", width=0, stretch=tk.NO)
+        for h in headers:
+            self._tv.column(h, anchor='w')
+
+        #create headings
+        self._tv.heading("#0", text="", anchor='center')
+        for h in headers:
+            self._tv.heading(h, text=h, anchor='w')
+
+        self._headers = headers
+        self._entries = []
+        self._size = 0
+        self._id_tracker = 0
+        pass
+
+    def getSize(self):
+        return self._size
+
+    def getHeaders(self):
+        return self._headers
+
+    def getEntries(self):
+        return self._entries
+
+    def assignID(self):
+        #always increment id so every table element is unique
+        self._id_tracker += 1
+        return self._id_tracker
+
+    def insertRecord(self, data, index=-1):
+        '''
+        Inserts a new record at specified index. Default is the appended to end
+        of table.
+        '''
+        if(index == -1):
+            index = self.getSize()
+        self._tv.insert(parent='', index=index, iid=self.assignID(), text='', values=tuple(data))
+        self._size += 1
+        pass
+
+    def replaceRecord(self, data, index):
+        self._tv.item(index, text='', values=tuple(data))
+
+    def removeRecord(self, index=-1):
+        '''
+        Removes a record from the specified index. Default is the last record.
+        Also returns the popped value if successful.
+        '''
+        popped_val = None
+        if(self.getSize()):
+            popped_val = self.getValues(index)
+            self._tv.delete(index)
+            self._size -= 1
+        return popped_val
+
+    def clearEntries(self):
+        #clear any old values from entry boxes
+        for ii in range(len(self.getEntries())):
+            self.getEntries()[ii].delete(0,tk.END)
+
+    def getValues(self, index):
+        '''
+        Returns the data values at the specified index from the table.
+        '''
+        fields = []
+        for value in self._tv.item(index)['values']:
+            fields += [value]
+        return fields
+
+    def mapPeripherals(self, field_frame, table_row):
+        padx = 10
+        pady = 10
+        #addition button
+        button = tk.Button(field_frame, text='+', command=self.handleAppend)
+        button.grid(row=table_row+1, column=0, padx=padx, pady=pady)
+        #update button
+        button = tk.Button(field_frame, text='update', command=self.handleUpdate)
+        button.grid(row=table_row+1, column=1, padx=padx, pady=pady)
+        #edit button
+        button = tk.Button(field_frame, text='edit', command=self.handleEdit)
+        button.grid(row=table_row+1, column=2, padx=padx, pady=pady)
+        #delete button
+        button = tk.Button(field_frame, text='-', command=self.handleRemove)
+        button.grid(row=table_row+1, column=3, padx=padx, pady=pady)
+
+        #text entries for editing
+        for ii in range(len(self.getHeaders())):
+            self._entries.append(tk.Entry(field_frame, text=''))
+            self._entries[-1].grid(row=table_row+2, column=ii, pady=pady)
+
+        #return the next availble row for the field_frame
+        return table_row+3
+
+    def handleUpdate(self):
+        #get what record is selected
+        sel = self._tv.focus()
+        if(sel == ''): return
+
+        #get the fields from the entry boxes
+        data = []
+        for ii in range(len(self.getEntries())):
+            data += [self.getEntries()[ii].get()]
+            # :todo: define rules for updating data fields
+
+        #print(data,int(sel[0]))
+        #now plug into selected space
+        self.replaceRecord(data, index=sel)
+        self.clearEntries()
+        pass
+
+    def handleAppend(self):
+        #get the fields from the entry boxes
+        data = []
+        for ii in range(len(self.getEntries())):
+            data += [self.getEntries()[ii].get()]
+        self.insertRecord(data)
+        self.clearEntries()
+
+    def handleRemove(self):
+        sel = self._tv.focus()
+        if(sel == ''): return
+        #print(sel)
+        self.removeRecord(int(sel[0]))
+
+    def handleEdit(self):
+        sel = self._tv.focus()
+        if(sel == ''): return
+
+        data = self.getValues(sel)
+        #clear any old values from entry boxes
+        self.clearEntries()
+        #load the values into the entry boxes
+        for ii in range(len(data)):
+            self.getEntries()[ii].insert(0,str(data[ii]))
+            pass
+        
+        pass
+
+    def getTreeview(self):
+        return self._tv
+
     pass
