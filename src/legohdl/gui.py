@@ -201,6 +201,7 @@ class GUI:
             display_fields(apt.SETTINGS[section])
             pass
         elif(section == 'label'):
+            # :todo: use radio buttons to toggle between recursive table and shallow table
             #shallow table
             #create a new frame for the scripts table
             m_frame = tk.Frame(self._field_frame)
