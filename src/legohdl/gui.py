@@ -406,13 +406,15 @@ class Table:
         button.pack(side=tk.LEFT, anchor='w')
         #divide up the entries among the frame width
         #text entries for editing
+        entry_frame = tk.Frame(field_frame)
+        entry_frame.grid(row=self._initial_row+2, column=0, sticky='ew')
         for ii in range(len(self.getHeaders())):
-            columnspan = 1
-            if(ii == len(self.getHeaders())-1):
-                columnspan = 1
-            
-            self._entries.append(tk.Entry(field_frame, text=''))
-            self._entries[-1].grid(row=self._initial_row+2, column=ii, sticky='ew')
+            if(ii == 0):
+                self._entries.append(tk.Entry(entry_frame, text='', width=20))
+                self._entries[-1].pack(side=tk.LEFT, fill='both')
+            else:
+                self._entries.append(tk.Entry(entry_frame, text=''))
+                self._entries[-1].pack(side=tk.LEFT, fill='both', expand=1)
 
         #return the next availble row for the field_frame
         return self._initial_row+3
