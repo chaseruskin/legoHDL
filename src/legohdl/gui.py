@@ -388,26 +388,26 @@ class Table:
         #create frame for buttons to go into
         button_frame = tk.Frame(field_frame)
 
-        button_frame.grid(row=self._initial_row+1, column=0, sticky='ew')
+        button_frame.grid(row=self._initial_row+2, column=0, sticky='ew', pady=2)
         #addition button
-        button = tk.Button(button_frame, text='+', command=self.handleAppend)
-        button.pack(side=tk.LEFT, anchor='w')
+        button = tk.Button(button_frame, text=' + ', command=self.handleAppend)
+        button.pack(side=tk.LEFT, anchor='w', padx=2)
 
         if(editable):
             #update button
             button = tk.Button(button_frame, text='update', command=self.handleUpdate)
-            button.pack(side=tk.LEFT, anchor='w')
+            button.pack(side=tk.LEFT, anchor='w',padx=2)
             #edit button
             button = tk.Button(button_frame, text='edit', command=self.handleEdit)
-            button.pack(side=tk.LEFT, anchor='w')
+            button.pack(side=tk.LEFT, anchor='w', padx=2)
 
         #delete button
-        button = tk.Button(button_frame, text='-', command=self.handleRemove)
-        button.pack(side=tk.LEFT, anchor='w')
+        button = tk.Button(button_frame, text=' - ', command=self.handleRemove)
+        button.pack(side=tk.LEFT, anchor='w', padx=2)
         #divide up the entries among the frame width
         #text entries for editing
         entry_frame = tk.Frame(field_frame)
-        entry_frame.grid(row=self._initial_row+2, column=0, sticky='ew')
+        entry_frame.grid(row=self._initial_row+1, column=0, sticky='ew')
         for ii in range(len(self.getHeaders())):
             if(ii == 0):
                 self._entries.append(tk.Entry(entry_frame, text='', width=20))
