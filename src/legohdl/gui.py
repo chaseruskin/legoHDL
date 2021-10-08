@@ -130,7 +130,7 @@ class GUI:
                         apt.SETTINGS[key][name] = field.get()
                     except:
                         pass
-                elif(key == 'script'):
+                elif(key == 'script' or key == 'market'):
                     #load records directly from table for scripts
                     self._tk_vars[key] = {}
                     for record in self._tb.getAllValues():
@@ -157,6 +157,17 @@ class GUI:
                         apt.SETTINGS[key]['shallow'] = self._tk_vars[key]['shallow'].copy()
                         apt.SETTINGS[key]['recursive'] = self._tk_vars[key]['recursive'].copy()
                         pass
+                    elif(key == 'workspace'):
+                        #load records directly from table
+                        self._tk_vars[key] = {}
+                        apt.SETTINGS[key] = {}
+                        for record in self._tb.getAllValues():
+                            mkts = []
+                            for m in list(record[2].split(',')):
+                                if(m != ''):
+                                    mkts += [m]
+                            self._tk_vars[key][record[0]] = {'path' : record[1], 'market' : mkts}
+                            apt.SETTINGS[key][record[0]] = self._tk_vars[key][record[0]].copy()
 
         apt.save()
         log.info("Settings saved.")
@@ -291,12 +302,12 @@ class GUI:
                 self._tb.insertRecord([key,val])
             pass
         elif(section == 'workspace'):
-           
+            self._tk_vars[section] = apt.SETTINGS[section].copy()
             #create the table object
             self._tb = Table(self._field_frame, 'name', 'path', 'markets', row=0, col=0, rules=Table.workspaceRules)
             self._tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
-            for key,val in apt.SETTINGS['workspace'].items():
+            for key,val in self._tk_vars[section].items():
                 fields = [key]+list(val.values())
                 #convert any lists to strings seperated by commas
                 for ii in range(len(fields)):
@@ -309,11 +320,12 @@ class GUI:
                 self._tb.insertRecord(fields)
             pass
         elif(section == 'market'):
+            self._tk_vars[section] = apt.SETTINGS[section].copy()
             #create the table object
             self._tb = Table(self._field_frame, 'name', 'remote connection', row=0, col=0, rules=Table.marketRules)
             self._tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
-            for key,val in apt.SETTINGS['market'].items():
+            for key,val in self._tk_vars[section].items():
                 self._tb.insertRecord([key,val])
             pass
 
@@ -511,8 +523,6 @@ class Table:
             val = str(self.getValues(it)[col])
             val = val.lower() if(lower) else val
             elements += [val]
-        
-        print(elements)
         return elements
 
     @classmethod
