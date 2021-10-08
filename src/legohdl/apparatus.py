@@ -8,7 +8,6 @@
 #   functions that are used throughout other scripts.
 ################################################################################
 
-from genericpath import isfile
 import stat,glob,git
 from datetime import datetime
 import logging as log
@@ -100,6 +99,8 @@ class Apparatus:
     ENTITY_DELIM = ':'
 
     __active_workspace = None
+
+    DOCUMENTATION_URL = 'https://hdl.notion.site/legoHDL-f798525eee2f4378bcf5e970ae6373cf'
 
     @classmethod
     def initialize(cls):

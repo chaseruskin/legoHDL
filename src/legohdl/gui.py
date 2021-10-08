@@ -10,6 +10,7 @@
 import logging as log
 import os
 from .apparatus import Apparatus as apt
+import webbrowser
 
 import_success = True
 try:
@@ -44,7 +45,7 @@ class GUI:
         #center the window
         self._window = self.center(self._window)
 
-        self.initPanes()
+        self.initFrames()
         #enter main loop
         try:
             self._window.mainloop()
@@ -58,21 +59,19 @@ class GUI:
     def getH(self):
         return self._height
 
-    def initPanes(self):
+    def initFrames(self):
         #divide window into 2 sections
-        #m1 = tk.PanedWindow(self._window, orient='horizontal', sashrelief=tk.RAISED)
         #configure size for both sections
         menu_width = int(self.getW()/6)
         field_width = self.getW() - menu_width
         bar_height = int(self.getH()/10)
         field_height = self.getH() - bar_height
-        self._field_bg = '#CCCCCC'
 
-        #create the main divisions
+        #create the 3 main divisions
         menu_frame = tk.PanedWindow(self._window, width=menu_width, height=self.getH())
         self._field_frame = tk.LabelFrame(self._window, width=field_width, height=field_height, relief=tk.RAISED, padx=20, pady=20)
         bar_frame = tk.Frame(self._window, width=field_width, height=bar_height, relief=tk.SUNKEN)
-        # don't resize frames to fit content
+        #don't resize frames to fit content
         bar_frame.grid_propagate(0)
         self._field_frame.grid_propagate(0)
 
@@ -81,64 +80,54 @@ class GUI:
         self._window.grid_columnconfigure(0, weight=1)
 
         menu_frame.grid(row=1, sticky='w')
+        bar_frame.grid(row=2, sticky='nsew')
         self._field_frame.grid(row=1, sticky='nse')
         self._field_frame.grid_columnconfigure(0, weight=1)
-        bar_frame.grid(row=2, sticky='nsew')
-    
+        
         # --- menu pane ---
         #configure side menu
         items = tk.StringVar(value=list(apt.SETTINGS.keys()))
-        self._menu_list = tk.Listbox(self._window, listvariable=items, selectmode='single', relief=tk.SUNKEN)
+        self._menu_list = tk.Listbox(self._window, listvariable=items, selectmode='single', relief=tk.RIDGE)
         #configure actions when pressing a menu item
         self._menu_list.bind('<Double-1>', self.select)
         #add to the pane
         menu_frame.add(self._menu_list)
 
+        # --- variables for various widgets ---
         self._act_ws = tk.StringVar(value=apt.SETTINGS['general']['active-workspace'])
         self._mult_dev = tk.IntVar(value=int(apt.SETTINGS['general']['multi-develop']))
         self._ovlp_rec = tk.IntVar(value=int(apt.SETTINGS['general']['overlap-recursive']))
-        self._tgl_labels = tk.IntVar(value=0)
+        self._tgl_labels = tk.IntVar(value=1)
         self._ref_rate = tk.IntVar(value=int(apt.SETTINGS['general']['refresh-rate']))
 
         # --- field frame ---
         #configure field frame widgets
-        self._field_title = tk.Label(self._field_frame, text='general', bg=self._field_bg)
+        self._field_title = tk.Label(self._field_frame, text='general')
         self._cur_widgets = []
-        self.load('market')
+        self.load('general')
 
         # --- bar frame ---
         #configure bar frame widgets
         btn_save = tk.Button(bar_frame, text='apply', command=self.save, relief=tk.RAISED)
         btn_cancel = tk.Button(bar_frame, text='cancel', command=self._window.quit, relief=tk.RAISED)
+        btn_help = tk.Button(bar_frame, text='help', command=self.openDocs, relief=tk.RAISED)
 
-        #place on bar frame
-        btn_save.place(x=self.offsetW(-0.3),y=self.offsetH(0.2, bar_height))
-        btn_cancel.place(x=self.offsetW(-0.18),y=self.offsetH(0.2, bar_height))
+        #map buttons on bar frame
+        btn_help.pack(side=tk.RIGHT, padx=20, pady=16)
+        btn_cancel.pack(side=tk.RIGHT, padx=0, pady=16)
+        btn_save.pack(side=tk.RIGHT, padx=20, pady=16)
         pass
 
     def clrFieldFrame(self):
         for widgets in self._field_frame.winfo_children():
             widgets.destroy()
 
-    def offsetW(self, f, w=None):
-        if(w == None):
-            w = self.getW()
-        if(f < 0):
-            return w+int(w*f)
-        else:
-            return int(w*f)
-
-    def offsetH(self, f, h=None):
-        if(h == None):
-            h = self.getH()
-        if(f < 0):
-            return h-int(h*f)
-        else:
-            return int(h*f)
-
     def save(self):
         log.info("Settings saved.")
         pass
+
+    def openDocs(self):
+        webbrowser.open(apt.DOCUMENTATION_URL)
 
     def select(self, event):
         '''
@@ -152,11 +141,7 @@ class GUI:
         pass
 
     def load(self, section):
-        print('Loading',section+'...')
-        #refresh to get w and h
-        self._window.update_idletasks()
-        w = self._field_frame.winfo_width()
-        h = self._field_frame.winfo_height()
+        #print('Loading',section+'...')
         #clear all widgets from the frame
         self.clrFieldFrame()
         #re-write section title widget
@@ -170,15 +155,12 @@ class GUI:
                 #create widgets
                 widg = tk.Label(self._field_frame, text=field)
                 widg.grid(row=i, column=0, padx=10, pady=10)
-                #widg.place(x=self.offsetW(0.1,w), y=self.offsetH(i,h))
                 
                 if(isinstance(value, str) or value == None):
                     #special case for 'active-workspace'
                     if(field == 'active-workspace'):
-                        #sel = tk.StringVar(master=self._field_frame)
-                        #sel.set(apt.SETTINGS['general']['active-workspace'])
                         entry = tk.ttk.Combobox(self._field_frame, textvariable=self._act_ws, values=list(apt.SETTINGS['workspace'].keys()))
-                        print(entry.get())
+                        #print(entry.get())
                     else:
                         entry = tk.Entry(self._field_frame, width=40)
                         if(value == None):
@@ -188,14 +170,10 @@ class GUI:
  
                 elif(isinstance(value, bool)):
                     if(field == 'overlap-recursive'):
-                        box = tk.Radiobutton(self._field_frame, indicatoron=0, text='on', variable=self._ovlp_rec, value=1, width=8)
-                        box2 = tk.Radiobutton(self._field_frame, indicatoron=0, text='off', variable=self._ovlp_rec, value=0, width=8)
+                        ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._ovlp_rec)
                     elif(field == 'multi-develop'):
-                        box = tk.Radiobutton(self._field_frame, indicatoron=0, text='on', variable=self._mult_dev, value=1, width=8)
-                        box2 = tk.Radiobutton(self._field_frame, indicatoron=0, text='off', variable=self._mult_dev, value=0, width=8)
-                    
-                    box.grid(row=i, column=2, padx=10, pady=10, sticky='e')
-                    box2.grid(row=i, column=3, padx=10, pady=10, sticky='e')
+                        ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._mult_dev)
+
                 elif(isinstance(value, int)):
                     #refresh-rate
                     wheel = tk.ttk.Spinbox(self._field_frame, from_=-1, to=1440, textvariable=self._ref_rate, wrap=True)
@@ -211,53 +189,43 @@ class GUI:
             display_fields(apt.SETTINGS[section])
             pass
         elif(section == 'label'):
-            #create a new frame for the scripts table
-            m_frame = tk.Frame(self._field_frame)
-            m_frame.grid(row=1,column=0, columnspan=10, sticky='nsew')
-            #create the table object
-            tb = Table(m_frame, 'Name (@)', 'File extension')
-            
+           
             def loadShallowTable(event=None):
                 #clear all records
                 tb.clearRecords()
+                #load labels from shallow list
                 for key,val in apt.SETTINGS['label']['shallow'].items():
                     tb.insertRecord([key,val])
 
             def loadRecursiveTable(event=None):
                 #clear all records
                 tb.clearRecords()
+                #load labels from recursive list
                 for key,val in apt.SETTINGS['label']['recursive'].items():
                     tb.insertRecord([key,val])
-                
-            # radio buttons toggle between recursive table and shallow table  
-            btn_shallow = tk.Radiobutton(self._field_frame, indicatoron=0, text='shallow', variable=self._tgl_labels, value=0, width=8, bd=1, command=loadShallowTable)
-            btn_depth = tk.Radiobutton(self._field_frame, indicatoron=0, text='recursive', variable=self._tgl_labels, value=1, width=8, bd=1, command=loadRecursiveTable)
-            btn_shallow.grid(row=0, column=0, pady=10, padx=10)
-            btn_depth.grid(row=0, column=1, pady=10)
             
-            tb.mapPeripherals(self._field_frame, 1)
+            ToggleSwitch(self._field_frame, 'shallow', 'recursive', row=0, col=0, state_var=self._tgl_labels, offCmd=loadRecursiveTable, onCmd=loadShallowTable)
+            #create the table object
+            tb = Table(self._field_frame, 'Name (@)', 'File extension', row=1, col=0)
+            tb.mapPeripherals(self._field_frame)
+
             #load the table elements from the settings
             loadShallowTable()
             
             pass
         elif(section == 'script'):
-            #create a new frame for the scripts table
-            m_frame = tk.Frame(self._field_frame)
-            m_frame.grid(row=0,column=0, columnspan=10, sticky='nsew')
             #create the table object
-            tb = Table(m_frame, 'alias', 'command')
-            tb.mapPeripherals(self._field_frame, 0)
+            tb = Table(self._field_frame, 'alias', 'command', row=0, col=0)
+            tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in apt.SETTINGS['script'].items():
                 tb.insertRecord([key,val])
             pass
         elif(section == 'workspace'):
-            #create a new frame for the scripts table
-            m_frame = tk.Frame(self._field_frame)
-            m_frame.grid(row=0,column=0, columnspan=10, sticky='nsew')
+           
             #create the table object
-            tb = Table(m_frame, 'name', 'path', 'markets')
-            tb.mapPeripherals(self._field_frame, 0)
+            tb = Table(self._field_frame, 'name', 'path', 'markets', row=0, col=0)
+            tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in apt.SETTINGS['workspace'].items():
                 fields = [key]+list(val.values())
@@ -272,12 +240,9 @@ class GUI:
                 tb.insertRecord(fields)
             pass
         elif(section == 'market'):
-            #create a new frame for the scripts table
-            m_frame = tk.Frame(self._field_frame)
-            m_frame.grid(row=0,column=0, columnspan=10, sticky='nsew')
             #create the table object
-            tb = Table(m_frame, 'name', 'remote connection')
-            tb.mapPeripherals(self._field_frame, 0)
+            tb = Table(self._field_frame, 'name', 'remote connection', row=0, col=0)
+            tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in apt.SETTINGS['market'].items():
                 tb.insertRecord([key,val])
@@ -289,19 +254,15 @@ class GUI:
         '''
         #hide window
         win.attributes('-alpha', 0.0)
-        
         #update information regarding window size and screen size
         win.update_idletasks()
-        s_height = win.winfo_screenheight()
-        s_width = win.winfo_screenwidth()
-        width = win.winfo_width()
-        height = win.winfo_height()
+        s_height,s_width = win.winfo_screenheight(),win.winfo_screenwidth()
+        width,height = win.winfo_width(),win.winfo_height()
         #compute the left corner point for the window to be center
         center_x = int((s_width/2) - (width/2))
         centery_y = int((s_height/2) - (height/2))
-
+        #set size and position
         win.geometry(str(width)+"x"+str(height)+"+"+str(center_x)+"+"+str(centery_y))
-
         #reveal window
         win.deiconify()
         win.update_idletasks()
@@ -319,18 +280,23 @@ class GUI:
 
 class Table:
 
-    def __init__(self, tk_frame, *headers):
+    def __init__(self, tk_frame, *headers, row=0, col=0):
         '''
         Create an editable tkinter treeview object as a table containing records.
         '''
-        scroll_y = tk.Scrollbar(tk_frame)
+         #create a new frame for the scripts table
+        tb_frame = tk.Frame(tk_frame)
+        tb_frame.grid(row=row, column=col, columnspan=10, sticky='nsew')
+        self._initial_row = row
+
+        scroll_y = tk.Scrollbar(tb_frame)
         scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
 
-        scroll_x = tk.Scrollbar(tk_frame, orient='horizontal')
+        scroll_x = tk.Scrollbar(tb_frame, orient='horizontal')
         scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self._tv = tk.ttk.Treeview(tk_frame, column=tuple(headers), show='headings', xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set, selectmode='browse')
-        self._tv.pack(fill='both',expand=1)
+        self._tv = tk.ttk.Treeview(tb_frame, column=tuple(headers), show='headings', xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set, selectmode='browse')
+        self._tv.pack(fill='both', expand=1)
 
         self._tv.tag_configure('gray', background='#dddddd')
 
@@ -418,10 +384,11 @@ class Table:
             fields += [value]
         return fields
 
-    def mapPeripherals(self, field_frame, table_row, editable=True):
+    def mapPeripherals(self, field_frame, editable=True):
         #create frame for buttons to go into
         button_frame = tk.Frame(field_frame)
-        button_frame.grid(row=table_row+1, column=0, columnspan=10, sticky='ew')
+
+        button_frame.grid(row=self._initial_row+1, column=0, sticky='ew')
         #addition button
         button = tk.Button(button_frame, text='+', command=self.handleAppend)
         button.pack(side=tk.LEFT, anchor='w')
@@ -445,10 +412,10 @@ class Table:
                 columnspan = 1
             
             self._entries.append(tk.Entry(field_frame, text=''))
-            self._entries[-1].grid(row=table_row+2, column=ii, columnspan=columnspan, sticky='ew')
+            self._entries[-1].grid(row=self._initial_row+2, column=ii, sticky='ew')
 
         #return the next availble row for the field_frame
-        return table_row+3
+        return self._initial_row+3
 
 
     def validEntry(self, data):
@@ -513,5 +480,27 @@ class Table:
 
     def getTreeview(self):
         return self._tv
+
+    pass
+
+
+class ToggleSwitch:
+
+    def __init__(self, tk_frame, on_txt, off_txt, row, col, state_var, onCmd=None, offCmd=None,):
+        self._state = state_var
+
+        #create a new frame
+        swt_frame = tk.Frame(tk_frame)
+        swt_frame.grid(row=row, column=col, columnspan=10, sticky='ew')
+        
+        # radio buttons toggle between recursive table and shallow table  
+        btn_on = tk.Radiobutton(swt_frame, indicatoron=0, text=on_txt, variable=state_var, value=1, width=8, command=onCmd)
+        btn_off = tk.Radiobutton(swt_frame, indicatoron=0, text=off_txt, variable=state_var, value=0, width=8, command=offCmd)
+        btn_off.pack(side=tk.RIGHT)
+        btn_on.pack(side=tk.RIGHT)
+        pass
+
+    def getState(self):
+        return self._state.get()
 
     pass
