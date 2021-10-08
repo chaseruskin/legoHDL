@@ -70,7 +70,7 @@ class GUI:
 
         #create the main divisions
         menu_frame = tk.PanedWindow(self._window, width=menu_width, height=self.getH())
-        self._field_frame = tk.LabelFrame(self._window, text='test', bg=self._field_bg, width=field_width, height=field_height, relief=tk.RAISED, padx=20, pady=20)
+        self._field_frame = tk.LabelFrame(self._window, width=field_width, height=field_height, relief=tk.RAISED, padx=20, pady=20)
         bar_frame = tk.Frame(self._window, width=field_width, height=bar_height, relief=tk.SUNKEN)
         # don't resize frames to fit content
         bar_frame.grid_propagate(0)
@@ -82,6 +82,7 @@ class GUI:
 
         menu_frame.grid(row=1, sticky='w')
         self._field_frame.grid(row=1, sticky='nse')
+        self._field_frame.grid_columnconfigure(0, weight=1)
         bar_frame.grid(row=2, sticky='nsew')
     
         # --- menu pane ---
@@ -154,13 +155,14 @@ class GUI:
         self.clrFieldFrame()
         #re-write section title widget
         self._field_frame.config(text=section)
-        #self._field_title = tk.Label(self._field_frame, text=section, bg=self._field_bg, bd=5)
-        #self._field_title.grid(row=0, column=0)
 
         def display_fields(field_map, i=0):
             for field,value in field_map.items():
+                #skip profiles field
+                if(field == 'profiles'):
+                    continue
                 #create widgets
-                widg = tk.Label(self._field_frame, text=field, bg=self._field_bg)
+                widg = tk.Label(self._field_frame, text=field)
                 widg.grid(row=i, column=0, padx=10, pady=10)
                 #widg.place(x=self.offsetW(0.1,w), y=self.offsetH(i,h))
                 
@@ -171,25 +173,25 @@ class GUI:
                         sel.set(apt.SETTINGS['general']['active-workspace'])
                         entry = tk.ttk.Combobox(self._field_frame, textvariable=sel, values=list(apt.SETTINGS['workspace'].keys()))
                     else:
-                        entry = tk.Entry(self._field_frame, width=40, relief=tk.RIDGE, background='white', bd=1)
+                        entry = tk.Entry(self._field_frame, width=40)
                         if(value == None):
                             value = ''
                         entry.insert(tk.END, str(value))
-                    entry.grid(row=i, column=2, columnspan=2, padx=10, pady=10)
-                    #entry.place(x=self.offsetW(0.3,w), y=self.offsetH(i,h))
+                    entry.grid(row=i, column=2, columnspan=2, padx=10, pady=10, sticky='e')
+ 
                 elif(isinstance(value, bool)):
                     swt_var = tk.IntVar()
                     swt_var.set(1)
                     
-                    box = tk.Radiobutton(self._field_frame, indicatoron=0, text='on', variable=swt_var, value=1, width=8, bd=1)
-                    box2 = tk.Radiobutton(self._field_frame, indicatoron=0, text='off', variable=swt_var, value=0, width=8, bd=1)
+                    box = tk.Radiobutton(self._field_frame, indicatoron=0, text='on', variable=swt_var, value=1, width=8)
+                    box2 = tk.Radiobutton(self._field_frame, indicatoron=0, text='off', variable=swt_var, value=0, width=8)
                     
-                    box.grid(row=i, column=2, padx=10, pady=10)
-                    box2.grid(row=i, column=3, padx=10, pady=10)
+                    box.grid(row=i, column=2, padx=10, pady=10, sticky='e')
+                    box2.grid(row=i, column=3, padx=10, pady=10, sticky='e')
                 elif(isinstance(value, int)):
                     #
                     wheel = tk.ttk.Spinbox(self._field_frame, from_=-1, to=1440, textvariable=value, wrap=True, )
-                    wheel.grid(row=i, column=2, columnspan=2, padx=10, pady=10)
+                    wheel.grid(row=i, column=2, columnspan=2, padx=10, pady=10, sticky='e')
                 i += 1
                 if(isinstance(value,dict)):
                     #print(value)
@@ -201,33 +203,41 @@ class GUI:
             display_fields(apt.SETTINGS[section])
             pass
         elif(section == 'label'):
-            # :todo: use radio buttons to toggle between recursive table and shallow table
-            #shallow table
             #create a new frame for the scripts table
             m_frame = tk.Frame(self._field_frame)
-            m_frame.grid(row=0,column=0, columnspan=100)
+            m_frame.grid(row=1,column=0, columnspan=10, sticky='nsew')
             #create the table object
             tb = Table(m_frame, 'Name (@)', 'File extension')
-            next_row = tb.mapPeripherals(self._field_frame, 0)
-            #load the table elements from the settings
-            for key,val in apt.SETTINGS['label']['shallow'].items():
-                tb.insertRecord([key,val])
+            
+            def loadShallowTable(event=None):
+                #clear all records
+                tb.clearRecords()
+                for key,val in apt.SETTINGS['label']['shallow'].items():
+                    tb.insertRecord([key,val])
 
-            #recursive table
-            #create a new frame for the scripts table
-            m_frame = tk.Frame(self._field_frame)
-            m_frame.grid(row=next_row,column=0, columnspan=100)
-            #create the table object
-            tb = Table(m_frame, 'Name (@)', 'File extension')
-            tb.mapPeripherals(self._field_frame, next_row)
+            def loadRecursiveTable(event=None):
+                #clear all records
+                tb.clearRecords()
+                for key,val in apt.SETTINGS['label']['recursive'].items():
+                    tb.insertRecord([key,val])
+                
+            depth_var = tk.IntVar()
+            depth_var.set(1)
+            # radio buttons toggle between recursive table and shallow table  
+            btn_shallow = tk.Radiobutton(self._field_frame, indicatoron=0, text='shallow', variable=depth_var, value=1, width=8, bd=1, command=loadShallowTable)
+            btn_depth = tk.Radiobutton(self._field_frame, indicatoron=0, text='recursive', variable=depth_var, value=0, width=8, bd=1, command=loadRecursiveTable)
+            btn_shallow.grid(row=0, column=0, pady=10, padx=10)
+            btn_depth.grid(row=0, column=1, pady=10)
+            
+            tb.mapPeripherals(self._field_frame, 1)
             #load the table elements from the settings
-            for key,val in apt.SETTINGS['label']['recursive'].items():
-                tb.insertRecord([key,val])
+            loadShallowTable()
+            
             pass
         elif(section == 'script'):
             #create a new frame for the scripts table
             m_frame = tk.Frame(self._field_frame)
-            m_frame.grid(row=0,column=0, columnspan=100)
+            m_frame.grid(row=0,column=0, columnspan=10, sticky='nsew')
             #create the table object
             tb = Table(m_frame, 'alias', 'command')
             tb.mapPeripherals(self._field_frame, 0)
@@ -238,7 +248,7 @@ class GUI:
         elif(section == 'workspace'):
             #create a new frame for the scripts table
             m_frame = tk.Frame(self._field_frame)
-            m_frame.grid(row=0,column=0, columnspan=100)
+            m_frame.grid(row=0,column=0, columnspan=10, sticky='nsew')
             #create the table object
             tb = Table(m_frame, 'name', 'path', 'markets')
             tb.mapPeripherals(self._field_frame, 0)
@@ -258,7 +268,7 @@ class GUI:
         elif(section == 'market'):
             #create a new frame for the scripts table
             m_frame = tk.Frame(self._field_frame)
-            m_frame.grid(row=0,column=0, columnspan=100)
+            m_frame.grid(row=0,column=0, columnspan=10, sticky='nsew')
             #create the table object
             tb = Table(m_frame, 'name', 'remote connection')
             tb.mapPeripherals(self._field_frame, 0)
@@ -313,8 +323,10 @@ class Table:
         scroll_x = tk.Scrollbar(tk_frame, orient='horizontal')
         scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self._tv = tk.ttk.Treeview(tk_frame, column=tuple(headers), show='headings', xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
+        self._tv = tk.ttk.Treeview(tk_frame, column=tuple(headers), show='headings', xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set, selectmode='browse')
         self._tv.pack(fill='both',expand=1)
+
+        self._tv.tag_configure('gray', background='#dddddd')
 
         scroll_y.config(command=self._tv.yview)
         scroll_x.config(command=self._tv.xview)
@@ -322,10 +334,14 @@ class Table:
         #define columns
         self._tv.column("#0", width=0, stretch=tk.NO)
         for h in headers:
-            self._tv.column(h, anchor='w')
+            if(h == headers[0]):
+                self._tv.column(h, width=0, anchor='w')
+            else:
+                self._tv.column(h, anchor='w')
 
         #create headings
         self._tv.heading("#0", text="", anchor='center')
+        
         for h in headers:
             self._tv.heading(h, text=h, anchor='w')
 
@@ -356,7 +372,11 @@ class Table:
         '''
         if(index == -1):
             index = self.getSize()
-        self._tv.insert(parent='', index=index, iid=self.assignID(), text='', values=tuple(data))
+        if(self.getSize() % 2 == 0):
+            tag = 'white'
+        else:
+            tag = 'gray'
+        self._tv.insert(parent='', index=index, iid=self.assignID(), text='', values=tuple(data), tag=tag)
         self._size += 1
         pass
 
@@ -369,11 +389,17 @@ class Table:
         Also returns the popped value if successful.
         '''
         popped_val = None
-        if(self.getSize()):
+        if(index == -1):
+            index = self.getSize()-1
+        if(self.getSize() > 0):
             popped_val = self.getValues(index)
             self._tv.delete(index)
             self._size -= 1
         return popped_val
+
+    def clearRecords(self):
+        self._tv.delete(*self._tv.get_children())
+        self._size = 0
 
     def clearEntries(self):
         #clear any old values from entry boxes
@@ -389,26 +415,32 @@ class Table:
             fields += [value]
         return fields
 
-    def mapPeripherals(self, field_frame, table_row):
+    def mapPeripherals(self, field_frame, table_row, editable=True):
         padx = 10
         pady = 10
         #addition button
         button = tk.Button(field_frame, text='+', command=self.handleAppend)
-        button.grid(row=table_row+1, column=0, padx=padx, pady=pady)
-        #update button
-        button = tk.Button(field_frame, text='update', command=self.handleUpdate)
-        button.grid(row=table_row+1, column=1, padx=padx, pady=pady)
-        #edit button
-        button = tk.Button(field_frame, text='edit', command=self.handleEdit)
-        button.grid(row=table_row+1, column=2, padx=padx, pady=pady)
+        button.grid(row=table_row+1, column=0, padx=padx, pady=pady, sticky='w')
+
+        if(editable):
+            #update button
+            button = tk.Button(field_frame, text='update', command=self.handleUpdate)
+            button.grid(row=table_row+1, column=1, padx=padx, pady=pady, sticky='w')
+            #edit button
+            button = tk.Button(field_frame, text='edit', command=self.handleEdit)
+            button.grid(row=table_row+1, column=2, padx=padx, pady=pady, sticky='w')
         #delete button
         button = tk.Button(field_frame, text='-', command=self.handleRemove)
-        button.grid(row=table_row+1, column=3, padx=padx, pady=pady)
-
+        button.grid(row=table_row+1, column=3, padx=padx, pady=pady, sticky='w')
+        #divide up the entries among the frame width
         #text entries for editing
         for ii in range(len(self.getHeaders())):
+            columnspan = 1
+            if(ii == len(self.getHeaders())-1):
+                columnspan = 10
+            
             self._entries.append(tk.Entry(field_frame, text=''))
-            self._entries[-1].grid(row=table_row+2, column=ii, pady=pady)
+            self._entries[-1].grid(row=table_row+2, column=ii, columnspan=columnspan, sticky='ew')
 
         #return the next availble row for the field_frame
         return table_row+3
@@ -441,8 +473,16 @@ class Table:
     def handleRemove(self):
         sel = self._tv.focus()
         if(sel == ''): return
-        #print(sel)
-        self.removeRecord(int(sel[0]))
+        self.removeRecord(int(sel))
+        #now reapply the toggle colors
+        i = 0
+        for it in list(self._tv.get_children()):
+            if(i % 2 == 0):
+                tag = 'white'
+            else:
+                tag = 'gray'
+            self._tv.item(it, tag=tag)
+            i += 1
 
     def handleEdit(self):
         sel = self._tv.focus()
