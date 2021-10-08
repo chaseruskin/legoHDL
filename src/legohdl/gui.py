@@ -154,7 +154,7 @@ class GUI:
                     continue
                 #create widgets
                 widg = tk.Label(self._field_frame, text=field)
-                widg.grid(row=i, column=0, padx=10, pady=10)
+                widg.grid(row=i, column=0, padx=20, pady=5, sticky='w')
                 
                 if(isinstance(value, str) or value == None):
                     #special case for 'active-workspace'
