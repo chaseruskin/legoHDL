@@ -94,6 +94,12 @@ class GUI:
         #add to the pane
         menu_frame.add(self._menu_list)
 
+        self._act_ws = tk.StringVar(value=apt.SETTINGS['general']['active-workspace'])
+        self._mult_dev = tk.IntVar(value=int(apt.SETTINGS['general']['multi-develop']))
+        self._ovlp_rec = tk.IntVar(value=int(apt.SETTINGS['general']['overlap-recursive']))
+        self._tgl_labels = tk.IntVar(value=0)
+        self._ref_rate = tk.IntVar(value=int(apt.SETTINGS['general']['refresh-rate']))
+
         # --- field frame ---
         #configure field frame widgets
         self._field_title = tk.Label(self._field_frame, text='general', bg=self._field_bg)
@@ -169,9 +175,10 @@ class GUI:
                 if(isinstance(value, str) or value == None):
                     #special case for 'active-workspace'
                     if(field == 'active-workspace'):
-                        sel = tk.StringVar()
-                        sel.set(apt.SETTINGS['general']['active-workspace'])
-                        entry = tk.ttk.Combobox(self._field_frame, textvariable=sel, values=list(apt.SETTINGS['workspace'].keys()))
+                        #sel = tk.StringVar(master=self._field_frame)
+                        #sel.set(apt.SETTINGS['general']['active-workspace'])
+                        entry = tk.ttk.Combobox(self._field_frame, textvariable=self._act_ws, values=list(apt.SETTINGS['workspace'].keys()))
+                        print(entry.get())
                     else:
                         entry = tk.Entry(self._field_frame, width=40)
                         if(value == None):
@@ -180,17 +187,18 @@ class GUI:
                     entry.grid(row=i, column=2, columnspan=2, padx=10, pady=10, sticky='e')
  
                 elif(isinstance(value, bool)):
-                    swt_var = tk.IntVar()
-                    swt_var.set(1)
-                    
-                    box = tk.Radiobutton(self._field_frame, indicatoron=0, text='on', variable=swt_var, value=1, width=8)
-                    box2 = tk.Radiobutton(self._field_frame, indicatoron=0, text='off', variable=swt_var, value=0, width=8)
+                    if(field == 'overlap-recursive'):
+                        box = tk.Radiobutton(self._field_frame, indicatoron=0, text='on', variable=self._ovlp_rec, value=1, width=8)
+                        box2 = tk.Radiobutton(self._field_frame, indicatoron=0, text='off', variable=self._ovlp_rec, value=0, width=8)
+                    elif(field == 'multi-develop'):
+                        box = tk.Radiobutton(self._field_frame, indicatoron=0, text='on', variable=self._mult_dev, value=1, width=8)
+                        box2 = tk.Radiobutton(self._field_frame, indicatoron=0, text='off', variable=self._mult_dev, value=0, width=8)
                     
                     box.grid(row=i, column=2, padx=10, pady=10, sticky='e')
                     box2.grid(row=i, column=3, padx=10, pady=10, sticky='e')
                 elif(isinstance(value, int)):
-                    #
-                    wheel = tk.ttk.Spinbox(self._field_frame, from_=-1, to=1440, textvariable=value, wrap=True, )
+                    #refresh-rate
+                    wheel = tk.ttk.Spinbox(self._field_frame, from_=-1, to=1440, textvariable=self._ref_rate, wrap=True)
                     wheel.grid(row=i, column=2, columnspan=2, padx=10, pady=10, sticky='e')
                 i += 1
                 if(isinstance(value,dict)):
@@ -221,11 +229,9 @@ class GUI:
                 for key,val in apt.SETTINGS['label']['recursive'].items():
                     tb.insertRecord([key,val])
                 
-            depth_var = tk.IntVar()
-            depth_var.set(1)
             # radio buttons toggle between recursive table and shallow table  
-            btn_shallow = tk.Radiobutton(self._field_frame, indicatoron=0, text='shallow', variable=depth_var, value=1, width=8, bd=1, command=loadShallowTable)
-            btn_depth = tk.Radiobutton(self._field_frame, indicatoron=0, text='recursive', variable=depth_var, value=0, width=8, bd=1, command=loadRecursiveTable)
+            btn_shallow = tk.Radiobutton(self._field_frame, indicatoron=0, text='shallow', variable=self._tgl_labels, value=0, width=8, bd=1, command=loadShallowTable)
+            btn_depth = tk.Radiobutton(self._field_frame, indicatoron=0, text='recursive', variable=self._tgl_labels, value=1, width=8, bd=1, command=loadRecursiveTable)
             btn_shallow.grid(row=0, column=0, pady=10, padx=10)
             btn_depth.grid(row=0, column=1, pady=10)
             
