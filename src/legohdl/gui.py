@@ -148,41 +148,43 @@ class GUI:
         self._field_frame.config(text=section)
 
         def display_fields(field_map, i=0):
+            '''
+            Configure and map the appropiate widgets for the general settings
+            section.
+            '''
             for field,value in field_map.items():
                 #skip profiles field
                 if(field == 'profiles'):
                     continue
                 #create widgets
+                pady = 2
+                padx = 20
+                field_name_pos = 'w'
+                field_value_pos = 'e'
                 widg = tk.Label(self._field_frame, text=field)
-                widg.grid(row=i, column=0, padx=20, pady=5, sticky='w')
+                widg.grid(row=i, column=0, padx=padx, pady=pady, sticky=field_name_pos)
                 
                 if(isinstance(value, str) or value == None):
                     #special case for 'active-workspace'
                     if(field == 'active-workspace'):
                         entry = tk.ttk.Combobox(self._field_frame, textvariable=self._act_ws, values=list(apt.SETTINGS['workspace'].keys()))
-                        #print(entry.get())
                     else:
                         entry = tk.Entry(self._field_frame, width=40)
                         if(value == None):
                             value = ''
                         entry.insert(tk.END, str(value))
-                    entry.grid(row=i, column=2, columnspan=2, padx=10, pady=10, sticky='e')
- 
-                elif(isinstance(value, bool)):
-                    if(field == 'overlap-recursive'):
-                        ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._ovlp_rec)
-                    elif(field == 'multi-develop'):
-                        ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._mult_dev)
+                    entry.grid(row=i, column=2, columnspan=2, padx=padx, pady=pady, sticky=field_value_pos)
 
-                elif(isinstance(value, int)):
+                elif(field == 'overlap-recursive'):
+                    ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._ovlp_rec, padx=padx, pady=pady)
+                elif(field == 'multi-develop'):
+                    ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._mult_dev, padx=padx, pady=pady)
+                elif(field == 'refresh-rate'):
                     #refresh-rate
                     wheel = tk.ttk.Spinbox(self._field_frame, from_=-1, to=1440, textvariable=self._ref_rate, wrap=True)
-                    wheel.grid(row=i, column=2, columnspan=2, padx=10, pady=10, sticky='e')
+                    wheel.grid(row=i, column=2, columnspan=2, padx=padx, pady=pady, sticky=field_value_pos)
                 i += 1
-                if(isinstance(value,dict)):
-                    #print(value)
-                    i = display_fields(value, i)
-            return i
+            pass
 
         if(section == 'general'):
             #map widgets
@@ -593,12 +595,12 @@ class Table:
 
 class ToggleSwitch:
 
-    def __init__(self, tk_frame, on_txt, off_txt, row, col, state_var, onCmd=None, offCmd=None,):
+    def __init__(self, tk_frame, on_txt, off_txt, row, col, state_var, onCmd=None, offCmd=None, padx=0, pady=0):
         self._state = state_var
 
         #create a new frame
         swt_frame = tk.Frame(tk_frame)
-        swt_frame.grid(row=row, column=col, columnspan=10, sticky='ew')
+        swt_frame.grid(row=row, column=col, columnspan=10, sticky='ew', padx=padx, pady=pady)
         
         # radio buttons toggle between recursive table and shallow table  
         btn_on = tk.Radiobutton(swt_frame, indicatoron=0, text=on_txt, variable=state_var, value=1, width=8, command=onCmd)
