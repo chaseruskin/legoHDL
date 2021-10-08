@@ -90,7 +90,7 @@ class GUI:
         
         # --- menu pane ---
         #configure side menu
-        items = tk.StringVar(value=list(apt.SETTINGS.keys()))
+        items = tk.StringVar(value=list(list(apt.SETTINGS.keys()) + ['profiles']))
         self._menu_list = tk.Listbox(self._window, listvariable=items, selectmode='single', relief=tk.RIDGE)
         #configure actions when pressing a menu item
         self._menu_list.bind('<Double-1>', self.select)
@@ -138,6 +138,12 @@ class GUI:
                     #copy dictionary back to settings
                     apt.SETTINGS[key] = self._tk_vars[key].copy()
                     #print('save dictionary values!')
+                elif(name == 'profiles'):
+                    #load records directly from table for profiles
+                    self._tk_vars[name][name] = []
+                    for record in self._tb.getAllValues():
+                        self._tk_vars[name][name] += [record[0]]
+                    apt.SETTINGS['general'][name] = self._tk_vars[name][name].copy()
                 #save all others
                 elif(isinstance(field, dict) == False):
                     apt.SETTINGS[key][name] = field.get()
@@ -328,6 +334,16 @@ class GUI:
             for key,val in self._tk_vars[section].items():
                 self._tb.insertRecord([key,val])
             pass
+        elif(section == 'profiles'):
+            #copy in profile list from settings
+            self._tk_vars[section][section] = apt.SETTINGS['general']['profiles'].copy()
+            #create the table object
+            self._tb = Table(self._field_frame, 'name', row=0, col=0, rules=None)
+            #only '+' and '-' are available for profiles
+            self._tb.mapPeripherals(self._field_frame, editable=False)
+            #load the table elements from the settings
+            for item in self._tk_vars[section][section]:
+                self._tb.insertRecord([item])
 
     def center(self, win):
         '''
