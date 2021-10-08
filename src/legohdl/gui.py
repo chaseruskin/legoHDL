@@ -29,7 +29,11 @@ class GUI:
         if(import_success == False):
             log.error("Failed to open GUI for settings (unable to find tkinter).")
             return None
-        
+
+        #create dictionary to store tk variables
+        self._tk_vars = dict()
+
+        #create root window
         self._window = tk.Tk()
         #add icon
         file_path = os.path.realpath(__file__)
@@ -93,18 +97,12 @@ class GUI:
         #add to the pane
         menu_frame.add(self._menu_list)
 
-        # --- variables for various widgets ---
-        self._act_ws = tk.StringVar(value=apt.SETTINGS['general']['active-workspace'])
-        self._mult_dev = tk.IntVar(value=int(apt.SETTINGS['general']['multi-develop']))
-        self._ovlp_rec = tk.IntVar(value=int(apt.SETTINGS['general']['overlap-recursive']))
+        # always start label section with shallow labels begin displayed
         self._tgl_labels = tk.IntVar(value=1)
-        self._ref_rate = tk.IntVar(value=int(apt.SETTINGS['general']['refresh-rate']))
 
         # --- field frame ---
         #configure field frame widgets
-        self._field_title = tk.Label(self._field_frame, text='general')
-        self._cur_widgets = []
-        self.load('general')
+        self.loadFields('general')
 
         # --- bar frame ---
         #configure bar frame widgets
@@ -123,10 +121,30 @@ class GUI:
             widgets.destroy()
 
     def save(self):
+        # :todo: transfer all gui fields/data into legohdl.cfg
+        for key,sect in self._tk_vars.items():
+            for name,field in sect.items():
+                #save active-workspace if its a valid workspace available
+                if(name == 'active-workspace' and field.get() in apt.SETTINGS['workspace'].keys()):
+                    apt.SETTINGS[key][name] = field.get()
+                #save refresh-rate only if its an integer being returned
+                elif(name == 'refresh-rate'):
+                    try:
+                        apt.SETTINGS[key][name] = field.get()
+                    except:
+                        pass
+                #save all others
+                else:
+                    apt.SETTINGS[key][name] = field.get()
+
+        apt.save()
         log.info("Settings saved.")
         pass
 
     def openDocs(self):
+        '''
+        Open the documentation website in default browser.
+        '''
         webbrowser.open(apt.DOCUMENTATION_URL)
 
     def select(self, event):
@@ -137,15 +155,19 @@ class GUI:
         i = self._menu_list.curselection()
         if i != ():
             sect = self._menu_list.get(i)  
-            self.load(section=sect)
+            self.loadFields(section=sect)
         pass
 
-    def load(self, section):
+    def loadFields(self, section):
         #print('Loading',section+'...')
         #clear all widgets from the frame
         self.clrFieldFrame()
+        #clear tk vars dictionary
+        self._tk_vars = {section : {}}
         #re-write section title widget
         self._field_frame.config(text=section)
+
+        # [!] load in legohdl.cfg variables
 
         def display_fields(field_map, i=0):
             '''
@@ -156,6 +178,7 @@ class GUI:
                 #skip profiles field
                 if(field == 'profiles'):
                     continue
+                
                 #create widgets
                 pady = 2
                 padx = 20
@@ -165,24 +188,31 @@ class GUI:
                 widg.grid(row=i, column=0, padx=padx, pady=pady, sticky=field_name_pos)
                 
                 if(isinstance(value, str) or value == None):
+                    self._tk_vars[section][field] = tk.StringVar(value=apt.SETTINGS[section][field])
+                    
                     #special case for 'active-workspace'
                     if(field == 'active-workspace'):
-                        entry = tk.ttk.Combobox(self._field_frame, textvariable=self._act_ws, values=list(apt.SETTINGS['workspace'].keys()))
+                        entry = tk.ttk.Combobox(self._field_frame, textvariable=self._tk_vars[section][field], values=list(apt.SETTINGS['workspace'].keys()))
                     else:
-                        entry = tk.Entry(self._field_frame, width=40)
-                        if(value == None):
-                            value = ''
-                        entry.insert(tk.END, str(value))
-                    entry.grid(row=i, column=2, columnspan=2, padx=padx, pady=pady, sticky=field_value_pos)
+                        entry = tk.Entry(self._field_frame, width=40, textvariable=self._tk_vars[section][field])
 
-                elif(field == 'overlap-recursive'):
-                    ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._ovlp_rec, padx=padx, pady=pady)
-                elif(field == 'multi-develop'):
-                    ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._mult_dev, padx=padx, pady=pady)
-                elif(field == 'refresh-rate'):
-                    #refresh-rate
-                    wheel = tk.ttk.Spinbox(self._field_frame, from_=-1, to=1440, textvariable=self._ref_rate, wrap=True)
-                    wheel.grid(row=i, column=2, columnspan=2, padx=padx, pady=pady, sticky=field_value_pos)
+                    entry.grid(row=i, column=2, columnspan=2, padx=padx, pady=pady, sticky=field_value_pos)
+                    pass
+                elif(isinstance(value, bool)):
+                    self._tk_vars[section][field] = tk.BooleanVar(value=apt.SETTINGS[section][field])
+                    
+                    if(field == 'overlap-recursive'):
+                        ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._tk_vars[section][field], padx=padx, pady=pady)
+                    elif(field == 'multi-develop'):
+                        ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._tk_vars[section][field], padx=padx, pady=pady)
+                    pass
+                elif(isinstance(value, int)):
+                    self._tk_vars[section][field] = tk.IntVar(value=apt.SETTINGS[section][field])
+                    
+                    if(field == 'refresh-rate'):
+                        wheel = tk.ttk.Spinbox(self._field_frame, from_=-1, to=1440, textvariable=self._tk_vars[section][field], wrap=True)
+                        wheel.grid(row=i, column=2, columnspan=2, padx=padx, pady=pady, sticky=field_value_pos)
+                    pass
                 i += 1
             pass
 
