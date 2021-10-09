@@ -78,12 +78,12 @@ those of another workspace. List multiple markets by separating values with a co
 "The list of available markets to be connected to workspaces. A market allows blocks to be visible \
 from remote repositories and downloaded/installed across machines. If a market is not configured \
 to a remote repository, its remote connection is empty. Markets identified by remote connection cannot \
-be renamed.",
+be renamed. Markets have a .mrkt file at the root of their directory.",
 
         'profiles' : 
 "A list of profiles to import settings, templates, and/or scripts. Add a template by creating a template/ folder \
-at the root of profile. Add scripts into a scripts/ folder to be available for import. Add a legohdl.cfg file to configure \
-settings that will be merged in during that profile's import.",
+at the root of a profile. Add scripts into a scripts/ folder to be available for import. Add a legohdl.cfg file to configure \
+settings that will be merged in when importing that profile. A profile directory is indicated by having a .prfl file.",
     }
 
     def __init__(self):
