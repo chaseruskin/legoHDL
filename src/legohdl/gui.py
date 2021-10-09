@@ -31,50 +31,52 @@ class GUI:
         'author' : "Your name.",
 
         'refresh-rate' : 
-"""How often to synchronize markets with their remote every day. Set to -1 to refresh on every call. \
+"How often to synchronize markets with their remote every day. Set to -1 to refresh on every call. \
 Max value is 1440 (every minute). Evenly divides the refresh points throughout the 24-hour day. \
-This setting is the automation of the 'refresh' command.""",
+This setting is the automation of the 'refresh' command.",
 
-        'template' : "The path from where to copy a template folder when making a new \
-block. If an empty assignment, it will use the built-in template folder.",
+        'template' : 
+"The path from where to copy a template folder when making a new block. If an empty assignment, \
+it will use the built-in template folder.",
 
-        'multi-develop' : "When enabled, it will reference blocks found in the workspace path over \
-block's found in the cache. This would be beneficial for simulataneously \
-working on multiple related blocks. When done, be sure to release the \
-block's as new versions so the modifications are in stone.",
+        'multi-develop' : 
+"When enabled, it will reference blocks found in the workspace path over block's found in the cache. \
+This would be beneficial for simulataneously working on multiple related blocks. When done, be sure to \
+release the block's as new versions so the modifications are in stone.",
 
-        'overlap-recursive' : "When enabled, on export the labels to be gathered can be the same file \
-even if from the same project across different versions (overlapping). \
-If disabled, it will not write multiple labels for the same file, even \
-across different versioned blocks.",
+        'overlap-recursive' : 
+"When enabled, on export the labels to be gathered can be the same file even if from the same project \
+across different versions (overlapping). If disabled, it will not write multiple labels for the same \
+file, even across different versioned blocks.",
 
-        'label:shallow' : "User-defined groupings of filetypes to be collected and written to the \
-blueprint file on export. Labels help bridge a custom workflow with the user's \
-backend tool. Shallow labels are only searched for in the current block. An @ symbol will be automatically \
-prepended to the label in the blueprint file.\n\n\
+        'label:shallow' : 
+"User-defined groupings of filetypes to be collected and written to the blueprint file on export. \
+Labels help bridge a custom workflow with the user's backend tool. Shallow labels are only searched \
+for in the current block. An @ symbol will be automatically prepended to the label in the blueprint file.\n\n\
 Special default labels for *.vhd and *.vhdl are @VHDL-LIB, @VHDL-SRC, @VHDL-SIM, @VHDL-SIM-TOP, @VHDL-SRC-TOP, and for *.v and *.sv are @VLOG-LIB, @VLOG-SRC, \
 @VLOG-SIM, @VLOG-SIM-TOP, @VLOG-SRC-TOP.",
 
-        'label:recursive' : "User-defined groupings of filetypes to be collected and written to the \
-blueprint file on export. Labels help bridge a custom workflow with the user's \
-backend tool. Recursive labels are searched for in every dependent block. An @ symbol will be automatically \
-prepended to the label in the blueprint file.\n\n\
+        'label:recursive' : 
+"User-defined groupings of filetypes to be collected and written to the blueprint file on export. \
+Labels help bridge a custom workflow with the user's backend tool. Recursive labels are searched \
+for in every dependent block. An @ symbol will be automatically prepended to the label in the blueprint file.\n\n\
 Special default labels for *.vhd and *.vhdl are @VHDL-LIB, @VHDL-SRC, @VHDL-SIM, @VHDL-SIM-TOP, @VHDL-SRC-TOP, and for *.v and *.sv are @VLOG-LIB, @VLOG-SRC, \
 @VLOG-SIM, @VLOG-SIM-TOP, @VLOG-SRC-TOP.",
 
-        'script' : "User-defined aliases to execute backend scripts/tools. The command field is what \
-will be executed as-if through the terminal.",
+        'script' : 
+"User-defined aliases to execute backend scripts/tools. The command field is what will be executed \
+as-if through the terminal.",
 
-        'workspace' : "User-defined spaces for working with blocks. Blocks must appear in the \
-workspace's path to be recognized as downloaded. Multiple markets can be \
-configured to one workspace and markets can be shared across workspaces. \
-Block downloads and installations in one workspace are separate from those \
-of another workspace. List multiple markets by separating values with a comma (,).",
+        'workspace' : 
+"User-defined spaces for working with blocks. Blocks must appear in the workspace's path to be \
+recognized as downloaded. Multiple markets can be configured to one workspace and markets can \
+be shared across workspaces. Block downloads and installations in one workspace are separate from \
+those of another workspace. List multiple markets by separating values with a comma (,).",
 
-        'market' : "The list of available markets to be connected to workspaces. A market allows \
-blocks to be visible from remote repositories and downloaded/installed \
-across machines. If a market is not configured to a remote repository, its \
-remote connection is empty.",
+        'market' : 
+"The list of available markets to be connected to workspaces. A market allows blocks to be visible \
+from remote repositories and downloaded/installed across machines. If a market is not configured \
+to a remote repository, its remote connection is empty.",
 
         'profiles' : "A list of profiles to import settings, templates, and/or scripts.",
     }
