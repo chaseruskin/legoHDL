@@ -114,9 +114,12 @@ class Market:
         active_branch = self._repo.active_branch
         #switch to side branch if '-soft' flag raised
         tmp_branch = block_meta['library']+"."+block_meta['name']+"-"+block_meta['version']
-        if(self.url != None and options.count("soft")):
-            log.info("Checking out new branch '"+tmp_branch+"' to release block to "+self.getName(low=False)+"...")
-            self._repo.git.checkout("-b",tmp_branch)
+        if(options.count("soft")):
+            if(self.url != None):
+                log.info("Checking out new branch '"+tmp_branch+"' to release block to "+self.getName(low=False)+"...")
+                self._repo.git.checkout("-b",tmp_branch)
+            else:
+                log.warning("Cannot perform soft release because this market has no remote.")
 
         #locate block's directory within market
         block_dir = apt.fs(self._local_path+"/"+block_meta['library']+"/"+block_meta['name']+"/")
@@ -132,8 +135,10 @@ class Market:
                 break
 
         #add new zip file
-        _,zip_name = os.path.split(zip_file)
+        zip_dir,zip_name = os.path.split(zip_file)
         shutil.copyfile(zip_file, block_dir+zip_name)
+        #delete folder that contained zip file (tmp directory)
+        shutil.rmtree(zip_dir, onerror=apt.rmReadOnly)
 
         #read in all logging info about valid release points
         file_data = []
@@ -160,17 +165,23 @@ class Market:
             
         #save changes to repository (only add and stage the file that was made)
         rel_git_path = block_meta['library']+'/'+block_meta['name']+'/'
-        #self._repo.index.add(rel_git_path+apt.MARKER)
-        original_path = os.getcwd()
-        os.chdir(self.getPath())
-        apt.execute('git','add',rel_git_path+'*')
-        apt.execute('git','add',rel_git_path+old_zip)
-        os.chdir(original_path)
-        #self._repo.index.add(rel_git_path+"*")
-        pass
+        #add all new changes
+        apt.execute('git','-C',self.getPath(),'add',rel_git_path+apt.MARKER)
+        apt.execute('git','-C',self.getPath(),'add',rel_git_path+apt.VER_LOG)
+        apt.execute('git','-C',self.getPath(),'add',rel_git_path+zip_name)
+        #add change to change log if exists
+        if(changelog != None):
+            apt.execute('git','-C',self.getPath(),'add',rel_git_path+apt.CHANGELOG)
+        #add change that removed old zip file
+        if(old_zip != None):
+            try:
+                apt.execute('git','-C',self.getPath(),'add',rel_git_path+old_zip)
+            except:
+                #git recognized it as a rename so its already added to staging
+                pass
         
         #commit all releases
-        self._repo.git.commit('-m',"Adds "+block_meta['library']+'.'+block_meta['name']+" v"+block_meta['version'])
+        self._repo.git.commit('-m',"Adds "+block_meta['library']+'.'+block_meta['name']+"-v"+block_meta['version'])
         #push to remote market repository
         if(self.url != None):
             self._repo.git.push("-u","origin",str(self._repo.head.reference))
