@@ -43,7 +43,7 @@ class Market:
                     self._repo = git.Repo(self.getPath())
                     self._repo.git.add(update=True)
                     self._repo.index.add(self._repo.untracked_files)
-                    self._repo.git.commit('-m',"Initializes market")
+                    self._repo.git.commit('-m',"Initializes legohdl market")
                     self._repo.git.push("-u","origin",str(self._repo.head.reference))
             else:
                 self.url = None
@@ -52,6 +52,10 @@ class Market:
                 log.warning("No remote repository configured for "+self.getName(low=False))
                 #create blank market marker file
                 open(self.getPath()+self.getName(low=False)+apt.MRKT_EXT, 'w').close()
+                #add and commit the market .mrkt file
+                apt.execute('git','-C',self.getPath(),'add','.')
+                apt.execute('git','-C',self.getPath(),'commit','-m','"Initializes legohdl market"','-q')
+                pass
             
         self._repo = git.Repo(self.getPath())
         pass
@@ -90,7 +94,7 @@ class Market:
         return self.url
 
     #release a block to this market
-    def publish(self, meta, options=[], all_vers=[], changelog=None):
+    def publish(self, meta, zip_file, options=[], all_vers=[], changelog=None):
         if(self.url != None):
             #refresh remote
             if(len(self._repo.remotes)):
@@ -118,6 +122,19 @@ class Market:
         block_dir = apt.fs(self._local_path+"/"+block_meta['library']+"/"+block_meta['name']+"/")
         os.makedirs(block_dir,exist_ok=True)
 
+        #remove any stale zip files
+        direct_files = os.listdir(block_dir)
+        old_zip = None
+        for f in direct_files:
+            if(f.endswith('.block')):
+                old_zip = f
+                os.remove(apt.fs(block_dir+old_zip))
+                break
+
+        #add new zip file
+        _,zip_name = os.path.split(zip_file)
+        shutil.copyfile(zip_file, block_dir+zip_name)
+
         #read in all logging info about valid release points
         file_data = []
         #insert any versions found as valid release points to version.log
@@ -143,10 +160,13 @@ class Market:
             
         #save changes to repository (only add and stage the file that was made)
         rel_git_path = block_meta['library']+'/'+block_meta['name']+'/'
-        self._repo.index.add(rel_git_path+apt.MARKER)
-        self._repo.index.add(rel_git_path+apt.VER_LOG)
-        if(changelog != None):
-            self._repo.index.add(rel_git_path+apt.CHANGELOG)
+        #self._repo.index.add(rel_git_path+apt.MARKER)
+        original_path = os.getcwd()
+        os.chdir(self.getPath())
+        apt.execute('git','add',rel_git_path+'*')
+        apt.execute('git','add',rel_git_path+old_zip)
+        os.chdir(original_path)
+        #self._repo.index.add(rel_git_path+"*")
         pass
         
         #commit all releases

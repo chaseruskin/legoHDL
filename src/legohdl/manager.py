@@ -1249,10 +1249,6 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                     self.db.blockExists(package,"market")
         else:
             exists = False
-
-        # [!] testing zip function
-        #self.blockCWD.zip()
-        #exit()
         
         #branching through possible commands
         if(command == "install"):

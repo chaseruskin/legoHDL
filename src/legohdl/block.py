@@ -270,6 +270,9 @@ class Block:
 
         sorted_versions = self.sortVersions(self.getTaggedVersions())
 
+        # [!] zip and save the contents of the block's repository
+        zip_file = self.zip()
+
         #push to remote codebase!! (we have a valid remote url to use)
         if(url != None):
             self.pushRemote()
@@ -279,38 +282,42 @@ class Block:
         #publish on market/bazaar! (also publish all versions not found)
         if(self.__market != None):
             changelog_txt = self.getChangeLog(self.getPath())
-            self.__market.publish(self.getMeta(every=True), options, sorted_versions, changelog_txt)
+            self.__market.publish(self.getMeta(every=True), zip_file, options, sorted_versions, changelog_txt)
         elif(self.getMeta("market") != None):
             log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
 
     def zip(self):
         '''
-        Zip up entire block.
+        Zips up entire block. Ignores the build/ directory and returns the 
+        path to the zip file.
         '''
-        #add all files to zipfile
-        all_files = glob.glob(self.getPath()+"**/*", recursive=True)
-        all_files += glob.glob(self.getPath()+".*/**/*", recursive=True)
-        all_files += glob.glob(self.getPath()+".*")
+
         #create temp directory
         tmp_dir = apt.HIDDEN+"tmp/"
         os.makedirs(tmp_dir, exist_ok=True)
+        #project path in temp directory
+        tmp_path =  apt.fs(tmp_dir+self.getName(low=False))
+        
+        #transfer project there
+        apt.execute('git','clone',self.getPath(),tmp_path,'-q')
+
         #create zip file name
-        zip_name = self.getName(low=False)+'-'+self.getVersion()+'.block'
+        zip_name = self.getName(low=False)+'-'+self.getVersion()
         log.info("Zipping "+zip_name+"...")
         #create new zip file and write all files
-        with zipfile.ZipFile(tmp_dir+zip_name, 'w') as z:
-            #print(all_files)
-            for f in all_files:
-                z.write(f, os.path.relpath(f))
-            z.close()
+        os.chdir(tmp_dir)
+        shutil.make_archive(zip_name, 'zip', self.getName(low=False))
+        #rename from .zip to .block
+        os.rename(zip_name+'.zip', zip_name+'.block')
+        os.chdir(self.getPath())
         
-        #clean  up temp directory
-        #shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
-        #os.rename(tmp_dir+zip_name, tmp_dir+zip_name.replace('.block','.zip'))
-        #zip_name = zip_name.replace('.block','.zip')
-        self.unzip(tmp_dir+zip_name)
-        pass
+        #clean up temp directory
+        shutil.rmtree(tmp_path, onerror=apt.rmReadOnly)
+        #unzip file
+        #self.unzip(tmp_dir+zip_name)
+        print('zip file:',apt.fs(tmp_dir+zip_name+'.block'))
+        return apt.fs(tmp_dir+zip_name+'.block')
 
     def unzip(self, path):
         zip_name = os.path.basename(path)
