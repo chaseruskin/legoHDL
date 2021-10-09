@@ -778,7 +778,7 @@ scripts)?", warning=False)
         local_path = cls.SETTINGS['workspace'][name]['path']
         
         if(os.path.exists(local_path) == False):
-            log.info("Creating new path... "+local_path)
+            log.info("Creating new path for "+name+" workspace... "+local_path)
             os.makedirs(local_path)
 
         #create cfg structure for workspace settings 'local' and 'market'
