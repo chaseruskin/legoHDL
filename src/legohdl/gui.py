@@ -22,6 +22,56 @@ except ModuleNotFoundError:
 
 class GUI:
 
+    COMMENTS = {
+        'active-workspace' : "The current workspace set.",
+
+        'editor' : "The command to call your preferred text editor.",
+
+        'author' : "Your name.",
+
+        'refresh-rate' : "How often to synchronize markets with their remote every day. Set to \
+-1 to refresh on every call. Max value is 1440 (every minute). Evenly divides \
+the refresh points throughout the 24-hour day. This setting \
+is the automation of the 'refresh' command.",
+
+        'template' : "The path from where to copy a template folder when making a new \
+block. If an empty assignment, it will use the built-in template folder.",
+
+        'multi-develop' : "When enabled, it will reference blocks found in the workspace path over \
+block's found in the cache. This would be beneficial for simulataneously \
+working on multiple related blocks. When done, be sure to release the \
+block's as new versions so the modifications are in stone.",
+
+        'overlap-recursive' : "When enabled, on export the labels to be gathered can be the same file \
+even if from the same project across different versions (overlapping). \
+If disabled, it will not write multiple labels for the same file, even \
+across different versioned blocks.",
+
+        'label:shallow' : "User-defined groupings of filetypes to be collected and written to the \
+recipe file on export. Labels help bridge a custom workflow with the user's \
+backend tool. Shallow labels are only searched for in the current block.",
+
+        'label:recursive' : "User-defined groupings of filetypes to be collected and written to the \
+recipe file on export. Labels help bridge a custom workflow with the user's \
+backend tool. Recursive labels are searched for in every dependent block.",
+
+        'script' : "User-defined aliases to execute backend scripts/tools. The command field is what \
+will be executed as-if through the terminal.",
+
+        'workspace' : "User-defined spaces for working with blocks. Blocks must appear in the \
+workspace's path to be recognized as downloaded. Multiple markets can be \
+configured to one workspace and markets can be shared across workspaces. \
+Block downloads and installations in one workspace are separate from those \
+of another workspace. List multiple markets by separating values with a comma (,).",
+
+        'market' : "The list of available markets to be connected to workspaces. A market allows \
+blocks to be visible from remote repositories and downloaded/installed \
+across machines. If a market is not configured to a remote repository, its \
+remote connection is empty.",
+
+        'profiles' : "A list of profiles to import settings, templates, and/or scripts.",
+    }
+
     def __init__(self):
         '''
         Create a Tkinter object.
@@ -222,9 +272,12 @@ class GUI:
         pass
 
     def loadFields(self, section):
+        comment_font = ('Arial', 11)
+        wrap_len = 500
         #print('Loading',section+'...')
         #clear all widgets from the frame
         self.clrFieldFrame()
+        self._comments = tk.Label(self._field_frame, text='', font=comment_font, wraplength=wrap_len, justify="left")
         #clear tk vars dictionary
         self._tk_vars = {section : {}}
         #re-write section title widget
@@ -245,7 +298,7 @@ class GUI:
                     continue
                 
                 #create widgets
-                pady = 2
+                pady = 1
                 padx = 20
                 field_name_pos = 'w'
                 field_value_pos = 'e'
@@ -279,12 +332,15 @@ class GUI:
                         wheel.grid(row=i, column=2, columnspan=2, padx=padx, pady=pady, sticky=field_value_pos)
                     pass
                 i += 1
+                self._comments = tk.Label(self._field_frame, font=comment_font, text=self.COMMENTS[field], wraplength=wrap_len, justify="left")
+                self._comments.grid(row=i, column=0, columnspan=10, padx=padx, pady=pady, sticky=field_name_pos)
+                i += 1
             pass
-
+        i = 0 
         if(section == 'general'):
             #map widgets
             display_fields(apt.SETTINGS[section])
-            pass
+            i = -1 #disable because we print comments in method
         elif(section == 'label'):
             #store 1-level dicionaries
             self._tk_vars[section]['shallow'] = apt.SETTINGS[section]['shallow'].copy()
@@ -300,6 +356,8 @@ class GUI:
                 #load labels from shallow list
                 for key,val in self._tk_vars[section]['shallow'].items():
                     self._tb.insertRecord([key,val])
+                self._comments.configure(text=self.COMMENTS[section+':shallow'])
+                pass
 
             def loadRecursiveTable(event=None):
                 #store shallow label
@@ -312,22 +370,25 @@ class GUI:
                 #load labels from recursive list
                 for key,val in self._tk_vars[section]['recursive'].items():
                     self._tb.insertRecord([key,val])
+                self._comments.configure(text=self.COMMENTS[section+':recursive'])
+                pass
             
             ToggleSwitch(self._field_frame, 'shallow', 'recursive', row=0, col=0, state_var=self._tgl_labels, offCmd=loadRecursiveTable, onCmd=loadShallowTable)
             #create the table object
             self._tb = Table(self._field_frame, 'Name (@)', 'File extension', row=1, col=0)
-            self._tb.mapPeripherals(self._field_frame)
+            i = self._tb.mapPeripherals(self._field_frame)
 
             #load the table elements from the settings
             loadShallowTable()
             self._tk_vars[section]['recursive'] = apt.SETTINGS[section]['recursive'].copy()
-            
+            self._comments.grid(row=i, column=0, columnspan=10, padx=10, pady=2, sticky='w')
+            i = -1
             pass
         elif(section == 'script'):
             self._tk_vars[section] = apt.SETTINGS[section].copy()
             #create the table object
             self._tb = Table(self._field_frame, 'alias', 'command', row=0, col=0)
-            self._tb.mapPeripherals(self._field_frame)
+            i = self._tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in self._tk_vars[section].items():
                 self._tb.insertRecord([key,val])
@@ -336,7 +397,7 @@ class GUI:
             self._tk_vars[section] = apt.SETTINGS[section].copy()
             #create the table object
             self._tb = Table(self._field_frame, 'name', 'path', 'markets', row=0, col=0, rules=Table.workspaceRules)
-            self._tb.mapPeripherals(self._field_frame)
+            i = self._tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in self._tk_vars[section].items():
                 fields = [key]+list(val.values())
@@ -354,7 +415,7 @@ class GUI:
             self._tk_vars[section] = apt.SETTINGS[section].copy()
             #create the table object
             self._tb = Table(self._field_frame, 'name', 'remote connection', row=0, col=0, rules=Table.marketRules)
-            self._tb.mapPeripherals(self._field_frame)
+            i = self._tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in self._tk_vars[section].items():
                 self._tb.insertRecord([key,val])
@@ -365,10 +426,14 @@ class GUI:
             #create the table object
             self._tb = Table(self._field_frame, 'name', row=0, col=0, rules=None)
             #only '+' and '-' are available for profiles
-            self._tb.mapPeripherals(self._field_frame, editable=False, openCmd=self._tb.openProfile)
+            i = self._tb.mapPeripherals(self._field_frame, editable=False, openCmd=self._tb.openProfile)
             #load the table elements from the settings
             for item in self._tk_vars[section][section]:
                 self._tb.insertRecord([item])
+
+        if(i >= 0):
+            self._comments.configure(text=self.COMMENTS[section])
+            self._comments.grid(row=i, column=0, columnspan=10, padx=10, pady=2, sticky='w')
 
     def center(self, win):
         '''
