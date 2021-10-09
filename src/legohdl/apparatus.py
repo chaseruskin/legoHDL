@@ -718,6 +718,10 @@ scripts)?", warning=False)
     #looks within profiles directory and returns dict of all valid profiles
     @classmethod
     def getProfiles(cls):
+        '''
+        This method returns a python dictionary with keys as true profile names
+        and their respective values as their path.
+        '''
         places = os.listdir(cls.HIDDEN+"profiles/")
         profiles = dict()
         for plc in places:

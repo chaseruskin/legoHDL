@@ -176,6 +176,7 @@ class GUI:
                             apt.SETTINGS[key][record[0]] = self._tk_vars[key][record[0]].copy()
 
         apt.save()
+        apt.dynamicProfiles()
         log.info("Settings saved.")
         pass
 
@@ -340,7 +341,7 @@ class GUI:
             #create the table object
             self._tb = Table(self._field_frame, 'name', row=0, col=0, rules=None)
             #only '+' and '-' are available for profiles
-            self._tb.mapPeripherals(self._field_frame, editable=False)
+            self._tb.mapPeripherals(self._field_frame, editable=False, openCmd=self._tb.openProfile)
             #load the table elements from the settings
             for item in self._tk_vars[section][section]:
                 self._tb.insertRecord([item])
@@ -491,8 +492,16 @@ class Table:
             records += [self.getValues(i)]
         return records
 
-
-    def mapPeripherals(self, field_frame, editable=True):
+    def mapPeripherals(self, field_frame, editable=True, openCmd=None):
+        '''
+        Creates surrounding supportive widgets for a data table.
+        
+        Parameters
+        ---
+        field_frame : master frame where the table is inputted
+        editable : boolean to determine if 'update' and 'edit' buttons exist
+        openCmd : method to set an 'open' button (no button if 'None')
+        '''
         #create frame for buttons to go into
         button_frame = tk.Frame(field_frame)
 
@@ -513,6 +522,11 @@ class Table:
         button = tk.Button(button_frame, text=' - ', command=self.handleRemove)
         button.pack(side=tk.LEFT, anchor='w', padx=2)
 
+        if(openCmd != None):
+            #open button
+            button = tk.Button(button_frame, text='open', command=openCmd)
+            button.pack(side=tk.LEFT, anchor='w',padx=2)
+
         self._status = tk.Label(button_frame, text='')
         self._status.pack(side=tk.RIGHT, anchor='e', padx=2)
         #divide up the entries among the frame width
@@ -529,6 +543,18 @@ class Table:
 
         #return the next availble row for the field_frame
         return self._initial_row+3
+
+    def openProfile(self):
+        sel = self._tv.focus()
+        if(sel == ''): return
+        #grab the data available at the selected table element
+        data = self.getValues(sel)
+        if(apt.SETTINGS['general']['editor'] != ''):
+            try:
+                apt.execute(apt.SETTINGS['general']['editor'], apt.getProfiles()[data[0]])
+            except KeyError:
+                tk.messagebox.showerror(title='Nonexistent Profile', message='Make sure to click apply to save settings.')
+        pass
 
     def getAllRows(self, col, lower=True):
         '''
