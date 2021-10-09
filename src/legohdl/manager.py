@@ -296,7 +296,7 @@ class legoHDL:
     def export(self, block, top=None, options=[]):
         '''
         This method performs the export command. The requirements are organized 
-        into a topologically sorted graph and written to the recipe file. It
+        into a topologically sorted graph and written to the blueprint file. It
         also searches for recursive/shallow custom labels within the required
         blocks.
         '''
@@ -317,7 +317,7 @@ class legoHDL:
         top_dog,top,tb = block.identifyTopDog(top, inc_sim=inc_sim)
         #print(top_dog,top,tb)
         
-        output = open(build_dir+"recipe", 'w')   
+        output = open(build_dir+"blueprint", 'w')   
 
         #mission: recursively search through every src VHD file for what else needs to be included
         unit_order,block_order = self.formGraph(block, top_dog)
@@ -472,9 +472,9 @@ class legoHDL:
     def compileList(self, block, unit_order):
         '''
         This method is used in the export command. It formats the units with
-        their file into the recipe structure with respective labels.
+        their file into the blueprint structure with respective labels.
         '''
-        recipe_list = []
+        blueprint_list = []
         for u in unit_order:
             line = '@'
             if(u.getLanguageType() == Unit.Language.VHDL):
@@ -492,9 +492,9 @@ class legoHDL:
                 line = line+'-SRC '
             #append file onto line
             line = line + u.getFile()
-            #add to recipe list
-            recipe_list.append(line)
-        return recipe_list
+            #add to blueprint list
+            blueprint_list.append(line)
+        return blueprint_list
 
     #! === DOWNLOAD COMMAND ===
 
@@ -1601,7 +1601,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             formatHelp("open","opens the downloaded block with the configured text-editor")
             formatHelp("port","print ports list of specified entity")
             formatHelp("graph","visualize dependency graph for reference")
-            formatHelp("export","generate a recipe file from labels")
+            formatHelp("export","generate a blueprint file from labels")
             formatHelp("build","execute a custom configured script")
             formatHelp("run","export and build in a single step")
             formatHelp("release","release a new version of the current block")
@@ -1786,7 +1786,7 @@ the cache, it will also install the latest version to the cache.
         elif(cmd == "run"):
             printFmt("run","[+<script-name>]","[...]")
             rollover("""
-Generate a recipe file through 'export' and then build the design with a custom configured script
+Generate a blueprint file through 'export' and then build the design with a custom configured script
 through 'build' all in this command. The toplevel and testbench will be auto-detected and ask
 the user to select one if multiple exist. If no script name is specified, it will default look for
 the script named 'master'. If only 1 script is configured, it will default to that script regardless of name.
@@ -1822,7 +1822,7 @@ if it is a repository and has a remote URL.
         elif(cmd == "export"):
             printFmt("export","[<toplevel>] [-ignore-tb]")
             rollover("""
-Create the dependency tree for the current design and generate the recipe file. The recipe is stored
+Create the dependency tree for the current design and generate the blueprint file. The blueprint is stored
 into a clean directory called 'build' on every export. It will update the Block.cfg files with the
 current dependencies being used to export the design. The toplevel and testbench will be auto-detected and ask
 the user to select one if multiple exist. If the toplevel is not a testbench, legohdl will attempt to find its

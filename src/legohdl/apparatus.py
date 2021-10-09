@@ -1351,12 +1351,12 @@ if(args.count('-gen')):
             name,value = args[i].split('=')
             generics[name] = value
 
-# === Collect data from the recipe file ========================================
+# === Collect data from the blueprint file ========================================
 #   This part will gather the necessary data we want for our workflow so that
 #   we can act accordingly on that data to get the ouptut we want.
 # ==============================================================================
 
-#enter the 'build' directory for this is where the recipe file is located
+#enter the 'build' directory for this is where the blueprint file is located
 os.chdir('build')
 
 src_files = {'VHDL' : [], 'VLOG' : []}
@@ -1366,9 +1366,9 @@ top_design = top_testbench = None
 python_vector_script = None
 pin_assignments = {}
 
-#read the contents of the recipe file
-with open('recipe', 'r') as recipe:
-    lines = recipe.readlines()
+#read the contents of the blueprint file
+with open('blueprint', 'r') as blueprint:
+    lines = blueprint.readlines()
     for rule in lines:
         parsed = rule.split()
         #label is always first item
@@ -1441,7 +1441,7 @@ with open('recipe', 'r') as recipe:
             python_vector_script = filepath.strip()
 
     #done collecting data for our workflow
-    recipe.close()
+    blueprint.close()
 
 # === Act on the collected data ================================================
 #   Now that we have the 'ingredients', write some logic to call your tool
@@ -1615,7 +1615,7 @@ else:
 ; --- Label settings ---
 ; description:
 ;   User-defined groupings of filetypes, to be collected and written to the
-;   recipe file on export. Labels help bridge a custom workflow with the user's
+;   blueprint file on export. Labels help bridge a custom workflow with the user's
 ;   backend tool.'''),
 
     'shallow' : (cfg.HEADER,\

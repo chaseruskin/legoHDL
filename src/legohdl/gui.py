@@ -30,10 +30,10 @@ class GUI:
 
         'author' : "Your name.",
 
-        'refresh-rate' : "How often to synchronize markets with their remote every day. Set to \
--1 to refresh on every call. Max value is 1440 (every minute). Evenly divides \
-the refresh points throughout the 24-hour day. This setting \
-is the automation of the 'refresh' command.",
+        'refresh-rate' : 
+"""How often to synchronize markets with their remote every day. Set to -1 to refresh on every call. \
+Max value is 1440 (every minute). Evenly divides the refresh points throughout the 24-hour day. \
+This setting is the automation of the 'refresh' command.""",
 
         'template' : "The path from where to copy a template folder when making a new \
 block. If an empty assignment, it will use the built-in template folder.",
@@ -49,12 +49,18 @@ If disabled, it will not write multiple labels for the same file, even \
 across different versioned blocks.",
 
         'label:shallow' : "User-defined groupings of filetypes to be collected and written to the \
-recipe file on export. Labels help bridge a custom workflow with the user's \
-backend tool. Shallow labels are only searched for in the current block.",
+blueprint file on export. Labels help bridge a custom workflow with the user's \
+backend tool. Shallow labels are only searched for in the current block. An @ symbol will be automatically \
+prepended to the label in the blueprint file.\n\n\
+Special default labels for *.vhd and *.vhdl are @VHDL-LIB, @VHDL-SRC, @VHDL-SIM, @VHDL-SIM-TOP, @VHDL-SRC-TOP, and for *.v and *.sv are @VLOG-LIB, @VLOG-SRC, \
+@VLOG-SIM, @VLOG-SIM-TOP, @VLOG-SRC-TOP.",
 
         'label:recursive' : "User-defined groupings of filetypes to be collected and written to the \
-recipe file on export. Labels help bridge a custom workflow with the user's \
-backend tool. Recursive labels are searched for in every dependent block.",
+blueprint file on export. Labels help bridge a custom workflow with the user's \
+backend tool. Recursive labels are searched for in every dependent block. An @ symbol will be automatically \
+prepended to the label in the blueprint file.\n\n\
+Special default labels for *.vhd and *.vhdl are @VHDL-LIB, @VHDL-SRC, @VHDL-SIM, @VHDL-SIM-TOP, @VHDL-SRC-TOP, and for *.v and *.sv are @VLOG-LIB, @VLOG-SRC, \
+@VLOG-SIM, @VLOG-SIM-TOP, @VLOG-SRC-TOP.",
 
         'script' : "User-defined aliases to execute backend scripts/tools. The command field is what \
 will be executed as-if through the terminal.",
