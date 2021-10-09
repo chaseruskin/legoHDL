@@ -1,3 +1,10 @@
+```
+--------------------------------------------------------------------------------
+This file is kept for archival purposes and is no longer modified. See the legohdl github projects page to see the updated roadmap.
+--------------------------------------------------------------------------------
+```
+
+
 ## Roadmap to Release v1.0.0
 
 - [ ] add default market for default profile (open-ip)
@@ -5,11 +12,7 @@
 
 - [ ] add option for auto-align equal signs for Block.cfg files
 
-- [ ] cannot modify markets in settings.cfg (can only add/delete from list)
-
 ### Future Roadmap
-
-- [ ] add ability to add summary text to .prfl and .mrkt files to then use "show" command to read the description about the given profile/market.
 
 - [ ] ! #10 handle if adding a market, and then a block with the same name is found as one that already exists. Prompt user to say handle name collision before adding market. One step further (the real issue), also a block has conflicts if the block has entities/modules that are already defined in a user's workspace. -> or allow user to specify if found multiple entity names when generating dependency tree -> yes. Maybe also specify market name on commands that require using a block title if ambigiuous (multiple exist). Identify if its the same block based on title and if they have the same git url.
 
