@@ -40,14 +40,14 @@ This automates the 'refresh' command.",
 it will use the built-in template folder.",
 
         'multi-develop' : 
-"When enabled, it will reference blocks found in the workspace path over block's found in the cache. \
-This would be beneficial for simulataneously working on multiple related blocks. When done, be sure to \
-release the block's as new versions so the modifications are in stone.",
+"When enabled, it will reference blocks found in the workspace path over blocks found in the cache. \
+This is ideal for simulataneously working on interconnected blocks. When done, be sure to \
+release the blocks as new versions so any changes are set in stone (default is disabled).",
 
         'overlap-recursive' : 
 "When enabled, on export the labels to be gathered can be the same file even if from the same project \
 across different versions (overlapping). If disabled, it will not write multiple labels for the same \
-file, even across different versioned blocks.",
+file, even across different block versions (default is disabled).",
 
         'label:shallow' : 
 "User-defined groupings of filetypes to be collected and written to the blueprint file on export. \
