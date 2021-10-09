@@ -118,18 +118,28 @@ class GUI:
             widgets.destroy()
 
     def save(self):
-        # :todo: transfer all gui fields/data into legohdl.cfg
+        '''
+        Transfers all GUI-related fields/data into legohdl.cfg file and apt.SETTINGS
+        variable. Saves only affect the current field frame window variables/settings.
+        '''
+        #transfer all gui fields/data into legohdl.cfg
         for key,sect in self._tk_vars.items():
             for name,field in sect.items():
+                # --- ACTIVE-WORKSPACE ---
                 #save active-workspace if its a valid workspace available
                 if(name == 'active-workspace' and field.get() in apt.SETTINGS['workspace'].keys()):
                     apt.SETTINGS[key][name] = field.get()
+                    pass
+                # --- REFRESH-RATE ---
                 #save refresh-rate only if its an integer being returned
                 elif(name == 'refresh-rate'):
                     try:
                         apt.SETTINGS[key][name] = field.get()
                     except:
+                        #do not save getting an error on field.get() (NaN)
                         pass
+                    pass
+                # --- SCRIPTS and MARKETS ---
                 elif(key == 'script' or key == 'market'):
                     #load records directly from table for scripts
                     self._tk_vars[key] = {}
@@ -137,47 +147,61 @@ class GUI:
                         self._tk_vars[key][record[0]] = record[1]
                     #copy dictionary back to settings
                     apt.SETTINGS[key] = self._tk_vars[key].copy()
-                    #print('save dictionary values!')
+                    pass
+                # --- PROFILES ---
                 elif(name == 'profiles'):
                     #load records directly from table for profiles
                     self._tk_vars[name][name] = []
                     for record in self._tb.getAllValues():
                         self._tk_vars[name][name] += [record[0]]
+                    #copy list back to settings
                     apt.SETTINGS['general'][name] = self._tk_vars[name][name].copy()
-                #save all others
+
+                    #dynamically create/remove any changed profiles
+                    apt.dynamicProfiles()
+                    pass
+                # --- LABELS ----
+                elif(key == 'label'):
+                    #load records directly from table for recursive (tgl_label == 0)
+                    if(self._tgl_labels.get() == 0):
+                        self._tk_vars[key]['recursive'] = {}
+                        for record in self._tb.getAllValues():
+                            self._tk_vars[key]['recursive'][record[0]] = record[1]
+                    #load records directly from table for shallow (tgl_label == 1)
+                    else:
+                        self._tk_vars[key]['shallow'] = {}
+                        for record in self._tb.getAllValues():
+                            self._tk_vars[key]['shallow'][record[0]] = record[1]
+                    #copy dictionaries back to settings
+                    apt.SETTINGS[key]['shallow'] = self._tk_vars[key]['shallow'].copy()
+                    apt.SETTINGS[key]['recursive'] = self._tk_vars[key]['recursive'].copy()
+                    pass
+                # --- WORKSPACES ---
+                elif(key == 'workspace'):
+                    #load records directly from table
+                    self._tk_vars[key] = {}
+                    apt.SETTINGS[key] = {}
+                    for record in self._tb.getAllValues():
+                        #properly formart market list
+                        mkts = []
+                        for m in list(record[2].split(',')):
+                            if(m != ''):
+                                mkts += [m]
+                        #store the inner workspace dictionaries
+                        self._tk_vars[key][record[0]] = {'path' : record[1], 'market' : mkts}
+                        #copy dictionary back to settings
+                        apt.SETTINGS[key][record[0]] = self._tk_vars[key][record[0]].copy()
+                    pass
+                # --- OTHERS/SIMPLE STRING VARIABLES ---
                 elif(isinstance(field, dict) == False):
                     apt.SETTINGS[key][name] = field.get()
+                # --- ? ---
                 else:
-                    if(key == 'label'):
-                        #load records directly from table for recursive
-                        if(self._tgl_labels.get() == 0):
-                            self._tk_vars[key]['recursive'] = {}
-                            for record in self._tb.getAllValues():
-                                self._tk_vars[key]['recursive'][record[0]] = record[1]
-                        #load records directly from table for shallow
-                        else:
-                            self._tk_vars[key]['shallow'] = {}
-                            for record in self._tb.getAllValues():
-                                self._tk_vars[key]['shallow'][record[0]] = record[1]
-                        #copy dictionaries back to settings
-                        apt.SETTINGS[key]['shallow'] = self._tk_vars[key]['shallow'].copy()
-                        apt.SETTINGS[key]['recursive'] = self._tk_vars[key]['recursive'].copy()
-                        pass
-                    elif(key == 'workspace'):
-                        #load records directly from table
-                        self._tk_vars[key] = {}
-                        apt.SETTINGS[key] = {}
-                        for record in self._tb.getAllValues():
-                            mkts = []
-                            for m in list(record[2].split(',')):
-                                if(m != ''):
-                                    mkts += [m]
-                            self._tk_vars[key][record[0]] = {'path' : record[1], 'market' : mkts}
-                            apt.SETTINGS[key][record[0]] = self._tk_vars[key][record[0]].copy()
-
+                    log.error("A saving error has occurred.")
+        #write back to legohdl.cfg
         apt.save()
-        apt.dynamicProfiles()
-        log.info("Settings saved.")
+        #inform the user
+        log.info("Settings saved successfully.")
         pass
 
     def openDocs(self):
