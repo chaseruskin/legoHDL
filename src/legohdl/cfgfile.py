@@ -312,8 +312,12 @@ class CfgFile:
         '''
         if(isinstance(str_int, int)):
             return str_int
+        mult = 1
+        if(len(str_int) and str_int[0] == '-'):
+            mult = -1
+            str_int = str_int[1:]
         if(str_int.isdigit()):
-            return int(str_int)
+            return int(str_int)*mult
         else:
             return 0
 

@@ -17,6 +17,7 @@ try:
     import tkinter as tk
     from tkinter.ttk import *
     from tkinter import messagebox
+    from tkinter import font
 except ModuleNotFoundError:
     import_success = False
 
@@ -244,7 +245,22 @@ remote connection is empty.",
                     pass
                 # --- OTHERS/SIMPLE STRING VARIABLES ---
                 elif(isinstance(field, dict) == False):
-                    apt.SETTINGS[key][name] = field.get()
+                    e = field.get()
+                    if(isinstance(e, str)):
+                        #split to identify any paths and ENV_NAME
+                        words = e.split()
+                        for i in range(len(words)):
+                            if(words[i].count(apt.ENV_NAME)):
+                                words[i] = words[i].replace(apt.ENV_NAME, apt.HIDDEN)
+                            if(os.path.exists(os.path.expanduser(words[i]))):
+                                words[i] = apt.fs(words[i])
+                        #regroup into one string
+                        e = ''
+                        for c in words:
+                            e = e + c + ' '
+                        e.strip()
+                    field.set(e)
+                    apt.SETTINGS[key][name] = e
                 # --- ? ---
                 else:
                     log.error("A saving error has occurred.")
@@ -272,7 +288,8 @@ remote connection is empty.",
         pass
 
     def loadFields(self, section):
-        comment_font = ('Arial', 11)
+        ft = font.nametofont("TkSmallCaptionFont")
+        comment_font = ft
         wrap_len = 500
         #print('Loading',section+'...')
         #clear all widgets from the frame
@@ -314,7 +331,7 @@ remote connection is empty.",
                     else:
                         entry = tk.Entry(self._field_frame, width=40, textvariable=self._tk_vars[section][field])
 
-                    entry.grid(row=i, column=2, columnspan=2, padx=padx, pady=pady, sticky=field_value_pos)
+                    entry.grid(row=i, column=2, columnspan=10, padx=padx, pady=pady, sticky=field_value_pos)
                     pass
                 elif(isinstance(value, bool)):
                     self._tk_vars[section][field] = tk.BooleanVar(value=apt.SETTINGS[section][field])
@@ -329,7 +346,7 @@ remote connection is empty.",
                     
                     if(field == 'refresh-rate'):
                         wheel = tk.ttk.Spinbox(self._field_frame, from_=-1, to=1440, textvariable=self._tk_vars[section][field], wrap=True)
-                        wheel.grid(row=i, column=2, columnspan=2, padx=padx, pady=pady, sticky=field_value_pos)
+                        wheel.grid(row=i, column=2, columnspan=10, padx=padx, pady=pady, sticky=field_value_pos)
                     pass
                 i += 1
                 self._comments = tk.Label(self._field_frame, font=comment_font, text=self.COMMENTS[field], wraplength=wrap_len, justify="left")
@@ -757,7 +774,13 @@ class Table:
         #get the fields from the entry boxes
         data = []
         for ii in range(len(self.getEntries())):
-            data += [self.getEntries()[ii].get()]
+            #replace ENV_NAME with correct path
+            e = str(self.getEntries()[ii].get())
+            if(e.count(apt.ENV_NAME)):
+                e = e.replace(apt.ENV_NAME, apt.HIDDEN)
+            if(os.path.exists(os.path.expanduser(e))):
+                e = apt.fs(e)
+            data += [e]
 
         #define rules for updating data fields
         if(self.validEntry(data, new=False)):
@@ -774,7 +797,12 @@ class Table:
         #get the fields from the entry boxes
         data = []
         for ii in range(len(self.getEntries())):
-            data += [self.getEntries()[ii].get()]
+            e = str(self.getEntries()[ii].get())
+            if(e.count(apt.ENV_NAME)):
+                e = e.replace(apt.ENV_NAME, apt.HIDDEN)
+            if(os.path.exists(os.path.expanduser(e))):
+                e = apt.fs(e)
+            data += [e]
 
         if(self.validEntry(data, new=True)):
             #now add to new space at end
