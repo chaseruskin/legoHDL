@@ -25,7 +25,7 @@ Documentation can be found [here](https://hdl.notion.site/legoHDL-f798525eee2f43
 
 
 ### __Roadmap__
-The project is currently under development, and the [roadmap](./ROADMAP.md) gives a glimpse into what is being developed with new things always being added.
+The project is currently under development, and the [roadmap](https://github.com/c-rus/legoHDL/projects/1) gives a glimpse into what is being developed with new things always being added.
 
 ### __Trying it out__
 Being under active development, some things are out-of-date in the documentation and features are constantly being changed. If you still want to try some things out, you currently can:
