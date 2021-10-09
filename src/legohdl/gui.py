@@ -33,10 +33,10 @@ class GUI:
         'refresh-rate' : 
 "How often to synchronize markets with their remote every day. Set to -1 to refresh on every call. \
 Max value is 1440 (every minute). Evenly divides the refresh points throughout the 24-hour day. \
-This setting is the automation of the 'refresh' command.",
+This automates the 'refresh' command.",
 
         'template' : 
-"The path from where to copy a template folder when making a new block. If an empty assignment, \
+"The path to copy a template folder when making a new block. If an empty assignment, \
 it will use the built-in template folder.",
 
         'multi-develop' : 
@@ -65,7 +65,8 @@ Special default labels for *.vhd and *.vhdl are @VHDL-LIB, @VHDL-SRC, @VHDL-SIM,
 
         'script' : 
 "User-defined aliases to execute backend scripts/tools. The command field is what will be executed \
-as-if through the terminal.",
+as-if through the terminal. Enter the alias to legoHDL during the build command prepended with a + symbol. \
+Use scripts to read a block's exported blueprint file and perform custom actions on the collected data.",
 
         'workspace' : 
 "User-defined spaces for working with blocks. Blocks must appear in the workspace's path to be \
@@ -76,9 +77,13 @@ those of another workspace. List multiple markets by separating values with a co
         'market' : 
 "The list of available markets to be connected to workspaces. A market allows blocks to be visible \
 from remote repositories and downloaded/installed across machines. If a market is not configured \
-to a remote repository, its remote connection is empty.",
+to a remote repository, its remote connection is empty. Markets identified by remote connection cannot \
+be renamed.",
 
-        'profiles' : "A list of profiles to import settings, templates, and/or scripts.",
+        'profiles' : 
+"A list of profiles to import settings, templates, and/or scripts. Add a template by creating a template/ folder \
+at the root of profile. Add scripts into a scripts/ folder to be available for import. Add a legohdl.cfg file to configure \
+settings that will be merged in during that profile's import.",
     }
 
     def __init__(self):
