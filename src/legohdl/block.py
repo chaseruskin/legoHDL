@@ -235,13 +235,13 @@ class Block:
             return
         #in order to release to market, we must have a valid git remote url
         url = self.grabGitRemote()
-        if(url == None):
-            # :todo: package the project as a zip in the temp folder
-            if(self.__market != None):
-                cont = apt.confirmation("legohdl will not release to market "+self.__market.getName()+" because this block is not tied to a remote. Proceed anyway?")
-                #user decided that is not OKAY, exiting release
-                if(cont == False):
-                    exit(log.info("Did not release "+ver))
+        #no longer requires a remote url to send as release
+        #if(url == None):
+        #    if(self.__market != None):
+        #        cont = apt.confirmation("legohdl will not release to market "+self.__market.getName()+" because this block is not tied to a remote. Proceed anyway?")
+        #        #user decided that is not OKAY, exiting release
+        #        if(cont == False):
+        #            exit(log.info("Did not release "+ver))
 
         #user decided to proceed with release
         self.setMeta('version', ver[1:])
@@ -276,13 +276,14 @@ class Block:
         #push to remote codebase!! (we have a valid remote url to use)
         if(url != None):
             self.pushRemote()
-        #no other actions should happen when no url is exists
-        else:
-            return
-        #publish on market/bazaar! (also publish all versions not found)
+        # #no other actions should happen when no url is exists
+        # else:
+        #     return
+        #publish on market! (also publish all versions not found)
         if(self.__market != None):
             changelog_txt = self.getChangeLog(self.getPath())
             self.__market.publish(self.getMeta(every=True), zip_file, options, sorted_versions, changelog_txt)
+            return
         elif(self.getMeta("market") != None):
             log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
@@ -316,7 +317,7 @@ class Block:
         shutil.rmtree(tmp_path, onerror=apt.rmReadOnly)
         #unzip file
         #self.unzip(tmp_dir+zip_name)
-        print('zip file:',apt.fs(tmp_dir+zip_name+'.block'))
+        #print('zip file:',apt.fs(tmp_dir+zip_name+'.block'))
         return apt.fs(tmp_dir+zip_name+'.block')
 
     def unzip(self, path):
