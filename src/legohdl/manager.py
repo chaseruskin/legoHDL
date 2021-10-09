@@ -1479,8 +1479,10 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                     log.error("No profile exists as "+value)
             #open settings
             elif(options.count("settings")):
-                settings_gui = GUI()
-                if(settings_gui.initialized() == False):
+                settings_gui = None
+                if(options.count("file") == 0):
+                    settings_gui = GUI()
+                if(settings_gui == None or settings_gui.initialized() == False):
                     log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
                     apt.execute(apt.SETTINGS['general']['editor'], apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
             #open block
