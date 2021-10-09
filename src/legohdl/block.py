@@ -296,16 +296,29 @@ class Block:
         tmp_dir = apt.HIDDEN+"tmp/"
         os.makedirs(tmp_dir, exist_ok=True)
         #create zip file name
-        zip_name = self.getName(low=False)+'-'+self.getVersion()+'.zip'
-        log.info("Creating "+zip_name+"...")
+        zip_name = self.getName(low=False)+'-'+self.getVersion()+'.block'
+        log.info("Zipping "+zip_name+"...")
         #create new zip file and write all files
-        z = zipfile.ZipFile(tmp_dir+zip_name, 'w')
-        #print(all_files)
-        for f in all_files:
-            z.write(f, os.path.relpath(f))
+        with zipfile.ZipFile(tmp_dir+zip_name, 'w') as z:
+            #print(all_files)
+            for f in all_files:
+                z.write(f, os.path.relpath(f))
+            z.close()
         
         #clean  up temp directory
-        shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
+        #shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
+        #os.rename(tmp_dir+zip_name, tmp_dir+zip_name.replace('.block','.zip'))
+        #zip_name = zip_name.replace('.block','.zip')
+        self.unzip(tmp_dir+zip_name)
+        pass
+
+    def unzip(self, path):
+        zip_name = os.path.basename(path)
+        log.info("Unzipping "+zip_name+"...")
+        with zipfile.ZipFile(path, 'r') as z:
+            z.extractall(path.replace(zip_name, self.getName(low=False)))
+            z.close() 
+            pass
         pass
     
     def sortVersions(self, unsorted_vers):
