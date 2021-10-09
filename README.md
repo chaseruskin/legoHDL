@@ -2,7 +2,7 @@
 
 # legoHDL
 ![ci-build](https://github.com/c-rus/legohdl/actions/workflows/build.yml/badge.svg)
-### The simple, lightweight, powerful HDL package manager and development tool.
+### The custom, lightweight, and powerful HDL package manager and development tool.
   
 <br />  
 
@@ -16,7 +16,7 @@ Supports VHDL and Verilog/SystemVerilog with mixed language support.
 
 <br />
 
-legoHDL is available to work completely local or along with remote locations to collaborate and share blocks with others. It is designed to give the developer complete customization and increased productivity in their workflow.
+legoHDL is available to work completely local or along with remote locations to collaborate and share blocks with others. It is designed to give the developer complete customization and increased productivity in their workflow. Settings can be modified via an integrated GUI.
 <br /> 
 
 ### __Documentation__
@@ -45,7 +45,7 @@ Once the roadmap is complete for v1.0.0, users will be able to install legoHDL d
 
 4. Enter other prompted information such as your name, text-editor, and workspace path.
 
-5. Ready to build! Create a block from the imported default template and automtically open it in the configured text-editor: `legohdl new demo.MyBlock -open`. Refer
+5. Ready to build! Create a block from the imported default template and automatically open it in the configured text-editor: `legohdl new Demo.MyBlock -open`. Refer
 to the [documentation](https://hdl.notion.site/legoHDL-f798525eee2f4378bcf5e970ae6373cf) for more details.
 
 ### Commands
@@ -62,7 +62,7 @@ Development
    open         opens the downloaded block with the configured text-editor
    port         print ports list of specified entity
    graph        visualize dependency graph for reference
-   export       generate a recipe file from labels
+   export       generate a blueprint file from labels
    build        execute a custom configured script
    run          export and build in a single step
    release      release a new version of the current block
