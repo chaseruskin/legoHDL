@@ -18,7 +18,4 @@ jobs:
       - run: legohdl show mux_2x1
       - run: legohdl show sample.mux_2x1 -version
       - run: legohdl port sample.mux_2x1 -map
-      - run: legohdl config 'python -c "import os,sys; os.chdir(sys.argv[1]); os.system(\"/bin/bash\")"' -editor
-      - run: legohdl download mux_2x1
-      - run: legohdl open mux_2x1
-      - run: legohdl graph
+      - run: legohdl port sample.mux_2x1 -arch
