@@ -311,13 +311,15 @@ class legoHDL:
 
         inc_sim = (options.count('ignore-tb') == 0)
 
+        blueprint_filepath = build_dir+"blueprint"
+
         log.info("Finding toplevel design...")
 
         #get the Unit objects for the top_dog, top design, and top testbench
         top_dog,top,tb = block.identifyTopDog(top, inc_sim=inc_sim)
         #print(top_dog,top,tb)
         
-        output = open(build_dir+"blueprint", 'w')   
+        output = open(blueprint_filepath, 'w')   
 
         #mission: recursively search through every src VHD file for what else needs to be included
         unit_order,block_order = self.formGraph(block, top_dog)
@@ -429,6 +431,8 @@ class legoHDL:
         output.close()
         #update the derives section to give details into what blocks are required for this one
         block.updateDerivatives(block_order)
+
+        log.info("Blueprint located at: "+blueprint_filepath)
         log.info("success")
         pass
 
@@ -442,18 +446,19 @@ class legoHDL:
         #start with top unit (returns all units if no top unit is found (packages case))
         block.grabUnits(top, override=True)
         hierarchy = Unit.Hierarchy
-        hierarchy.output()
+        #print the dependency tree
+        hierarchy.output(block.getLib(low=True)+'.'+top)
         
         unit_order,block_order = hierarchy.topologicalSort()
 
-        print('---ENTITY ORDER---')
-        for i in range(0, len(unit_order)):
-            u = unit_order[i]
-            if(not u.isPKG()):
-                print(u.getFull(),end='')
-                if(i < len(unit_order)-1):
-                    print(' -> ',end='')
-        print()
+        # print('---ENTITY ORDER---')
+        # for i in range(0, len(unit_order)):
+            # u = unit_order[i]
+            # if(not u.isPKG()):
+                # print(u.getFull(),end='')
+                # if(i < len(unit_order)-1):
+                    # print(' -> ',end='')
+        # print()
 
         print('---BLOCK ORDER---')
         #ensure the current block is the last one on order
