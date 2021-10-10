@@ -94,19 +94,35 @@ class Graph:
         return order,block_order
 
     #only display entities in the tree (no package units)
-    def output(self):
-        print('---DEPENDENCY TREE---')
-        for v in self.__adj_list.keys():
-            if(v not in self._unit_bank.keys()):
-                exit(log.error("Entity "+v+" may be missing architecture."))
-            elif(not self._unit_bank[v].isPKG()):
-                print("[",v,"]",end=' <-- ')
-                for u in self.__adj_list[v]:
-                    if(u not in self._unit_bank.keys()):
-                        exit(log.error("Entity "+u+" may be missing architecture."))
-                    elif(not self._unit_bank[u].isPKG()):
-                        print(u,end=' ')
-                print()
+    def output(self, top, leaf='+-'):
+        first = (leaf == '+-')
+        #print title if method is on top-level entity
+        if(first):
+            print('---DEPENDENCY TREE---')
+        #start with top level
+        if(top not in self._unit_bank.keys()):
+            exit(log.error('Entity '+top+' may be missing an architecture.'))
+        if(not self._unit_bank[top].isPKG()):
+            #uncomment this next line to print market along with entity
+            #print(leaf,self._unit_bank[top].getMarket()+'.'+top)
+            temp_leaf = leaf
+            #skip first bar because everything is under top-level entity
+            if(not first):
+                temp_leaf = ' '+leaf[1:]
+            #print to console
+            print(temp_leaf,top)
+        for sub_entity in self.__adj_list[top]:
+            next_leaf = '| '+leaf
+            #remove rightmost bar if the parent is the end of a branch
+            if(leaf.count('\\')):
+                last_bar = next_leaf.rfind('|')
+                next_leaf = next_leaf[:last_bar] + ' ' + next_leaf[last_bar+1:]
+            #add trailing slant if end of the branch
+            if(sub_entity == self.__adj_list[top][-1]):
+                next_leaf = next_leaf.replace('+','\\')
+
+            self.output(sub_entity, next_leaf)
+        pass
 
     def getVertices(self):
         return len(self.__adj_list)
