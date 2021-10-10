@@ -1437,7 +1437,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
 
         elif(command == "run" and self.blockCWD.isValid()):
-            self.export(self.blockCWD, options)
+            self.export(self.blockCWD, top=None, options=options)
             self.build(value)
             pass
 
