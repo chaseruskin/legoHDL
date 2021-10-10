@@ -1,7 +1,9 @@
-# legoHDL
+legoHDL
+=======
+
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
    getting_started
    complete_walkthrough
