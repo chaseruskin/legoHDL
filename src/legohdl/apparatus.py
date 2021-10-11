@@ -100,7 +100,7 @@ class Apparatus:
 
     __active_workspace = None
 
-    DOCUMENTATION_URL = 'https://hdl.notion.site/legoHDL-f798525eee2f4378bcf5e970ae6373cf'
+    DOCUMENTATION_URL = 'https://legohdl.readthedocs.io/en/latest/index.html'
 
     @classmethod
     def initialize(cls):

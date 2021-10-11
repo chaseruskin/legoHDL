@@ -21,7 +21,7 @@ legoHDL is available to work completely local or along with remote locations to 
 
 ### __Documentation__
 
-Documentation can be found [here](https://hdl.notion.site/legoHDL-f798525eee2f4378bcf5e970ae6373cf). 
+Documentation can be found [here](https://legohdl.readthedocs.io/en/latest/index.html). 
 
 
 ### __Roadmap__
