@@ -1,5 +1,8 @@
+|title_bar|
+===========
+
 legoHDL
-=======
+-------
 
 legoHDL is a simple, powerful, and flexible package manager for HDL designs. 
 It provides full package management capabilities as one would expect from 
@@ -22,3 +25,6 @@ Visit that site for more documentation until migration is complete.
    legohdl/writing_scripts
    legohdl/commands
    legohdl/managing_settings
+
+
+.. |title_bar| image:: assets/title_3x.png
