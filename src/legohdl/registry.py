@@ -204,6 +204,9 @@ class Registry:
                 if('block' not in tmp.keys() or tmp['block']['name'] == cfg.NULL):
                     log.warning("Invalid "+apt.MARKER+" file: "+file)
                     continue
+                elif(tmp['block']['library'] == cfg.NULL):
+                    log.warning("Invalid "+apt.MARKER+" file: "+file)
+                    continue
             s = file.rfind('/')
             c = Block(path=file[:s+1])
             if(c.getLib() not in self._local_prjs.keys()):

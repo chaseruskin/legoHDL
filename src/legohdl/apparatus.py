@@ -29,11 +29,13 @@ class Apparatus:
     PRFL_EXT = ".prfl"
     #identify custom configuration files
     CFG_EXT = ".cfg"
+    #identify a valid HDL design project folder
+    BLOCK_EXT = ".cfg"
 
     SETTINGS_FILE = "legohdl"+CFG_EXT
 
     #identify a valid block project within the framework
-    MARKER = "Block"+CFG_EXT
+    MARKER = "Block"+BLOCK_EXT
 
     #looks for this file upon a release to ask user to update changelog
     CHANGELOG = "CHANGELOG.md"

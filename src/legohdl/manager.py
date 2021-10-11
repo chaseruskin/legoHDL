@@ -1294,8 +1294,10 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             self.build(value)
             pass
 
-        elif(command == "new" and len(package)):
-            if(L == ''):
+        elif(command == "new"):
+            if(N == ''):
+                exit(log.error("A block must have a name as part of its title."))
+            elif(L == ''):
                 exit(log.error("A block must have a library as part of its title."))
             if(exists):
                 exit(log.error("A block already exists as "+package))
@@ -1315,7 +1317,6 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             #if this remote is bare, we cannot create a blank project from it.
             if(git_url != None and apt.isRemoteBare(git_url) == False):
                 exit(log.error("Cannot configure with remote because it is not empty! Try using the 'init' command"))
-                pass
 
             #try to validate market
             mkt_obj = self.identifyMarket(M)
