@@ -43,7 +43,7 @@ class Market:
                     self._repo = git.Repo(self.getPath())
                     self._repo.git.add(update=True)
                     self._repo.index.add(self._repo.untracked_files)
-                    self._repo.git.commit('-m',"Initializes market")
+                    self._repo.git.commit('-m',"Initializes legohdl market")
                     self._repo.git.push("-u","origin",str(self._repo.head.reference))
             else:
                 self.url = None
@@ -52,6 +52,10 @@ class Market:
                 log.warning("No remote repository configured for "+self.getName(low=False))
                 #create blank market marker file
                 open(self.getPath()+self.getName(low=False)+apt.MRKT_EXT, 'w').close()
+                #add and commit the market .mrkt file
+                apt.execute('git','-C',self.getPath(),'add','.')
+                apt.execute('git','-C',self.getPath(),'commit','-m','"Initializes legohdl market"','-q')
+                pass
             
         self._repo = git.Repo(self.getPath())
         pass
@@ -110,9 +114,13 @@ class Market:
         active_branch = self._repo.active_branch
         #switch to side branch if '-soft' flag raised
         tmp_branch = block_meta['library']+"."+block_meta['name']+"-"+block_meta['version']
-        if(self.url != None and options.count("soft")):
-            log.info("Checking out new branch '"+tmp_branch+"' to release block to "+self.getName(low=False)+"...")
-            self._repo.git.checkout("-b",tmp_branch)
+        #try to publish on a side branch (possibly for team reviewing)
+        if(options.count("soft")):
+            if(self.url != None):
+                log.info("Checking out new branch '"+tmp_branch+"' to release block to "+self.getName(low=False)+"...")
+                self._repo.git.checkout("-b",tmp_branch)
+            else:
+                log.warning("Cannot perform soft release because this market has no remote.")
 
         #locate block's directory within market
         block_dir = apt.fs(self._local_path+"/"+block_meta['library']+"/"+block_meta['name']+"/")
@@ -150,7 +158,7 @@ class Market:
         pass
         
         #commit all releases
-        self._repo.git.commit('-m',"Adds "+block_meta['library']+'.'+block_meta['name']+" v"+block_meta['version'])
+        self._repo.git.commit('-m',"Adds "+block_meta['library']+'.'+block_meta['name']+"-v"+block_meta['version'])
         #push to remote market repository
         if(self.url != None):
             self._repo.git.push("-u","origin",str(self._repo.head.reference))

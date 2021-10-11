@@ -1161,7 +1161,7 @@ scripts)?", warning=False)
         try:
             func(path)
         except PermissionError:
-            exit("Failed to remove path due to being open in another process.")
+            exit(log.error("Failed to remove path due to being open in another process."))
     pass
 
     @classmethod

@@ -222,7 +222,7 @@ class Block:
                 patch += 1
             #no correct flag was found
             else:
-                exit(log.error("No correct flag was identified."))
+                exit(log.error("No valid version flag was identified."))
         #get version numbering from manual set
         else:
             ver = ver[1:]
@@ -283,8 +283,10 @@ class Block:
             log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
     
-    #merge sort (1/2) - returns a list highest -> lowest
     def sortVersions(self, unsorted_vers):
+        '''
+        Mergesort (1/2) - returns a list from highest to lowest.
+        '''
         #split list
         midpoint = int(len(unsorted_vers)/2)
         l1 = unsorted_vers[:midpoint]
@@ -296,8 +298,10 @@ class Block:
             return unsorted_vers
         pass
 
-    #merge sort (2/2) - begin merging lists
     def mergeSort(self, l1, r1):
+        '''
+        Mergesort (2/2) - begin merging lists.
+        '''
         sorting = []
         while len(l1) and len(r1):
             if(Block.biggerVer(l1[0],r1[0]) == r1[0]):
@@ -311,6 +315,10 @@ class Block:
         return sorting
 
     def getTaggedVersions(self):
+        '''
+        Returns a list of all version #'s that had a valid TAG_ID appended from
+        the git repository tags.
+        '''
         all_tags = self._repo.git.tag(l=True)
         #split into list
         all_tags = all_tags.split("\n")
@@ -330,11 +338,16 @@ class Block:
 
     @classmethod
     def stdVer(cls, ver):
+        '''
+        Standardize the version argument by swapping _ with .
+        '''
         return ver.replace("_",".")
 
-    #returns rhs if equal
     @classmethod
     def biggerVer(cls, lver, rver):
+        '''
+        Compare two versions. Retuns the higher version, or RHS if both equal.
+        '''
         l1,l2,l3 = cls.sepVer(lver)
         r1,r2,r3 = cls.sepVer(rver)
         if(l1 < r1):
@@ -345,9 +358,11 @@ class Block:
             return rver
         return lver
 
-    #return true if can be separated into 3 numeric values and starts with 'v'
     @classmethod
     def validVer(cls, ver, maj_place=False):
+        '''
+        Returns true if can be separated into 3 numeric values and starts with 'v'.
+        '''
         ver = cls.stdVer(ver)
         #must have 2 dots and start with 'v'
         if(not maj_place and (ver == None or ver.count(".") != 2 or ver.startswith('v') == False)):
@@ -367,9 +382,11 @@ class Block:
                 ver[f_dot+1:l_dot].isdecimal() and \
                 ver[l_dot+1:].isdecimal())
     
-    #separate the version into 3 numeric values
     @classmethod
     def sepVer(cls, ver):
+        '''
+        Separate a version into 3 integer values.
+        '''
         ver = cls.stdVer(ver)
         if(ver == '' or ver == None):
             return 0,0,0
@@ -420,8 +437,10 @@ class Block:
     def getAvailableVers(self):
         return ['v'+self.getHighestTaggedVersion()]
     
-    #load the metadata from the Block.cfg file
     def loadMeta(self):
+        '''
+        Load the metadata from the Block.cfg file into the __metadata dictionary.
+        '''
         with open(self.metadataPath(), "r") as file:
             self.__metadata = cfg.load(file, ignore_depth=True)
             #print(self.__metadata)
@@ -443,6 +462,8 @@ class Block:
         for field in blanks_to_none:
             self.setMeta(field, cfg.castNone(self.getMeta(field)))
             
+        #remember what the metadata looked like initially to compare for determining
+        #   if needing to write file for saving
         if(self._initial_metadata == None):
             self._initial_metadata = self.getMeta().copy()
 
@@ -453,6 +474,7 @@ class Block:
             #dynamically determine the latest valid release point
             self.setMeta('version', avail_vers[0][1:])
 
+        #ensure derives is a proper list format
         if(self.getMeta('derives') == cfg.NULL):
             self.setMeta('derives',list())
 
