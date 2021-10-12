@@ -111,6 +111,8 @@ class Graph:
                 temp_leaf = ' '+leaf[1:]
             #print to console
             print(temp_leaf,top)
+        if(len(self.__adj_list) == 0):
+            return
         for sub_entity in self.__adj_list[top]:
             next_leaf = '| '+leaf
             #remove rightmost bar if the parent is the end of a branch
