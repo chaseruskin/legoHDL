@@ -8,6 +8,7 @@
 
 from collections.abc import MutableMapping
 
+
 class Map(MutableMapping):
 
     def __init__(self, *args, **kwargs):
@@ -15,22 +16,57 @@ class Map(MutableMapping):
         self.update(dict(*args, **kwargs))
         pass
 
+    
+    def _keytransform(self, k):
+        '''
+        Converts key to lower-case if it is type string.
+        '''
+        if(isinstance(k, str)):
+            k = k.lower()
+        return k
+
+
     def __getitem__(self, k):
         return self._inventory[self._keytransform(k)]
+
 
     def __setitem__(self, k, v):
         self._inventory[self._keytransform(k)] = v
 
+
     def __delitem__(self, k):
         del self._inventory[self._keytransform(k)]
 
-    def _keytransform(self, k):
-        return k.lower()
 
     def __iter__(self):
         return iter(self._inventory)
 
+
     def __len__(self):
         return len(self._inventory)
+
+
+    def __instancecheck__(self, instance):
+        return instance == dict or instance == Map
+
+
+    def __str__(self):
+        return self._inventory.__str__()
+
+
+    def __repr__(self):
+        return self._inventory.__repr__()
+
+
+    def keys(self):
+        return self._inventory.keys()
+
+
+    def items(self):
+        return self._inventory.items()
+
+
+    def values(self):
+        return self._inventory.values()
 
     pass

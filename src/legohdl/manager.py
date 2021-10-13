@@ -42,7 +42,15 @@ class legoHDL:
             print(Script.Jar)
             print(Script.Jar['superscript'])
             s.setAlias('scriptII')
+            Script.Jar['SCRIPTII'].setCommand("echo \"hello world!\"")
             print(Script.Jar['scriptII'])
+            Script.Jar['SCRIPTII'].setCommand("")
+            Script("SCRIPTX", "\n")
+            print(Script.Jar['scriptII'])
+            print("Dictionary:")
+            print(Script.Jar)
+            print(Script.Jar.__instancecheck__(Map))
+            print(isinstance(Script.Jar, dict))
             exit()
             pass
 
