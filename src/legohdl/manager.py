@@ -19,6 +19,8 @@ from .cfgfile import CfgFile as cfg
 from .market import Market
 from .unit import Unit
 from .gui import GUI
+from .script import Script
+from .map import Map
 
 class legoHDL:
 
@@ -29,6 +31,20 @@ class legoHDL:
         Initialize the legoHDL tool. This method specifically parses the command
         line arguments, loads tool-wide settings, and initializes the registry.
         '''
+        #run tests (flip to false to deactivate)
+        if(False):
+            s = Script("superScript","make -f /Users/chase/Develop/HDL/SimpleCircuit/makefile alyze")
+            print(s)
+            m = Map()
+            m['KEY'] = 2
+            print(m.keys())
+
+            print(Script.Jar)
+            print(Script.Jar['superscript'])
+            s.setAlias('scriptII')
+            print(Script.Jar['scriptII'])
+            exit()
+            pass
 
         command = package = ""
         options = []
