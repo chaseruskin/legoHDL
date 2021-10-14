@@ -8,7 +8,6 @@
 ################################################################################
 
 import os, sys, shutil
-import subprocess
 import git
 import logging as log
 from .block import Block
@@ -19,9 +18,7 @@ from .cfgfile import CfgFile as cfg
 from .market import Market
 from .unit import Unit
 from .gui import GUI
-from .script import Script
-from .map import Map
-from .git import Git
+from .test import main as test
 
 class legoHDL:
 
@@ -32,32 +29,6 @@ class legoHDL:
         Initialize the legoHDL tool. This method specifically parses the command
         line arguments, loads tool-wide settings, and initializes the registry.
         '''
-        #run tests (flip to false to deactivate)
-        if(True):
-            s = Script("superScript","make -f /Users/chase/Develop/HDL/SimpleCircuit/makefile alyze")
-            print(s)
-            m = Map()
-            m['KEY'] = 2
-            print(m.keys())
-
-            print(Script.Jar)
-            print(Script.Jar['superscript'])
-            s.setAlias('scriptII')
-            Script.Jar['SCRIPTII'].setCommand("echo \"hello world!\"")
-            print(Script.Jar['scriptII'])
-            Script.Jar['SCRIPTII'].setCommand("")
-            Script("SCRIPTX", "\n")
-            print(Script.Jar['scriptII'])
-            print("Dictionary:")
-            print(Script.Jar)
-            print(Script.Jar.__instancecheck__(Map))
-            print(isinstance(Script.Jar, dict))
-
-            print('git:',Git.isValid(os.getcwd()))
-            here = Git(os.getcwd())
-            here.commit("test commit")
-            exit()
-            pass
 
         command = package = ""
         options = []
@@ -1975,7 +1946,10 @@ The name of the .prfl file is the name of the profile itself.
 
 
 def main():
-    legoHDL()
+    if(sys.argv[1:].count('debug')):
+        test()
+    else:
+        legoHDL()
 
 #entry-point
 if __name__ == "__main__":
