@@ -12,6 +12,7 @@ from .apparatus import Apparatus as apt
 import os
 
 def main():
+    apt.load()
     #run tests (flip to false to deactivate)
     if(False):
         print("--- SCRIPT.PY ---")
@@ -34,14 +35,15 @@ def main():
         print(Script.Jar.__instancecheck__(Map))
         print(isinstance(Script.Jar, dict))
         pass
-    
+
     if(True):
         print('--- GIT CLASS ---')
         #create temporary new block
         tmp_lib = 'Test'
         tmp_name = 'temporal'
         apt.execute('legohdl','new',tmp_lib+'.'+tmp_name)
-        tmp_dir = '/users/chase/develop/eel4712c/'+tmp_lib+'/'+tmp_name+'/'
+
+        tmp_dir = apt.getLocal()+tmp_lib+'/'+tmp_name+'/'
         #enter block's directory
         os.chdir(tmp_dir)
 
