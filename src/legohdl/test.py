@@ -41,17 +41,25 @@ def main():
         #create temporary new block
         tmp_lib = 'Test'
         tmp_name = 'temporal'
-        apt.execute('legohdl','new',tmp_lib+'.'+tmp_name)
-
         tmp_dir = apt.getLocal()+tmp_lib+'/'+tmp_name+'/'
+
+        if(os.path.exists(tmp_dir)):
+            shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
+        
+        apt.execute('legohdl','new',tmp_lib+'.'+tmp_name)
+        
         #enter block's directory
         os.chdir(tmp_dir)
 
         grepo = Git(os.getcwd())
         print(grepo)
-
-
+        open('myfile.txt','w').close()
+        open('myfile.txt2','w').close()
+        grepo.commit('myfile.txt')
+        grepo.add('myfile.txt', 'myfile.txt2')
+        grepo.commit('hello!')
+        grepo.setRemote('https://myplace.git')
         #clean up block
-        shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
+        #shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
         pass
     pass
