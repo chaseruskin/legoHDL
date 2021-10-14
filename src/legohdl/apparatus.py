@@ -1065,7 +1065,7 @@ scripts)?", warning=False)
         return True
     
     @classmethod
-    def execute(cls, *code, subproc=False, quiet=True):
+    def execute(cls, *code, subproc=False, quiet=True, returnoutput=False):
         '''
         Execute the command and runs it as subprocess.
         '''
@@ -1075,7 +1075,10 @@ scripts)?", warning=False)
         
         if(quiet == False):
             log.info(code_line)
-
+        if(returnoutput):
+            proc = subprocess.Popen(code_line.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+            resp = proc.stderr.read()
+            return resp.decode()
         if(subproc):
             rc = subprocess.call(code_line.split())
         else:

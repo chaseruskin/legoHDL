@@ -2,7 +2,7 @@
 # Script: script.py
 # Author: Chase Ruskin
 # Description:
-#   The Script class. A script object can be used to execute a command through
+#   The Script class. A Script object can be used to execute a command through
 #   legohdl, very similiar to how aliases function within the command-line.
 
 import os
@@ -12,7 +12,7 @@ class Script:
 
     #store all scripts in class variable
     Jar = Map()
-
+    
 
     def __init__(self, alias, cmd_call):
         '''

@@ -1,19 +1,20 @@
-################################################################################
-#   Project: legohdl
-#   Script: market.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script describes the attributes and behaviors of legohdl markets.
+# Project: legohdl
+# Script: market.py
+# Author: Chase Ruskin
+# Description:
+#   This script describes the attributes and behaviors of legohdl markets.
 #   A market holds 'pointer' files to legohdl blocks available on the internet
 #   as git repositories.
-################################################################################
 
 import os,shutil,git
 import logging as log
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
+from .map import Map
 
 class Market:
+    #store all markets in a class dictionary
+    Jar = Map()
 
     def __init__(self, name, url):
         self._name = name

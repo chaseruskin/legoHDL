@@ -21,6 +21,7 @@ from .unit import Unit
 from .gui import GUI
 from .script import Script
 from .map import Map
+from .git import Git
 
 class legoHDL:
 
@@ -32,7 +33,7 @@ class legoHDL:
         line arguments, loads tool-wide settings, and initializes the registry.
         '''
         #run tests (flip to false to deactivate)
-        if(False):
+        if(True):
             s = Script("superScript","make -f /Users/chase/Develop/HDL/SimpleCircuit/makefile alyze")
             print(s)
             m = Map()
@@ -51,6 +52,10 @@ class legoHDL:
             print(Script.Jar)
             print(Script.Jar.__instancecheck__(Map))
             print(isinstance(Script.Jar, dict))
+
+            print('git:',Git.isValid(os.getcwd()))
+            here = Git(os.getcwd())
+            here.commit("test commit")
             exit()
             pass
 
