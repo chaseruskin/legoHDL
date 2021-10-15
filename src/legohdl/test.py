@@ -13,11 +13,13 @@ from .market import Market
 from .apparatus import Apparatus as apt
 import os
 from .workspace import Workspace
+from .label import Label
 
 
 def main():
     apt.load()
     #run tests (flip to false to deactivate)
+
     if(False):
         print("\n--- SCRIPT.PY ---")
         s = Script("superScript","make -f /Users/chase/Develop/HDL/SimpleCircuit/makefile alyze")
@@ -66,10 +68,12 @@ def main():
         #clean up block
         #shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
         pass
+
     if(False):
         print('\n---MARKET CLASS---')
         print(Market.Jar)
-    if(True):
+
+    if(False):
         print('\n---WORKSPACE CLASS---')
         #create workspaces
         tmp_ws = "super_WS"
@@ -106,7 +110,8 @@ def main():
         #remove workspace
         tmp.remove()
         other.remove()
-    if(True):
+
+    if(False):
         print('\n---PROFILE CLASS---')
 
         tmp = Profile("Loadout_I")
@@ -125,5 +130,15 @@ def main():
         print("Last import:",Profile.LoadLastImport())
 
         tmp.remove()
-        pass
+        
+    if(True):
+        print('\n---LABEL CLASS---')
+
+        t = Label("PY-MODEL", ['*.py'], False)
+    
+        print(t)
+        
+        print(Label.Jar)
+
+        print(Label.Jar[t.getName()])
     pass

@@ -801,8 +801,18 @@ scripts)?", warning=False)
             cls.__active_workspace = name
         pass
 
+
     @classmethod
     def confirmation(cls, prompt, warning=True):
+        '''
+        Prompt the user to verify a given action before proceeding.
+
+        Parameters:
+            prompt (str): the message to display for confirmation
+            warning (bool): determine if to use log.info or log.warning
+        Returns:
+            (bool): true if user inputted 'y', false if 'n'
+        '''
         if(warning):
             log.warning(prompt+" [y/n]")
         else:
@@ -820,6 +830,45 @@ scripts)?", warning=False)
                 verify = input("[y/n]").lower()
             except KeyboardInterrupt:
                 exit("\nExited prompt.")
+
+
+    @classmethod
+    def StrToList(self, c_str, delim=','):
+        '''
+        Converts a string seperated by `delim` to a list of its string values.
+        Strips off whitespace for each value.
+
+        Parameters:
+            c_str (str): unparsed string
+            delim (str): valid delimiter to parse the string
+        Returns:
+            [(str)]: list of words/values found in the unparsed string
+        '''
+        parsed = c_str.split(delim)
+        #trim off any whitespace or \n characters
+        for i in range(len(parsed)):
+            parsed[i] = parsed[i].strip()
+
+        return parsed
+
+
+    @classmethod
+    def ListToStr(self, in_list, delim=','):
+        '''
+        Converts a list to a string separated by `delim`.
+
+        Parameters:
+            in_list ([str]): list of string items to convert
+            delim (str): valid delimiter to separate list items in the string
+        Returns:
+            str: single complete string with items separated by delimiter
+        '''
+        single_str = ''
+        #concatenate all items together split by delimiter
+        for w in in_list:
+            single_str = single_str + w + delim
+        return single_str
+
 
     @classmethod
     def readyForRefresh(cls):
