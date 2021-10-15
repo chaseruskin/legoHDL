@@ -23,7 +23,7 @@ setuptools.setup(
     ],
     entry_points='''
             [console_scripts]
-            legohdl=legohdl.manager:main
+            legohdl=legohdl.legohdl:main
         ''',
     package_dir={"": "src"},
     package_data={"": ['data/icon.gif']},

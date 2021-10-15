@@ -1,6 +1,6 @@
 ################################################################################
 #   Project: legohdl
-#   Script: manager.py
+#   Script: legohdl.py
 #   Author: Chase Ruskin
 #   Description:
 #       This script is the entry-point to the legohdl program. It parses the
