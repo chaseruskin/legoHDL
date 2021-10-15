@@ -52,7 +52,7 @@ def main():
         if(os.path.exists(tmp_dir)):
             shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
         
-        apt.execute('legohdl','new',tmp_lib+'.'+tmp_name)
+        apt.execute('legohdl','new', tmp_lib+'.'+tmp_name)
         
         #enter block's directory
         os.chdir(tmp_dir)
@@ -64,16 +64,45 @@ def main():
         grepo.commit('myfile.txt')
         grepo.add('myfile.txt', 'myfile.txt2')
         grepo.commit('hello!')
-        grepo.setRemote('https://myplace.git')
+        print("bad repo:")
+        print(grepo.isValidRepo('https://myplace.git', remote=True))
+        print("pong repo ssh:")
+        print(Git.isValidRepo('git@gitlab.com:chase800/pong.git', remote=True))
+        print('pong repo https:')
+        print(Git.isValidRepo('https://gitlab.com/chase800/pong.git', remote=True))
+        print(Git.isBlankRepo('https://gitlab.com/chase800/pong.git', remote=True))
+        print('blank repo:')
+        print(Git.isValidRepo('https://gitlab.com/chase800/blank.git', remote=True))
+        print(Git.isBlankRepo('https://gitlab.com/chase800/blank.git', remote=True))
+        print('real repo:')
+        print(Git.isBlankRepo('/users/chase/desktop/tmp/'))
+
+        print('cloning tests:')
+        rep1 = Git('/users/chase/desktop/myBlock', clone='https://gitlab.com/chase800/blank.git')
+
+
+        print('remote url tests:')
+        print(rep1.getRemoteName())
+        print(rep1.getRemoteURL())
+        print(grepo.getRemoteName())
+        print(grepo.getRemoteURL())
+
+        print(grepo)
+
+        print(rep1)
+        grepo.setRemoteURL('https://myplace.git')
+        print(grepo)
+        grepo.setRemoteURL('https://gitlab.com/chase800/blank.git')
+        print(grepo)
         #clean up block
-        #shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
+        shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
         pass
 
     if(False):
         print('\n---MARKET CLASS---')
         print(Market.Jar)
 
-    if(True):
+    if(False):
         print('\n---WORKSPACE CLASS---')
         #create workspaces
         tmp_ws = "super_WS"
@@ -134,7 +163,7 @@ def main():
 
         tmp.remove()
         
-    if(True):
+    if(False):
         print('\n---LABEL CLASS---')
 
         t = Label("PY-MODEL", ['*.py'], False)
