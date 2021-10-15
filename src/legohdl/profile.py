@@ -7,11 +7,12 @@
 #   to save certain setting configurations (loadouts) and share settings across
 #   users.
 
-from genericpath import isdir
-import os,shutil
+import os,shutil,copy
 import logging as log
+from .git import Git
 from .map import Map
 from .apparatus import Apparatus as apt
+from .cfgfile import CfgFile as cfg
 
 
 class Profile:
@@ -24,26 +25,221 @@ class Profile:
 
     def __init__(self, name, url=None):
         '''
-        Creates a Profile instance.
+        Creates a Profile instance. If creating from a url, the `name` parameter
+        will be ignored and the `name` will equal the filename of the .prfl.
 
         Parameters:
             name (str): profile's name
+            url (str): optionally a profile url to create a profile from
         Returns:
             None
         '''
-        #set profile's name
-        self._name = name
-        #set profile's directory
-        self._prfl_dir = apt.fs(apt.HIDDEN+"profiles/"+self.getName())
+        success = True
+        if(url != None):
+            success = self.loadFromURL(url)
+        else:
+            #set profile's name
+            self._name = name
 
-        #create profile directory if DNE
-        os.makedirs(self.getProfileDir(), exist_ok=True)
-        #create profile market file if DNE
-        if(os.path.exists(self.getProfileDir()+self.getName()+apt.PRFL_EXT) == False):
-            open(self.getProfileDir()+self.getName()+apt.PRFL_EXT, 'w').close()
+            #create profile directory if DNE
+            os.makedirs(self.getProfileDir(), exist_ok=True)
+            #create profile market file if DNE
+            if(os.path.exists(self.getProfileDir()+self.getName()+apt.PRFL_EXT) == False):
+                open(self.getProfileDir()+self.getName()+apt.PRFL_EXT, 'w').close()
+            
+            #create git repository
+            self._repo = Git(self.getProfileDir())
         
         #add to the catalog
-        self.Jar[self.getName()] = self
+        if(success):
+            self.Jar[self.getName()] = self
+        pass
+
+    
+    def loadFromURL(self, url):
+        '''
+        Attempts to load/add a profile from an external path/url. Will not add
+        if the path is not a non-empty git repository, does not have .prfl, or
+        the profile name is already taken.
+
+        Parameters:
+            url (str): the external path/url that is a profile to be added
+        Returns:
+            success (bool): if the profile was successfully add to profiles/ dir
+        '''
+        empty_repo = Git.isBlankRepo(url, True) or Git.isBlankRepo(url, False)
+        success = True
+
+        if(Git.isValidRepo(url, True) == False and Git.isValidRepo(url, False) == False):
+            log.error("Invalid repository "+url+".")
+            success = False
+            return success
+
+        #create temp dir
+        os.makedirs(apt.TMP)
+
+        #clone from repository
+        if(empty_repo == False):
+            Git(apt.TMP, clone=url)
+
+            #determine if a .prfl file exists
+            log.info("Locating .prfl file... ")
+            files = os.listdir(apt.TMP)
+            for f in files:
+                prfl_i = f.find(apt.PRFL_EXT)
+                if(prfl_i > -1):
+                    #remove extension to get the profile's name
+                    self._name = f[:prfl_i]
+                    log.info("Identified profile "+self.getName())
+                    break
+            else:
+                log.error("Invalid profile; could not locate .prfl file.")
+                success = False
+
+            #try to add profile if found a name (.prfl file)
+            if(hasattr(self, '_name')):
+                #do not add to profiles if name is already in use
+                if(self.getName().lower() in self.Jar.keys()):
+                    log.error("Cannot add profile "+self.getName()+" due to name conflict.")
+                    success = False
+                #add to profiles folder
+                else:
+                    log.info("Adding profile "+self.getName()+"...")
+                    self._repo = Git(self.getProfileDir(), clone=apt.TMP)
+        else:
+            log.error("Cannot load profile from empty repository.")
+            success = False
+
+        #clean up temp dir
+        shutil.rmtree(apt.TMP, onerror=apt.rmReadOnly)
+        return success
+
+
+    def importLoadout(self, ask=False):
+        '''
+        Load settings, template and/or scripts into legohdl from the profile.
+
+        Parameters:
+            ask (bool): explicitly prompt user at each stage in the process
+        Returns:
+            None
+        '''
+
+
+        def deepMerge(src, dest, setting="", scripts_only=False):
+            '''
+            Merge all values found in src to override destination into a modified
+            dictionary.
+
+            Parameters:
+                src (dict): multi-level dictionary to grab values from
+                dest (dict): multi-level dictionary to append values in
+                scripts_only (bool): only add in script settings
+            Returns:
+                dest (dict): the modified dictionary with new overridden values
+            '''
+            for k,v in src.items():
+                next_level = setting
+                isHeader = isinstance(v, dict)
+                if(setting == ""):
+                    next_level = cfg.HEADER[0]+k+cfg.HEADER[1]+" " if(isHeader) else k
+                else:
+                    if(isHeader):
+                        next_level = next_level + cfg.HEADER[0] + k + cfg.HEADER[1]+" "
+                    else:
+                        next_level = next_level + k
+                #print(next_level)
+                #only proceed when importing just scripts
+                if(scripts_only and next_level.startswith(cfg.HEADER[0]+'script'+cfg.HEADER[1]) == 0):
+                    continue
+                #skip scripts if not explicitly set in argument
+                elif(scripts_only == False and next_level.startswith(cfg.HEADER[0]+'script'+cfg.HEADER[1]) == 1):
+                    continue
+                #go even deeper into the dictionary tree
+                if(isinstance(v, dict)):
+                    if(k not in dest.keys()):
+                        dest[k] = dict()
+                        #log.info("Creating new dictionary "+k+" under "+next_level+"...")
+                    deepMerge(v, dest[k], setting=next_level, scripts_only=scripts_only)
+                #combine all settings except if profiles setting exists in src
+                elif(k != 'profiles'):
+                    #log.info("Overloading "+next_level+"...")
+                    #append to list, don't overwrite
+                    if(isinstance(v, list)):
+                        #create new list if DNE
+                        if(k not in dest.keys()):
+                            #log.info("Creating new list "+k+" under "+next_level+"...")
+                            dest[k] = []
+                        if(isinstance(dest[k], list)):   
+                            for i in v:
+                                #find replace all parts of string with ENV_NAME
+                                if(isinstance(v,str)):
+                                    v = v.replace(apt.ENV_NAME, apt.HIDDEN[:len(apt.HIDDEN)-1])
+                                if(i not in dest[k]):
+                                    dest[k] += [i]
+                    #otherwise normal overwrite
+                    else:
+                        if(isinstance(v,str)):
+                            v = v.replace(apt.ENV_NAME, apt.HIDDEN[:len(apt.HIDDEN)-1])
+                        #do not allow a null value to overwrite an already established value
+                        if(k in dest.keys() and v == cfg.NULL):
+                            continue
+                        dest[k] = v
+                    #print to console the overloaded settings
+                    log.info(next_level+" = "+str(v))
+            return dest
+
+        log.info("Importing profile "+self.getName()+"...")
+        #overload available settings
+        if(self.hasSettings()):
+            act = (ask == False) or apt.confirmation("Import "+apt.SETTINGS_FILE+"?", warning=False)
+            if(act):
+                log.info('Overloading '+apt.SETTINGS_FILE+'...')
+                with open(self.getPath()+apt.SETTINGS_FILE, 'r') as f:
+                    prfl_settings = cfg.load(f)
+                    
+                    dest_settings = copy.deepcopy(apt.SETTINGS)
+                    dest_settings = deepMerge(prfl_settings, dest_settings)
+                    apt.SETTINGS = dest_settings
+            pass
+        #copy in template folder
+        if(self.hasTemplate()):
+            act = (ask == False) or apt.confirmation("Import template?", warning=False)
+            if(act):
+                log.info('Importing template...')
+                shutil.rmtree(apt.HIDDEN+"template/",onerror=apt.rmReadOnly)
+                shutil.copytree(self.getProfileDir()+"template/", apt.HIDDEN+"template/")
+            pass
+        #copy in scripts
+        if(self.hasScripts()):
+            act = (ask == False) or apt.confirmation("Import scripts?", warning=False)
+            if(act):
+                log.info('Importing scripts...')
+                scripts = os.listdir(self.getProfileDir()+'scripts/')
+                for scp in scripts:
+                    log.info("Copying "+scp+" to built-in scripts folder...")
+                    if(os.path.isfile(self.getProfileDir()+'scripts/'+scp)):
+                        #copy contents into built-in script folder
+                        prfl_script = open(self.getProfileDir()+'scripts/'+scp, 'r')
+                        copied_script = open(apt.HIDDEN+'scripts/'+scp, 'w')
+                        #transfer file data via writing it to file
+                        script_data = prfl_script.readlines()
+                        copied_script.writelines(script_data)
+                        #close files
+                        prfl_script.close()
+                        copied_script.close()
+                        pass
+                    pass
+                if(self.hasSettings()):
+                    log.info('Overloading scripts in '+apt.SETTINGS_FILE+'...')
+                    with open(self.getProfileDir()+apt.SETTINGS_FILE, 'r') as f:
+                        prfl_settings = cfg.load(f)
+                        dest_settings = copy.deepcopy(apt.SETTINGS)
+                        dest_settings = deepMerge(prfl_settings, dest_settings, scripts_only=True)
+                        apt.SETTINGS = dest_settings
+            pass
+        #save all modifications to legohdl settings
+        apt.save()
         pass
 
 
@@ -120,9 +316,8 @@ class Profile:
                 with open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'w') as f:
                     f.write(n)
 
-        #update attibutes
+        #update attibute
         self._name = n
-        self._prfl_dir = new_prfl_dir
         #update the Jar
         self.Jar[self.getName()] = self
         pass
@@ -156,7 +351,7 @@ class Profile:
 
 
     def getProfileDir(self):
-        return self._prfl_dir
+        return apt.fs(apt.HIDDEN+"profiles/"+self.getName())
 
 
     def hasTemplate(self):
@@ -183,6 +378,7 @@ class Profile:
         settings: {self.hasSettings()}
         template: {self.hasTemplate()}
         scripts: {self.hasScripts()}
+            repo: {self._repo}
         '''
 
     pass

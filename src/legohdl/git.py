@@ -43,10 +43,15 @@ class Git:
                 elif(self.isValidRepo(self.getPath(), remote=False) == False):
                     #clone from remote url
                     _,err = apt.execute('git', 'clone', clone, self.getPath(), quiet=False, returnoutput=True)
-                    if(len(err)):
-                        log.error(err)
+                    #if(len(err)):
+                        #log.error(err)
                 else:
                     log.error("Cannot clone to an already initialized git repository.")
+            #verify its a valid local repository and clone from local repository
+            elif(self.isValidRepo(clone, remote=False) == True and self.isBlankRepo(clone, remote=False) == False):
+                _,err = apt.execute('git', 'clone', clone, self.getPath(), quiet=False, returnoutput=True)
+                #if(len(err)):
+                    #log.error(err)
         #check if git exists here for local repository
         elif(self.isValidRepo(self.getPath(), remote=False) == False):
             #initialize a new repository if DNE
@@ -194,6 +199,8 @@ class Git:
         #actually check the remote connection
         log.info("Checking ability to link to remote url...")
         if(path == None or path.count(".git") == 0):
+            #update dictionary to log this url
+            cls._URLstatus[path] = False
             return False
 
         _,err = apt.execute('git', 'ls-remote', path, quiet=False, returnoutput=True)

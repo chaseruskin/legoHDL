@@ -42,7 +42,7 @@ def main():
         print(isinstance(Script.Jar, dict))
         pass
 
-    if(True):
+    if(False):
         print('\n--- GIT CLASS ---')
         #create temporary new block
         tmp_lib = 'Test'
@@ -98,11 +98,11 @@ def main():
         shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
         pass
 
-    if(True):
+    if(False):
         print('\n---MARKET CLASS---')
         print(Market.Jar)
 
-    if(True):
+    if(False):
         print('\n---WORKSPACE CLASS---')
         #create workspaces
         tmp_ws = "super_WS"
@@ -143,7 +143,7 @@ def main():
         tmp.remove()
         other.remove()
 
-    if(False):
+    if(True):
         print('\n---PROFILE CLASS---')
 
         tmp = Profile("Loadout_I")
@@ -154,12 +154,19 @@ def main():
         Profile("DEFAULT")
         print(Profile.Jar)
 
+        Profile("loadout_XI", url='https://github.com/uf-eel4712c/profile.git')
+        l_x = Profile("something", url='/users/chase/desktop/myprofile/')
+
+        print(Profile.Jar["loadout_10"])
         print(Profile.Jar['default'])
         print(Profile.Jar['EEL4712C'])
         tmp.setName("Loadout_II")
         print(tmp)
         print(Profile.Jar)
         print("Last import:",Profile.LoadLastImport())
+
+        l_x.importLoadout()
+        Profile.Jar['EEL4712C'].importLoadout(ask=True)
 
         tmp.remove()
         

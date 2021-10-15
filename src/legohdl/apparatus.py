@@ -22,6 +22,9 @@ class Apparatus:
 
     #path to hidden legohdl folder
     HIDDEN = os.path.expanduser("~/.legohdl/")
+    
+    #temporary path for various purposes
+    TMP = HIDDEN+"tmp/"
 
     #identify a valid market and its name
     MRKT_EXT = ".mrkt"
@@ -593,10 +596,7 @@ scripts)?", warning=False)
                 next_level = setting
                 isHeader = isinstance(v, dict)
                 if(setting == ""):
-                    if(isHeader):
-                        next_level = cfg.HEADER[0]+k+cfg.HEADER[1]+" "
-                    else:
-                        next_level = k
+                    next_level = cfg.HEADER[0]+k+cfg.HEADER[1]+" " if(isHeader) else k
                 else:
                     if(isHeader):
                         next_level = next_level + cfg.HEADER[0] + k + cfg.HEADER[1]+" "
@@ -1170,6 +1170,8 @@ scripts)?", warning=False)
             path (str): an unformatted path
         Returns:
             path (str): the formatted path
+
+        Similar to os.path.normcase(path).
         '''
         #do not format the path if it is a URL or path is empty
         if(path == None or path == '' or path.lower().startswith('http') or \
