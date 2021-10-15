@@ -346,7 +346,7 @@ class Profile:
 
 
     @classmethod
-    def LoadLastImport(cls):
+    def ReadLastImport(cls):
         '''
         Read from import.log the name of the last used profile is, if exists.
         Sets the class atribute LastImport Profile obj.

@@ -163,7 +163,7 @@ def main():
         tmp.setName("Loadout_II")
         print(tmp)
         print(Profile.Jar)
-        print("Last import:",Profile.LoadLastImport())
+        print("Last import:",Profile.ReadLastImport())
 
         l_x.importLoadout()
         Profile.Jar['EEL4712C'].importLoadout(ask=True)
