@@ -205,6 +205,8 @@ class CfgFile:
             datafile (file): a python file object to be written in cfg format
             comments (dict): a dictionary of strings where the keys are headers where 
             the comments will be placed before that header/assignment
+            ignore_depth (bool):
+            space_headers (bool):
         Returns:
             (bool): true if save was successful
         '''
@@ -315,6 +317,14 @@ class CfgFile:
     def castBool(cls, str_val):
         '''
         Return boolean converted from string data type.
+
+        Parameters:
+            str_val (str): string to cast to boolean
+        Returns:
+            (bool): str_val determined as a boolean type
+
+        Accepted true cases are: 'true', '1', 'yes', 'on', 'enable'. All others
+        will return false.
         '''
         if(isinstance(str_val, bool)):
             return str_val
@@ -327,6 +337,11 @@ class CfgFile:
     def castNone(cls, str_blank):
         '''
         Return if string is of type None (empty ''), else return string.
+
+        Parameters:
+            str_blank (str):
+        Returns
+            None if `str_blank` == '' else returns `str_blank` unmodified
         '''
         if(str_blank == cls.NULL):
             return None
@@ -338,6 +353,11 @@ class CfgFile:
     def castInt(cls, str_int):
         '''
         Return integer if string is an integer, else return 0.
+
+        Parameters:
+            str_int (str):
+        Returns
+            (int):
         '''
         if(isinstance(str_int, int)):
             return str_int
@@ -354,12 +374,13 @@ class CfgFile:
     @classmethod
     def getAllFields(cls, data):
         '''
-        Return a list of all field names found within the python dictionary
-        object.
+        Returns a list of all field names found within the dictionary, regardless
+        of scope.
 
-        Parameters
-        ---
-        data : python dictionary object
+        Parameters:
+            data (dict): python dictionary object
+        Returns:
+            ([str]): list of all field names (keys, even within scopes)
         '''
 
 
@@ -371,7 +392,7 @@ class CfgFile:
                     fields += [k]
             return fields
 
-            
+
         return fieldSearch(data)
 
 
