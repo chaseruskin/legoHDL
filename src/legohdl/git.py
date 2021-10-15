@@ -2,7 +2,7 @@
 # Script: git.py
 # Author: Chase Ruskin
 # Description:
-#   The Git class. A git object has handy commands availabel for Git 
+#   The Git class. A git object has handy commands available for Git 
 #   repositories.
 
 import os, shutil

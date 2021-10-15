@@ -6,12 +6,11 @@
 #   markets. This is what the user keeps their work's scope within for a given
 #   "organization".
 
-import os
-from .apparatus import Apparatus as apt
-from .map import Map
+import os, shutil
 import logging as log
 from .market import Market
-import shutil
+from .apparatus import Apparatus as apt
+from .map import Map
 
 
 class Workspace:

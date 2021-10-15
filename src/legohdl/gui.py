@@ -1,16 +1,14 @@
-################################################################################
-#   Project: legohdl
-#   Script: gui.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script contains the class describing the settings GUI framework
+# Project: legohdl
+# Script: gui.py
+# Author: Chase Ruskin
+# Description:
+#   This script contains the class describing the settings GUI framework
 #   and behavior for interacting, modifying, and saving settings.
-################################################################################
 
+import os, webbrowser
 import logging as log
-import os
 from .apparatus import Apparatus as apt
-import webbrowser
+
 
 import_success = True
 try:

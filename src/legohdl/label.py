@@ -6,9 +6,8 @@
 #   with '@' in the blueprint file. A label has a list of extensions to be
 #   searched for within a block. A label can be recursive or shallow.
 
-from .apparatus import Apparatus as apt
-from .map import Map
 import logging as log
+from .map import Map
 
 
 class Label:

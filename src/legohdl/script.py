@@ -6,8 +6,8 @@
 #   legohdl, very similiar to how aliases function within the command-line.
 
 import os
-from .map import Map
 import logging as log
+from .map import Map
 
 
 class Script:
