@@ -8,6 +8,7 @@
 import os
 from .map import Map
 
+
 class Script:
 
     #store all scripts in class variable
@@ -124,24 +125,13 @@ class Script:
 
 
     def __str__(self):
-        '''
-        Represent the object and its variables as a string.
-
-        Parameters:
-            None
-        Returns:
-            self._cmd (str): the entire command for this script
-        '''
-        path = ''
-        if(self.hasPath()):
-            path = self._path
-        txt = f'''
+        p = '' if(self.hasPath()) else self._path
+        return f'''
         ID: {hex(id(self))}
         alias: {self._alias}
         cmd: {self._cmd}
         program: {self._prog}
-        path: {path}
+        path: {p}
         '''
-        return txt
 
     pass

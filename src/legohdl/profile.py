@@ -20,9 +20,15 @@ class Profile:
 
     LastImport = None
 
+
     def __init__(self, name):
         '''
         Creates a Profile instance.
+
+        Parameters:
+            name (str): profile's name
+        Returns:
+            None
         '''
         #set profile's name
         self._name = name
@@ -75,29 +81,27 @@ class Profile:
             log.error("Cannot change profile name to "+n+" due to name conflict.")
             return False
         #change is okay to occur
-        else:
-            log.info("Renaming profile "+self.getName()+" to "+n+"...")
-            #delete the old value in Jar
-            if(self.getName().lower() in self.Jar.keys()):
-                del self.Jar[self.getName()]
+        log.info("Renaming profile "+self.getName()+" to "+n+"...")
+        #delete the old value in Jar
+        if(self.getName().lower() in self.Jar.keys()):
+            del self.Jar[self.getName()]
 
-            #rename the prfl file
-            os.rename(self.getProfileDir()+self.getName()+apt.PRFL_EXT, self.getProfileDir()+n+apt.PRFL_EXT)
-            new_prfl_dir = apt.fs(apt.HIDDEN+"profiles/"+n)
-            #rename the profile directory
-            os.rename(self.getProfileDir(), new_prfl_dir)
+        #rename the prfl file
+        os.rename(self.getProfileDir()+self.getName()+apt.PRFL_EXT, self.getProfileDir()+n+apt.PRFL_EXT)
+        new_prfl_dir = apt.fs(apt.HIDDEN+"profiles/"+n)
+        #rename the profile directory
+        os.rename(self.getProfileDir(), new_prfl_dir)
 
-            #update the import log if the name was the previous name
-            if(self.LoadLastImport() == self):
-                 with open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'w') as f:
-                     f.write(n)
+        #update the import log if the name was the previous name
+        if(self.LoadLastImport() == self):
+                with open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'w') as f:
+                    f.write(n)
 
-            #update attibutes
-            self._name = n
-            self._prfl_dir = new_prfl_dir
-            #update the Jar
-            self.Jar[self.getName()] = self
-            
+        #update attibutes
+        self._name = n
+        self._prfl_dir = new_prfl_dir
+        #update the Jar
+        self.Jar[self.getName()] = self
         pass
 
 

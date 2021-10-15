@@ -14,6 +14,7 @@ from .apparatus import Apparatus as apt
 import os
 from .workspace import Workspace
 
+
 def main():
     apt.load()
     #run tests (flip to false to deactivate)

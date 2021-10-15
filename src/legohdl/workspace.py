@@ -13,6 +13,7 @@ import logging as log
 from .market import Market
 import shutil
 
+
 class Workspace:
 
     #store all workspaces in dictionary

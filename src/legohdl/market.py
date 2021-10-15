@@ -12,6 +12,7 @@ from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
 from .map import Map
 
+
 class Market:
     #store all markets in a class dictionary
     Jar = Map()
