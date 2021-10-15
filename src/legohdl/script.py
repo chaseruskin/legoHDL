@@ -7,6 +7,7 @@
 
 import os
 from .map import Map
+import logging as log
 
 
 class Script:
@@ -26,6 +27,7 @@ class Script:
         Returns:
             None
         '''
+        self._alias = alias
         valid_cmd = self.setCommand(cmd_call)
         #only adds to Jar if a valid command is given (not empty)
         if(valid_cmd):
@@ -56,16 +58,20 @@ class Script:
         Returns:
             (bool): if successfully added to Jar (key name not taken)
         '''
-        if(a.lower() in self.Jar.keys()):
-            print('Could not set name (already exists).')
+        if(a == '' or a == None):
+            log.error("Script alias cannot be empty.")
             return False
+        if(a.lower() in self.Jar.keys()):
+            log.error('Could not set script alias to '+a+' due to name conflict.')
+            return False
+
         #remove old key if it exists
-        if(hasattr(self, '_alias')):
-            del self.Jar[self.getName()]
+        if(hasattr(self, '_alias') and self.getAlias().lower() in self.Jar.keys()):
+            del self.Jar[self.getAlias()]
         #set the alias name and add it to the jar
         self._alias = a
         #add this script to the dictionary
-        self.Jar[self.getName()] = self
+        self.Jar[self.getAlias()] = self
         return True
 
 
@@ -80,6 +86,7 @@ class Script:
         '''
         #do not change command if it is blank
         if(len(c.strip()) == 0):
+            log.error("Script "+self.getAlias()+" cannot have an empty command.")
             return False
 
         self._cmd = c
@@ -100,7 +107,7 @@ class Script:
         return True
 
 
-    def getName(self):
+    def getAlias(self):
         '''
         Returns the script's name.
         
@@ -110,6 +117,17 @@ class Script:
             self._alias (str): the name for this command call   
         '''
         return self._alias
+
+
+    def getExe(self):
+        return self._prog
+
+
+    def getPath(self):
+        if(self.hasPath()):
+            return self._path
+        else:
+            return None
 
 
     def getCommand(self):
@@ -125,13 +143,12 @@ class Script:
 
 
     def __str__(self):
-        p = '' if(self.hasPath()) else self._path
         return f'''
         ID: {hex(id(self))}
-        alias: {self._alias}
-        cmd: {self._cmd}
-        program: {self._prog}
-        path: {p}
+        alias: {self.getAlias()}
+        cmd: {self.getCommand()}
+        program: {self.getExe()}
+        path: {self.getPath()}
         '''
 
     pass

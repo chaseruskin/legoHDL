@@ -36,6 +36,35 @@ class Label:
         pass
 
 
+    def setName(self, n):
+        '''
+        Modifies the label's name if not already taken.
+
+        Parameters:
+            n (str): label's name
+        Returns:
+            (bool): true if name was modified
+        '''
+        #cannot change to a blank name
+        if(n == '' or n == None):
+            log.error("Label name cannot be empty.")
+            return False
+        #cannot change to a name already being used
+        if(n.lower() in self.Jar.keys()):
+            log.error("Cannot rename label to "+n+" due to name conflict.")
+            return False
+        #okay to proceed with modification
+        #remove key from Jar
+        if(self.getName().lower() in self.Jar.keys()):
+            del self.Jar[self.getName()]
+        
+        #set new name
+        self._name = n
+        #update Jar
+        self.Jar[self.getName()] = self
+        return True
+
+
     def setExtensions(self, exts):
         '''
         Modify the label's extensions.
@@ -46,7 +75,7 @@ class Label:
             (bool): true if extensions were modified
         '''
         if(len(exts) == 0):
-            log.error("A label cannot have zero extensions.")
+            log.error("Label "+self.getName()+" cannot have zero extensions.")
             return False
         #set the new extensions
         self._exts = exts

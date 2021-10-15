@@ -20,7 +20,7 @@ def main():
     apt.load()
     #run tests (flip to false to deactivate)
 
-    if(False):
+    if(True):
         print("\n--- SCRIPT.PY ---")
         s = Script("superScript","make -f /Users/chase/Develop/HDL/SimpleCircuit/makefile alyze")
         print(s)
@@ -135,10 +135,18 @@ def main():
         print('\n---LABEL CLASS---')
 
         t = Label("PY-MODEL", ['*.py'], False)
+        Label("BDF", ['*.bdf'], False)
+        Label("MATLAB", ['*.m, *.matlab'], False)
     
         print(t)
-        
+
+        t.setExtensions(['*.pyc', '*.python'])
+
         print(Label.Jar)
+
+        print(Label.Jar[t.getName()])
+
+        t.setName("PYTHON-CODE")
 
         print(Label.Jar[t.getName()])
     pass
