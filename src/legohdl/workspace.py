@@ -67,8 +67,6 @@ class Workspace:
             else:
                 log.warning("Could not link unknown market "+mrkt+" to "+self.getName()+".")
             pass
-        #default all initalized workspaces to not be the active workspace
-        self._is_active = False
 
         #add to class Jar
         self.Jar[self.getName()] = self
@@ -217,23 +215,18 @@ class Workspace:
             (bool): true if active-workspace was set
         '''
         if(ws != None and ws.lower() in cls.Jar.keys()):
-            #turn off active on the previous active workspace_obj
             re_assign = (cls._ActiveWorkspace != None)
-            if(re_assign):
-                cls._ActiveWorkspace.setActive(False)
-            
+            #set the active workspace obj from found workspace
             cls._ActiveWorkspace = cls.Jar[ws]
+            #only give prompt if reassigning the active-workspace
             if(re_assign):
                 log.info("Assigning workspace "+cls._ActiveWorkspace.getName()+" as active workspace...")
-            #turn on active on the new active workspace_obj
-            cls._ActiveWorkspace.setActive(True)
 
             return True
         elif(len(cls.Jar.keys()) and cls._ActiveWorkspace == None):
             random_ws = list(cls.Jar.keys())[0]
             cls._ActiveWorkspace = cls.Jar[random_ws]
             log.info("Workspace "+ws+" does not exist. Auto-assigning active workspace to "+cls._ActiveWorkspace.getName()+"...")
-            cls._ActiveWorkspace.setActive(True)
             return True
         else:
             log.info("Workspace "+ws+" does not exist. Keeping "+cls._ActiveWorkspace.getName()+" as active.")
@@ -256,12 +249,8 @@ class Workspace:
         return self._markets
 
 
-    def setActive(self, b):
-        self._is_active = b
-
-
     def isActive(self):
-        return self._is_active
+        return self == self.getActiveWorkspace()
 
 
     @classmethod

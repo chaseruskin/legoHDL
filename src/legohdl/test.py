@@ -7,6 +7,7 @@
 from .script import Script
 from .map import Map
 from .git import Git
+from .profile import Profile
 import shutil
 from .market import Market
 from .apparatus import Apparatus as apt
@@ -38,7 +39,7 @@ def main():
         print(isinstance(Script.Jar, dict))
         pass
 
-    if(True):
+    if(False):
         print('\n--- GIT CLASS ---')
         #create temporary new block
         tmp_lib = 'Test'
@@ -64,7 +65,7 @@ def main():
         #clean up block
         #shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
         pass
-    if(True):
+    if(False):
         print('\n---MARKET CLASS---')
         print(Market.Jar)
     if(True):
@@ -104,4 +105,24 @@ def main():
         #remove workspace
         tmp.remove()
         other.remove()
+    if(True):
+        print('\n---PROFILE CLASS---')
+
+        tmp = Profile("Loadout_I")
+        print(Profile.Jar)
+        print(tmp)
+
+        Profile("eel4712c")
+        Profile("DEFAULT")
+        print(Profile.Jar)
+
+        print(Profile.Jar['default'])
+        print(Profile.Jar['EEL4712C'])
+        tmp.setName("Loadout_II")
+        print(tmp)
+        print(Profile.Jar)
+        print("Last import:",Profile.LoadLastImport())
+
+        tmp.remove()
+        pass
     pass
