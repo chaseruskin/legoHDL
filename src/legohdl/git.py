@@ -108,7 +108,7 @@ class Git:
         Returns:
             None
         '''
-        if(self.getRemoteURL() != ''):
+        if(self.remoteExists()):
             self.git('push','--set-upstream',self.getRemoteName(),self.getBranch(),'--tags')
         pass
         
@@ -122,7 +122,7 @@ class Git:
         Returns:
             None
         '''
-        if(self.getRemoteURL() != ''):
+        if(self.remoteExists()):
             self.git('pull')
         pass
 
@@ -176,6 +176,25 @@ class Git:
             self.git('remote', 'set-url', r, url)
             self._remote_url = url
         pass
+
+
+    def isLatest(self):
+        '''
+        Fetches any changes from remote and determines if behind the remote.
+
+        Parameters:
+            None
+        Returns:
+            (bool): true if current branch is up-to-date or ahead of remote
+        '''
+        #sync with remote repository for any branch changes
+        if(self.remoteExists()):
+            self.git('remote','update')
+            st,_ = self.git('status')
+            return (st.count('Your branch is up to date with') or st.count('Your branch is ahead of'))
+        #always is latest if no remote to sync with
+        else:
+            return True
         
 
     @classmethod
@@ -311,6 +330,10 @@ class Git:
 
     def getPath(self):
         return self._path
+
+
+    def remoteExists(self):
+        return self.getRemoteURL() != ''
 
 
     def __str__(self):

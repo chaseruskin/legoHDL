@@ -582,7 +582,7 @@ scripts)?", warning=False)
         return True
 
 
-    #[!] TO MOVE TO PROFILE CLASS
+    #[!] PREPARING FOR REMOVAL
     #perform backend operation to overload settings, template, and scripts
     @classmethod
     def importProfile(cls, prfl_name, explicit=False):
@@ -696,7 +696,7 @@ scripts)?", warning=False)
         pass
 
 
-    #[!] TO MOVE TO PROFILE CLASS
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def updateProfile(cls, name):
         reload_default = (name.lower() == "default")
@@ -739,7 +739,7 @@ scripts)?", warning=False)
         pass
     
 
-    #[!] PREPARING FOR REMOVAL
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def isInProfile(cls, name, loc):
         if(name in cls.getProfiles()):
@@ -749,7 +749,7 @@ scripts)?", warning=False)
                 return os.path.isdir(cls.getProfiles()[name]+loc+"/")
 
 
-    #[!] PREPARING FOR REMOVAL
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def getProfiles(cls):
         '''
@@ -796,7 +796,7 @@ scripts)?", warning=False)
         pass
 
 
-    #[!] PREPARING FOR REMOVAL
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def initializeWorkspace(cls, name, local_path=None):
         workspace_dir = cls.HIDDEN+"workspaces/"+name+"/"
@@ -985,13 +985,22 @@ scripts)?", warning=False)
 
         return refresh
     
+
     @classmethod
     def save(cls):
+        '''
+        Saves the current multi-level dictionary cls.SETTINGS to the cfg file.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
         with open(cls.HIDDEN+cls.SETTINGS_FILE, "w") as file:
             cfg.save(cls.SETTINGS, file, cls.getComments())
-            pass
         pass
 
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def getLocal(cls):
         if(cls.inWorkspace()):
@@ -1196,7 +1205,7 @@ scripts)?", warning=False)
         return path
 
 
-    #[!] PREPARING FOR REMOVAL
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def getMarketNames(cls):
         '''
@@ -1248,11 +1257,19 @@ scripts)?", warning=False)
         '''
         rem = cls.SETTINGS['workspace'][cls.__active_workspace]['market']
         return (rem != None and len(rem))
+
+    
     @classmethod
     def fullMerge(cls, dest, src):
         '''
         Recursively moves keys/vals from src dictionary into destination
         dictionary if they don't exist. Returns dest.
+
+        Parameters:
+            dest (dict): the dictionary to modify
+            src (dict): the dictionary to grab keys/values from
+        Returns:
+            dest (dict): modified dictionary with key/values from src
         '''
 
         for k,v in src.items():
@@ -1290,8 +1307,15 @@ scripts)?", warning=False)
                     tmp[lib][prj] = place2[lib][prj]
         return tmp
 
+
     @classmethod
     def rmReadOnly(cls, func, path, execinfo):
+        '''
+        Work-around fix to windows issues when trying to remove a file/folder
+        that may be used in a process.
+
+        To be used with shutil.rmtree() as the `onerror` argument.
+        '''
         os.chmod(path, stat.S_IWRITE)
         try:
             func(path)
@@ -1299,7 +1323,8 @@ scripts)?", warning=False)
             exit(log.error("Failed to remove path due to being open in another process."))
     pass
 
-    #[!] TO MOVE TO GIT CLASS
+
+    #[!] PREPARED FOR REMOVAL $
     @classmethod
     def isRemoteBare(cls, git_url):
         tmp_dir = cls.HIDDEN+"tmp/"
@@ -1311,6 +1336,7 @@ scripts)?", warning=False)
         isBare = repo.git.status('-uno').count('No commits yet\n') > 0
         shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
         return isBare
+
 
     #[!] TO MOVE TO PROFILE CLASS
     @classmethod

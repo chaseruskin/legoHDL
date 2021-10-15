@@ -243,6 +243,28 @@ class Profile:
         pass
 
 
+    def update(self):
+        '''
+        If has a remote repository, checks with it to ensure the current branch
+        is up-to-date and pulls any changes.
+        
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        # :todo: needs to handle reloading default profile
+        log.info("Updating repository for profile "+self.getName()+"...")
+        #check status from remote
+        if(self._repo.isLatest() == False):
+            log.info('Pulling new updates...')
+            self._repo.pull()
+            log.info("success")
+        else:
+            log.info("Already up-to-date.")
+        pass
+
+
     def remove(self):
         '''
         Deletes the profile from the Jar and its directory.
