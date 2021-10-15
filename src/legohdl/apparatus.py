@@ -259,7 +259,7 @@ scripts)?", warning=False)
         cls.save()
         pass
 
-    #[!] PREPARING FOR REMOVAL
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def getWorkspace(cls, key, modify=False, value=None):
         '''
@@ -274,8 +274,19 @@ scripts)?", warning=False)
             cls.SETTINGS['workspace'][cls.SETTINGS['general']['active-workspace']][key] = value
             return True
 
+
     @classmethod
     def isSubPath(cls, inner_path, path):
+        '''
+        Tests if one `inner_path` is encapsulated by `path`. Returns false if
+        identical. If called on Linux, the paths are not evaluated as case-insensitive.
+
+        Parameters:
+            inner_path (str): path to see if within another path
+            path (str): the bigger path to see if a path is within it
+        Returns:
+            (bool): true if path starts with inner_path 
+        '''
         kernel = platform.system()
         #must be careful to exactly match paths within Linux OS
         if(kernel != "Linux"):
@@ -284,7 +295,8 @@ scripts)?", warning=False)
 
         return cls.fs(path).startswith(cls.fs(inner_path)) and (path != inner_path)
 
-    #[!] PREPARING FOR REMOVAL
+
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def getProfileNames(cls):
         '''
@@ -299,6 +311,7 @@ scripts)?", warning=False)
         for n in names:
             cls._prfl_map[n.lower()] = n
         return cls._prfl_map
+
 
     #[!] PREPARING FOR REMOVAL $
     @classmethod
@@ -327,7 +340,8 @@ scripts)?", warning=False)
                 with open(cls.HIDDEN+"profiles/"+prfl+"/"+prfl+cls.PRFL_EXT, 'w'):
                     pass
         pass
-    
+
+
     #[!] PREPARING FOR REMOVAL $
     @classmethod
     def getWorkspaceNames(cls):
@@ -343,7 +357,8 @@ scripts)?", warning=False)
         for n in ws_names:
             cls._ws_map[n.lower()] = n
         return cls._ws_map
-    
+
+
     #[!] PREPARING FOR REMOVAL $
     @classmethod
     def dynamicWorkspace(cls):
@@ -387,6 +402,7 @@ scripts)?", warning=False)
         
         pass
 
+
     #[!] PREPARING FOR REMOVAL $
     #automatically manage if a script still exists and clean up non-existent scripts
     @classmethod
@@ -413,6 +429,7 @@ scripts)?", warning=False)
             del cls.SETTINGS['script'][d]
         pass
 
+
     #[!] PREPARING FOR REMOVAL $
     @classmethod
     def inWorkspace(cls):
@@ -423,6 +440,7 @@ scripts)?", warning=False)
             return False
         else:
             return True
+
 
     #[!] TO MOVE TO MARKET CLASS
     @classmethod
@@ -479,6 +497,7 @@ scripts)?", warning=False)
             return sel_mrkt
         else:
             return success
+
 
     #[!] TO MOVE TO PROFILE CLASS
     @classmethod
@@ -558,6 +577,7 @@ scripts)?", warning=False)
         if(sel_prfl not in cls.SETTINGS['general']['profiles']):
             cls.SETTINGS['general']['profiles'].append(sel_prfl)
         return True
+
 
     #[!] TO MOVE TO PROFILE CLASS
     #perform backend operation to overload settings, template, and scripts
@@ -675,6 +695,7 @@ scripts)?", warning=False)
         cls.save()
         pass
 
+
     #[!] TO MOVE TO PROFILE CLASS
     @classmethod
     def updateProfile(cls, name):
@@ -717,6 +738,7 @@ scripts)?", warning=False)
             cls.loadDefaultProfile(importing=False)
         pass
     
+
     #[!] PREPARING FOR REMOVAL
     @classmethod
     def isInProfile(cls, name, loc):
@@ -725,6 +747,7 @@ scripts)?", warning=False)
                 return os.path.isfile(cls.getProfiles()[name]+loc)
             else:
                 return os.path.isdir(cls.getProfiles()[name]+loc+"/")
+
 
     #[!] PREPARING FOR REMOVAL
     @classmethod
@@ -741,6 +764,7 @@ scripts)?", warning=False)
                 profiles[plc] = path
 
         return profiles
+
 
     @classmethod
     def getTemplateFiles(cls):
@@ -770,6 +794,7 @@ scripts)?", warning=False)
                 print('\t',f.replace(cls.TEMPLATE, '/'))
 
         pass
+
 
     #[!] PREPARING FOR REMOVAL
     @classmethod
@@ -883,6 +908,7 @@ scripts)?", warning=False)
         for w in in_list:
             single_str = single_str + w + delim
         return single_str
+
 
     #[!] TO MOVE TO MARKET CLASS
     @classmethod
@@ -1088,6 +1114,85 @@ scripts)?", warning=False)
                 del cls.SETTINGS['market'][second_mrkt]
                 return False
         pass
+    
+
+    @classmethod
+    def execute(cls, *code, subproc=False, quiet=True, returnoutput=False):
+        '''
+        Execute the command and runs it through the terminal. Immediately exits
+        the script if return code is non-zero and `returnoutput` is false.
+
+        Parameters:
+            code (*str): variable amount of arguments for execution
+            subproc (bool): run in subprocess if true else use os.system()
+            quiet (bool): display the command being executed
+            returnoutput (bool): uses subprocess to retun stdout and stderr
+        Returns:
+            stdout (str): standard output if `returnoutput` is true
+            stderr (str): error output if `returnoutput` is true
+        '''
+        #compile all variable arguments into single string separated by spaces
+        code_line = ''
+        for c in code:
+            code_line = code_line + c + ' '
+        #print to console the command to be executed
+        if(quiet == False):
+            log.info(code_line)
+        #use subprocess to return stdout and stderr as strings
+        if(returnoutput):
+            proc = subprocess.Popen(code_line.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+            out = proc.stdout.read()
+            err = proc.stderr.read()
+            return out.decode().strip(), err.decode().strip()
+        #use subprocess
+        if(subproc):
+            rc = subprocess.run(code_line.split())
+            try:
+                rc.check_returncode()
+            except ChildProcessError:
+                rc = 1
+        #use os.system()
+        else:
+            rc = os.system(code_line)
+        #immediately stop script upon a bad return code
+        if(rc):
+            exit(rc)
+
+
+    @classmethod
+    def fs(cls, path):
+        '''
+        Properly formats a path string by fixing all `\` to be `/`. Will also
+        append an extra '/' if the ending of the path is not a file, indicated by having
+        no file extension. Will not alter URLs. Expands users in path.
+
+        Parameters:
+            path (str): an unformatted path
+        Returns:
+            path (str): the formatted path
+        '''
+        #do not format the path if it is a URL or path is empty
+        if(path == None or path == '' or path.lower().startswith('http') or \
+            path.lower().startswith('git@')):
+            return path
+
+        #replace 'environment' name with the hidden directory
+        path = path.replace(cls.ENV_NAME, cls.HIDDEN)
+        #expand the user variable
+        path = os.path.expanduser(path)
+        #replace all backward slashes
+        path = path.replace('\\','/')
+        #replace any double slashes
+        path = path.replace('//','/')
+
+        #append an extra '/' if not ending in one and trying to be a filepath
+        dot = path.rfind('.')
+        last_slash = path.rfind('/')
+        if(last_slash > dot and path[-1] != '/'):
+            path = path + '/'
+        
+        return path
+
 
     #[!] PREPARING FOR REMOVAL
     @classmethod
@@ -1114,7 +1219,8 @@ scripts)?", warning=False)
         
         return cls._mrkt_map
 
-    #[!] TO MOVE TO GIT CLASS
+
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def isValidURL(cls, url):
         '''
@@ -1130,33 +1236,9 @@ scripts)?", warning=False)
         except:
             return False
         return True
-    
 
-    @classmethod
-    def execute(cls, *code, subproc=False, quiet=True, returnoutput=False):
-        '''
-        Execute the command and runs it as subprocess.
-        '''
-        code_line = ''
-        for c in code:
-            code_line = code_line + c + ' '
-        
-        if(quiet == False):
-            log.info(code_line)
-        if(returnoutput):
-            proc = subprocess.Popen(code_line.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-            out = proc.stdout.read()
-            err = proc.stderr.read()
-            return out.decode().strip(), err.decode().strip()
-        if(subproc):
-            rc = subprocess.call(code_line.split())
-        else:
-            rc = os.system(code_line)
-        #immediately stop script upon a bad return code
-        if(rc):
-            exit(rc)
 
-    #[!] PREPARING FOR REMOVAL
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def linkedMarket(cls):
         '''
@@ -1164,32 +1246,6 @@ scripts)?", warning=False)
         '''
         rem = cls.SETTINGS['workspace'][cls.__active_workspace]['market']
         return (rem != None and len(rem))
-
-    @classmethod
-    def fs(cls, path):
-        '''
-        Fixes all \ slashes to become / slashes in path strings. Will also
-        append an extra '/' if the ending of the path is not a file (has no
-        file extension).
-        '''
-        if(path == None or path == '' or path.lower().startswith('http') or \
-            path.lower().startswith('git@')):
-            return path
-
-        path = path.replace(cls.ENV_NAME, cls.HIDDEN[:len(cls.HIDDEN)-1])
-
-        path = os.path.expanduser(path)
-        path = path.replace('\\','/')
-        path = path.replace('//','/')
-
-        dot = path.rfind('.')
-        last_slash = path.rfind('/')
-
-        if(last_slash > dot and path[len(path)-1] != '/'):
-            path = path + '/'
-        
-        return path
-
     @classmethod
     def fullMerge(cls, dest, src):
         '''
@@ -1205,6 +1261,7 @@ scripts)?", warning=False)
                 dest[k] = cls.fullMerge(dest[k], src[k])
 
         return dest
+
 
     @classmethod
     def merge(cls, place1, place2):

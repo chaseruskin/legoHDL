@@ -5,7 +5,7 @@
 #   The Git class. A git object has handy commands availabel for Git 
 #   repositories.
 
-import os
+import os, shutil
 import logging as log
 from .apparatus import Apparatus as apt
 
@@ -104,7 +104,7 @@ class Git:
             None
         '''
         if(self.getRemoteURL() != ''):
-            self.git('push','--set-upstream',self.getRemoteName(),self.getBranch())
+            self.git('push','--set-upstream',self.getRemoteName(),self.getBranch(),'--tags')
         pass
         
 
@@ -122,30 +122,19 @@ class Git:
         pass
 
 
-    def getBranch(self, force=False):
+    def delete(self, path=None):
         '''
-        Identify the current branch for the git repository. 
-
+        Delete's the .git/ folder at the specified directory. If path is None
+        then it uses the Git object's path to remove directory.
+        
         Parameters:
-            force (bool): resuses previously determined branch name unless true
+            path (str): optionally specify the path to remove .git/ folder from
         Returns:
-            self._branch (str): branch name
+            None
         '''
-        if(hasattr(self, '_branch') and force == False):
-            return self._branch
-        out,_ = self.git('status')
-        txt = out.split()
-        #create variable to know when to be ready for branch name
-        next_is_name = False
-        for word in txt:
-            if(next_is_name):
-                self._branch = word
-                #stop reading words upon identifying the branch name
-                break
-            #branch name will come next in the list of words
-            next_is_name = (word == 'branch')
-
-        return self._branch
+        path_to_del = apt.fs(path) if(path != None) else self.getPath()
+        shutil.rmtree(path_to_del+".git/", onerror=apt.rmReadOnly)
+        pass
 
 
     def setRemoteURL(self, url, force=False):
@@ -244,6 +233,32 @@ class Git:
         cls._URLstatus[path] = is_valid
         #verify no output and no errors (it is blank)
         return (len(out) == 0 and len(err) == 0)
+
+
+    def getBranch(self, force=False):
+        '''
+        Identify the current branch for the git repository. 
+
+        Parameters:
+            force (bool): resuses previously determined branch name unless true
+        Returns:
+            self._branch (str): branch name
+        '''
+        if(hasattr(self, '_branch') and force == False):
+            return self._branch
+        out,_ = self.git('status')
+        txt = out.split()
+        #create variable to know when to be ready for branch name
+        next_is_name = False
+        for word in txt:
+            if(next_is_name):
+                self._branch = word
+                #stop reading words upon identifying the branch name
+                break
+            #branch name will come next in the list of words
+            next_is_name = (word == 'branch')
+
+        return self._branch
 
 
     def getRemoteName(self):

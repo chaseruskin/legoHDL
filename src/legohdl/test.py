@@ -42,7 +42,7 @@ def main():
         print(isinstance(Script.Jar, dict))
         pass
 
-    if(False):
+    if(True):
         print('\n--- GIT CLASS ---')
         #create temporary new block
         tmp_lib = 'Test'
@@ -98,11 +98,11 @@ def main():
         shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
         pass
 
-    if(False):
+    if(True):
         print('\n---MARKET CLASS---')
         print(Market.Jar)
 
-    if(False):
+    if(True):
         print('\n---WORKSPACE CLASS---')
         #create workspaces
         tmp_ws = "super_WS"
