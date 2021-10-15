@@ -82,7 +82,7 @@ def main():
 
         #assign active
         Workspace.setActiveWorkspace(other_ws)
-        print("[!] Changing workspace name")
+        print("[!] CHANGING WORKSPACE NAME [!]")
         print(Workspace.Jar)
         print(other)
         other.setName("wsIV")

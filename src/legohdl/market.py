@@ -16,6 +16,7 @@ class Market:
     #store all markets in a class dictionary
     Jar = Map()
 
+
     def __init__(self, name, url):
         self._name = name
         self.url = url
@@ -62,15 +63,18 @@ class Market:
         self._repo = git.Repo(self.getPath())
         pass
 
+
     def getName(self, low=True):
         if(low):
             return self._name.lower()
         else:
             return self._name
 
+
     def delete(self):
         if(os.path.exists(self._local_path)):
             shutil.rmtree(self._local_path, onerror=apt.rmReadOnly)
+
 
     def setRemote(self, url):
         if((self.isRemote() and self._repo.remotes.origin.url != self.url) or (not self.isRemote())):
@@ -94,6 +98,7 @@ class Market:
                 if(self.isRemote() and url != None):
                     self.url = self._repo.remotes.origin.url
         return self.url
+
 
     #release a block to this market
     def publish(self, meta, options=[], all_vers=[], changelog=None):
@@ -157,7 +162,6 @@ class Market:
         self._repo.index.add(rel_git_path+apt.VER_LOG)
         if(changelog != None):
             self._repo.index.add(rel_git_path+apt.CHANGELOG)
-        pass
         
         #commit all releases
         self._repo.git.commit('-m',"Adds "+block_meta['library']+'.'+block_meta['name']+"-v"+block_meta['version'])
@@ -170,12 +174,15 @@ class Market:
                 self._repo.git.branch("-d",tmp_branch)
         pass
 
+
     #return true is configured to a remote repository
     def isRemote(self):
         return len(self._repo.remotes)
 
+
     def getPath(self):
         return self._local_path
+
 
     def __str__(self):
         return f'''

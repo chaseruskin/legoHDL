@@ -35,6 +35,7 @@ class Script:
     def hasPath(self):
         '''
         Returns true if the script object does have a path within its command.
+        Also is used to determine if the script is 'openable'.
         
         Parameters:
             None
