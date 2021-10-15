@@ -1077,8 +1077,9 @@ scripts)?", warning=False)
             log.info(code_line)
         if(returnoutput):
             proc = subprocess.Popen(code_line.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-            resp = proc.stdout.read()
-            return resp.decode()
+            out = proc.stdout.read()
+            err = proc.stderr.read()
+            return out.decode(), err.decode()
         if(subproc):
             rc = subprocess.call(code_line.split())
         else:

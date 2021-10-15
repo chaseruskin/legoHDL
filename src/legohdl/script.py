@@ -135,7 +135,7 @@ class Script:
         if(self.hasPath()):
             path = self._path
         txt = f'''
-        hash: {self.__hash__}
+        ID: {hex(id(self))}
         alias: {self._alias}
         cmd: {self._cmd}
         program: {self._prog}

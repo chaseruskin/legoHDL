@@ -57,7 +57,8 @@ class Market:
                 apt.execute('git','-C',self.getPath(),'add','.')
                 apt.execute('git','-C',self.getPath(),'commit','-m','"Initializes legohdl market"','-q')
                 pass
-            
+
+        self.Jar[self.getName(low=False)] = self
         self._repo = git.Repo(self.getPath())
         pass
 
@@ -177,5 +178,9 @@ class Market:
         return self._local_path
 
     def __str__(self):
-        return f"{self.getName()}, {self.url}"
+        return f'''
+        ID: {hex(id(self))}
+        Name: {self.getName()}
+        URL: {self.url}
+        '''
     pass

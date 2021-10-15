@@ -61,7 +61,11 @@ class legoHDL:
         #limit functionality if not in a workspace
         if(not apt.inWorkspace() and (command != '' and command != 'config' and command != 'profile' and command != 'help' and (command != 'open' or ("settings" not in options and "template" not in options)))):
             exit()
-        self.parse(command, package, options)
+
+        if(sys.argv[1:].count('debug')):
+            test()
+        else:
+            self.parse(command, package, options)
         pass
 
     #! === INSTALL COMMAND ===
@@ -1946,10 +1950,7 @@ The name of the .prfl file is the name of the profile itself.
 
 
 def main():
-    if(sys.argv[1:].count('debug')):
-        test()
-    else:
-        legoHDL()
+    legoHDL()
 
 #entry-point
 if __name__ == "__main__":

@@ -8,8 +8,10 @@ from .script import Script
 from .map import Map
 from .git import Git
 import shutil
+from .market import Market
 from .apparatus import Apparatus as apt
 import os
+from .workspace import Workspace
 
 def main():
     apt.load()
@@ -62,4 +64,29 @@ def main():
         #clean up block
         #shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
         pass
+    if(True):
+        print('---MARKET CLASS---')
+        print(Market.Jar)
+    if(True):
+        print('---WORKSPACE CLASS---')
+        #create workspace
+        tmp_ws = "super_WS"
+        Workspace(tmp_ws, "~/develop/temporal/", ['uf-ece'])
+        Workspace("wsII", "~/develop/wsII")
+        #grab workspace from Jar
+        tmp = Workspace.Jar[tmp_ws]
+        print(Workspace.Jar)
+        print(tmp)
+        #link markets
+        tmp.linkMarket("anotherMrkt")
+        tmp.linkMarket("open-ip")
+        print(tmp)
+        #unlink markets
+        tmp.unlinkMarket("anotherMrkt")
+        tmp.unlinkMarket("open-ip")
+        tmp.unlinkMarket("open-ip")
+        print(tmp)
+        #remove workspace
+        tmp.remove()
+        Workspace.Jar['wsii'].remove()
     pass

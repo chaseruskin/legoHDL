@@ -18,7 +18,8 @@ class Git:
         return self._path
 
     def call(self, *args):
-        return apt.execute('git','-C',self.getPath(),*args,quiet=False,returnoutput=True)
+        resp,_ = apt.execute('git','-C',self.getPath(),*args,quiet=False,returnoutput=True)
+        return resp
 
     def commit(self, msg):
         #first identify if has commits available
@@ -62,7 +63,7 @@ class Git:
         #add new remote connection
         if(r == '' and valid_url):
             r = 'origin'
-            self.call('remote','add','origin',url)
+            self.call('remote','add',r,url)
         #remove remote connection
         elif(r != '' and (not valid_url and force)):
             self.call('remote','remove',r)
@@ -86,7 +87,7 @@ class Git:
 
     def __str__(self):
         return f'''
-        hash: {self.__hash__}
+        ID: {hex(id(self))}
         path: {self._path}
         branch: {self.getBranch()}
         remote: {self.getRemote()}
