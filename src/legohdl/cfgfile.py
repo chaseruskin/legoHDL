@@ -1,13 +1,12 @@
-################################################################################
-#   Project: legohdl
-#   Script: cfgfile.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script handles reading/writing the custom configuration files used
+# Project: legohdl
+# Script: cfgfile.py
+# Author: Chase Ruskin
+# Description:
+#   This script handles reading/writing the custom configuration files used
 #   for settings and blocks.
-################################################################################
 
 import logging as log
+
 
 class CfgFile:
 
@@ -23,22 +22,32 @@ class CfgFile:
 
     NEAT = True
 
+
     @classmethod
     def load(cls, datafile, ignore_depth=False):
         '''
-        Return the python dictionary of all key/value pairs.
+        Load the items from cfg file into a dictionary.
 
-        Parameters
-        ---
-        datafile : a python file object
-        ignore_depth : all headers are seen at first level and each variable
-                       is assigned to previous header
+        Parameters:
+            datafile (file): a python file object written in cfg
+            ignore_depth (bool): all headers are seen at first level and each variable 
+            is assigned to previous header
+        Returns:
+            (dict): multi-level dictionary of items from cfg file
         '''
-        map = dict()
+
 
         def tunnel(mp, key, scope_stack, data=None):
             '''
-            Tracks through a dictionary to get to correct scope level.
+            Recursively tracks through a dictionary to get to correct scope level.
+
+            Parameters:
+                mp (dict): the dictionary to add key/val pair to
+                key (str): new key to be added within correct scope
+                scope_stack ([str]): list of existing keys to traverse
+                data (*): any value; if None then a {} will be added as value
+            Returns:
+                mp (dict): the dictionary with new key/val pair
             '''
             if(len(scope_stack)):
                 nxt = scope_stack[0]
@@ -52,10 +61,18 @@ class CfgFile:
                     mp[key] = {}
             return mp
 
+
         def collectList(cnt, val, tmp):
             '''
             Parse through an assigned list. Returns the bracket count and
             running list variable.
+
+            Parameters:
+                val (str):
+                tmp (str):
+            Returns:
+                cnt (int):
+                tmp (str):
             '''
             cnt += val.count(cls.LIST[0]) - val.count(cls.LIST[1])
             val = val.replace(cls.LIST[0],'').replace(cls.LIST[1],'')
@@ -64,6 +81,9 @@ class CfgFile:
                 if(len(i)):
                     tmp += [i]
             return cnt, tmp
+
+        #dictionary to fill and return as end result
+        map = dict()
 
         scope = [] # stores levels of scope keys for map dictionary
         tmp = [] # temporary list used to store an assigned list
@@ -111,7 +131,6 @@ class CfgFile:
                     lvl = 0
                 
                 key = line.strip()[1:len(line.strip())-1]
-                
                 #pop off scopes
                 scope = scope[0:lvl]
                     
@@ -175,18 +194,23 @@ class CfgFile:
 
         return map
 
+
     @classmethod
     def save(cls, data, datafile, comments=dict(), ignore_depth=False, space_headers=False):
         '''
-        Write python dictionary to data file.
+        Write dictionary to data file in cfg format.
 
         Parameters:
-        ---
-        data : a python dictionary object
-        datafile : a python file object
-        comments : a dictionary of strings where the keys are headers where
-                   the comments will be placed before that header/assignment
+            data (dict): a multi-level python dictionary object
+            datafile (file): a python file object to be written in cfg format
+            comments (dict): a dictionary of strings where the keys are headers where 
+            the comments will be placed before that header/assignment
+        Returns:
+            (bool): true if save was successful
         '''
+        another_header = False
+
+
         def write_comment(c_str, spacing, isHeader):
             # add proper indentation for the said comment
             if((c_str[0] == cls.HEADER and isHeader) or 
@@ -194,8 +218,9 @@ class CfgFile:
                 lines = c_str[1].split('\n')
                 for l in lines:
                     datafile.write(spacing+l+"\n")
+            pass
+        
 
-        another_header = False
         def write_dictionary(mp, lvl=0, l_len=0):
             nonlocal another_header
             #determine proper indentation
@@ -279,10 +304,12 @@ class CfgFile:
                     #write the value as-is
                     else:
                         datafile.write(mp+'\n')
-        
+            pass
+
         #recursively call method to write all dictionary key/values
         write_dictionary(data)
         return True
+
 
     @classmethod
     def castBool(cls, str_val):
@@ -295,6 +322,7 @@ class CfgFile:
         return (str_val == 'true' or str_val == '1' or 
                 str_val == 'yes' or str_val == 'on' or str_val == 'enable')
     
+
     @classmethod
     def castNone(cls, str_blank):
         '''
@@ -304,7 +332,8 @@ class CfgFile:
             return None
         else:
             return str_blank
-            
+
+
     @classmethod
     def castInt(cls, str_int):
         '''
@@ -321,6 +350,7 @@ class CfgFile:
         else:
             return 0
 
+
     @classmethod
     def getAllFields(cls, data):
         '''
@@ -331,6 +361,8 @@ class CfgFile:
         ---
         data : python dictionary object
         '''
+
+
         def fieldSearch(map, fields=[]):
             for k in map.keys():
                 if(isinstance(map[k], dict)):
@@ -339,6 +371,8 @@ class CfgFile:
                     fields += [k]
             return fields
 
+            
         return fieldSearch(data)
+
 
     pass
