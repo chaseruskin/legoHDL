@@ -259,6 +259,7 @@ scripts)?", warning=False)
         cls.save()
         pass
 
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def getWorkspace(cls, key, modify=False, value=None):
         '''
@@ -283,6 +284,7 @@ scripts)?", warning=False)
 
         return cls.fs(path).startswith(cls.fs(inner_path)) and (path != inner_path)
 
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def getProfileNames(cls):
         '''
@@ -298,6 +300,7 @@ scripts)?", warning=False)
             cls._prfl_map[n.lower()] = n
         return cls._prfl_map
 
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def dynamicProfiles(cls):
         #identify valid profiles in the hidden direcotory
@@ -324,7 +327,8 @@ scripts)?", warning=False)
                 with open(cls.HIDDEN+"profiles/"+prfl+"/"+prfl+cls.PRFL_EXT, 'w'):
                     pass
         pass
-
+    
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def getWorkspaceNames(cls):
         '''
@@ -340,6 +344,7 @@ scripts)?", warning=False)
             cls._ws_map[n.lower()] = n
         return cls._ws_map
     
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def dynamicWorkspace(cls):
         '''
@@ -384,7 +389,8 @@ scripts)?", warning=False)
             cls.SETTINGS['general']['active-workspace'] = acting_ws
         
         pass
-    
+
+    #[!] PREPARING FOR REMOVAL
     #automatically manage if a script still exists and clean up non-existent scripts
     @classmethod
     def dynamicScripts(cls):
@@ -420,6 +426,7 @@ scripts)?", warning=False)
         else:
             return True
 
+    #[!] TO MOVE TO MARKET CLASS
     @classmethod
     def loadMarket(cls, value):
         '''
@@ -475,6 +482,7 @@ scripts)?", warning=False)
         else:
             return success
 
+    #[!] TO MOVE TO PROFILE CLASS
     @classmethod
     def loadProfile(cls, value, explicit=False, append=False):
         '''
@@ -553,6 +561,7 @@ scripts)?", warning=False)
             cls.SETTINGS['general']['profiles'].append(sel_prfl)
         return True
 
+    #[!] TO MOVE TO PROFILE CLASS
     #perform backend operation to overload settings, template, and scripts
     @classmethod
     def importProfile(cls, prfl_name, explicit=False):
@@ -668,6 +677,7 @@ scripts)?", warning=False)
         cls.save()
         pass
 
+    #[!] TO MOVE TO PROFILE CLASS
     @classmethod
     def updateProfile(cls, name):
         reload_default = (name.lower() == "default")
@@ -709,6 +719,7 @@ scripts)?", warning=False)
             cls.loadDefaultProfile(importing=False)
         pass
     
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def isInProfile(cls, name, loc):
         if(name in cls.getProfiles()):
@@ -717,7 +728,7 @@ scripts)?", warning=False)
             else:
                 return os.path.isdir(cls.getProfiles()[name]+loc+"/")
 
-    #looks within profiles directory and returns dict of all valid profiles
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def getProfiles(cls):
         '''
@@ -738,6 +749,11 @@ scripts)?", warning=False)
         '''
         Returns a list of all available files within the template, excluding the
         .git folder (if exists). Paths are relative to the template base path.
+
+        Parameters:
+            None
+        Returns:
+            ([str]): list of all available files within the current template.
         '''
         #get all files
         log.info("All available files in the current template:")
@@ -757,6 +773,7 @@ scripts)?", warning=False)
 
         pass
 
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def initializeWorkspace(cls, name, local_path=None):
         workspace_dir = cls.HIDDEN+"workspaces/"+name+"/"
@@ -869,7 +886,7 @@ scripts)?", warning=False)
             single_str = single_str + w + delim
         return single_str
 
-
+    #[!] TO MOVE TO MARKET CLASS
     @classmethod
     def readyForRefresh(cls):
         #helper method to convert a datetime time word to a decimal floating type number
@@ -991,6 +1008,7 @@ scripts)?", warning=False)
             meta = None
         return meta
 
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def isConflict(cls, mapping, name):
         '''
@@ -1003,6 +1021,7 @@ scripts)?", warning=False)
                 mapping[name.lower()]+".")
         return c
 
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def getMarkets(cls, workspace_level=True):
         '''
@@ -1043,7 +1062,7 @@ scripts)?", warning=False)
         cls.save()
         return mrkt_roots
 
-
+    #[!] PREPARING FOR REMOVAL
     def resolveMarketConflict(cls, first_mrkt, second_mrkt):
         '''
         This method resolves naming conflicts between two markets that share
@@ -1072,7 +1091,7 @@ scripts)?", warning=False)
                 return False
         pass
 
-
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def getMarketNames(cls):
         '''
@@ -1097,6 +1116,7 @@ scripts)?", warning=False)
         
         return cls._mrkt_map
 
+    #[!] TO MOVE TO GIT CLASS
     @classmethod
     def isValidURL(cls, url):
         '''
@@ -1113,6 +1133,7 @@ scripts)?", warning=False)
             return False
         return True
     
+
     @classmethod
     def execute(cls, *code, subproc=False, quiet=True, returnoutput=False):
         '''
@@ -1137,6 +1158,7 @@ scripts)?", warning=False)
         if(rc):
             exit(rc)
 
+    #[!] PREPARING FOR REMOVAL
     @classmethod
     def linkedMarket(cls):
         '''
@@ -1152,7 +1174,8 @@ scripts)?", warning=False)
         append an extra '/' if the ending of the path is not a file (has no
         file extension).
         '''
-        if(path == None or path.lower().startswith('http') or path.lower().startswith('git@')):
+        if(path == None or path == '' or path.lower().startswith('http') or \
+            path.lower().startswith('git@')):
             return path
 
         path = path.replace(cls.ENV_NAME, cls.HIDDEN[:len(cls.HIDDEN)-1])
@@ -1219,6 +1242,7 @@ scripts)?", warning=False)
             exit(log.error("Failed to remove path due to being open in another process."))
     pass
 
+    #[!] TO MOVE TO GIT CLASS
     @classmethod
     def isRemoteBare(cls, git_url):
         tmp_dir = cls.HIDDEN+"tmp/"
@@ -1231,6 +1255,7 @@ scripts)?", warning=False)
         shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
         return isBare
 
+    #[!] TO MOVE TO PROFILE CLASS
     @classmethod
     def loadDefaultProfile(cls, importing=True):
         prfl_dir = cls.HIDDEN+"profiles/"

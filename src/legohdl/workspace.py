@@ -54,6 +54,12 @@ class Workspace:
         if(os.path.isdir(self.getWorkspaceDir()) == False):
             log.info("Creating hidden workspace directory for "+self.getName()+"...")
             os.makedirs(self.getWorkspaceDir(), exist_ok=True)
+        #create workspace's cache where installed blocks will be stored
+        os.makedirs(self.getWorkspaceDir()+"cache", exist_ok=True)
+        #create the refresh log if DNE
+        if(os.path.isfile(self.getWorkspaceDir()+apt.REFRESH_LOG) == False):
+            open(self.getWorkspaceDir()+apt.REFRESH_LOG, 'w').close()
+
         #store the code's state of each version for each block
         os.makedirs(self.getWorkspaceDir()+"cache", exist_ok=True)
         #create the refresh log
@@ -234,6 +240,10 @@ class Workspace:
         return False
 
 
+    def isLinked(self):
+        return len(self.getMarkets())
+
+
     def getPath(self):
         return self._path
 
@@ -266,6 +276,7 @@ class Workspace:
         Path: {self.getPath()}
         Active: {self.isActive()}
         Hidden directory: {self.getWorkspaceDir()}
+        Is Linked: {self.isLinked()}
         Markets: {self.getMarkets()}
         '''
 
