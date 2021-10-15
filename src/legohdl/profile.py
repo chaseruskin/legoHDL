@@ -334,7 +334,7 @@ class Profile:
         os.rename(self.getProfileDir(), new_prfl_dir)
 
         #update the import log if the name was the previous name
-        if(self.LoadLastImport() == self):
+        if(self.ReadLastImport() == self):
                 with open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'w') as f:
                     f.write(n)
 
