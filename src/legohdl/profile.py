@@ -80,7 +80,7 @@ class Profile:
 
         #clone from repository
         if(empty_repo == False):
-            Git(apt.TMP, clone=url)
+            tmp_repo = Git(apt.TMP, clone=url)
 
             #determine if a .prfl file exists
             log.info("Locating .prfl file... ")
@@ -106,6 +106,8 @@ class Profile:
                 else:
                     log.info("Adding profile "+self.getName()+"...")
                     self._repo = Git(self.getProfileDir(), clone=apt.TMP)
+                    #assign the correct remote url to the profile
+                    self._repo.setRemoteURL(tmp_repo.getRemoteURL())
         else:
             log.error("Cannot load profile from empty repository.")
             success = False

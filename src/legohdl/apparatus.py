@@ -1149,13 +1149,13 @@ scripts)?", warning=False)
             log.info(code_line)
         #use subprocess to return stdout and stderr as strings
         if(returnoutput):
-            proc = subprocess.Popen(code_line.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+            proc = subprocess.Popen([*code], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
             out = proc.stdout.read()
             err = proc.stderr.read()
             return out.decode().strip(), err.decode().strip()
         #use subprocess
         if(subproc):
-            rc = subprocess.run(code_line.split())
+            rc = subprocess.run([*code])
             try:
                 rc.check_returncode()
             except ChildProcessError:

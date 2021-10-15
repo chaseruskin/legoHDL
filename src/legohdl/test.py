@@ -14,6 +14,7 @@ from .apparatus import Apparatus as apt
 import os
 from .workspace import Workspace
 from .label import Label
+from .market2 import Market2
 
 
 def main():
@@ -102,7 +103,7 @@ def main():
         print('\n---MARKET CLASS---')
         print(Market.Jar)
 
-    if(False):
+    if(True):
         print('\n---WORKSPACE CLASS---')
         #create workspaces
         tmp_ws = "super_WS"
@@ -188,4 +189,16 @@ def main():
         t.setName("PYTHON-CODE")
 
         print(Label.Jar[t.getName()])
+    if(True):
+        print('\n---MARKET CLASS (under as Market2)---')
+
+        Market2("open-ip")
+
+        Market2("soc-blocksII", "https://gitlab.com/chase800/mymarket.git")
+
+        Market2("marketIII", "https://gitlab.com/chase800/mymarket.git")
+
+        Market2.printAll()
+
+        #shutil.rmtree(Market2.Jar['soc-blocks'].getMarketDir(), onerror=apt.rmReadOnly)
     pass

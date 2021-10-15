@@ -8,6 +8,7 @@
 import os, shutil
 import logging as log
 from .apparatus import Apparatus as apt
+from .map import Map
 
 
 class Git:
@@ -15,12 +16,14 @@ class Git:
     #track all valid and invalid urls for faster performance
     _URLstatus = {}
 
+    QUIET = True
 
     def __init__(self, path, clone=None):
         '''
         Create a Git instance. This is a repository-like object. Will `init`
         if one DNE at local path, or try to `clone` to `path` name if `clone` is
-        not None.
+        not None. If the clone is an empty repository, it will configure it as
+        a remote connection.
 
         Parameters:
             path (str): path to initialize git to
@@ -42,14 +45,14 @@ class Git:
                     self.setRemoteURL(clone)
                 elif(self.isValidRepo(self.getPath(), remote=False) == False):
                     #clone from remote url
-                    _,err = apt.execute('git', 'clone', clone, self.getPath(), quiet=False, returnoutput=True)
+                    _,err = apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
                     #if(len(err)):
                         #log.error(err)
                 else:
                     log.error("Cannot clone to an already initialized git repository.")
             #verify its a valid local repository and clone from local repository
             elif(self.isValidRepo(clone, remote=False) == True and self.isBlankRepo(clone, remote=False) == False):
-                _,err = apt.execute('git', 'clone', clone, self.getPath(), quiet=False, returnoutput=True)
+                _,err = apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
                 #if(len(err)):
                     #log.error(err)
         #check if git exists here for local repository
@@ -69,7 +72,7 @@ class Git:
             output (str): stdout from the subprocess
             error (str): stderr from the subprocess
         '''
-        resp,err = apt.execute('git', '-C', self.getPath(), *args, quiet=False, returnoutput=True)
+        resp,err = apt.execute('git', '-C', self.getPath(), *args, quiet=self.QUIET, returnoutput=True)
         return resp,err
 
 
@@ -213,21 +216,38 @@ class Git:
         if(remote == False):
             return os.path.isdir(apt.fs(path)+'.git/')
         #has it aleady been checked?
-        if(path in cls._URLstatus.keys()):
-            return cls._URLstatus[path]
+        if(path in cls._URLstatus.keys() and 'valid' in cls._URLstatus[path].keys()):
+            return cls._URLstatus[path]['valid']
         #actually check the remote connection
-        log.info("Checking ability to link to remote url...")
         if(path == None or path.count(".git") == 0):
             #update dictionary to log this url
-            cls._URLstatus[path] = False
+            cls.setRepoProperties(path, valid=False)
             return False
 
-        _,err = apt.execute('git', 'ls-remote', path, quiet=False, returnoutput=True)
+        log.info("Checking ability to link to remote url "+path+"...")
+        _,err = apt.execute('git', 'ls-remote', path, quiet=cls.QUIET, returnoutput=True)
         is_valid = (len(err) == 0)
         #update dictionary to log this url
-        cls._URLstatus[path] = is_valid
+        cls.setRepoProperties(path,  valid=is_valid)
         #verify no errors on output
+        if(is_valid):
+            log.info("success")
+        else:
+            log.info("failed")
         return is_valid
+
+
+    @classmethod
+    def setRepoProperties(cls, path, valid=None, blank=None):
+        #set up new path to collect info on
+        if(path not in cls._URLstatus.keys()):
+            cls._URLstatus[path] = Map()
+        #set if repo is valid
+        if(valid != None):
+            cls._URLstatus[path]['valid'] = valid
+        #set if repo is empty
+        if(blank != None):
+            cls._URLstatus[path]['blank'] = blank
 
 
     @classmethod
@@ -242,23 +262,27 @@ class Git:
         Returns:
             (bool): true if no commits are made to the repository
         '''
-        #check local path
-        if(remote == False):
-            #check output from running log and seeing if error pops up
-            _,err = apt.execute('git','-C',path,'log', quiet=False, returnoutput=True)
-            return (len(err) > 0)
-        
-        #actually check the remote connection
-        log.info("Checking ability to link to remote url...")
-        if(path == None or path.count(".git") == 0):
+        #check local path (only if repository is not remote)
+        if(cls.isValidRepo(path, remote=True) == False):
+            if(cls.isValidRepo(path, remote=False)):
+                #check output from running log and seeing if error pops up
+                _,err = apt.execute('git','-C',path,'log', quiet=cls.QUIET, returnoutput=True)
+                is_blank = (len(err) > 0)
+                return is_blank
             return False
-
-        out,err = apt.execute('git', 'ls-remote', path, quiet=False, returnoutput=True)
-        is_valid = (len(err) == 0)
-        #update dictionary to log this url
-        cls._URLstatus[path] = is_valid
-        #verify no output and no errors (it is blank)
-        return (len(out) == 0 and len(err) == 0)
+        #check if remote url is blank
+        else:
+            #has it aleady been checked?
+            if(path in cls._URLstatus.keys() and 'blank' in cls._URLstatus[path].keys()):
+                return cls._URLstatus[path]['blank']
+            #verify if its blank
+            out,err = apt.execute('git', 'ls-remote', path, quiet=cls.QUIET, returnoutput=True)
+            is_valid = (len(err) == 0)
+            is_blank = is_valid and (len(out) == 0)
+            #update dictionary to log this url
+            cls.setRepoProperties(path, valid=is_valid, blank=is_blank)
+            #verify no output and no errors (it is blank)
+            return is_blank
 
 
     def getBranch(self, force=False):
