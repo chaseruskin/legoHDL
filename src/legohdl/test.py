@@ -17,7 +17,7 @@ def main():
     apt.load()
     #run tests (flip to false to deactivate)
     if(False):
-        print("--- SCRIPT.PY ---")
+        print("\n--- SCRIPT.PY ---")
         s = Script("superScript","make -f /Users/chase/Develop/HDL/SimpleCircuit/makefile alyze")
         print(s)
         m = Map()
@@ -39,7 +39,7 @@ def main():
         pass
 
     if(True):
-        print('--- GIT CLASS ---')
+        print('\n--- GIT CLASS ---')
         #create temporary new block
         tmp_lib = 'Test'
         tmp_name = 'temporal'
@@ -65,18 +65,29 @@ def main():
         #shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
         pass
     if(True):
-        print('---MARKET CLASS---')
+        print('\n---MARKET CLASS---')
         print(Market.Jar)
     if(True):
-        print('---WORKSPACE CLASS---')
-        #create workspace
+        print('\n---WORKSPACE CLASS---')
+        #create workspaces
         tmp_ws = "super_WS"
+        other_ws = "wsII"
         Workspace(tmp_ws, "~/develop/temporal/", ['uf-ece'])
-        Workspace("wsII", "~/develop/wsII")
+        Workspace(other_ws, "~/develop/wsII", ['OPEN-IP'])
         #grab workspace from Jar
         tmp = Workspace.Jar[tmp_ws]
+        other =  Workspace.Jar[other_ws]
         print(Workspace.Jar)
         print(tmp)
+
+        #assign active
+        Workspace.setActiveWorkspace(other_ws)
+        print("[!] Changing workspace name")
+        print(Workspace.Jar)
+        print(other)
+        other.setName("wsIV")
+        print(Workspace.Jar)
+        print(other)
         #link markets
         tmp.linkMarket("anotherMrkt")
         tmp.linkMarket("open-ip")
@@ -85,8 +96,12 @@ def main():
         tmp.unlinkMarket("anotherMrkt")
         tmp.unlinkMarket("open-ip")
         tmp.unlinkMarket("open-ip")
+        #re assign the active workspace
+        Workspace.setActiveWorkspace(tmp_ws)
+        print(Workspace.getActiveWorkspace())
         print(tmp)
+        print(other)
         #remove workspace
         tmp.remove()
-        Workspace.Jar['wsii'].remove()
+        other.remove()
     pass

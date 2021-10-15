@@ -19,7 +19,7 @@ class Workspace:
     Jar = Map()
 
     #active-workspace is a workspace object
-    ActiveWorkspace = None
+    _ActiveWorkspace = None
 
 
     def __init__(self, name, path, markets=[]):
@@ -67,6 +67,8 @@ class Workspace:
             else:
                 log.warning("Could not link unknown market "+mrkt+" to "+self.getName()+".")
             pass
+        #default all initalized workspaces to not be the active workspace
+        self._is_active = False
 
         #add to class Jar
         self.Jar[self.getName()] = self
@@ -105,6 +107,40 @@ class Workspace:
             return True
 
 
+    def setName(self, n):
+        '''
+        Change the workspace's name if the name is not already taken.
+
+        Parameters:
+            n (str): new name for workspace
+        Returns:
+            (bool): true if name successfully altered and updated in Jar
+        '''
+        if(n == '' or n == None):
+            log.error("Workspace name cannot be empty.")
+            return False
+
+        if(n.lower() in self.Jar.keys()):
+            log.error("Cannot rename workspace to "+n+" due to name conflict.")
+            return False
+        else:
+            #remove old name from Jar
+            if(self.getName().lower() in self.Jar.keys()):
+                del self.Jar[self.getName()]
+
+            #rename hidden directory if exists
+            new_dir = apt.fs(apt.HIDDEN+"workspaces/"+n+"/")
+            if(hasattr(self, "_ws_dir")):
+                os.rename(self.getWorkspaceDir(), new_dir)
+            #set the hidden workspace directory
+            self._ws_dir = new_dir
+
+            #change to new name
+            self._name = n
+            #update the Jar
+            self.Jar[self.getName()] = self
+            return True
+
     def remove(self):
         '''
         Removes the workspace object from the Jar and its hidden directory.
@@ -114,27 +150,12 @@ class Workspace:
         Returns:
             None
         '''
+        log.info("Removing workspace "+self.getName()+"...")
         #delete the hidden workspace directory
         shutil.rmtree(self.getWorkspaceDir(), onerror=apt.rmReadOnly)
         #remove from class Jar
         del self.Jar[self.getName()]
         pass
-
-
-    def getPath(self):
-        return self._path
-
-
-    def getWorkspaceDir(self):
-        return self._ws_dir
-
-
-    def getName(self):
-        return self._name
-
-
-    def getMarkets(self):
-        return self._markets
 
 
     def linkMarket(self, mrkt):
@@ -183,12 +204,78 @@ class Workspace:
             return False
 
 
+    @classmethod
+    def setActiveWorkspace(cls, ws):
+        '''
+        Set the active workspace after initializing all workspaces into Jar. If
+        the input name is invalid, it will set the first workspace in the Jar as
+        active.
+
+        Parameters:
+            ws (str): workspace name
+        Returns:
+            (bool): true if active-workspace was set
+        '''
+        if(ws != None and ws.lower() in cls.Jar.keys()):
+            #turn off active on the previous active workspace_obj
+            re_assign = (cls._ActiveWorkspace != None)
+            if(re_assign):
+                cls._ActiveWorkspace.setActive(False)
+            
+            cls._ActiveWorkspace = cls.Jar[ws]
+            if(re_assign):
+                log.info("Assigning workspace "+cls._ActiveWorkspace.getName()+" as active workspace...")
+            #turn on active on the new active workspace_obj
+            cls._ActiveWorkspace.setActive(True)
+
+            return True
+        elif(len(cls.Jar.keys()) and cls._ActiveWorkspace == None):
+            random_ws = list(cls.Jar.keys())[0]
+            cls._ActiveWorkspace = cls.Jar[random_ws]
+            log.info("Workspace "+ws+" does not exist. Auto-assigning active workspace to "+cls._ActiveWorkspace.getName()+"...")
+            cls._ActiveWorkspace.setActive(True)
+            return True
+        else:
+            log.info("Workspace "+ws+" does not exist. Keeping "+cls._ActiveWorkspace.getName()+" as active.")
+        return False
+
+
+    def getPath(self):
+        return self._path
+
+
+    def getWorkspaceDir(self):
+        return self._ws_dir
+
+
+    def getName(self):
+        return self._name
+
+
+    def getMarkets(self):
+        return self._markets
+
+
+    def setActive(self, b):
+        self._is_active = b
+
+
+    def isActive(self):
+        return self._is_active
+
+
+    @classmethod
+    def getActiveWorkspace(cls):
+        return cls._ActiveWorkspace
+
+
     def __str__(self):
         return f'''
         ID: {hex(id(self))}
         Name: {self.getName()}
         Path: {self.getPath()}
-        hidden dir: {self.getWorkspaceDir()}
+        Active: {self.isActive()}
+        Hidden directory: {self.getWorkspaceDir()}
         Markets: {self.getMarkets()}
         '''
 
