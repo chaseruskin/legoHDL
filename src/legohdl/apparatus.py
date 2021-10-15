@@ -300,7 +300,7 @@ scripts)?", warning=False)
             cls._prfl_map[n.lower()] = n
         return cls._prfl_map
 
-    #[!] PREPARING FOR REMOVAL
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def dynamicProfiles(cls):
         #identify valid profiles in the hidden direcotory
@@ -328,7 +328,7 @@ scripts)?", warning=False)
                     pass
         pass
     
-    #[!] PREPARING FOR REMOVAL
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def getWorkspaceNames(cls):
         '''
@@ -344,7 +344,7 @@ scripts)?", warning=False)
             cls._ws_map[n.lower()] = n
         return cls._ws_map
     
-    #[!] PREPARING FOR REMOVAL
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def dynamicWorkspace(cls):
         '''
@@ -381,16 +381,13 @@ scripts)?", warning=False)
                 #delete if found a directory type
                 if(os.path.isdir(cls.HIDDEN+"workspaces/"+ws)):
                     shutil.rmtree(cls.HIDDEN+"workspaces/"+ws, onerror=cls.rmReadOnly)
-                #delete if found a file type
-                else:
-                    os.remove(cls.HIDDEN+"workspaces/"+ws)
 
         if(acting_ws != cfg.NULL):
             cls.SETTINGS['general']['active-workspace'] = acting_ws
         
         pass
 
-    #[!] PREPARING FOR REMOVAL
+    #[!] PREPARING FOR REMOVAL $
     #automatically manage if a script still exists and clean up non-existent scripts
     @classmethod
     def dynamicScripts(cls):
@@ -416,6 +413,7 @@ scripts)?", warning=False)
             del cls.SETTINGS['script'][d]
         pass
 
+    #[!] PREPARING FOR REMOVAL $
     @classmethod
     def inWorkspace(cls):
         #determine current workspace currently being used

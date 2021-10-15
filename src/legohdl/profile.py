@@ -7,6 +7,7 @@
 #   to save certain setting configurations (loadouts) and share settings across
 #   users.
 
+from genericpath import isdir
 import os,shutil
 import logging as log
 from .map import Map
@@ -21,7 +22,7 @@ class Profile:
     LastImport = None
 
 
-    def __init__(self, name):
+    def __init__(self, name, url=None):
         '''
         Creates a Profile instance.
 
@@ -60,6 +61,28 @@ class Profile:
         shutil.rmtree(self.getProfileDir(), onerror=apt.rmReadOnly)
         #remove from Jar
         del self.Jar[self.getName()]
+        pass
+
+
+    @classmethod
+    def tidy(cls):
+        '''
+        Remove any stale profiles from the profiles/ directory. A stale profile
+        is one that is not listed in the settings and not stored in the Jar.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        prfl_dirs = os.listdir(apt.HIDDEN+"profiles/")
+        #target deletions
+        for prfl in prfl_dirs:
+            #skip if its the import.log
+            if(prfl == apt.PRFL_LOG):
+                continue
+            if(prfl.lower() not in cls.Jar.keys()):
+                shutil.rmtree(apt.HIDDEN+"profiles/"+prfl, onerror=apt.rmReadOnly)
         pass
 
 

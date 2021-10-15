@@ -146,6 +146,7 @@ class Workspace:
             self.Jar[self.getName()] = self
             return True
 
+
     def remove(self):
         '''
         Removes the workspace object from the Jar and its hidden directory.
@@ -207,6 +208,43 @@ class Workspace:
         else:
             log.warning("Could not unlink unknown market "+mrkt+" from "+self.getName()+".")
             return False
+
+
+    @classmethod
+    def tidy(cls):
+        '''
+        Removes any stale hidden workspace directories that aren't mapped to a
+        workspace found in the class Jar container.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        #list all hidden workspace directories
+        hidden_dirs = os.listdir(apt.HIDDEN+"workspaces/")
+        for hd in hidden_dirs:
+            if(hd.lower() not in cls.Jar.keys()):
+                log.info("Removing stale hidden workspace directory for "+hd+"...") 
+                if(os.path.isdir(apt.HIDDEN+"workspaces/"+hd)):
+                    shutil.rmtree(apt.HIDDEN+"workspaces/"+hd, onerror=apt.rmReadOnly)
+                #remove all files from workspace directory
+                else:
+                    os.remove(apt.HIDDEN+"workspaces/"+hd)
+        pass
+
+
+    @classmethod
+    def inWorkspace(cls):
+        '''
+        Determine if an active workspace is selected.
+
+        Parameters:
+            None
+        Returns:
+            (bool): true if ActiveWorkspace is not None
+        '''
+        return cls._ActiveWorkspace != None
 
 
     @classmethod

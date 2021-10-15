@@ -20,7 +20,7 @@ def main():
     apt.load()
     #run tests (flip to false to deactivate)
 
-    if(True):
+    if(False):
         print("\n--- SCRIPT.PY ---")
         s = Script("superScript","make -f /Users/chase/Develop/HDL/SimpleCircuit/makefile alyze")
         print(s)
@@ -73,13 +73,16 @@ def main():
         print('\n---MARKET CLASS---')
         print(Market.Jar)
 
-    if(False):
+    if(True):
         print('\n---WORKSPACE CLASS---')
         #create workspaces
         tmp_ws = "super_WS"
         other_ws = "wsII"
         Workspace(tmp_ws, "~/develop/temporal/", ['uf-ece'])
         Workspace(other_ws, "~/develop/wsII", ['OPEN-IP'])
+        for nm,ws in apt.SETTINGS['workspace'].items():
+            Workspace(nm, apt.SETTINGS['workspace'][nm]['path'], apt.SETTINGS['workspace'][nm]['market'])
+        Workspace.tidy()
         #grab workspace from Jar
         tmp = Workspace.Jar[tmp_ws]
         other =  Workspace.Jar[other_ws]
