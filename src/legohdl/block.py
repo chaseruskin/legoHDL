@@ -56,7 +56,7 @@ class Block:
                 self.loadMeta()
                 return
         elif(path == None):
-            self.__local_path = apt.fs(apt.getLocal()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
+            self.__local_path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
 
         #try to see if this directory is indeed a git repo
         self._repo = None
@@ -93,7 +93,7 @@ class Block:
 
         rem = apt.fs(rem)
         #new path is default to local/library/
-        new_path = apt.fs(apt.getLocal()+"/"+self.getLib(low=False)+"/")
+        new_path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/")
         os.makedirs(new_path, exist_ok=True)
         #create temp directory to clone project into
         os.makedirs(tmp_dir, exist_ok=True)
@@ -1518,7 +1518,7 @@ class Block:
         if(apt.SETTINGS['general']['multi-develop'] == True):
             log.info("Multi-develop is enabled")
             #1. first find all Block.cfg files (roots of blocks)
-            files = glob.glob(apt.getLocal()+"**/"+apt.MARKER, recursive=True)
+            files = glob.glob(Workspace.getActive().getPath()+"**/"+apt.MARKER, recursive=True)
             #print(files)
             #2. go through each recursive search within these roots for vhd files (skip self block root)
             for f in files:
