@@ -70,6 +70,9 @@ class Market:
 
         #add to class container
         self.Jar[self.getName()] = self
+
+        #compute the block count by finding how many cfg block files are in market
+        self._block_count = len(glob.glob(self.getMarketDir()+"**/*"+apt.MARKER, recursive=True))
         pass
 
 
@@ -295,6 +298,28 @@ class Market:
 
 
     @classmethod
+    def printList(cls, active_markets=[]):
+        '''
+        Prints formatted list for markets with availability to active-workspace
+        and their remote connection, and number of available blocks.
+
+        Parameters:
+            active_markets ([Market]): list of market objects belonging to active workspace
+        Returns:
+            None
+        '''
+        print('{:<15}'.format("Market"),'{:<48}'.format("Remote Repository"),'{:<12}'.format("Block Count"),'{:<12}'.format("Active"))
+        print("-"*15+" "+"-"*48+" "+"-"*12+" "+"-"*8)
+        for mrkt in cls.Jar.values():
+            active = 'yes' if(mrkt in active_markets) else '-'
+            val = mrkt._repo.getRemoteURL() if(mrkt.isRemote()) else 'local'
+            print('{:<15}'.format(mrkt.getName()),'{:<48}'.format(val),'{:<12}'.format(mrkt.getBlockCount()),'{:<8}'.format(active))
+            pass
+
+        pass
+
+
+    @classmethod
     def tidy(cls):
         '''
         Removes all stale markets that are not found in the markets/ directory.
@@ -317,6 +342,10 @@ class Market:
             pass
 
         pass
+
+
+    def getBlockCount(self):
+        return self._block_count
 
 
     def isRemote(self):

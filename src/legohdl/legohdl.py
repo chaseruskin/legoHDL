@@ -69,24 +69,20 @@ class legoHDL:
         #initialize all Labels
         Label.load()
 
-
         Workspace.printAll()
 
         Workspace.getActiveWorkspace().autoRefresh(rate=0)
 
-        exit()
-
-        #dyamincally manage any registries that were added to legohdl.cfg
-        Registry.dynamicLoad(apt.getMarkets(workspace_level=False))
         #save all legohdl.cfg changes
         apt.save()
         
         self.blockPKG = None
         self.blockCWD = None
         #initialize registry with the workspace-level markets
-        self.db = Registry(apt.getMarkets()) 
+        self.db = Registry(Workspace.getActiveWorkspace().getMarkets())
+
         #limit functionality if not in a workspace
-        if(not apt.inWorkspace() and (command != '' and command != 'config' and command != 'profile' and command != 'help' and (command != 'open' or ("settings" not in options and "template" not in options)))):
+        if(not Workspace.inWorkspace() and (command != '' and command != 'config' and command != 'profile' and command != 'help' and (command != 'open' or ("settings" not in options and "template" not in options)))):
             exit()
 
         if(sys.argv[1:].count('debug')):
@@ -1039,7 +1035,7 @@ class legoHDL:
         '''
         #try to attach a market
         for mkt in self.db.getMarkets():
-            if(mkt.getName(low=True) == m.lower()):
+            if(m.lower() == mkt.getName()):
                 log.info("Identified "+mkt.getName()+" as block's market.")
                 return mkt
         if(len(m)):
@@ -1098,99 +1094,6 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         print()
         pass
 
-    def listLabels(self):
-        '''
-        This method perfoms the list command for labels.
-        '''
-        print('{:<20}'.format("Label"),'{:<24}'.format("Extension"),'{:<14}'.format("Recursive"))
-        print("-"*20+" "+"-"*24+" "+"-"*14+" ")
-        for depth,pair in apt.SETTINGS['label'].items():
-            rec = "-"
-            if(depth == "recursive"):
-                rec = "yes"
-            for key,val in pair.items():
-                print('{:<20}'.format(key),'{:<24}'.format(val),'{:<14}'.format(rec))
-            pass
-        pass
-
-    def listMarkets(self):
-        '''
-        This method perfoms the list command for markets.
-        '''
-        print('{:<16}'.format("Market"),'{:<50}'.format("URL"),'{:<12}'.format("Available"))
-        print("-"*16+" "+"-"*50+" "+"-"*12)
-        for key,val in apt.SETTINGS['market'].items():
-            rec = '-'
-            if(key in apt.getWorkspace('market')):
-                rec = 'yes'
-            if(val == None):
-                val = 'local'
-            print('{:<16}'.format(key),'{:<50}'.format(val),'{:<12}'.format(rec))
-            pass
-        pass
-
-    def listProfiles(self):
-        '''
-        This method perfoms the list command for profiles.
-        '''
-        prfls = apt.getProfiles()
-        last_prfl = open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'r').readline()
-        # :todo: also indicate if an update is available
-        print('{:<16}'.format("Profile"),'{:<12}'.format("Last Import"),'{:<16}'.format(apt.SETTINGS_FILE),'{:<12}'.format("template/"),'{:<12}'.format("scripts/"))
-        print("-"*16+" "+"-"*12+" "+"-"*16+" "+"-"*12+" "+"-"*12)
-        for prfl in prfls:
-            last_import = 'yes' if(last_prfl == prfl) else '-'
-            has_template = 'yes' if(apt.isInProfile(prfl, 'template')) else '-'
-            has_scripts = 'yes' if(apt.isInProfile(prfl, 'scripts')) else '-'
-            has_settings = 'yes' if(apt.isInProfile(prfl, apt.SETTINGS_FILE)) else '-'
-            #check if it has a remote
-            # prfl_path = apt.getProfiles()[prfl]
-            # if(os.path.exists(prfl_path+".git")):
-            #     repo = git.Repo(prfl_path)
-            #     if(len(repo.remotes)):
-            #         repo.git.remote('update')
-            #         status = repo.git.status('-uno')
-            #         if(status.count('Your branch is up to date with') or status.count('Your branch is ahead of')):
-            #             pass
-            #         else:
-            #             print('needs update')
-                
-            print('{:<16}'.format(prfl),'{:<12}'.format(last_import),'{:<16}'.format(has_settings),'{:<12}'.format(has_template),'{:<12}'.format(has_scripts))
-            pass
-    
-    def listWorkspace(self):
-        '''
-        This method perfoms the list command for workspaces.
-        '''
-        print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Markets"))
-        print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
-        for key,val in apt.SETTINGS['workspace'].items():
-            act = '-'
-            rems = ''
-            for r in val['market']:
-                rems = rems + r + ','
-            if(key == apt.SETTINGS['general']['active-workspace']):
-                act = 'yes'
-            print('{:<16}'.format(key),'{:<6}'.format(act),'{:<40}'.format(val['path']),'{:<14}'.format(rems))
-            pass
-        pass
-
-    def listScripts(self):
-        '''
-        This method perfoms the list command for scripts.
-        '''
-        print('{:<12}'.format("Name"),'{:<12}'.format("Command"))
-        print("-"*12+" "+"-"*64)
-        for key,val in apt.SETTINGS['script'].items():
-            cmd = ''
-            if(isinstance(val,list)):
-                for v in val:
-                    cmd = cmd + v + ' '
-            else:
-                cmd = val
-            print('{:<12}'.format(key),'{:<12}'.format(cmd))
-            pass
-        pass
 
     #! === UPDATE COMMAND ===
 
@@ -1262,30 +1165,29 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         package = package.replace("-", "_")
 
         #first identify if automatic-refresh should occur on markets
-        if(apt.inWorkspace() and apt.readyForRefresh() and apt.linkedMarket()):
-            self.db.sync('')
-
+        #if(apt.inWorkspace() and apt.readyForRefresh() and apt.linkedMarket()):
+            #self.db.sync('')
         #is the user trying to shortcut?
-        if(apt.inWorkspace() and L == '' and cmd != 'new' and self.db.canShortcut(N)):
+        if(Workspace.inWorkspace() and L == '' and cmd != 'new' and self.db.canShortcut(N)):
             #rewrite MLNV based on shortcut if possible
             M,L,N,_ = self.db.shortcut(N)
             if(cmd != 'export' and cmd != 'graph' and cmd != 'run' and cmd != 'build'):
                 package = L+'.'+N
 
-        if(apt.inWorkspace()):
+        if(Workspace.inWorkspace()):
             if(self.db.blockExists(package,"local")):
                 self.blockPKG = self.db.getBlocks("local")[L][N]
             else:
                 self.blockPKG = None
 
         valid = (self.blockPKG != None)
-        if(apt.inWorkspace()):
+        if(Workspace.inWorkspace()):
             exists = self.db.blockExists(package,"local") or \
                     self.db.blockExists(package,"cache") or \
                     self.db.blockExists(package,"market")
         else:
             exists = False
-        
+
         #branching through possible commands
         if(command == "install"):
             ver = None
@@ -1410,16 +1312,15 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
         elif(command == "list"): #a visual aide to help a developer see what package's are at the ready to use
             if(options.count("script")):
-                self.listScripts()
+                Script.printList()
             elif(options.count("label")):
-                self.listLabels()
+                Label.printList()
             elif(options.count("market")):
-                self.listMarkets()
+                Market.printList(Workspace.getActiveWorkspace().getMarkets())
             elif(options.count("workspace")):
-                self.listWorkspace()
+                Workspace.printList()
             elif(options.count("profile")):
-                self.listProfiles()
-            # :todo: add ability to list all files in current template
+                Profile.printList()
             elif(options.count("template")):
                 apt.getTemplateFiles()
                 #categorize by hidden files (skipped)

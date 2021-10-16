@@ -231,7 +231,7 @@ scripts)?", warning=False)
         elif(cls.SETTINGS['general']['refresh-rate'] < cls.MIN_RATE):
             cls.SETTINGS['general']['refresh-rate'] = cls.MIN_RATE
         #dynamically add profiles to the hidden folder
-        cls.dynamicProfiles()
+        #cls.dynamicProfiles()
         #dynamically create new workspace directories
         #cls.dynamicWorkspace()
 
@@ -904,10 +904,13 @@ scripts)?", warning=False)
             str: single complete string with items separated by delimiter
         '''
         single_str = ''
+        if(isinstance(in_list, str)):
+            return in_list
         #concatenate all items together split by delimiter
         for w in in_list:
             single_str = single_str + w + delim
-        return single_str
+        #return with last delimiter trimmed off
+        return single_str[0:-1]
 
 
     @classmethod

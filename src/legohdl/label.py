@@ -83,6 +83,23 @@ class Label:
         for t in cls.Jar.values():
             print(t)
 
+    @classmethod
+    def printList(cls):
+        '''
+        Prints formatted list for labels with recursive flag and file extensions.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        print('{:<20}'.format("Label"),'{:<24}'.format("Extensions"),'{:<14}'.format("Recursive"))
+        print("-"*20+" "+"-"*24+" "+"-"*14+" ")
+        for lbl in cls.Jar.values():
+            rec = 'yes' if(lbl.isRecursive()) else '-'
+            print('{:<20}'.format(lbl.getName()),'{:<24}'.format(apt.ListToStr(lbl.getExtensions())),'{:<14}'.format(rec))
+        pass
+        pass
 
     def setExtensions(self, exts):
         '''

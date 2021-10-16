@@ -421,6 +421,26 @@ class Workspace:
         else:
             return self._markets
 
+    
+    @classmethod
+    def printList(cls):
+        '''
+        Prints formatted list for workspaces with market availability and which is active.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Markets"))
+        print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
+        for ws in cls.Jar.values():
+            mrkts = apt.ListToStr(ws.getMarkets(returnnames=True))
+            act = 'yes' if(ws == cls.getActiveWorkspace()) else '-'
+            print('{:<16}'.format(ws.getName()),'{:<6}'.format(act),'{:<40}'.format(ws.getPath()),'{:<14}'.format(mrkts))
+            pass
+        pass
+
 
     def isActive(self):
         return self == self.getActiveWorkspace()

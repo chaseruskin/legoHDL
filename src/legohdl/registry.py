@@ -17,6 +17,7 @@ from .block import Block
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
 from .market import Market
+from .workspace import Workspace
 
 class Registry:
     class Mode(Enum):
@@ -32,35 +33,8 @@ class Registry:
         Initialize all market objects that have been found for this workspace.
         '''
         #list of all markets for current workspace
-        self.__mkts = list()
-        #list of all available market names as dictionary 
-        all_mrkt_names = apt.getMarketNames()
-
-        if(apt.inWorkspace() and apt.linkedMarket()):
-            for nm,val in mrkts.items():
-                #pass the true-case name of the market to initialize
-                if(nm in all_mrkt_names.keys()):
-                    self.__mkts.append(Market(all_mrkt_names[nm],val))
+        self.__mkts = mrkts
         pass
-    
-    @classmethod
-    def dynamicLoad(cls, mrkts):
-        '''
-        This method creates markets if not existing in markets dir and deletes
-        market folders if the key is not found in the settings.
-        '''
-        #try to create system-wide markets if DNE
-        for rem,val in mrkts.items():
-            Market(rem,val)
-
-        #if a folder exists in registry path but key is not in settings, delete the registry
-        regs = os.listdir(apt.MARKETS)
-        for r in regs:
-            if r not in mrkts.keys():
-                if(os.path.isdir(apt.MARKETS+r)):
-                    shutil.rmtree(apt.MARKETS+r, onerror=apt.rmReadOnly)
-                else:
-                    os.remove(apt.MARKETS+r)
 
     def listBlocks(self, M, L, N, options):
         '''
@@ -219,7 +193,7 @@ class Registry:
     def getProjectsCache(self, updt=False):
         if hasattr(self,"_cache_prjs") and not updt:
             return self._cache_prjs
-        path = apt.WORKSPACE+"cache/"
+        path = Workspace.getActiveWorkspace().getWorkspaceDir()+"cache/"
         self._cache_prjs = dict()
         libs = os.listdir(path)
         for l in libs:

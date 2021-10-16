@@ -108,6 +108,24 @@ class Script:
         return True
 
 
+    @classmethod
+    def printList(cls):
+        '''
+        Prints formatted list for scripts with alias and the commands.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        print('{:<15}'.format("Alias"),'{:<12}'.format("Command"))
+        print("-"*15+" "+"-"*64)
+        for scpt in cls.Jar.values():
+            print('{:<15}'.format(scpt.getAlias()),'{:<12}'.format(scpt.getCommand()))
+            pass
+        pass
+
+
     def getAlias(self):
         '''
         Returns the script's name.

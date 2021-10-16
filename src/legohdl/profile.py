@@ -364,6 +364,29 @@ class Profile:
 
 
     @classmethod
+    def printList(cls):
+        '''
+        Prints formatted list for profiles and indicates what is available in each one.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        last_prfl = cls.ReadLastImport()
+        # :todo: also indicate if an update is available
+        print('{:<16}'.format("Profile"),'{:<12}'.format("Last Import"),'{:<16}'.format(apt.SETTINGS_FILE),'{:<12}'.format("template/"),'{:<12}'.format("scripts/"))
+        print("-"*16+" "+"-"*12+" "+"-"*16+" "+"-"*12+" "+"-"*12)
+        for prfl in cls.Jar.values():
+            last_import = 'yes' if(last_prfl == prfl) else '-'
+            has_template = 'yes' if(prfl.hasTemplate()) else '-'
+            has_scripts = 'yes' if(prfl.hasScripts()) else '-'
+            has_settings = 'yes' if(prfl.hasSettings()) else '-'               
+            print('{:<16}'.format(prfl.getName()),'{:<12}'.format(last_import),'{:<16}'.format(has_settings),'{:<12}'.format(has_template),'{:<12}'.format(has_scripts))
+            pass
+
+
+    @classmethod
     def ReadLastImport(cls):
         '''
         Read from import.log the name of the last used profile is, if exists.
