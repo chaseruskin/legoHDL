@@ -9,7 +9,7 @@ jobs:
       - run: git config --global user.email ""
       - run: git config --global user.name "chase"
       - run: pip install .
-      - run: printf 'y\n\nchase\ngedit\n~/demo/\n' | legohdl
+      - run: printf 'y\n\nchase\ngedit\n~/demo/\ny\n' | legohdl
       - run: legohdl new Lib.Prj1
       - run: legohdl list
       - run: legohdl config https://github.com/uf-eel4712c/uf-ece.git -market -add
