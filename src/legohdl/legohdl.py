@@ -15,10 +15,16 @@ from .__version__ import __version__
 from .registry import Registry
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
-from .market import Market
+
 from .unit import Unit
 from .gui import GUI
 from .test import main as test
+
+from .market import Market
+from .workspace import Workspace
+from .profile import Profile
+from .script import Script
+from .label import Label
 
 class legoHDL:
 
@@ -49,6 +55,27 @@ class legoHDL:
 
         #load legohdl.cfg
         apt.load()
+        #initialize all Markets
+        Market.load()
+        Market.tidy()
+        #initialize all Workspaces
+        Workspace.load()
+        Workspace.setActiveWorkspace(apt.SETTINGS['general']['active-workspace'])
+        Workspace.tidy()
+        #initialize all Profiles
+        Profile.load()
+        #initialize all Scripts
+        Script.load()
+        #initialize all Labels
+        Label.load()
+
+
+        Workspace.printAll()
+
+        Workspace.getActiveWorkspace().autoRefresh(rate=0)
+
+        exit()
+
         #dyamincally manage any registries that were added to legohdl.cfg
         Registry.dynamicLoad(apt.getMarkets(workspace_level=False))
         #save all legohdl.cfg changes

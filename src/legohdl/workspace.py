@@ -325,9 +325,21 @@ class Workspace:
             log.info("Automatically refreshing workspace markets... "+infoo)
             #refresh all markets attached to this workspace
             for mrkt in self.getMarkets():
-                # :todo: needs to start using new Market class before using this method
-                #mrkt.refresh()
+                mrkt.refresh()
                 pass
+        pass
+
+
+    @classmethod
+    def load(cls):
+        '''
+        Load all workspaces from settings.
+
+        '''
+        wspcs = apt.SETTINGS['workspace']
+
+        for ws in wspcs.keys():
+            Workspace(ws, wspcs[ws]['path'], wspcs[ws]['market'])
         pass
 
 
@@ -391,12 +403,34 @@ class Workspace:
         return self._name
 
 
-    def getMarkets(self):
-        return self._markets
+    def getMarkets(self, returnnames=False):
+        '''
+        Return the market objects associated with the given workspace.
+
+        Parameters:
+            returnnames (bool): true will return lower-case market names
+        Returns:
+            ([Market]) or ([str]): list of available markets
+            
+        '''
+        if(returnnames):
+            mrkt_names = []
+            for mrkt in self._markets:
+                mrkt_names += [mrkt.getName().lower()]
+            return mrkt_names
+        else:
+            return self._markets
 
 
     def isActive(self):
         return self == self.getActiveWorkspace()
+
+
+    @classmethod
+    def printAll(cls):
+        for key,ws in cls.Jar.items():
+            print('key:',key)
+            print(ws)
 
 
     @classmethod
@@ -411,8 +445,8 @@ class Workspace:
         Path: {self.getPath()}
         Active: {self.isActive()}
         Hidden directory: {self.getWorkspaceDir()}
-        Is Linked: {self.isLinked()}
-        Markets: {self.getMarkets()}
+        Linked to: {self.isLinked()}
+        Markets: {self.getMarkets(returnnames=True)}
         '''
 
     pass

@@ -233,31 +233,31 @@ scripts)?", warning=False)
         #dynamically add profiles to the hidden folder
         cls.dynamicProfiles()
         #dynamically create new workspace directories
-        cls.dynamicWorkspace()
+        #cls.dynamicWorkspace()
 
         #determine current workspace being used
-        cls.__active_workspace = cls.SETTINGS['general']['active-workspace']
+        #cls.__active_workspace = cls.SETTINGS['general']['active-workspace']
 
-        if(not cls.inWorkspace()):
-            log.warning("Active workspace not found!")
-            return False
-
+        #if(not cls.inWorkspace()):
+        #    log.warning("Active workspace not found!")
+        #    return False
+#
         if(cls.SETTINGS['general']['template'] != cfg.NULL and os.path.isdir(cls.SETTINGS['general']['template'])):
             cls.SETTINGS['general']['template'] = cls.fs(cls.SETTINGS['general']['template'])
             cls.TEMPLATE = cls.SETTINGS['template']
             pass
-        
-        if(cls.getLocal() == None):
-            log.error("Please specify a workspace path for "\
-                +cls.SETTINGS['general']['active-workspace']\
-                +". See \'legohdl help config\' for more details.")
-            cls.SETTINGS['general']['active-workspace'] = None
-            return
-
-        cls.WORKSPACE = cls.fs(cls.WORKSPACE+cls.SETTINGS['general']['active-workspace'])
+        #
+        #if(cls.getLocal() == None):
+        #    log.error("Please specify a workspace path for "\
+        #        +cls.SETTINGS['general']['active-workspace']\
+        #        +". See \'legohdl help config\' for more details.")
+        #    cls.SETTINGS['general']['active-workspace'] = None
+        #    return
+#
+        #cls.WORKSPACE = cls.fs(cls.WORKSPACE+cls.SETTINGS['general']['active-workspace'])
 
         #ensure no dead scripts are populated in 'script' section of settings
-        cls.dynamicScripts()
+        #cls.dynamicScripts()
         #save all safety measures
         cls.save()
         pass

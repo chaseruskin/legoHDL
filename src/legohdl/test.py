@@ -14,7 +14,6 @@ from .apparatus import Apparatus as apt
 import os
 from .workspace import Workspace
 from .label import Label
-from .market2 import Market2
 
 
 def main():
@@ -193,20 +192,20 @@ def main():
     if(True):
         print('\n---MARKET CLASS (under as Market2)---')
 
-        Market2("open-ip")
+        Market("open-ip")
 
-        Market2("soc-blocks", "https://gitlab.com/chase800/mymarket.git")
+        Market("soc-blocks", "https://gitlab.com/chase800/mymarket.git")
 
-        Market2('uf-ece', "https://gitlab.com/uf-eel4712c/uf-ece.git")
+        Market('uf-ece', "https://gitlab.com/uf-eel4712c/uf-ece.git")
 
         #Market2("marketIII", "https://gitlab.com/chase800/mymarket.git")
 
-        Market2.printAll()
+        Market.printAll()
 
-        Market2.Jar['UF-ECE'].refresh()
+        Market.Jar['UF-ECE'].refresh()
 
-        Market2.tidy()
+        Market.tidy()
 
 
-        #shutil.rmtree(Market2.Jar['soc-blocks'].getMarketDir(), onerror=apt.rmReadOnly)
+        #shutil.rmtree(Market.Jar['soc-blocks'].getMarketDir(), onerror=apt.rmReadOnly)
     pass

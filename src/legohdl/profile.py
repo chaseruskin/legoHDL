@@ -351,6 +351,17 @@ class Profile:
         self.Jar[self.getName()] = self
         pass
 
+    @classmethod
+    def load(cls):
+        '''
+        Load profiles from settings.
+
+        '''
+        prfls = apt.SETTINGS['general']['profiles']
+        for p in prfls:
+            Profile(p)
+        pass
+
 
     @classmethod
     def ReadLastImport(cls):

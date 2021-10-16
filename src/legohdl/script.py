@@ -7,6 +7,7 @@
 
 import os
 import logging as log
+from .apparatus import Apparatus as apt
 from .map import Map
 
 
@@ -140,6 +141,18 @@ class Script:
             self._cmd (str): the entire command for this script
         '''
         return self._cmd
+
+
+    @classmethod
+    def load(cls):
+        '''
+        Load scripts from settings.
+
+        '''
+        scpts = apt.SETTINGS['script']
+        for alias,cmd in scpts.items():
+            Script(alias, cmd)
+        pass
 
 
     def __str__(self):

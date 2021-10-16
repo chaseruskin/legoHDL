@@ -8,6 +8,7 @@
 
 import logging as log
 from .map import Map
+from .apparatus import Apparatus as apt
 
 
 class Label:
@@ -62,6 +63,25 @@ class Label:
         #update Jar
         self.Jar[self.getName()] = self
         return True
+
+    
+    @classmethod
+    def load(cls):
+        '''
+        Load all labels from settings.
+
+        '''
+        #load shallow labels
+        shallow = apt.SETTINGS['label']['shallow']
+        for lbl,exts in shallow.items():
+            Label(lbl, exts, is_recur=False)
+        #load recursive labels
+        recursive = apt.SETTINGS['label']['recursive']
+        for lbl,exts in recursive.items():
+            Label(lbl, exts, is_recur=True)
+
+        for t in cls.Jar.values():
+            print(t)
 
 
     def setExtensions(self, exts):
