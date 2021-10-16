@@ -136,8 +136,8 @@ def main():
         tmp.unlinkMarket("open-ip")
         #re assign the active workspace
         Workspace.setActiveWorkspace(tmp_ws)
-        Workspace.getActiveWorkspace().autoRefresh(rate=-1)
-        print(Workspace.getActiveWorkspace())
+        Workspace.getActive().autoRefresh(rate=-1)
+        print(Workspace.getActive())
         print(tmp)
         print(other)
         #remove workspace

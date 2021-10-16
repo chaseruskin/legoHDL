@@ -36,6 +36,8 @@ class legoHDL:
         line arguments, loads tool-wide settings, and initializes the registry.
         '''
 
+        log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.INFO)
+
         command = package = ""
         options = []
         #store args accordingly from command-line
@@ -54,6 +56,11 @@ class legoHDL:
             exit()
 
         #load legohdl.cfg
+        #ensure all necessary hidden folder structures exist
+        intial_setup = apt.initialize()
+        if(intial_setup):
+            self.runSetup()
+
         apt.load()
         #initialize all Markets
         Market.load()
@@ -64,6 +71,7 @@ class legoHDL:
         Workspace.tidy()
         #initialize all Profiles
         Profile.load()
+        Profile.tidy()
         #initialize all Scripts
         Script.load()
         #initialize all Labels
@@ -72,17 +80,18 @@ class legoHDL:
         Workspace.printAll()
 
         if(Workspace.inWorkspace()):
-            Workspace.getActiveWorkspace().autoRefresh(rate=0)
+            Workspace.getActive().autoRefresh(rate=0)
 
         #save all legohdl.cfg changes
         apt.save()
+        Workspace.save()
         
         self.blockPKG = None
         self.blockCWD = None
         #initialize registry with the workspace-level markets
         if(Workspace.inWorkspace()):
-            self.db = Registry(Workspace.getActiveWorkspace().getMarkets())
-            
+            self.db = Registry(Workspace.getActive().getMarkets())
+
         #limit functionality if not in a workspace
         if(not Workspace.inWorkspace() and (command != '' and command != 'config' and command != 'profile' and command != 'help' and (command != 'open' or ("settings" not in options and "template" not in options)))):
             exit()
@@ -91,6 +100,47 @@ class legoHDL:
             test()
         else:
             self.parse(command, package, options)
+        pass
+
+
+    def runSetup(self):
+        is_select = apt.confirmation("This looks like your first time running \
+legoHDL! Would you like to use a profile (import settings, template, and \
+scripts)?", warning=False)
+        if(is_select):
+            #give user options to proceeding to load a profile
+            resp = input("""Enter:
+1) nothing for default profile
+2) a path or git repository to a new profile
+3) 'exit' to cancel
+""")
+            #continually prompt until get a valid response to move forward
+            while True:
+                if(resp.lower() == 'exit'):
+                    log.info('Profile configuration skipped.')
+                    break
+                elif(resp == ''):
+                    log.info("Setting up default profile...")
+                    Profile.reloadDefault(importing=True)
+                    break
+                elif(Profile('', url=resp)):
+                    break
+                resp = input()
+                pass
+        #decided to not run setup prompt or we have no workspaces
+        if(not is_select or len(apt.SETTINGS['workspace'].keys()) == 0):
+            #ask to create workspace
+            ws_name = input("Enter a workspace name: ")
+            while(len(ws_name) == 0 or ws_name.isalnum() == False):
+                ws_name = input()
+            apt.SETTINGS['workspace'][ws_name] = dict()
+            
+        #ask for name to store in settings
+        feedback = input("Enter your name: ")
+        apt.SETTINGS['general']['author'] = apt.SETTINGS['general']['author'] if(feedback.strip() == cfg.NULL) else feedback.strip()
+        #ask for test-editor to store in settings
+        feedback = input("Enter your text-editor: ")
+        apt.SETTINGS['general']['editor'] = apt.SETTINGS['general']['editor'] if(feedback.strip() == cfg.NULL) else feedback.strip()
         pass
 
     #! === INSTALL COMMAND ===
@@ -1318,7 +1368,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             elif(options.count("label")):
                 Label.printList()
             elif(options.count("market")):
-                Market.printList(Workspace.getActiveWorkspace().getMarkets())
+                Market.printList(Workspace.getActive().getMarkets())
             elif(options.count("workspace")):
                 Workspace.printList()
             elif(options.count("profile")):
@@ -1455,24 +1505,31 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
         elif(command == "update"):
             if(options.count('profile')):
-                if(value.lower() in apt.getProfileNames().keys() or value.lower() == 'default'):
+                if(value.lower() in Profile.Jar.keys() or value.lower() == 'default'):
                     if(value.lower() != 'default'):
-                        value = apt.getProfileNames()[value.lower()]
+                        Profile.Jar[value].update()
                     else:
-                        value = value.lower()
-                    #update this profile if it has a remote repository
-                    apt.updateProfile(value)
+                        Profile.reloadDefault()
                 else:
-                    log.error("No profile exists as "+value)
-                
+                    log.error("No profile exists as "+value+".")
             elif(self.db.blockExists(package,"cache")):
                 #perform install over remote url
                 self.update(package)
             pass
 
         elif(command == "profile" and package != ''):
-            #import new settings
-            apt.loadProfile(value, explicit=options.count('ask'))
+            asking = options.count('ask')
+            #import new settings from an existing profile
+            if(value.lower() in Profile.Jar.keys()):
+                Profile.Jar[value].importLoadout(ask=asking)
+            #try to create new profile from url and import
+            else:
+                tmp = Profile('', url=value)
+                if(tmp in Profile.Jar.values()):
+                    tmp.importLoadout(ask=asking)
+                #save new profile
+                Profile.save()
+
             #reinitialize all settings/perform safety measures
             apt.load()
             pass
@@ -1560,7 +1617,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             print("\nType \'legohdl help <command>\' to read more on entered command.")
         else:
             print("Invalid command; type \"legohdl help\" to see a list of available commands")
-        pass
+    pass
 
     #! === HELP COMMAND ===
 

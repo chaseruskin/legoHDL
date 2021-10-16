@@ -109,6 +109,7 @@ class Apparatus:
 
     @classmethod
     def initialize(cls):
+        
         cls.HIDDEN = cls.fs(cls.HIDDEN)
         ask_for_setup = (os.path.exists(cls.HIDDEN) == False)
         
@@ -132,6 +133,20 @@ class Apparatus:
 
         #generate list of all available fields/options
         cls.OPTIONS = cls.OPTIONS + cfg.getAllFields(cls.LAYOUT)
+
+        #load dictionary data in variable
+        with open(cls.HIDDEN+cls.SETTINGS_FILE, "r") as file:
+            cls.SETTINGS = cfg.load(file)
+        
+        #merge bare_settings into loaded settings to ensure all keys are present
+        cls.SETTINGS = cls.fullMerge(cls.SETTINGS, cls.LAYOUT)
+
+        #ensure all pieces of settings are correct
+        cls.generateDefault(dict,"shallow","recursive",header="label")
+        cls.generateDefault(dict,"market","script","workspace",header=None)
+        cls.generateDefault(bool,"multi-develop","overlap-recursive",header="general")
+        cls.generateDefault(int,"refresh-rate",header="general")
+        cls.generateDefault(list,"profiles",header="general")
             
         return ask_for_setup
 
@@ -168,6 +183,7 @@ scripts)?", warning=False)
                 ws_name = input()
             cls.SETTINGS['workspace'][ws_name] = dict()
 
+
         #ask for name to store in settings
         feedback = input("Enter your name: ")
         cls.SETTINGS['general']['author'] = cls.SETTINGS['general']['author'] if(feedback.strip() == cfg.NULL) else feedback.strip()
@@ -196,28 +212,6 @@ scripts)?", warning=False)
 
     @classmethod
     def load(cls):
-        log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.INFO)
-        #ensure all necessary hidden folder structures exist
-        ask_for_setup = cls.initialize()
-
-        #load dictionary data in variable
-        with open(cls.HIDDEN+cls.SETTINGS_FILE, "r") as file:
-            cls.SETTINGS = cfg.load(file)
-        
-        #merge bare_settings into loaded settings to ensure all keys are present
-        cls.SETTINGS = cls.fullMerge(cls.SETTINGS, cls.LAYOUT)
-
-        #ensure all pieces of settings are correct
-        cls.generateDefault(dict,"shallow","recursive",header="label")
-        cls.generateDefault(dict,"market","script","workspace",header=None)
-        cls.generateDefault(bool,"multi-develop","overlap-recursive",header="general")
-        cls.generateDefault(int,"refresh-rate",header="general")
-        cls.generateDefault(list,"profiles",header="general")
-
-        #run setup here
-        if(ask_for_setup):
-            cls.runSetup()
-
         #ensure all pieces of settings are correct
         cls.generateDefault(dict,"shallow","recursive",header="label")
         cls.generateDefault(dict,"market","script","workspace",header=None,)
@@ -230,34 +224,12 @@ scripts)?", warning=False)
             cls.SETTINGS['general']['refresh-rate'] = cls.MAX_RATE
         elif(cls.SETTINGS['general']['refresh-rate'] < cls.MIN_RATE):
             cls.SETTINGS['general']['refresh-rate'] = cls.MIN_RATE
-        #dynamically add profiles to the hidden folder
-        #cls.dynamicProfiles()
-        #dynamically create new workspace directories
-        #cls.dynamicWorkspace()
-
-        #determine current workspace being used
-        #cls.__active_workspace = cls.SETTINGS['general']['active-workspace']
-
-        #if(not cls.inWorkspace()):
-        #    log.warning("Active workspace not found!")
-        #    return False
 #
         if(cls.SETTINGS['general']['template'] != cfg.NULL and os.path.isdir(cls.SETTINGS['general']['template'])):
             cls.SETTINGS['general']['template'] = cls.fs(cls.SETTINGS['general']['template'])
             cls.TEMPLATE = cls.SETTINGS['template']
             pass
-        #
-        #if(cls.getLocal() == None):
-        #    log.error("Please specify a workspace path for "\
-        #        +cls.SETTINGS['general']['active-workspace']\
-        #        +". See \'legohdl help config\' for more details.")
-        #    cls.SETTINGS['general']['active-workspace'] = None
-        #    return
-#
-        #cls.WORKSPACE = cls.fs(cls.WORKSPACE+cls.SETTINGS['general']['active-workspace'])
-
-        #ensure no dead scripts are populated in 'script' section of settings
-        #cls.dynamicScripts()
+        
         #save all safety measures
         cls.save()
         pass
@@ -301,52 +273,6 @@ scripts)?", warning=False)
 
     #[!] PREPARING FOR REMOVAL $
     @classmethod
-    def getProfileNames(cls):
-        '''
-        This method returns a dictionary of the lower-case names to the
-        true-case names for each profile.
-        '''
-        if(hasattr(cls, "_prfl_map")):
-            return cls._prfl_map
-
-        cls._prfl_map = {}
-        names = cls.getProfiles()
-        for n in names:
-            cls._prfl_map[n.lower()] = n
-        return cls._prfl_map
-
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def dynamicProfiles(cls):
-        #identify valid profiles in the hidden direcotory
-        found_prfls = cls.getProfiles()
-        #print(found_prfls)
-        #identify potential profiles in the setting.cfg
-        listed_prfls = cls.SETTINGS['general']['profiles']
-        #target deletions
-        for prfl in found_prfls:
-            if(prfl not in listed_prfls):
-                shutil.rmtree(cls.getProfiles()[prfl], onerror=cls.rmReadOnly)
-        
-        #target additions
-        for prfl in listed_prfls:
-            if(prfl not in found_prfls):
-                #check if there is a conflict with trying to make a new profile
-                if(os.path.exists(cls.HIDDEN+"profiles/"+prfl)):
-                    log.error("A profile already exists for "+prfl+".")
-                    cls.SETTINGS['general']['profiles'].remove(prfl)
-                    continue
-                log.info("Creating empty profile "+prfl+"...")
-                os.makedirs(cls.HIDDEN+"profiles/"+prfl, exist_ok=True)
-                
-                with open(cls.HIDDEN+"profiles/"+prfl+"/"+prfl+cls.PRFL_EXT, 'w'):
-                    pass
-        pass
-
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
     def getWorkspaceNames(cls):
         '''
         This method returns a dictionary of lower-case workspace names mapped 
@@ -360,77 +286,6 @@ scripts)?", warning=False)
         for n in ws_names:
             cls._ws_map[n.lower()] = n
         return cls._ws_map
-
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def dynamicWorkspace(cls):
-        '''
-        This method automatically creates local paths for workspaces and 
-        deletes data from stale workspaces.
-        '''
-        acting_ws = cls.SETTINGS['general']['active-workspace']
-        coupled_ws = tuple(cls.SETTINGS['workspace'].items())
-        all_mrkts = list(cls.getMarkets(workspace_level=False).keys())
-        for ws,val in coupled_ws:
-            #check if there is a name conflict
-            if(cls.isConflict(cls.getWorkspaceNames(), ws)):
-                del cls.SETTINGS['workspace'][ws]
-                continue
-            if(isinstance(val, dict) == False):
-                val = dict()
-                cls.SETTINGS['workspace'][ws] = dict()
-            if('path' not in val.keys()):
-                cls.SETTINGS['workspace'][ws]['path'] = cfg.NULL
-            if('market' not in val.keys() or isinstance(val['market'],list) == False):
-                val['market'] = list()
-                cls.SETTINGS['workspace'][ws]['market'] = list()
-            #automatically remove invalid market names from workspace's market list
-            ws_mrkts = list(cls.SETTINGS['workspace'][ws]['market'])
-            for mrkt in ws_mrkts:
-                if mrkt not in all_mrkts:
-                    cls.SETTINGS['workspace'][ws]['market'].remove(mrkt)
-            #try to initialize workspace
-            cls.initializeWorkspace(ws, cls.fs(val['path']))
-
-        #remove any hidden workspace folders that are no longer in the legohdl.cfg
-        for ws in cls.getWorkspaceNames().values():
-            if(ws not in cls.SETTINGS['workspace'].keys()):
-                #delete if found a directory type
-                if(os.path.isdir(cls.HIDDEN+"workspaces/"+ws)):
-                    shutil.rmtree(cls.HIDDEN+"workspaces/"+ws, onerror=cls.rmReadOnly)
-
-        if(acting_ws != cfg.NULL):
-            cls.SETTINGS['general']['active-workspace'] = acting_ws
-        
-        pass
-
-
-    #[!] PREPARING FOR REMOVAL $
-    #automatically manage if a script still exists and clean up non-existent scripts
-    @classmethod
-    def dynamicScripts(cls):
-        #loop through all script entries
-        deletions = []
-        for key,val in cls.SETTINGS['script'].items():
-            exists = False
-            if(isinstance(val, list)):
-                parsed = val
-            else:
-                parsed = val.split()
-            #try every part of the value as a path
-            for pt in parsed:
-                pt = pt.replace("\"","").replace("\'","")
-                if(os.path.isfile(pt)):
-                    exists = True
-                    break
-            #mark this pair for deletion from settings
-            if(not exists):
-                deletions.append(key)
-        #clean dead script from scripts section
-        for d in deletions:
-            del cls.SETTINGS['script'][d]
-        pass
 
 
     #[!] PREPARING FOR REMOVAL $
@@ -582,190 +437,6 @@ scripts)?", warning=False)
         return True
 
 
-    #[!] PREPARING FOR REMOVAL
-    #perform backend operation to overload settings, template, and scripts
-    @classmethod
-    def importProfile(cls, prfl_name, explicit=False):
-        with open(cls.HIDDEN+"profiles/"+cls.PRFL_LOG, 'w') as f:
-            f.write(prfl_name)
-        if(prfl_name not in cls.SETTINGS['general']['profiles']):
-            cls.SETTINGS['general']['profiles'] += [prfl_name]
-        #merge all values found in src override dest into a new dictionary
-        def deepMerge(src, dest, setting="", scripts_only=False):
-            for k,v in src.items():
-                next_level = setting
-                isHeader = isinstance(v, dict)
-                if(setting == ""):
-                    next_level = cfg.HEADER[0]+k+cfg.HEADER[1]+" " if(isHeader) else k
-                else:
-                    if(isHeader):
-                        next_level = next_level + cfg.HEADER[0] + k + cfg.HEADER[1]+" "
-                    else:
-                        next_level = next_level + k
-                #print(next_level)
-                #only proceed when importing just scripts
-                if(scripts_only and next_level.startswith(cfg.HEADER[0]+'script'+cfg.HEADER[1]) == 0):
-                    continue
-                #skip scripts if not explicitly set in argument
-                elif(scripts_only == False and next_level.startswith(cfg.HEADER[0]+'script'+cfg.HEADER[1]) == 1):
-                    continue
-                #go even deeper into the dictionary tree
-                if(isinstance(v, dict)):
-                    if(k not in dest.keys()):
-                        dest[k] = dict()
-                        #log.info("Creating new dictionary "+k+" under "+next_level+"...")
-                    deepMerge(v, dest[k], setting=next_level, scripts_only=scripts_only)
-                #combine all settings except if profiles setting exists in src
-                elif(k != 'profiles'):
-                    #log.info("Overloading "+next_level+"...")
-                    #append to list, don't overwrite
-                    if(isinstance(v, list)):
-                        #create new list if DNE
-                        if(k not in dest.keys()):
-                            #log.info("Creating new list "+k+" under "+next_level+"...")
-                            dest[k] = []
-                        if(isinstance(dest[k], list)):   
-                            for i in v:
-                                #find replace all parts of string with ENV_NAME
-                                if(isinstance(v,str)):
-                                    v = v.replace(cls.ENV_NAME, cls.HIDDEN[:len(cls.HIDDEN)-1])
-                                if(i not in dest[k]):
-                                    dest[k] += [i]
-                    #otherwise normal overwrite
-                    else:
-                        if(isinstance(v,str)):
-                            v = v.replace(cls.ENV_NAME, cls.HIDDEN[:len(cls.HIDDEN)-1])
-                        #do not allow a null workspace path to overwrite an already established workspace path
-                        if(k in dest.keys() and k == 'path' and v == cfg.NULL):
-                            continue
-                        dest[k] = v
-                    #print to console the overloaded settings
-                    log.info(next_level+" = "+str(v))
-            return dest
-
-        prfl_path = cls.getProfiles()[prfl_name]
-        #overload available settings
-        if(cls.isInProfile(prfl_name, cls.SETTINGS_FILE)):
-            act = not explicit or cls.confirmation("Import "+cls.SETTINGS_FILE+"?", warning=False)
-            if(act):
-                log.info('Overloading '+cls.SETTINGS_FILE+'...')
-                with open(prfl_path+cls.SETTINGS_FILE, 'r') as f:
-                    prfl_settings = cfg.load(f)
-                    
-                    dest_settings = copy.deepcopy(cls.SETTINGS)
-                    dest_settings = deepMerge(prfl_settings, dest_settings)
-                    cls.SETTINGS = dest_settings
-            pass
-
-        #copy in template folder
-        if(cls.isInProfile(prfl_name, 'template')):
-            act = not explicit or cls.confirmation("Import template?", warning=False)
-            if(act):
-                log.info('Importing template...')
-                shutil.rmtree(cls.HIDDEN+"template/",onerror=cls.rmReadOnly)
-                shutil.copytree(prfl_path+"template/", cls.HIDDEN+"template/")
-            pass
-
-        #copy in scripts
-        if(cls.isInProfile(prfl_name, 'scripts')):
-            act = not explicit or cls.confirmation("Import scripts?", warning=False)
-            if(act):
-                log.info('Importing scripts...')
-                scripts = os.listdir(prfl_path+'scripts/')
-                for scp in scripts:
-                    log.info("Copying "+scp+" to built-in scripts folder...")
-                    if(os.path.isfile(prfl_path+'scripts/'+scp)):
-                        #copy contents into built-in script folder
-                        prfl_script = open(prfl_path+'scripts/'+scp, 'r')
-                        copied_script = open(cls.HIDDEN+'scripts/'+scp,'w')
-                        script_data = prfl_script.readlines()
-                        copied_script.writelines(script_data)
-                        prfl_script.close()
-                        copied_script.close()
-                        pass
-                    pass
-                log.info('Overloading scripts in '+cls.SETTINGS_FILE+'...')
-                with open(prfl_path+cls.SETTINGS_FILE, 'r') as f:
-                    prfl_settings = cfg.load(f)
-                    dest_settings = copy.deepcopy(cls.SETTINGS)
-                    dest_settings = deepMerge(prfl_settings, dest_settings, scripts_only=True)
-                    cls.SETTINGS = dest_settings
-            pass
-
-        cls.save()
-        pass
-
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def updateProfile(cls, name):
-        reload_default = (name.lower() == "default")
-
-        if name in cls.getProfiles():
-            #see if this path is a git repository
-            try:
-                repo = git.Repo(cls.getProfiles()[name])
-                log.info("Updating repository for "+name+" profile...")
-                #pull down the latest
-                if(len(repo.remotes)):
-                    repo.git.remote('update')
-                    status = repo.git.status('-uno')
-                    if(status.count('Your branch is up to date with') or status.count('Your branch is ahead of')):
-                        log.info("Already up-to-date.")
-                        return
-                    else:
-                        log.info('Pulling new updates...')
-                    repo.remotes[0].pull()
-                    log.info("success")
-                    return
-                else:  
-                    if(not reload_default):
-                        exit(log.error("This git repository has no remote URL."))
-            except:
-                if(not reload_default):
-                    exit(log.error("Not a git repository."))
-        else:
-            #must add to setting if default not found
-            if(reload_default):
-                cls.SETTINGS['general']['profiles'].append('default')
-                cls.save()
-            else:
-                log.error("Profile "+name+" does not exist.")
-            pass
-
-        if(reload_default):
-            log.info("Reloading default profile...")
-            cls.loadDefaultProfile(importing=False)
-        pass
-    
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def isInProfile(cls, name, loc):
-        if(name in cls.getProfiles()):
-            if(loc == cls.SETTINGS_FILE):
-                return os.path.isfile(cls.getProfiles()[name]+loc)
-            else:
-                return os.path.isdir(cls.getProfiles()[name]+loc+"/")
-
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def getProfiles(cls):
-        '''
-        This method returns a python dictionary with keys as true profile names
-        and their respective values as their path.
-        '''
-        places = os.listdir(cls.HIDDEN+"profiles/")
-        profiles = dict()
-        for plc in places:
-            path = cls.fs(cls.HIDDEN+"profiles/"+plc+"/")
-            if(os.path.isfile(path+plc+cls.PRFL_EXT)):
-                profiles[plc] = path
-
-        return profiles
-
-
     @classmethod
     def getTemplateFiles(cls):
         '''
@@ -793,52 +464,6 @@ scripts)?", warning=False)
                     pass
                 print('\t',f.replace(cls.TEMPLATE, '/'))
 
-        pass
-
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def initializeWorkspace(cls, name, local_path=None):
-        workspace_dir = cls.HIDDEN+"workspaces/"+name+"/"
-        if(os.path.isdir(workspace_dir) == False):
-            log.info("Creating workspace directories for "+name+"...")
-            os.makedirs(workspace_dir, exist_ok=True)
-        #store the code's state of each version for each block
-        os.makedirs(workspace_dir+"cache", exist_ok=True)
-        #create the refresh log
-        if(os.path.isfile(workspace_dir+cls.REFRESH_LOG) == False):
-            open(workspace_dir+cls.REFRESH_LOG, 'w').close()
-        
-        #ask to create paths for workspace's with invalid paths
-        ws_path = local_path
-        if(ws_path == cfg.NULL):
-            ws_path = input("Enter workspace "+name+"'s path: ")
-            while(len(ws_path) <= 0):
-                ws_path = input()
-
-        cls.SETTINGS['workspace'][name]['path'] = cls.fs(ws_path)
-        local_path = cls.SETTINGS['workspace'][name]['path']
-        
-        if(os.path.exists(local_path) == False):
-            log.info("Creating new path for "+name+" workspace... "+local_path)
-            os.makedirs(local_path)
-
-        #create cfg structure for workspace settings 'local' and 'market'
-        if(name not in cls.SETTINGS['workspace'].keys()):
-            cls.SETTINGS['workspace'][name] = {'path' : local_path, 'market' : None}
-        #make sure market is a list
-        if(isinstance(cls.SETTINGS['workspace'][name]['market'],list) == False):
-            cls.SETTINGS['workspace'][name]['market'] = []
-
-        #cannot be active workspace if a workspace path is null
-        if(cls.SETTINGS['workspace'][name]['path'] == None and cls.__active_workspace == name):
-            cls.__active_workspace = None
-            return
-
-        #if no active-workspace then set it as active
-        if(not cls.inWorkspace()):
-            cls.SETTINGS['general']['active-workspace'] = name
-            cls.__active_workspace = name
         pass
 
 
@@ -916,82 +541,6 @@ scripts)?", warning=False)
     @classmethod
     def getRefreshRate(cls):
         return cls.SETTINGS['general']['refresh-rate']
-
-
-    #[!] TO MOVE TO MARKET CLASS
-    @classmethod
-    def readyForRefresh(cls):
-        #helper method to convert a datetime time word to a decimal floating type number
-        def timeToFloat(prt):
-            time_stamp = str(prt).split(' ')[1]
-            time_sects = time_stamp.split(':')
-            hrs = int(time_sects[0])
-            #convert to 'hours'.'minutes'
-            time_fmt = (float(hrs)+(float(float(time_sects[1])/60)))
-            return time_fmt
-            
-        rf_log_path = cls.WORKSPACE+cls.REFRESH_LOG
-        rate = cls.SETTINGS['general']['refresh-rate']
-        
-        #never perform an automatic refresh
-        if(rate == 0):
-            return False
-        #always perform an automatic refresh
-        elif(rate <= cls.MIN_RATE):
-            log.info("Automatically refreshing markets...")
-            return True
-    
-        refresh = False
-        latest_punch = None
-        stage = 1
-        cur_time = datetime.now()
-
-        #divide the 24 hour period into even checkpoints
-        max_hours = float(24)
-        spacing = float(max_hours / rate)
-        intervals = []
-        for i in range(rate):
-            intervals += [spacing*i]
-
-        #read when the last refresh time occurred
-        with open(rf_log_path, 'r') as rf_log:
-            #read the latest date
-            file_data = rf_log.readlines()
-            #no refreshes have occurred so automatically need a refresh
-            if(len(file_data) == 0):
-                latest_punch = cur_time
-                refresh = True
-            else:
-                latest_punch = datetime.fromisoformat(file_data[0])
-                #print(latest_punch)
-                #get latest time that was punched
-                last_time_fmt = timeToFloat(latest_punch)
-                #determine the next checkpoint available for today
-                next_checkpoint = max_hours
-                for i in range(len(intervals)):
-                    if(last_time_fmt < intervals[i]):
-                        next_checkpoint = intervals[i]
-                        stage = i + 1
-                        break
-                #print('next checkpoint',next_checkpoint)
-                cur_time_fmt = timeToFloat(cur_time)
-                #check if the time has occurred on a previous day, (automatically update because its a new day)
-                next_day = cur_time.year > latest_punch.year or cur_time.month > latest_punch.month or cur_time.day > latest_punch.day
-                #print(next_day)
-                #print("currently",cur_time_fmt)
-                #determine if the current time has passed the next checkpoint or if its a new day
-                if(next_day or cur_time_fmt >= next_checkpoint):
-                    latest_punch = cur_time
-                    refresh = True
-
-        #write back the latest punch
-        with open(rf_log_path, 'w') as rf_log:
-            rf_log.write(str(latest_punch))
-
-        if(refresh):
-            log.info("Automatically refreshing markets... ("+str(stage)+"/"+str(rate)+")")
-
-        return refresh
     
 
     @classmethod
@@ -1315,6 +864,21 @@ scripts)?", warning=False)
                     tmp[lib][prj] = place2[lib][prj]
         return tmp
 
+    
+    @classmethod
+    def getProgramPath(cls):
+        '''
+        Returns the path to the actual legoHDL script program.
+
+        Parameters:
+            None
+        Returns:
+            (str): directory to the entry-point script
+        '''
+        file_path = os.path.realpath(__file__)
+        tail,_ = os.path.split(file_path)
+        return cls.fs(tail)
+
 
     @classmethod
     def rmReadOnly(cls, func, path, execinfo):
@@ -1345,355 +909,6 @@ scripts)?", warning=False)
         shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
         return isBare
 
-
-    #[!] TO MOVE TO PROFILE CLASS
-    @classmethod
-    def loadDefaultProfile(cls, importing=True):
-        prfl_dir = cls.HIDDEN+"profiles/"
-        prfl_name = "default"
-        prfl_path = prfl_dir+prfl_name+"/"
-
-        #remove default if previously existed
-        if(os.path.isdir(prfl_path)):
-            shutil.rmtree(prfl_path, onerror=cls.rmReadOnly)
-        
-        #create default
-        os.makedirs(prfl_path)
-        #create profile marker file
-        open(prfl_path+prfl_name+cls.PRFL_EXT, 'w').close()
-
-        def_settings = dict()
-        def_settings['script'] = \
-        {
-            'hello'  : 'python '+cls.ENV_NAME+'/scripts/hello_world.py',
-        }
-        def_settings['workspace'] = dict()
-        def_settings['workspace']['primary'] = {'path' : None, 'market' : None}
-        #create default legohdl.cfg
-        with open(prfl_path+cls.SETTINGS_FILE, 'w') as f:
-            cfg.save(def_settings, f)
-            pass
-
-        #create default template
-        os.makedirs(prfl_path+"template/")
-        os.makedirs(prfl_path+"template/src")
-        os.makedirs(prfl_path+"template/test")
-        os.makedirs(prfl_path+"template/constr")
-        #create readme
-        with open(prfl_path+'template/README.md', 'w') as f:
-            f.write("# %BLOCK%")
-            pass
-        #create .gitignore
-        with open(prfl_path+'template/.gitignore', 'w') as f:
-            f.write("build/")
-            pass
-
-        comment_section = """--------------------------------------------------------------------------------
--- Block: %BLOCK%
--- Author: %AUTHOR%
--- Creation Date: %DATE%
--- Entity: template
--- Description:
---      This is a sample template VHDL source file to help automate boilerplate 
---  code.
---------------------------------------------------------------------------------"""
-        vhdl_code = """
-  
-library ieee;
-use ieee.std_logic_1164.all;
-
-
-entity template is
-    port(
-
-    );
-end entity;
-
-
-architecture rtl of template is
-begin
-
-end architecture;      
-"""
-        #create template design
-        with open(prfl_path+'template/src/template.vhd', 'w') as f:
-            f.write(comment_section)
-            f.write(vhdl_code)
-            pass
-
-        #create template testbench
-        with open(prfl_path+'template/test/template_tb.vhd', 'w') as f:
-            f.write(comment_section.replace("template", "template_tb"))
-            f.write(vhdl_code.replace("template", "template_tb").replace("""\n    port(
-
-    );""", '\b'))
-            pass
-
-        #create default scripts
-        os.makedirs(prfl_path+"scripts/")
-
-        # with open(prfl_path+"scripts/xsim_default.py", 'w') as f:
-            
-        #     pass
-
-        # with open(prfl_path+"scripts/modelsim_default.py", 'w') as f:
-
-        #     pass
-        with open(prfl_path+"scripts/hello_world.py", 'w') as f:
-            f.write("""# Script: hello_world.py
-# Author: Chase Ruskin
-# Creation Date: 09.19.2021
-# Description:
-#   Backend script that uses no EDA tool but provides an outline for one way
-#   how to structure a script. A workflow is ran here by only printing related
-#   information to the console.
-# Default:
-#   Do nothing.
-# Options:
-#   -lint        : lint the design
-#   -synth       : synthesis the design
-#   -route       : route/implement/fit the design (assign pins)
-#   -sim         : simulate the design
-#   -gen         : any arguments after this one are VHDL generics or verilog 
-#                  parameters and will be passed to the top-level design and to 
-#                  the test vector script, if available. An example of setting 
-#                  generics: -gen width=10 addr=32 trunc=2
-#   
-# To learn more about writing your own backend scripts for legohdl, visit:
-# https://hdl.notion.site/Writing-Scripts-f7fc7f75be104c4fa1640d2316f5d6ef
-
-import sys,os
-
-# === Define constants, important variables, helper methods ====================
-#   Identify any variables necessary for this script to work. Some examples
-#   include tool path, device name, project name, device family name. 
-# ==============================================================================
-
-def execute(*code):
-    '''
-    This method prints out the inputted command before executing it. The
-    parameter is a variable list of strings that will be separated by spaces
-    within the method. If a bad return code is seen on execution, this entire
-    script will exit with that error code.
-    '''
-    #format the command with spaces between each passed-in string
-    code_line = ''
-    for c in code:
-        code_line = code_line + c + ' '
-    #print command to console
-    print(code_line)
-    #execute the command
-    rc = os.system(code_line)
-    #immediately stop script upon a bad return code
-    if(rc):
-        exit(rc)
-
-#path to the tool's executable (can be blank if the tool is already in the PATH)
-TOOL_PATH = ""
-
-#fake device name, but can be useful to be defined or to be set in command-line
-DEVICE = "A2CG1099-1"
-
-#the project will reside in a folder the same name as this block's folder
-PROJECT = os.path.basename(os.getcwd())
-
-# === Handle command-line arguments ============================================
-#   Create custom command-line arguments to handle specific workflows and common
-#   usage cases.
-# ==============================================================================
-
-#keep all arguments except the first one (the filepath is not needed)
-args = sys.argv[1:]
-
-#detect what workflow to perform
-lint = args.count('-lint')
-synthesize = args.count('-synth')
-simulate = args.count('-sim')
-route = args.count('-route')
-
-#identify if there are any generics set on command-line
-generics = {}
-if(args.count('-gen')):
-    start_i = args.index('-gen')
-    #iterate through remaining arguments to capture generic value sets
-    for i in range(start_i+1, len(args)):
-        #split by '=' sign
-        if(args[i].count('=') == 1):
-            name,value = args[i].split('=')
-            generics[name] = value
-
-# === Collect data from the blueprint file ========================================
-#   This part will gather the necessary data we want for our workflow so that
-#   we can act accordingly on that data to get the ouptut we want.
-# ==============================================================================
-
-#enter the 'build' directory for this is where the blueprint file is located
-os.chdir('build')
-
-src_files = {'VHDL' : [], 'VLOG' : []}
-sim_files = {'VHDL' : [], 'VLOG' : []}
-lib_files = {'VHDL' : {}, 'VLOG' : {}}
-top_design = top_testbench = None
-python_vector_script = None
-pin_assignments = {}
-
-#read the contents of the blueprint file
-with open('blueprint', 'r') as blueprint:
-    lines = blueprint.readlines()
-    for rule in lines:
-        parsed = rule.split()
-        #label is always first item
-        label = parsed[0]
-        #filepath is always last item
-        filepath = parsed[-1]
-
-        #add VHDL source files
-        if(label == "@VHDL-SRC"):
-            src_files['VHDL'].append(filepath)
-
-        #add VHDL simulation files
-        elif(label == "@VHDL-SIM"):
-            sim_files['VHDL'].append(filepath)
-
-        #add VHDL files from libraries
-        elif(label == "@VHDL-LIB"):
-            lib = parsed[1]
-            #create new list to track all files belonging to this library
-            if(lib not in lib_files['VHDL'].keys()):
-                lib_files['VHDL'][lib] = []
-
-            lib_files['VHDL'][lib].append(filepath)
-
-        #capture the top-level design unit
-        elif(label == "@VHDL-SRC-TOP" or label == "@VLOG-SRC-TOP"):
-            top_design = parsed[1]
-
-        #capture the top-level testbench unit
-        elif(label == "@VHDL-SIM-TOP" or label == "@VLOG-SIM-TOP"):
-            top_testbench = parsed[1]
-
-        #add Verilog source files
-        elif(label == "@VLOG-SRC"):
-            src_files['VLOG'].append(filepath)
-
-        #add Verilog library files
-        elif(label == "@VLOG-LIB"):
-            lib = parsed[1]
-            #create new list to track all files belonging to this library
-            if(lib not in lib_files['VLOG'].keys()):
-                lib_files['VLOG'][lib] = []
-
-            lib_files['VLOG'][lib].append(filepath)
-
-        #add Verilog simulation files
-        elif(label == "@VLOG-SIM"):
-            sim_files['VLOG'].append(filepath)
-
-        #custom label: capture information regarding pin assignments
-        elif(label == "@PIN-PLAN"):
-            #write a custom file parser for these special files we designed to
-            # extract pin information
-            with open(filepath) as pin_file:
-                locations = pin_file.readlines()
-                for spot in locations:
-                    #skip any comment lines indicated by '#'
-                    comment_index = spot.find('#')
-                    if(comment_index > -1):
-                        spot = spot[:comment_index]
-                    #separate by the comma
-                    if(spot.count(',') != 1):
-                        continue
-                    #organize into fpga pin and port name
-                    pin,name = spot.split(',')
-                    pin_assignments[pin.strip()] = name.strip()
-
-        #custom label: capture the python test vector script if avaialable
-        elif(label == "@PY-MODEL"):
-            python_vector_script = filepath.strip()
-
-    #done collecting data for our workflow
-    blueprint.close()
-
-# === Act on the collected data ================================================
-#   Now that we have the 'ingredients', write some logic to call your tool
-#   based on the data we collected. One example could be to use the collected
-#   data to write a TCL script, and then call your EDA tool to use that TCL
-#   script.
-# ==============================================================================
-
-#simulation
-if(simulate):    
-    if(top_testbench == None):
-        exit("Error: No top level testbench found.")
-    #format generics for as a command-line argument for test vector script
-    generics_command = ''
-    for g,v in generics.items():
-        generics_command += '-'+g+'='+v+' '
-    #call test vector generator first with passing generics into script
-    if(python_vector_script):
-        execute('python',python_vector_script,generics_command)
-
-    execute(TOOL_PATH+"echo","Simulating design with tesbench...")
-    print('---RUNNING SIMULATION---')
-    print('TOP:',top_testbench)
-    #print out any generics we set on command-line
-    if(len(generics)):
-        print('GENERICS SET:',)
-        for g,v in generics.items():
-            print(g,'=',v)
-    pass
-#routing/fit/implementation
-elif(route):
-    execute(TOOL_PATH+"echo","Routing design to pins...")
-    print("----PINS ALLOCATED-----")
-    for pin,port in pin_assignments.items():
-        print(pin,'-->',port)
-    pass
-#synthesis
-elif(synthesize):
-    if(top_design == None):
-        exit("Error: No top level design found.")
-    execute(TOOL_PATH+"echo","Synthesizing design...")
-    print('---FILES SYNTHESIZED---')
-    print("TOP:",top_design)
-    #print out any generics we set on command-line
-    if(len(generics)):
-        print('GENERICS SET:',)
-        for g,v in generics.items():
-            print(g,'=',v)
-    #print all files being synthesized
-    for l in src_files.keys():
-        for f in src_files[l]:
-            print(l,f)
-    #print all files from libraries (external from project)
-    for f_type in lib_files.keys():
-        for lib in lib_files[f_type].keys():
-            for f in lib_files[f_type][lib]:
-                print(f_type,lib,f)
-    pass
-#syntax checking
-elif(lint):
-    execute(TOOL_PATH+"echo","Checking design syntax...")
-    print("---FILES ANALYZED----")
-    #print souce files being analyzed
-    for l in src_files.keys():
-        for f in src_files[l]:
-            print(l,f)
-    #print simulation fies being analyzed
-    for l in sim_files.keys():
-        for f in sim_files[l]:
-            print(l,f)
-    pass
-#no action
-else:
-    exit("Error: No flow was recognized! Try one of the following: -lint, \
--synth, -route, -sim.")
-""")
-            pass
-
-        if(importing):
-            cls.importProfile("default")
-        pass
     
     @classmethod
     def getComments(cls):

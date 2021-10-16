@@ -98,9 +98,7 @@ settings that will be merged in when importing that profile. A profile directory
         #create root window
         self._window = tk.Tk()
         #add icon
-        file_path = os.path.realpath(__file__)
-        head,_ = os.path.split(file_path)
-        img = tk.Image("photo", file=head+'/data/icon.gif')
+        img = tk.Image("photo", file=apt.getProgramPath()+'/data/icon.gif')
         self._window.tk.call('wm','iconphoto', self._window._w, img)
         #set the window size
         self._width,self._height = 800,600

@@ -242,6 +242,9 @@ class Profile:
                         dest_settings = deepMerge(prfl_settings, dest_settings, scripts_only=True)
                         apt.SETTINGS = dest_settings
             pass
+        #write to log file
+        with open(self.DIR+self.LOG_FILE, 'w') as f:
+            f.write(self.getName())
         #save all modifications to legohdl settings
         apt.save()
         pass
@@ -257,7 +260,6 @@ class Profile:
         Returns:
             None
         '''
-        # :todo: needs to handle reloading default profile
         log.info("Updating repository for profile "+self.getName()+"...")
         #check status from remote
         if(self._repo.isLatest() == False):
@@ -266,6 +268,54 @@ class Profile:
             log.info("success")
         else:
             log.info("Already up-to-date.")
+        pass
+
+
+    @classmethod
+    def reloadDefault(cls, importing=False):
+        if('default' in cls.Jar.keys()):
+            cls.Jar['default'].remove()
+        log.info("Reloading default profile...")
+        default = Profile("default")
+
+        def_settings = dict()
+        def_settings['script'] = \
+        {
+            'hello'  : 'python '+apt.ENV_NAME+'/scripts/hello_world.py',
+        }
+        def_settings['workspace'] = dict()
+        def_settings['workspace']['primary'] = {'path' : None, 'market' : None}
+        #create default legohdl.cfg
+        with open(default.getProfileDir()+apt.SETTINGS_FILE, 'w') as f:
+            cfg.save(def_settings, f)
+            pass
+
+        #create default template
+        os.makedirs(default.getProfileDir()+"template/")
+        os.makedirs(default.getProfileDir()+"template/src")
+        os.makedirs(default.getProfileDir()+"template/test")
+        os.makedirs(default.getProfileDir()+"template/constr")
+        #create readme
+        with open(default.getProfileDir()+'template/README.md', 'w') as f:
+            f.write("# %BLOCK%")
+            pass
+        #create .gitignore
+        with open(default.getProfileDir()+'template/.gitignore', 'w') as f:
+            f.write("build/")
+            pass
+
+        #create template design
+        with open(default.getProfileDir()+'template/src/template.vhd', 'w') as f:
+            f.write('-- code here')
+            pass
+
+        #create default scripts
+        os.makedirs(default.getProfileDir()+"scripts/")
+        shutil.copyfile(apt.getProgramPath()+"data/hello.py", default.getProfileDir()+"scripts/hello.py")
+
+        if(importing):
+            default.importLoadout()
+        Profile.save()
         pass
 
 
@@ -355,11 +405,23 @@ class Profile:
     def load(cls):
         '''
         Load profiles from settings.
-
         '''
         prfls = apt.SETTINGS['general']['profiles']
         for p in prfls:
             Profile(p)
+        pass
+
+
+    @classmethod
+    def save(cls):
+        '''
+        Save profiles to settings.
+        '''
+        serialize = []
+        for prfl in cls.Jar.values():
+            serialize += [prfl.getName()]
+        apt.SETTINGS['general']['profiles'] = serialize
+        apt.save()
         pass
 
 

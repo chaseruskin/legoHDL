@@ -166,7 +166,7 @@ class Registry:
         if hasattr(self,"_local_prjs") and not updt:
             return self._local_prjs
         self._local_prjs = dict()
-        folders = glob.glob(apt.getLocal()+"/**/*/"+apt.MARKER, recursive=True)
+        folders = glob.glob(Workspace.getActive().getPath()+"/**/*/"+apt.MARKER, recursive=True)
 
         for file in folders:
             #print(file)
@@ -193,7 +193,7 @@ class Registry:
     def getProjectsCache(self, updt=False):
         if hasattr(self,"_cache_prjs") and not updt:
             return self._cache_prjs
-        path = Workspace.getActiveWorkspace().getWorkspaceDir()+"cache/"
+        path = Workspace.getActive().getDir()+"cache/"
         self._cache_prjs = dict()
         libs = os.listdir(path)
         for l in libs:

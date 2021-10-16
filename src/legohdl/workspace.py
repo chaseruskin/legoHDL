@@ -29,7 +29,7 @@ class Workspace:
     MAX_RATE = 1440
 
 
-    def __init__(self, name, path, markets=[]):
+    def __init__(self, name, path, markets=[], ask=True):
         '''
         Create a workspace instance.
 
@@ -37,6 +37,7 @@ class Workspace:
             name (str): the identity for the workspace
             path (str): the local path where blocks will be looked for
             markets ([str]): the list of markets that are tied to this workspace
+            ask (bool): will ask user if wishing to enter workspace path
         Returns:
             None
         '''
@@ -51,20 +52,26 @@ class Workspace:
         self.setPath(path)
         #do not create workspace if the path is empty
         if(self.getPath() == ''):
-            log.error("Skipping workspace "+self.getName()+" due to empty local path.")
-            return
+            if(ask == False):
+                log.error("Skipping workspace "+self.getName()+" due to empty local path.")
+                return
+            else:
+                #keep asking to set path until one is decided/input
+                path = input("Enter workspace "+self.getName()+"'s path: ")
+                while(self.setPath(path) == False):
+                    path = input("Enter workspace "+self.getName()+"'s path: ")
         
         self._ws_dir = apt.fs(self.DIR+self.getName()+"/")
         
         #ensure all workspace hidden directories exist
-        if(os.path.isdir(self.getWorkspaceDir()) == False):
+        if(os.path.isdir(self.getDir()) == False):
             log.info("Creating hidden workspace directory for "+self.getName()+"...")
-            os.makedirs(self.getWorkspaceDir(), exist_ok=True)
+            os.makedirs(self.getDir(), exist_ok=True)
         #create workspace's cache where installed blocks will be stored
-        os.makedirs(self.getWorkspaceDir()+"cache", exist_ok=True)
+        os.makedirs(self.getDir()+"cache", exist_ok=True)
         #create the refresh log if DNE
-        if(os.path.isfile(self.getWorkspaceDir()+self.LOG_FILE) == False):
-            open(self.getWorkspaceDir()+self.LOG_FILE, 'w').close()
+        if(os.path.isfile(self.getDir()+self.LOG_FILE) == False):
+            open(self.getDir()+self.LOG_FILE, 'w').close()
 
         self._markets = []
         #find all market objects by name and store in list
@@ -136,7 +143,7 @@ class Workspace:
             #rename hidden directory if exists
             new_dir = apt.fs(self.DIR+n+"/")
             if(hasattr(self, "_ws_dir")):
-                os.rename(self.getWorkspaceDir(), new_dir)
+                os.rename(self.getDir(), new_dir)
             #set the hidden workspace directory
             self._ws_dir = new_dir
 
@@ -158,7 +165,7 @@ class Workspace:
         '''
         log.info("Removing workspace "+self.getName()+"...")
         #delete the hidden workspace directory
-        shutil.rmtree(self.getWorkspaceDir(), onerror=apt.rmReadOnly)
+        shutil.rmtree(self.getDir(), onerror=apt.rmReadOnly)
         #remove from class Jar
         del self.Jar[self.getName()]
         pass
@@ -282,12 +289,12 @@ class Workspace:
             intervals += [spacing*i]
         
         #ensure log file exists
-        if(os.path.exists(self.getWorkspaceDir()+self.LOG_FILE)):
-            open(self.getWorkspaceDir()+self.LOG_FILE, 'w').close()
+        if(os.path.exists(self.getDir()+self.LOG_FILE)):
+            open(self.getDir()+self.LOG_FILE, 'w').close()
 
         #read log file
         #read when the last refresh time occurred
-        with open(self.getWorkspaceDir()+self.LOG_FILE, 'r') as log_file:
+        with open(self.getDir()+self.LOG_FILE, 'r') as log_file:
             #read the latest date
             data = log_file.readlines()
             #no refreshes have occurred so automatically need a refresh
@@ -340,6 +347,28 @@ class Workspace:
 
         for ws in wspcs.keys():
             Workspace(ws, wspcs[ws]['path'], wspcs[ws]['market'])
+        pass
+
+
+    @classmethod
+    def save(cls):
+        '''
+        Serializes the Workspace objects and saves them to the settings dictionary.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        serialized = {}
+        #serialize the Workspace objects into dictionary format for settings
+        for ws in cls.Jar.values():
+            serialized[ws.getName()] = {}
+            serialized[ws.getName()]['path'] = ws.getPath()
+            serialized[ws.getName()]['market'] = ws.getMarkets(returnnames=True, lowercase=False)
+        #update settings dictionary
+        apt.SETTINGS['workspace'] = serialized
+        apt.save()
         pass
 
 
@@ -397,7 +426,7 @@ class Workspace:
         return self._path
 
 
-    def getWorkspaceDir(self):
+    def getDir(self):
         return self._ws_dir
 
 
@@ -405,12 +434,13 @@ class Workspace:
         return self._name
 
 
-    def getMarkets(self, returnnames=False):
+    def getMarkets(self, returnnames=False, lowercase=True):
         '''
         Return the market objects associated with the given workspace.
 
         Parameters:
-            returnnames (bool): true will return lower-case market names
+            returnnames (bool): true will return market names
+            lowercase (boll): true will return lower-case names if returnnames is enabled
         Returns:
             ([Market]) or ([str]): list of available markets
             
@@ -418,7 +448,10 @@ class Workspace:
         if(returnnames):
             mrkt_names = []
             for mrkt in self._markets:
-                mrkt_names += [mrkt.getName().lower()]
+                name = mrkt.getName()
+                if(lowercase):
+                    name = name.lower()
+                mrkt_names += [name]
             return mrkt_names
         else:
             return self._markets
@@ -438,14 +471,14 @@ class Workspace:
         print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
         for ws in cls.Jar.values():
             mrkts = apt.ListToStr(ws.getMarkets(returnnames=True))
-            act = 'yes' if(ws == cls.getActiveWorkspace()) else '-'
+            act = 'yes' if(ws == cls.getActive()) else '-'
             print('{:<16}'.format(ws.getName()),'{:<6}'.format(act),'{:<40}'.format(ws.getPath()),'{:<14}'.format(mrkts))
             pass
         pass
 
 
     def isActive(self):
-        return self == self.getActiveWorkspace()
+        return self == self.getActive()
 
 
     @classmethod
@@ -456,7 +489,7 @@ class Workspace:
 
 
     @classmethod
-    def getActiveWorkspace(cls):
+    def getActive(cls):
         return cls._ActiveWorkspace
 
 
@@ -466,7 +499,7 @@ class Workspace:
         Name: {self.getName()}
         Path: {self.getPath()}
         Active: {self.isActive()}
-        Hidden directory: {self.getWorkspaceDir()}
+        Hidden directory: {self.getDir()}
         Linked to: {self.isLinked()}
         Markets: {self.getMarkets(returnnames=True)}
         '''

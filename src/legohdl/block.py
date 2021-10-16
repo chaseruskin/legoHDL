@@ -18,6 +18,8 @@ from .apparatus import Apparatus as apt
 from .graph import Graph 
 from .unit import Unit
 
+from .workspace import Workspace
+
 
 #a Block is a package/module that is signified by having the marker file
 class Block:
@@ -414,7 +416,7 @@ class Block:
         return apt.isSubPath(apt.MARKETS, self.getPath())
 
     def isLocal(self):
-        return apt.isSubPath(apt.getLocal(), self.getPath())
+        return apt.isSubPath(Workspace.getActive().getDir(), self.getPath())
 
     def bindMarket(self, mkt):
         if(mkt != None):
@@ -495,7 +497,7 @@ class Block:
                 self.setMeta('market', self.__market.getName())
             #see if the market is bound to your workspace
             elif(self.getMeta("market") != None):
-                if self.getMeta("market") in apt.getMarkets().keys():
+                if self.getMeta("market") in Workspace.getActive().getMarkets(returnnames=True):
                     self.__market = Market(self.getMeta('market'), apt.SETTINGS['market'][self.getMeta('market')])
                 else:
                     log.warning("Market "+self.getMeta('market')+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
