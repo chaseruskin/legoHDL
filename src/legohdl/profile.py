@@ -7,7 +7,7 @@
 #   to save certain setting configurations (loadouts) and share settings across
 #   users.
 
-import os,shutil,copy
+import os,shutil,copy,glob
 import logging as log
 from .git import Git
 from .map import Map
@@ -21,6 +21,10 @@ class Profile:
     Jar = Map()
 
     LastImport = None
+
+    DIR = apt.fs(apt.HIDDEN+"profiles/")
+    EXT = ".prfl"
+    LOG_FILE = "import.log"
 
 
     def __init__(self, name, url=None):
@@ -44,8 +48,8 @@ class Profile:
             #create profile directory if DNE
             os.makedirs(self.getProfileDir(), exist_ok=True)
             #create profile market file if DNE
-            if(os.path.exists(self.getProfileDir()+self.getName()+apt.PRFL_EXT) == False):
-                open(self.getProfileDir()+self.getName()+apt.PRFL_EXT, 'w').close()
+            if(os.path.exists(self.getProfileDir()+self.getName()+self.EXT) == False):
+                open(self.getProfileDir()+self.getName()+self.EXT, 'w').close()
             
             #create git repository
             self._repo = Git(self.getProfileDir())
@@ -67,26 +71,24 @@ class Profile:
         Returns:
             success (bool): if the profile was successfully add to profiles/ dir
         '''
-        empty_repo = Git.isBlankRepo(url, True) or Git.isBlankRepo(url, False)
         success = True
 
         if(Git.isValidRepo(url, True) == False and Git.isValidRepo(url, False) == False):
             log.error("Invalid repository "+url+".")
-            success = False
-            return success
+            return False
 
         #create temp dir
         os.makedirs(apt.TMP)
 
         #clone from repository
-        if(empty_repo == False):
+        if(Git.isBlankRepo(url) == False):
             tmp_repo = Git(apt.TMP, clone=url)
 
             #determine if a .prfl file exists
             log.info("Locating .prfl file... ")
             files = os.listdir(apt.TMP)
             for f in files:
-                prfl_i = f.find(apt.PRFL_EXT)
+                prfl_i = f.find(self.EXT)
                 if(prfl_i > -1):
                     #remove extension to get the profile's name
                     self._name = f[:prfl_i]
@@ -288,21 +290,23 @@ class Profile:
     def tidy(cls):
         '''
         Remove any stale profiles from the profiles/ directory. A stale profile
-        is one that is not listed in the settings and not stored in the Jar.
+        is one that is not listed in the settings and therefore not stored in the Jar.
 
         Parameters:
             None
         Returns:
             None
         '''
-        prfl_dirs = os.listdir(apt.HIDDEN+"profiles/")
-        #target deletions
-        for prfl in prfl_dirs:
-            #skip if its the import.log
-            if(prfl == apt.PRFL_LOG):
-                continue
-            if(prfl.lower() not in cls.Jar.keys()):
-                shutil.rmtree(apt.HIDDEN+"profiles/"+prfl, onerror=apt.rmReadOnly)
+        #list all profiles
+        prfl_files = glob.glob(cls.DIR+"**/*"+cls.EXT, recursive=True)
+        for f in prfl_files:
+            prfl_name = os.path.basename(f).replace(cls.EXT,'')
+            #remove a market that is not found in settings (Jar class container)
+            if(prfl_name.lower() not in cls.Jar.keys()):
+                log.info("Removing stale profile "+prfl_name+"...")
+                prfl_dir = f.replace(os.path.basename(f),'')
+                #shutil.rmtree(mrkt_dir, onerror=apt.rmReadOnly)
+            pass
         pass
 
 
@@ -330,14 +334,14 @@ class Profile:
             del self.Jar[self.getName()]
 
         #rename the prfl file
-        os.rename(self.getProfileDir()+self.getName()+apt.PRFL_EXT, self.getProfileDir()+n+apt.PRFL_EXT)
-        new_prfl_dir = apt.fs(apt.HIDDEN+"profiles/"+n)
+        os.rename(self.getProfileDir()+self.getName()+self.EXT, self.getProfileDir()+n+self.EXT)
+        new_prfl_dir = apt.fs(self.DIR+n)
         #rename the profile directory
         os.rename(self.getProfileDir(), new_prfl_dir)
 
         #update the import log if the name was the previous name
         if(self.ReadLastImport() == self):
-                with open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'w') as f:
+                with open(self.DIR+self.LOG_FILE, 'w') as f:
                     f.write(n)
 
         #update attibute
@@ -359,7 +363,7 @@ class Profile:
             cls.LastImport (Profile): the profile obj last used to import
         '''
         #open the import.log
-        with open(apt.HIDDEN+"profiles/"+apt.PRFL_LOG, 'r') as f:
+        with open(cls.DIR+cls.LOG_FILE, 'r') as f:
             #read the profile's name
             prfl_name = f.readline().strip()
             #return that profile obj if the name is found in the Jar
@@ -375,7 +379,7 @@ class Profile:
 
 
     def getProfileDir(self):
-        return apt.fs(apt.HIDDEN+"profiles/"+self.getName())
+        return apt.fs(self.DIR+self.getName())
 
 
     def hasTemplate(self):

@@ -13,7 +13,7 @@ from .map import Map
 
 class Git:
 
-    #track all valid and invalid urls for faster performance
+    #track all valid and invalid urls for faster performance (as well as if blank)
     _URLstatus = {}
 
     QUIET = True
@@ -40,21 +40,19 @@ class Git:
             #verify its a valid URL
             if(self.isValidRepo(clone, remote=True)):
                 #use init and then add remote
-                if(self.isBlankRepo(clone, remote=True)):
+                if(self.isBlankRepo(clone)):
                     self.git('init')
                     self.setRemoteURL(clone)
                 elif(self.isValidRepo(self.getPath(), remote=False) == False):
                     #clone from remote url
-                    _,err = apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
-                    #if(len(err)):
-                        #log.error(err)
+                    log.info("Cloning repository from "+clone+"...")
+                    apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
                 else:
                     log.error("Cannot clone to an already initialized git repository.")
             #verify its a valid local repository and clone from local repository
-            elif(self.isValidRepo(clone, remote=False) == True and self.isBlankRepo(clone, remote=False) == False):
-                _,err = apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
-                #if(len(err)):
-                    #log.error(err)
+            elif(self.isValidRepo(clone, remote=False) == True and self.isBlankRepo(clone) == False):
+                apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
+                pass
         #check if git exists here for local repository
         elif(self.isValidRepo(self.getPath(), remote=False) == False):
             #initialize a new repository if DNE
@@ -211,6 +209,10 @@ class Git:
             remote (bool): is the path a remote url to verify
         Returns:
             (bool): true if .git/ folder exists at path or connection is established for remote url
+
+        If it is a remote, it will log whether it is valid as well as if it is
+        empty for faster performance the next time the method is called on same
+        path.
         '''
         #check local path
         if(remote == False):
@@ -219,16 +221,16 @@ class Git:
         if(path in cls._URLstatus.keys() and 'valid' in cls._URLstatus[path].keys()):
             return cls._URLstatus[path]['valid']
         #actually check the remote connection
-        if(path == None or path.count(".git") == 0):
-            #update dictionary to log this url
-            cls.setRepoProperties(path, valid=False)
+        if(path == None or path.count(".git") == 0 or path == ''):
+            #not a valid repository
             return False
 
         log.info("Checking ability to link to remote url "+path+"...")
-        _,err = apt.execute('git', 'ls-remote', path, quiet=cls.QUIET, returnoutput=True)
+        out,err = apt.execute('git', 'ls-remote', path, quiet=cls.QUIET, returnoutput=True)
         is_valid = (len(err) == 0)
+        is_blank = is_valid and (len(out) == 0)
         #update dictionary to log this url
-        cls.setRepoProperties(path,  valid=is_valid)
+        cls.setRepoProperties(path, valid=is_valid, blank=is_blank)
         #verify no errors on output
         if(is_valid):
             log.info("success")
@@ -251,27 +253,24 @@ class Git:
 
 
     @classmethod
-    def isBlankRepo(cls, path, remote=False):
+    def isBlankRepo(cls, path):
         '''
         Tests if the path/url is an empty git repository. As a byproduct it
         will also test if the remote is valid (needed in order to be blank).
 
         Parameters:
             path (str): local repository or remote url
-            remote (bool): is the path a remote url to verify
         Returns:
             (bool): true if no commits are made to the repository
         '''
-        #check local path (only if repository is not remote)
-        if(cls.isValidRepo(path, remote=True) == False):
-            if(cls.isValidRepo(path, remote=False)):
-                #check output from running log and seeing if error pops up
-                _,err = apt.execute('git','-C',path,'log', quiet=cls.QUIET, returnoutput=True)
-                is_blank = (len(err) > 0)
-                return is_blank
-            return False
+        #check local path (only if repository is not remote
+        if(cls.isValidRepo(path, remote=False)):
+            #check output from running log and seeing if error pops up
+            _,err = apt.execute('git','-C',path,'log', quiet=cls.QUIET, returnoutput=True)
+            is_blank = (len(err) > 0)
+            return is_blank
         #check if remote url is blank
-        else:
+        elif(cls.isValidRepo(path, remote=True)):
             #has it aleady been checked?
             if(path in cls._URLstatus.keys() and 'blank' in cls._URLstatus[path].keys()):
                 return cls._URLstatus[path]['blank']
@@ -283,6 +282,7 @@ class Git:
             cls.setRepoProperties(path, valid=is_valid, blank=is_blank)
             #verify no output and no errors (it is blank)
             return is_blank
+        return False
 
 
     def getBranch(self, force=False):

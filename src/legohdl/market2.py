@@ -6,7 +6,7 @@
 #   blocks that are availble for download/install. It is a special git 
 #   repository that keeps the block metadata.
 
-import os,shutil
+import os,shutil,glob
 import logging as log
 from .map import Map
 from .git import Git
@@ -17,6 +17,8 @@ class Market2:
     #store all markets in class container
     Jar = Map()
 
+    DIR = apt.fs(apt.HIDDEN+"markets/")
+    EXT = ".mrkt"
     
     def __init__(self, name, url=None):
         '''
@@ -50,7 +52,7 @@ class Market2:
                 #create market directory 
                 os.makedirs(self.getMarketDir())
                 # create .mrkt file
-                open(self.getMarketDir()+self.getName()+'.mrkt', 'w').close()
+                open(self.getMarketDir()+self.getName()+self.EXT, 'w').close()
             pass
         
         #create git repository object
@@ -58,10 +60,10 @@ class Market2:
 
         #are we trying to attach a blank remote?
         if(success == False):
-            if(Git.isBlankRepo(url, remote=True)):
+            if(Git.isBlankRepo(url)):
                 self._repo.setRemoteURL(url)
             #if did not exist then must add and push new commits    
-            self._repo.add(self.getName()+'.mrkt')
+            self._repo.add(self.getName()+self.EXT)
             self._repo.commit("Initializes legohdl market")
             self._repo.push()
 
@@ -81,33 +83,31 @@ class Market2:
         Returns:
             success (bool): if the market was successfully add to markets/ dir
         '''
-        empty_repo = Git.isBlankRepo(url, True) or Git.isBlankRepo(url, False)
         success = True
 
-        if(Git.isValidRepo(url, True) == False and Git.isValidRepo(url, False) == False):
+        if(Git.isValidRepo(url, remote=True) == False and Git.isValidRepo(url, remote=False) == False):
             log.error("Invalid repository "+url+".")
-            success = False
-            return success
+            return False
 
         #create temp dir
         os.makedirs(apt.TMP)
 
         #clone from repository
-        if(empty_repo == False):
+        if(Git.isBlankRepo(url) == False):
             tmp_repo = Git(apt.TMP, clone=url)
 
             #determine if a .prfl file exists
             log.info("Locating .mrkt file... ")
             files = os.listdir(apt.TMP)
             for f in files:
-                mrkt_i = f.find(apt.MRKT_EXT)
+                mrkt_i = f.find(self.EXT)
                 if(mrkt_i > -1):
                     #remove extension to get the profile's name
                     self._name = f[:mrkt_i]
                     log.info("Identified market "+self.getName()+".")
                     break
             else:
-                log.error("Invalid market; could not locate .mrkt file.")
+                log.error("Invalid market; could not locate "+self.EXT+" file.")
                 success = False
 
             #try to add profile if found a name (.mrkt file)
@@ -130,12 +130,78 @@ class Market2:
         return success
 
 
+    def setRemoteURL(self, url):
+        '''
+        Grants ability to set a remote url only if it is 1) valid 2) blank and 3) a remote
+        url is not already set.
+
+        Parameters:
+            url (str): the url to try and set for the given market
+        Returns:
+            (bool): true if the url was successfully attached under the given constraints.
+        '''
+        #check if remote is already set
+        if(self._repo.getRemoteURL() != ''):
+            log.error("Market "+self.getName()+" already has a remote URL.")
+            return False
+        #proceed
+        #check if url is valid and blank
+        if(Git.isValidRepo(url, remote=True) and Git.isBlankRepo(url)):
+            log.info("Attaching remote "+url+" to market "+self.getName()+"...")
+            self._repo.setRemoteURL(url)
+            #push any changes to sync remote repository
+            self._repo.push()
+            return True
+        log.error("Remote could not be added to market "+self.getName()+".")
+        return False
+
+
+    def remove(self):
+        '''
+        Removes a market from legohdl markets/ and the class container.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        #remove directory
+        shutil.rmtree(self.getMarketDir(), onerror=apt.rmReadOnly)
+        #remove from Jar
+        del self.Jar[self.getName()]
+
+
+    @classmethod
+    def tidy(cls):
+        '''
+        Removes all stale markets that are not found in the markets/ directory.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        #list all markets
+        mrkt_files = glob.glob(cls.DIR+"**/*"+cls.EXT, recursive=True)
+        for f in mrkt_files:
+            mrkt_name = os.path.basename(f).replace(cls.EXT,'')
+            #remove a market that is not found in settings (Jar class container)
+            if(mrkt_name.lower() not in cls.Jar.keys()):
+                log.info("Removing stale market "+mrkt_name+"...")
+                mrkt_dir = f.replace(os.path.basename(f),'')
+                #shutil.rmtree(mrkt_dir, onerror=apt.rmReadOnly)
+            pass
+
+        pass
+
+
     def getMarketDir(self):
-        return apt.fs(apt.HIDDEN+"markets/"+self.getName())
+        return apt.fs(self.DIR+self.getName())
 
 
     def getName(self):
         return self._name
+
 
     @classmethod
     def printAll(cls):

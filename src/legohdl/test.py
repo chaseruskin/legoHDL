@@ -103,7 +103,7 @@ def main():
         print('\n---MARKET CLASS---')
         print(Market.Jar)
 
-    if(True):
+    if(False):
         print('\n---WORKSPACE CLASS---')
         #create workspaces
         tmp_ws = "super_WS"
@@ -194,11 +194,12 @@ def main():
 
         Market2("open-ip")
 
-        Market2("soc-blocksII", "https://gitlab.com/chase800/mymarket.git")
+        Market2("soc-blocks", "https://gitlab.com/chase800/mymarket.git")
 
-        Market2("marketIII", "https://gitlab.com/chase800/mymarket.git")
+        #Market2("marketIII", "https://gitlab.com/chase800/mymarket.git")
 
         Market2.printAll()
 
+        Market2.tidy()
         #shutil.rmtree(Market2.Jar['soc-blocks'].getMarketDir(), onerror=apt.rmReadOnly)
     pass
