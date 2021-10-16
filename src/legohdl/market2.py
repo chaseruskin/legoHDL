@@ -11,6 +11,7 @@ import logging as log
 from .map import Map
 from .git import Git
 from .apparatus import Apparatus as apt
+from .cfgfile import CfgFile as cfg
 
 
 class Market2:
@@ -130,12 +131,82 @@ class Market2:
         return success
 
 
-    def publish(self):
+    def publish(self, meta, options=[], all_vers=[], changelog=None):
         '''
         Publishes a block's new metadata to the market and syncs with remote
         repository.
+
+        Parameters:
+            meta (dict): the metadata from the block's cfg file
+            options ([str]): list of options supported by publish method
+            all_vers ([str]): list of all available versions for this block
+            changelog (str): the changelog file data
+        Returns:
+            None
         '''
-        # :todo:
+        log.info("Publishing block to market "+self.getName()+"...")
+        #first ensure the market is up-to-date
+        self.refresh()
+
+        #store important data scoped for easier access
+        block_meta = meta['block']
+        #get the current branches name
+        active_branch = self._repo.getBranch()
+
+        #switch to side branch if '-soft' flag raised
+        tmp_branch = block_meta['library']+"."+block_meta['name']+"-"+block_meta['version']
+        #try to publish on a side branch (possibly for team reviewing)
+        if(options.count("soft")):
+            if(self._repo.remoteExists()):
+                log.info("Checking out new side branch '"+tmp_branch+"' for publishing to "+self.getName()+"...")
+                self._repo.git("checkout","-b",tmp_branch)
+            else:
+                log.warning("Cannot perform soft release because market "+self.getName()+" has no remote.")
+
+        #locate block's directory within market
+        block_dir = apt.fs(self.getMarketDir()+"/"+block_meta['library']+"/"+block_meta['name']+"/")
+        os.makedirs(block_dir,exist_ok=True)
+        
+        #read in all logging info about valid release points
+        file_data = []
+        #insert any versions found as valid release points to version.log
+        for v in all_vers:
+            file_data = file_data + [v+"\n"]
+        #rewrite version.log file to track all valid versions
+        with open(block_dir+apt.VER_LOG,'w') as f:
+                f.writelines(file_data)
+                pass
+
+        #save changelog 
+        if(changelog != None):
+            with open(block_dir+apt.CHANGELOG,'w') as f:
+                for line in changelog:
+                    f.write(line)
+                f.close()
+                pass
+
+        #save cfg file
+        with open(block_dir+apt.MARKER, 'w') as file:
+            cfg.save(meta, file, ignore_depth=True, space_headers=True)
+            file.close()
+
+        #stage changes to repository (only add and stage the file that was made)
+        rel_git_path = block_meta['library']+'/'+block_meta['name']+'/'
+        self._repo.add(rel_git_path+apt.MARKER, rel_git_path+apt.VER_LOG)
+        if(changelog != None):
+            self._repo.add(rel_git_path+apt.CHANGELOG)
+
+        #commit new version
+        self._repo.git.commit('-m',"Adds "+block_meta['library']+'.'+block_meta['name']+"-v"+block_meta['version'])
+
+        #sync with remote
+        self._repo.push()
+
+        #revert back to previous branch if needed
+        if(self._repo.getBranch() != active_branch):
+            self._repo.git('checkout',active_branch)
+            #delete temporal branch used for soft release
+            self._repo.git('branch','-d',tmp_branch)
         pass
 
 
@@ -149,14 +220,15 @@ class Market2:
         Returns:
             None
         '''
-        log.info("Refreshing market "+self.getName()+"...")
-        #check status from remote
-        if(self._repo.isLatest() == False):
-            log.info('Pulling new updates...')
-            self._repo.pull()
-            log.info("success")
-        else:
-            log.info("Already up-to-date.")
+        if(self._repo.remoteExists()):
+            log.info("Refreshing market "+self.getName()+"...")
+            #check status from remote
+            if(self._repo.isLatest() == False):
+                log.info('Pulling new updates...')
+                self._repo.pull()
+                log.info("success")
+            else:
+                log.info("Already up-to-date.")
         pass
 
 
@@ -226,6 +298,10 @@ class Market2:
 
         pass
 
+
+    def isRemote(self):
+        return self._repo.remoteExists()
+        
 
     def getMarketDir(self):
         return apt.fs(self.DIR+self.getName())
