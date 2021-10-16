@@ -382,8 +382,10 @@ class Workspace:
             cls._ActiveWorkspace = cls.Jar[random_ws]
             log.info("Workspace "+ws+" does not exist. Auto-assigning active workspace to "+cls._ActiveWorkspace.getName()+"...")
             return True
-        else:
+        elif(cls._ActiveWorkspace != None):
             log.info("Workspace "+ws+" does not exist. Keeping "+cls._ActiveWorkspace.getName()+" as active.")
+        else:
+            log.error("No workspace set as active.")
         return False
 
 
