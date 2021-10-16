@@ -8,6 +8,7 @@
 
 import os, shutil
 import logging as log
+from datetime import datetime
 from .market import Market
 from .apparatus import Apparatus as apt
 from .map import Map
@@ -20,6 +21,12 @@ class Workspace:
 
     #active-workspace is a workspace object
     _ActiveWorkspace = None
+
+    DIR = apt.fs(apt.HIDDEN+"workspaces/")
+    LOG_FILE = "refresh.log"
+
+    MIN_RATE = -1
+    MAX_RATE = 1440
 
 
     def __init__(self, name, path, markets=[]):
@@ -47,7 +54,7 @@ class Workspace:
             log.error("Skipping workspace "+self.getName()+" due to empty local path.")
             return
         
-        self._ws_dir = apt.fs(apt.HIDDEN+"workspaces/"+self.getName()+"/")
+        self._ws_dir = apt.fs(self.DIR+self.getName()+"/")
         
         #ensure all workspace hidden directories exist
         if(os.path.isdir(self.getWorkspaceDir()) == False):
@@ -56,14 +63,8 @@ class Workspace:
         #create workspace's cache where installed blocks will be stored
         os.makedirs(self.getWorkspaceDir()+"cache", exist_ok=True)
         #create the refresh log if DNE
-        if(os.path.isfile(self.getWorkspaceDir()+apt.REFRESH_LOG) == False):
-            open(self.getWorkspaceDir()+apt.REFRESH_LOG, 'w').close()
-
-        #store the code's state of each version for each block
-        os.makedirs(self.getWorkspaceDir()+"cache", exist_ok=True)
-        #create the refresh log
-        if(os.path.isfile(self.getWorkspaceDir()+apt.REFRESH_LOG) == False):
-            open(self.getWorkspaceDir()+apt.REFRESH_LOG, 'w').close()
+        if(os.path.isfile(self.getWorkspaceDir()+self.LOG_FILE) == False):
+            open(self.getWorkspaceDir()+self.LOG_FILE, 'w').close()
 
         self._markets = []
         #find all market objects by name and store in list
@@ -133,7 +134,7 @@ class Workspace:
                 del self.Jar[self.getName()]
 
             #rename hidden directory if exists
-            new_dir = apt.fs(apt.HIDDEN+"workspaces/"+n+"/")
+            new_dir = apt.fs(self.DIR+n+"/")
             if(hasattr(self, "_ws_dir")):
                 os.rename(self.getWorkspaceDir(), new_dir)
             #set the hidden workspace directory
@@ -221,15 +222,112 @@ class Workspace:
             None
         '''
         #list all hidden workspace directories
-        hidden_dirs = os.listdir(apt.HIDDEN+"workspaces/")
+        hidden_dirs = os.listdir(cls.DIR)
         for hd in hidden_dirs:
             if(hd.lower() not in cls.Jar.keys()):
                 log.info("Removing stale hidden workspace directory for "+hd+"...") 
-                if(os.path.isdir(apt.HIDDEN+"workspaces/"+hd)):
-                    shutil.rmtree(apt.HIDDEN+"workspaces/"+hd, onerror=apt.rmReadOnly)
+                if(os.path.isdir(cls.DIR+hd)):
+                    shutil.rmtree(cls.DIR+hd, onerror=apt.rmReadOnly)
                 #remove all files from workspace directory
                 else:
-                    os.remove(apt.HIDDEN+"workspaces/"+hd)
+                    os.remove(cls.DIR+hd)
+        pass
+
+
+    def autoRefresh(self, rate):
+        '''
+        Automatically refreshes all markets for the given workspace. Reads its
+        log file to determine if past next interval for refresh.
+
+        Parameters:
+            rate (int): how often to ask a refresh within a 24-hour period
+        Returns:
+            None
+        '''
+
+
+        def timeToFloat(prt):
+            '''
+            Converts a time object into a float type.
+
+            Parameters:
+                prt (datetime): iso format of current time
+            Returns:
+                (float): 0.00 (inclusive) - 24.00 (exclusive)
+            '''
+            time_stamp = str(prt).split(' ')[1]
+            time_sects = time_stamp.split(':')
+            hrs = int(time_sects[0])
+            #convert to 'hours'.'minutes'
+            time_fmt = (float(hrs)+(float(float(time_sects[1])/60)))
+            return time_fmt
+
+        refresh = False
+        last_punch = None
+        stage = 1
+        cur_time = datetime.now()
+
+        #do not perform refresh if the rate is 0
+        if(rate == 0):
+            return
+        #always refresh if the rate is set below 0 (-1)
+        elif(rate <= self.MIN_RATE):
+            refresh = True
+
+        #divide the 24 hour period into even checkpoints
+        max_hours = float(24)
+        spacing = float(max_hours / rate)
+        intervals = []
+        for i in range(rate):
+            intervals += [spacing*i]
+        
+        #ensure log file exists
+        if(os.path.exists(self.getWorkspaceDir()+self.LOG_FILE)):
+            open(self.getWorkspaceDir()+self.LOG_FILE, 'w').close()
+
+        #read log file
+        #read when the last refresh time occurred
+        with open(self.getWorkspaceDir()+self.LOG_FILE, 'r') as log_file:
+            #read the latest date
+            data = log_file.readlines()
+            #no refreshes have occurred so automatically need a refresh
+            if(len(data) == 0):
+                last_punch = cur_time
+                refresh = True
+            else:
+                last_punch = datetime.fromisoformat(data[0])
+                #determine if its time to refresh
+                #get latest time that was punched
+                last_time_fmt = timeToFloat(last_punch)
+                #determine the next checkpoint available for today
+                next_checkpoint = max_hours
+                for i in range(len(intervals)):
+                    if(last_time_fmt < intervals[i]):
+                        next_checkpoint = intervals[i]
+                        stage = i + 1
+                        break
+                #print('next checkpoint',next_checkpoint)
+                cur_time_fmt = timeToFloat(cur_time)
+                #check if the time has occurred on a previous day, (automatically update because its a new day)
+                next_day = cur_time.year > last_punch.year or cur_time.month > last_punch.month or cur_time.day > last_punch.day
+                #print(next_day)
+                #print("currently",cur_time_fmt)
+                #determine if the current time has passed the next checkpoint or if its a new day
+                if(next_day or cur_time_fmt >= next_checkpoint):
+                    last_punch = cur_time
+                    refresh = True
+            log_file.close()
+
+        #determine if its time to refresh
+        if(refresh):
+            #display what interval is being refreshed on the day
+            infoo = "("+str(stage)+"/"+str(rate)+")" if(rate > 0) else ''
+            log.info("Automatically refreshing workspace markets... "+infoo)
+            #refresh all markets attached to this workspace
+            for mrkt in self.getMarkets():
+                # :todo: needs to start using new Market class before using this method
+                #mrkt.refresh()
+                pass
         pass
 
 

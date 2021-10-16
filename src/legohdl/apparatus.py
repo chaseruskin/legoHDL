@@ -910,6 +910,11 @@ scripts)?", warning=False)
         return single_str
 
 
+    @classmethod
+    def getRefreshRate(cls):
+        return cls.SETTINGS['general']['refresh-rate']
+
+
     #[!] TO MOVE TO MARKET CLASS
     @classmethod
     def readyForRefresh(cls):

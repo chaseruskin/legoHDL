@@ -130,6 +130,36 @@ class Market2:
         return success
 
 
+    def publish(self):
+        '''
+        Publishes a block's new metadata to the market and syncs with remote
+        repository.
+        '''
+        # :todo:
+        pass
+
+
+    def refresh(self):
+        '''
+        If has a remote repository, checks with it to ensure the current branch
+        is up-to-date and pulls any changes.
+        
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        log.info("Refreshing market "+self.getName()+"...")
+        #check status from remote
+        if(self._repo.isLatest() == False):
+            log.info('Pulling new updates...')
+            self._repo.pull()
+            log.info("success")
+        else:
+            log.info("Already up-to-date.")
+        pass
+
+
     def setRemoteURL(self, url):
         '''
         Grants ability to set a remote url only if it is 1) valid 2) blank and 3) a remote
@@ -165,6 +195,7 @@ class Market2:
         Returns:
             None
         '''
+        log.info("Deleting market "+self.getName()+"...")
         #remove directory
         shutil.rmtree(self.getMarketDir(), onerror=apt.rmReadOnly)
         #remove from Jar
@@ -189,6 +220,7 @@ class Market2:
             if(mrkt_name.lower() not in cls.Jar.keys()):
                 log.info("Removing stale market "+mrkt_name+"...")
                 mrkt_dir = f.replace(os.path.basename(f),'')
+                # :todo: uncomment next line to take effect
                 #shutil.rmtree(mrkt_dir, onerror=apt.rmReadOnly)
             pass
 

@@ -305,6 +305,7 @@ class Profile:
             if(prfl_name.lower() not in cls.Jar.keys()):
                 log.info("Removing stale profile "+prfl_name+"...")
                 prfl_dir = f.replace(os.path.basename(f),'')
+                # :todo: uncomment next line to take effect
                 #shutil.rmtree(mrkt_dir, onerror=apt.rmReadOnly)
             pass
         pass
