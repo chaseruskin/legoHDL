@@ -26,7 +26,7 @@ setuptools.setup(
             legohdl=legohdl.legohdl:main
         ''',
     package_dir={"": "src"},
-    package_data={"": ['data/icon.gif']},
+    package_data={"": ['data/icon.gif', 'data/hello.py']},
     packages=setuptools.find_packages(where="src"),
     include_package_data=True,
     python_requires=">=3.5",
