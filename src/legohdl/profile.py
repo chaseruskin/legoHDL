@@ -199,7 +199,7 @@ class Profile:
             act = (ask == False) or apt.confirmation("Import "+apt.SETTINGS_FILE+"?", warning=False)
             if(act):
                 log.info('Overloading '+apt.SETTINGS_FILE+'...')
-                with open(self.getPath()+apt.SETTINGS_FILE, 'r') as f:
+                with open(self.getProfileDir()+apt.SETTINGS_FILE, 'r') as f:
                     prfl_settings = cfg.load(f)
                     
                     dest_settings = copy.deepcopy(apt.SETTINGS)
