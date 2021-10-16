@@ -71,7 +71,8 @@ class legoHDL:
 
         Workspace.printAll()
 
-        Workspace.getActiveWorkspace().autoRefresh(rate=0)
+        if(Workspace.inWorkspace()):
+            Workspace.getActiveWorkspace().autoRefresh(rate=0)
 
         #save all legohdl.cfg changes
         apt.save()
@@ -79,8 +80,9 @@ class legoHDL:
         self.blockPKG = None
         self.blockCWD = None
         #initialize registry with the workspace-level markets
-        self.db = Registry(Workspace.getActiveWorkspace().getMarkets())
-
+        if(Workspace.inWorkspace()):
+            self.db = Registry(Workspace.getActiveWorkspace().getMarkets())
+            
         #limit functionality if not in a workspace
         if(not Workspace.inWorkspace() and (command != '' and command != 'config' and command != 'profile' and command != 'help' and (command != 'open' or ("settings" not in options and "template" not in options)))):
             exit()
