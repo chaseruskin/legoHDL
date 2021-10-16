@@ -1415,7 +1415,12 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         elif(command == "refresh"):
             #package value is the market looking to refresh
             #if package value is null then all markets tied to this workspace refresh by default
-            self.db.sync(value)
+            if(value == ''):
+                log.info("Refreshing all markets...")
+                for mkrt in Market.Jar.values():
+                    mkrt.refresh()
+            elif(value.lower() in Market.Jar.keys()):
+                Market.Jar[value].refresh()
             pass
 
         elif(command == "export" and self.blockCWD.isValid()):
