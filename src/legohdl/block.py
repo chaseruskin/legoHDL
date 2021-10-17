@@ -1346,7 +1346,8 @@ class Block:
                 top = top.getName()
         
         if(top == None or top.lower() not in cur_lib.keys()):
-            exit(log.error("Entity "+top+" not found in current block."))
+            log.warning("No top entity found in current block.")
+            return None,None,None
         
         #get the unit from the currently available project-level blocks
         top_entity = cur_lib[top.lower()]

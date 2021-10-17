@@ -471,7 +471,8 @@ class legoHDL:
         block.grabUnits(top, override=True)
         hierarchy = Unit.Hierarchy
         #print the dependency tree
-        hierarchy.output(block.getLib(low=True)+'.'+top)
+        if(top != None):
+            hierarchy.output(block.getLib(low=True)+'.'+top)
         
         unit_order,block_order = hierarchy.topologicalSort()
 
