@@ -1,0 +1,150 @@
+; File: legoHDL Manual
+; Author: Chase Ruskin
+; Modified: 10/19/2021
+; Created: 10/19/2021
+; Description:
+;   The help text for each legoHDL command. Provides the name, synopsis,
+;   description, and options.
+; Usage:
+;   All lines with ';' are skipped. Each line beginning with an '*' is evaluated
+;   to see what command the following text belongs to. Reads all the way up
+;   to the next '*'.
+
+* new
+NAME:
+        new - Create a new legoHDL block (project)
+
+SYNOPSIS:
+        legohdl new <block> [-open] [-remote=<url>] [-no-template]
+
+DESCRIPTION:
+        Create a new HDL project recognized by legoHDL as a "block". The block
+        will be created under a new folder at the workspace's local path such
+        as <workspace-path>/<library>/<block>. A git repository will be automatically
+        created, and a bare git remote repository URL can be passed for
+        automatic configuration. If a non-bare remote repository is passed, the
+        block will not be created, but can be initialized (see 'init' command).
+
+OPTIONS:
+        <block>
+            The project's title. Follows the format of M.L.N (similiar to Xilinx's
+            VLN of VLNV). The M (market) is optional.
+
+        -open
+            Upon creating the block, open it in the configured text-editor.
+
+        -remote=<url>
+            A bare remote git repository to be attached to the created block's
+            git repository.
+
+        -no-template
+            Do not copy in the configured template folder. The created block
+            folder will only contain the necessary Block.cfg file.
+
+* init
+NAME:
+        init - Initialize a legoHDL block (project) from existing code, block metadata, 
+            or new files from the template
+
+SYNOPSIS:
+        legohdl init [<market>.].<library>.<block>
+
+DESCRIPTION:
+
+
+OPTIONS:
+
+* open
+NAME:
+        open - Use the configured text-editor to open a variety of legoHDL-related things
+
+SYNOPSIS:
+        legohdl open <block>
+        legohdl open [<script-alias>] -script
+        legohdl open <profile-name> -profile
+        legohdl open (-template | (-settings [-file]))
+
+DESCRIPTION:
+
+
+OPTIONS:
+        <block>
+
+
+        <script-alias>
+            The alias for the saved custom script within legoHDL. It is a user-defined
+            key in settings under "scripts". If the alias's value is a command that 
+            references a real existing file, that file will be opened.
+
+        -script
+            The flag to indicate a script is trying to be opened. If no <script-alias>
+            value is given with this flag, the built-in scripts folder will be
+            opened.
+
+        <profile-name>
+            The profile configuration name stored within legoHDL settings. When valid,
+            that profile directory will open.
+
+        -profile
+            The flag to indicate a profile is trying to be opened.
+
+        -template
+            The flag to indicate the template is trying to be opened. If the
+            configured template value in settings is blank, the built-in template
+            folder will be opened.
+        
+        -settings
+            The flag to indicate the settings is trying to be opened. The settings
+            are default to open in GUI mode for easy editing. However, the literal 
+            settings.cfg file can be opened in the text editor when -file is raised
+            too.
+
+        -file
+            The flag to indicate that the settings should open in the text-editor
+            and not in GUI mode.
+
+* port
+NAME:
+        port -
+
+SYNOPSIS:
+
+DESCRIPTION:
+        When trying to access current block-level entities, the block title
+        can be omitted (a form of shortcutting). To reference a entity,
+        "market.library.block(version):entity".
+OPTIONS:
+
+
+* graph
+NAME:
+
+SYNOPSIS:
+
+DESCRIPTION:
+
+OPTIONS:
+
+
+* build
+NAME:
+
+SYNOPSIS:
+
+DESCRIPTION:
+
+OPTIONS:
+
+
+* run 
+
+* release
+NAME:
+        release -
+
+SYNOPSIS:
+
+example->
+        legohdl release v1.0.0 -message="new design!" -soft -strict
+
+* del

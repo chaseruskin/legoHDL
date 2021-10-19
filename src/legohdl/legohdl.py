@@ -51,6 +51,7 @@ class legoHDL:
             elif(package == ''):
                 package = arg
 
+        #only display the program's version and exit
         if(command == '--version'):
             print(__version__)
             exit()
