@@ -103,7 +103,7 @@ SYNOPSIS:
         legohdl open <block>
         legohdl open [<script-alias>] -script
         legohdl open <profile-name> -profile
-        legohdl open (-template | (-settings [-file]))
+        legohdl open (-template | -settings[=<mode>])
 
 DESCRIPTION:
         :todo:
@@ -140,19 +140,19 @@ OPTIONS:
             settings.cfg file can be opened in the text editor when -file is raised
             too.
 
-        -file
-            The flag to indicate that the settings should open in the text-editor
-            and not in GUI mode.
+        <mode>
+            How to open the settings. Accepted values are gui and file. When omitted,
+            the default is to open the settings in gui mode.
 
 
 ; other names in contention: checkout, check, scope, probe, connect, grab, explore, 
-;                       investigate, view, utilize, use                    
+;                       investigate, view, utilize, use, get                   
 * port
 NAME:
         port - Print the compatible code for the ports list of a specified entity
 
 SYNOPSIS:
-        legohdl port [<block>:]<entity> [-comp | -inst [-vhdl | -vlog]] [-arch] [-about]
+        legohdl port [<block>:]<entity> [-comp[=<lang>] | -inst[=<lang>]] [-arch] [-about]
 
 DESCRIPTION:
         When trying to access current block-level entities, the <block>
@@ -181,11 +181,10 @@ OPTIONS:
                 relevant constants for each generic, relevant signals for each port,
                 and the direct entity instantiation.
 
-        -vhdl
-                Print the component format in VHDL compatible code.
-
-        -vlog
-                Print the component format in Verilog compatible code.
+        <lang>
+                Specify what HDL language to print the formatted code. Accepted
+                values are vlog and vhdl. Omitting <lang> prints the code in the 
+                entities natural language.
 
         -arch
                 List the available architectures. If the entity is a Verilog
@@ -194,7 +193,8 @@ OPTIONS:
         -about
                 Print the comment header block found at the beginning of this
                 entity's file (if exists). Helpful to read more information
-                about an entity and how it behaves.
+                about an entity and how it behaves. Also prints various statistics
+                regarding the entity.
 
 
 * graph
@@ -225,7 +225,7 @@ OPTIONS:
         -ignore-tb
                 Do not include any testbench unit in the dependency tree.
 
-
+; other names in contention: assemble, collect, gather, compose, compile, put
 * export
 NAME:
         export - Generate a blueprint file
