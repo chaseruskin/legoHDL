@@ -241,7 +241,7 @@ scripts)?", warning=False)
 
         if(cls.SETTINGS['general']['template'] != cfg.NULL and os.path.isdir(cls.SETTINGS['general']['template'])):
             cls.SETTINGS['general']['template'] = cls.fs(cls.SETTINGS['general']['template'])
-            cls.TEMPLATE = cls.SETTINGS['template']
+            cls.TEMPLATE = cls.SETTINGS['general']['template']
             pass
         
         if(cls.getLocal() == None):
