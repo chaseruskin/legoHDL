@@ -1,63 +1,100 @@
-################################################################################
-#   Project: legohdl
-#   Script: language.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script is a parent class parser for VHDL and Verilog files. It will
+# Project: legohdl
+# Script: language.py
+# Author: Chase Ruskin
+# Description:
+#   This script is a parent class parser for VHDL and Verilog files. It will
 #   break down the source code and split into valid tokens through the 
-#   'generate_code_stream' method.
-################################################################################
+#   'generate_code_stream' method. 
+#
+#   A file (language) has entities. A file object's role is to create the 
+#   entities/design units from its code, depending on if its 1 of the 2 
+#   supported languages: VHDL or verilog.
 
-
+import sys,os
 from abc import ABC, abstractmethod
 from .apparatus import Apparatus as apt
-import sys,os
+import logging as log
+from .map import Map
+
 
 class Language(ABC):
 
-    def __init__(self, fpath):
+    #class container to store a list of all known files
+    _ProcessedFiles = Map()
+
+    def __init__(self, fpath, M='', L='', N='', V=''):
+        '''
+        Create an HDL language file object.
+
+        Parameters:
+            fpath (str): HDL file path
+            M (str): the legohdl block market the file belongs to
+            L (str): the legohdl block library the file belongs to
+            N (str): the legohdl block name the file belongs to
+            V (str): the legohdl block version the file belongs to
+        Returns:
+            None
+        '''
+
+        #format the file path
         self._file_path = apt.fs(fpath)
-        self._std_delimiters = "(",")",":",";",",","="
+
+        if(self.getPath().lower() in self._ProcessedFiles.keys()):
+            log.info("Already processed: "+self.getPath())
+            return
         
-        #determine if the file is VHDL or Verilog/SystemVerilog
-        _,self._ext = os.path.splitext(fpath)
-        #create as all lower case
-        if(self._ext != None):
-            self._ext = '*'+self._ext.lower()
-        #determine which comments to ignore in generating code stream
-        if(self._ext in apt.VERILOG_CODE):
-            self._comments = "//"
-            self._multi_comment = ("/*","*/")
-        elif(self._ext in apt.VHDL_CODE):
-            self._comments = "--"
-            self._multi_comment = None
+        #create a group of standard delimiters
+        self._std_delimiters = "(",")",":",";",",","="
+
+        #remember what block owns this file
+        self._M = M
+        self._L = L
+        self._N = N
+        self._V = V
+
+        #add to processed list
+        self._ProcessedFiles[self.getPath().lower()] = self
         pass
+
 
     @abstractmethod
     def decipher(self, design_book, cur_lib, verbose):
         pass
+
 
     #generate string of component's signal declarations to be interfaced with the port
     @abstractmethod
     def writeComponentSignals(self):
         pass
 
+
     #write out the mapping instance of an entity (can be pure instance using 'entity' keyword also)
     @abstractmethod
     def writeComponentMapping(self, pureEntity=False, lib=''):
         pass
+
 
     #write out the entity but as a component
     @abstractmethod
     def writeComponentDeclaration(self):
         pass
 
-    #find all unit names within the source file and replace accordingly
-    def setUnitName(self, name_pairs):
-        if(self._ext in apt.VHDL_CODE):
-            case_sense = False
-        elif(self._ext in apt.VERILOG_CODE):
-            case_sense = True
+
+    # :todo: rename and polish
+    def setUnitName(self, name_pairs, keep_case):
+        '''
+        Find all unit names within the source file and replace with its new
+        revised name. 
+        
+        Used when installing a version and entity names get appended with the 
+        version number.
+
+        Parameters:
+            name_pairs (?) : ?
+            keep_case (bool): False for VHDL and True for VERILOG
+        Returns:
+            None
+        '''
 
         all_pairs = []
         all_langs = []
@@ -69,11 +106,11 @@ class Language(ABC):
         #do major find and replace
   
         #open file to manipulate lines
-        with open(self._file_path, 'r') as f:
+        with open(self.getPath(), 'r') as f:
             content = f.readlines()
             #must we have an exact match? yes if verilog
             #else convert to all lower case if not caring
-            if(not case_sense):
+            if(not keep_case):
                 tmp_content = []
                 for c in content: 
                     tmp_content.append(c.lower())
@@ -90,7 +127,7 @@ class Language(ABC):
                     #this is a verilog module we are looking for
                     if(all_langs[i] == 'VERILOG'):
                         #if we are inside a VHDL file we don't care
-                        if(not case_sense):
+                        if(not keep_case):
                             name_to_locate = name_to_locate.lower()
                         pass
 
@@ -115,14 +152,30 @@ class Language(ABC):
             for line in content:
                 f.write(line)
         pass
+
     
-    #turn a HDL file in to a string of words
+    # :todo: refactor and polish
     def generateCodeStream(self, keep_case, keep_term, *extra_parsers):
-        code_stream = []
+        '''
+        Turn an HDL file into a list of its words.
+
+        Parameters:
+            keep_case (bool): convert all words to lower or keep case sensitivity
+            keep_term (bool): decide if to keep all semi-colons (terminators)
+            extra_parsers (*str): special tokens that need to be separate words
+        Returns:
+            ([str]): list of words from HDL file
+        '''
+
+
         #take in a single word, return a list of the broken up words
         def chopSticks(piece):
-            #inner method to continously split delimiters that are bunched
+            'Take in a single word, and return a list of the further broken up words.'
+
+
             def computeNextIndex(w):
+                'Continuously split delimiters that are bunched together.'
+
                 min_index = sys.maxsize
                 for d in extra_parsers:
                     tmp_i = w.find(d)
@@ -131,8 +184,8 @@ class Language(ABC):
                 if(min_index == sys.maxsize):
                     return -1
                 return min_index
-                
-            #print(delimiters)
+            
+
             index = computeNextIndex(piece)
 
             chopped = []
@@ -163,13 +216,18 @@ class Language(ABC):
                             chopped.append(piece[index+1:])
                         break
                 #print(chopped)
+                pass
+
             return chopped
+
+
+        code_stream = []
         in_comments = False
-        #read the vhdl file to break into words
-        with open(self._file_path, 'r') as file:
+        #read the HDL file to break into words
+        with open(self.getPath(), 'r') as file:
             for line in file.readlines():
                 #drop rest of line if comment is started
-                comment_start = line.find(self._comments)
+                comment_start = line.find(self._comment)
                 if(comment_start == 0):
                     continue
                 elif(comment_start > -1):
@@ -222,4 +280,31 @@ class Language(ABC):
 
         #print(code_stream)
         return code_stream
+
+
+    def getPath(self):
+        return self._file_path
+
+
+    def M(self):
+        return self._M
+
+
+    def L(self):
+        return self._L
+
+
+    def N(self):
+        return self._N
+
+
+    def V(self):
+        return self._V
+
+
+    def __str__(self):
+        return f'''
+        file: {self.getPath()}
+        owner: {self.M()+'.'+self.L()+'.'+self.N()+'('+self.V()+')'}
+        '''
     pass

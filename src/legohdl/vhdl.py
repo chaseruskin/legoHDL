@@ -1,36 +1,147 @@
-################################################################################
-#   Project: legohdl
-#   Script: vhdl.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script inherits language.py and implements the behaviors for
+# Project: legohdl
+# Script: vhdl.py
+# Author: Chase Ruskin
+# Description:
+#   This script inherits language.py and implements the behaviors for
 #   VHDL code files (syntax, deciphering).
-################################################################################
+#
+#   A VHDL file has entities.
 
 from legohdl.language import Language
 import logging as log
 from .language import Language
+from .unit import Unit
+
 
 class Vhdl(Language):
 
+
+    def __init__(self, fpath, M='', L='', N='', V=''):
+        '''
+        Create a VHDL language file object.
+
+        Parameters:
+            fpath (str): HDL file path
+            M (str): the legohdl block market the file belongs to
+            L (str): the legohdl block library the file belongs to
+            N (str): the legohdl block name the file belongs to
+            V (str): the legohdl block version the file belongs to
+        Returns:
+            None
+        '''
+        super().__init__(fpath, M, L, N, V)
+        self._comment = "--"
+        self._multi_comment = None
+
+        #run with VHDL decoder
+        self.identifyDesigns()
+        pass
+
+
+    def __str__(self):
+        dsgns = ''
+        for d in self.identifyDesigns():
+            dsgns = dsgns + str(d) + '\n'
+        
+        return super().__str__()+f'''
+        designs: {dsgns}
+        '''
+
+
+    def identifyDesigns(self):
+        '''
+        Analyzes the current VHDL file to only identify design units and not
+        complete their data. Dynamically creates self._designs attribute.
+
+        Parameters:
+            None
+        Returns:
+            self._designs ([Unit]): list of units found in this file
+        '''
+        if(hasattr(self, "_designs")):
+            return self._designs
+
+        cs = self.generateCodeStream(True, False, *self._std_delimiters)
+        self._designs = []
+
+        #looking for design units
+        in_scope = False
+        for i in range(len(cs)-1):
+            token = cs[i].lower()
+            #search for entities
+            if(token == 'entity' and cs[i+1] != ':'): #ensure its not a entity instaniation
+                if(not in_scope): 
+                    name = cs[i+1]
+                    self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cs[i+1])]
+                in_scope = not in_scope
+            #search for packages
+            elif(token == 'package' and cs[i+1].lower() != 'body'): #ensure its not a package body
+                if(not in_scope):
+                    name = cs[i+1]
+                    self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cs[i+1])]
+                in_scope = not in_scope
+            
+            if(token == 'end'):
+                if(in_scope and cs[i+1].lower() == name.lower()):
+                    in_scope = False
+
+        return self._designs
+
+
     #function to determine required modules for self units
-    def decipher(self, design_book, cur_lib, verbose):
-        if(verbose):
-            log.info("Deciphering VHDL file...")
-            log.info(self._file_path)
-        #parse into words
-        cs = self.generateCodeStream(False, False, *self._std_delimiters)
+    def decipher(self, design_book=Unit.Jar, cur_lib='', verbose=False):
+        '''
+        Analyzes the current VHDL file to collect data for all identified design 
+        units.
+        '''
+        current_map = Unit.Jar[self.M()][self.L()][self.N()]
+
 
         def splitBlock(name):
+            'Splits a string into 3 separate strings based on ".".'
+
             specs = name.split('.')
             if(name.find('.') == -1):
                 return '','',''
+            #replace with current library if name is 'work'
             if(specs[0] == 'work'):
-                specs[0] = cur_lib
+                specs[0] = self.L()
             if(name.count('.') == 2):
                 return specs[0],specs[1],specs[2]
             else:
                 return specs[0],specs[1],''
+
+
+        #key: library.package, value: list of component names
+        components_on_standby = dict()
+
+        def resetNamespace(uses):
+            'Log all collected information to the correct design unit as exiting its scope.'
+            global components_on_standby
+
+            #reset to no available components at disposal from any package files
+            components_on_standby = dict()
+            #the current unit is now complete ("checked")
+            current_map[unit_name].setChecked(True)
+            #now try to check the unit's dependencies
+            for u in uses:
+                if(u not in current_map[unit_name].getRequirements()):
+                    current_map[unit_name].addRequirement(u)
+                #only enter recursion if the unit has not already been completed ("checked")
+                if(not Unit.Jar[u.M()][u.L()][u.N()][u.getName()].isChecked()):
+                    #find out what Language file object has this design?
+                    self._ProcessedFiles[u.getFile()].decipher()
+                    
+            uses = []
+            return uses
+        
+
+        if(verbose):
+            log.info("Deciphering VHDL file... "+self.getPath())
+
+        #parse into words
+        cs = self.generateCodeStream(False, False, *self._std_delimiters)
+
         #find all design unit names (package calls or entity calls) and trace it back in design_book to the
         #block that is covers, this is a dependency,
 
@@ -39,29 +150,11 @@ class Vhdl(Language):
         #units being used with the "use" keyword span over the following unit in the file and resets
         use_packages = []
 
-        #key: library.package, value: list of component names
-        components_on_standby = dict()
-
         in_pkg = in_body = in_true_body = False
         in_entity = in_arch = in_true_arch = in_config = False
         unit_name = arch_name = body_name = config_name =  None
         isEnding = False
 
-        def resetNamespace(uses):
-            global components_on_standby
-            #reset to no available components at disposal from any package files
-            components_on_standby = dict()
-            #the current unit is now complete ("checked")
-            design_book[cur_lib][unit_name].setChecked(True)
-            #now try to check the unit's dependencies
-            for u in uses:
-                if(u not in design_book[cur_lib][unit_name].getRequirements()):
-                    design_book[cur_lib][unit_name].addRequirement(u)
-                #only enter recursion if the unit has not already been completed ("checked")
-                if(not design_book[u.getLib()][u.getName()].isChecked()):
-                    u.getLang().decipher(design_book,u.getLib(), verbose)
-            uses = []
-            return uses
         #print("###")
         #print(design_book)
 
@@ -71,17 +164,19 @@ class Vhdl(Language):
 
             #add to file's global library calls
             if(code_word == 'library'):
-                if(cs[i+1] in design_book.keys()):
+                if(cs[i+1] in Unit.allL()):
                     library_declarations.append(cs[i+1])
             elif(code_word == 'use'):
                 # this is a unit being used for the current unit being evaluated
                 L,U,_ = splitBlock(cs[i+1])
-                if(L in design_book.keys()):
+                if(L in Unit.allL()):
                     #add this package as a key/value pair with its components if it has the ".all"
                     if(cs[i+1].endswith(".all")):
-                        components_on_standby[L+'.'+U] = self.grabComponents(design_book[L][U].getFile())
+                        # [!] :todo: use a "locate" method using shortcutting and prompting user if multiple components are in question
+                        components_on_standby[L+'.'+U] = self.grabComponents(Unit.Jar[L][U].getFile())
                     #add the package unit itself
-                    use_packages.append(design_book[L][U])
+                    # [!] :todo: use a "locate" method using shortcutting and prompting user if multiple components are in question
+                    use_packages.append(Unit.Jar[L][U])
             elif(code_word == 'entity'):
                 # this is ending a entity declaration
                 if(isEnding):
@@ -108,12 +203,12 @@ class Vhdl(Language):
                 elif(not in_config):
                     in_config = True
                     config_name = cs[i+1]
-                    design_book[cur_lib][unit_name].setConfig(config_name)
+                    current_map[unit_name].setConfig(config_name)
                 pass
             elif(code_word == 'port'):
                 #this entity has a ports list and therefore is not a testbench
                 if(in_entity):
-                    design_book[cur_lib][unit_name].unsetTB()
+                    current_map[unit_name].unsetTB()
             elif(code_word == ":"):
                 # :todo: entity instantiations from within deep architecture using full title (library.pkg.entity)
                 if(in_true_arch):
@@ -151,13 +246,13 @@ class Vhdl(Language):
                     #ex: architecture rtl of entity1
                     #skip 'of' keyword and identify entity name
                     whos_arch = cs[i+3]
-                    design_book[cur_lib][whos_arch].addArchitecture(arch_name)
+                    current_map[whos_arch].addArchitecture(arch_name)
                 pass
             elif(code_word == "component"):
                 # :todo: - component declarations from within shallow architecture
                 #the entity exists in the current library
-                if(in_arch and cs[i+1] in design_book[cur_lib].keys()):
-                    use_packages.append(design_book[cur_lib][cs[i+1]])
+                if(in_arch and cs[i+1] in current_map.keys()):
+                    use_packages.append(current_map[cs[i+1]])
                 pass
             elif(code_word == "begin"):
                 # this is entering the deep architecture
@@ -231,6 +326,7 @@ class Vhdl(Language):
         #print("===LIBS====",library_declarations)
         return design_book
 
+
     #return a list of components available by this package
     def grabComponents(self, filepath):
         #reassign file path so code stream comes from right file
@@ -261,6 +357,7 @@ class Vhdl(Language):
         #restore file path back to its original assignment
         self._file_path = tmp_file
         return comps
+
 
     #append a signal/generic string to a list of its respective type
     def addSignal(self, stash, c, stream, true_stream, declare=False, isSig=False):
@@ -305,6 +402,7 @@ class Vhdl(Language):
             stash.append(line)
         return stash
 
+
     #generate string of component's signal declarations to be interfaced with the port
     def writeComponentSignals(self):
         #keep cases and keep terminators
@@ -348,6 +446,7 @@ class Vhdl(Language):
             signals_txt = signals_txt + sig + '\n'
         #print(signals_txt)
         return signals_txt
+
 
     #write out the mapping instance of an entity (can be pure instance using 'entity' keyword also)
     def writeComponentMapping(self, pureEntity=False, lib=''):

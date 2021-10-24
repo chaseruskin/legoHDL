@@ -12,8 +12,12 @@ import logging as log
 
 class Verilog(Language):
 
-    def __init__(self, fpath):
+    def __init__(self, fpath, ):
         super().__init__(fpath)
+        #run with VERILOG decoder
+        self._comment = "//"
+        self._multi_comment = ("/*","*/")
+        
         self._std_delimiters = *self._std_delimiters,'#','[',']'
         self._param_end = -1
         self._port_end = -1

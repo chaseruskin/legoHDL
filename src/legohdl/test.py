@@ -14,6 +14,10 @@ from .apparatus import Apparatus as apt
 import os
 from .workspace import Workspace
 from .label import Label
+from .language import Language
+from .vhdl import Vhdl
+from .verilog import Verilog
+from .unit import Unit
 
 
 def main():
@@ -210,5 +214,24 @@ def main():
     
     if(True):
         print('\n---ENTITY CLASS---')
+        fp1 = '/Users/chase/Develop/eel4712c/lab1/src/fa.vhd'
+        fp2 = '/Users/chase/Develop/eel4712c/lab3/src/adder.vhd'
+        fp3 = '/Users/chase/Develop/eel4712c/lab4/src/top_level.vhd'
+
+        v1 = Vhdl(fp1, L='eel4712c', N='lab1')
+        #v2= Vhdl(fp2, L='eel4712c', N='lab3')
+        v3 = Vhdl(fp3, M='uf-ece', L='eel4712c', N='lab2')
+        print(v1)
+        #print(v3)
+
+        print(Unit.Jar['']['EEL4712C']['LAB1']['fA'])
+        print("__Processed__")
+        print(Language._ProcessedFiles)
+
+        print(Unit.allL())
+
+        print(Unit.FlippedJar)
+
+        print(Unit.shortcut(e='fa', n='lab1'))
 
     pass
