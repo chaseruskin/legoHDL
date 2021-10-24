@@ -289,7 +289,7 @@ class Workspace:
             intervals += [spacing*i]
         
         #ensure log file exists
-        if(os.path.exists(self.getDir()+self.LOG_FILE)):
+        if(os.path.exists(self.getDir()+self.LOG_FILE) == False):
             open(self.getDir()+self.LOG_FILE, 'w').close()
 
         #read log file
@@ -334,6 +334,11 @@ class Workspace:
             for mrkt in self.getMarkets():
                 mrkt.refresh()
                 pass
+
+            #write updated time value to log file
+            with open(self.getDir()+self.LOG_FILE, 'w') as lf:
+                lf.write(str(cur_time))
+
         pass
 
 

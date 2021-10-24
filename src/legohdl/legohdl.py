@@ -28,11 +28,6 @@ from .map import Map
 
 class legoHDL:
 
-    class CMD(Enum):
-
-
-        pass
-
     #! === INITIALIZE ===
 
     def __init__(self):
@@ -61,6 +56,8 @@ class legoHDL:
             #next is the "item" (may not be used for all commands)
             elif(i == 1):
                 self._item = arg
+            else:
+                break
 
         #only display the program's version and exit
         if(self._command == '--version'):
@@ -71,8 +68,6 @@ class legoHDL:
         self.parseArgs(sys.argv[1:])
 
         print(self)
-
-        exit()
 
         #load legohdl.cfg
         #ensure all necessary hidden folder structures exist
@@ -98,9 +93,6 @@ class legoHDL:
 
         Workspace.printAll()
 
-        if(Workspace.inWorkspace()):
-            Workspace.getActive().autoRefresh(rate=0)
-
         #save all legohdl.cfg changes
         apt.save()
         Workspace.save()
@@ -112,13 +104,22 @@ class legoHDL:
             self.db = Registry(Workspace.getActive().getMarkets())
 
         #limit functionality if not in a workspace
-        if(not Workspace.inWorkspace() and (command != '' and command != 'config' and command != 'profile' and command != 'help' and (command != 'open' or ("settings" not in options and "template" not in options)))):
-            exit()
+        if(not Workspace.inWorkspace()):
+            if(self._command == '' or \
+                self._command == 'config' or \
+                self._command == 'help' or \
+                self._command == 'open' and (self._flags.count('settings') or self._flags.count('template'))):
+                pass
+            else:
+                exit(log.error("Failed to run command because active workspace is not set."))
+        else:
+            Workspace.getActive().autoRefresh(rate=apt.getRefreshRate())
 
         if(sys.argv[1:].count('debug')):
             test()
         else:
-            self.parse(command, package, options)
+            exit()
+            self.runCommand()
         pass
 
 
@@ -142,10 +143,10 @@ class legoHDL:
                     #find the first '=' and partition into key,value
                     eq_i = arg.find('=')
                     key, val = arg[1:eq_i], arg[eq_i+1:]
+                    arg = '-'+key #update value to put into flags list
                     self._vars[key] = val
-                else:
-                    #store lower-case of flag for evaluation purposes
-                    self._flags.append(arg[1:].lower())
+                #store lower-case of flag for evaluation purposes
+                self._flags.append(arg[1:].lower())
                 pass
         pass
 
