@@ -8,23 +8,21 @@
 import os, sys, shutil
 import git
 import logging as log
-from enum import Enum
-from .block import Block
 from .__version__ import __version__
+from .block import Block
 from .registry import Registry
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
-
+from .map import Map
 from .unit import Unit
 from .gui import GUI
 from .test import main as test
-
 from .market import Market
 from .workspace import Workspace
 from .profile import Profile
 from .script import Script
 from .label import Label
-from .map import Map
+
 
 class legoHDL:
 
@@ -69,7 +67,7 @@ class legoHDL:
 
         print(self)
 
-        self.helpPrompt()
+        self._help()
 
         #load legohdl.cfg
         #ensure all necessary hidden folder structures exist
@@ -1650,6 +1648,139 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
     pass
 
 
+    def checkVar(self, key, val):
+        '''
+        Checks if val equals the value stored behind the key in the
+        _vars map. Returns false if key DNE.
+        
+        Parameters:
+            key (str): key to check value behind in _vars
+            val (str): value to compare with
+        Returns:
+            (bool): if val was equal to key's value in _vars
+        '''
+        if(key not in self._vars.keys()):
+            return False
+        else:
+            return val == self._vars[key]
+
+
+    def itemEmpty(self):
+        return self._item == ''
+
+
+    def _config(self):
+        '''Run 'config' command.'''
+
+        pass
+
+
+    def _refresh(self):
+        '''Run 'refresh' command.'''
+
+        #package value is the market looking to refresh
+        #if package value is null then all markets tied to this workspace refresh by default
+        if(self._flags.count('all')):
+            log.info("Refreshing all markets...")
+            for mkrt in Market.Jar.values():
+                mkrt.refresh()
+        elif(self.itemEmpty()):
+            log.info("Refreshing all workspace markets...")
+            for mrkt in Workspace.getActive().getMarkets():
+                mrkt.refresh()
+        elif(self._item.lower() in Market.Jar.keys()):
+            Market.Jar[self._item].refresh()
+        pass
+
+
+    def _list(self):
+        '''Run 'list' command.'''
+
+        if(self._flags.count("script")):
+            Script.printList()
+        elif(self._flags.count("label")):
+            Label.printList()
+        elif(self._flags.count("market")):
+            Market.printList(Workspace.getActive().getMarkets())
+        elif(self._flags.count("workspace")):
+            Workspace.printList()
+        elif(self._flags.count("profile")):
+            Profile.printList()
+        elif(self._flags.count("template")):
+            apt.getTemplateFiles()
+            #categorize by hidden files (skipped)
+            #and visible files (files that are copied in on using template)
+        else:
+            M,L,N,_ = Block.snapTitle(self._item)
+            self.inventory(M,L,N,self._flags)
+        pass
+
+
+    def _open(self):
+        '''Run 'open' command.'''
+
+        valid_editor = apt.getEditor() != cfg.NULL
+        #open the settings (default is gui mode)
+        if(self._flags.count("settings")):
+            gui_mode = True
+            if('settings' in self._vars.keys()):
+                gui_mode = not self.checkVar('settings', 'file')
+            #try to open in gui
+            if(gui_mode):
+                settings_gui = GUI()
+                #adjust success if initialization failed
+                gui_mode = settings_gui.initialized() 
+
+            if(valid_editor and gui_mode == False):
+                log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
+                apt.execute(apt.getEditor(), apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
+            pass
+        #cannot open anything without a text-editor!
+        if(valid_editor == False):
+            exit(log.error("No text-editor configured!"))
+            pass
+        #open template
+        if(self._flags.count("template")):
+            log.info("Opening block template folder at... "+apt.fs(apt.TEMPLATE))
+            apt.execute(apt.getEditor(), apt.fs(apt.TEMPLATE))
+            pass
+        #open scripts
+        elif(self._flags.count("script")):
+            #want to open the specified script?
+            script_path = apt.fs(apt.HIDDEN+"scripts")
+
+            #maybe open up the script file directly if given a value
+            if(self._item.lower() in Script.Jar.keys()):
+                #able to open script?
+                scpt = Script.Jar[self._item.lower()]
+                if(scpt.hasPath()):
+                    script_path = scpt.getPath()
+                    log.info("Opening script "+self._item+" at... "+script_path)
+                else:
+                    exit(log.error("Script "+self._item+" has no path to open."))
+            elif(self.itemEmpty() == False):
+                exit(log.error("Script "+self._item+" does not exist."))
+
+            apt.execute(apt.getEditor(),script_path)
+            pass
+        #open profile
+        elif(self._flags.count("profile")):
+            #open the specified path to the profile if it exists
+            if(self._item.lower() in Profile.Jar.keys()):
+                prfl_path = Profile.Jar[self._item].getPath()
+                log.info("Opening profile "+self._item+" at... "+prfl_path)
+                apt.execute(apt.getEditor(), prfl_path)
+            else:
+                log.error("Profile "+self._item+" does not exist.")
+            pass
+        #open block
+        elif(False): # :todo:
+            self.blockPKG.load()
+        else:
+            exit(log.error("No block "+self._item+" exists in your workspace."))
+        pass
+
+
     def runCommand(self):
         '''
         Select from available commands what method to run.
@@ -1671,7 +1802,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
 
         elif('open' == cmd):
-
+            self._open()
             pass
 
         elif('get' == cmd):
@@ -1699,11 +1830,11 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
 
         elif('list' == cmd):
-            
+            self._list()
             pass
 
         elif('refresh' == cmd):
-            
+            self._refresh()
             pass
 
         elif('install' == cmd):
@@ -1727,24 +1858,24 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
 
         elif('config' == cmd):
-            
+            self._config()
             pass
 
         elif('help' == cmd):
-            self.helpPrompt()
+            self._help()
             pass
         
         else:
-            self.defaultPrompt()
+            self._default()
             #notify user when a bad command was entered
             if(cmd != ''):
-                log.error("Unknown command: "+cmd)
+                log.error("Unknown command: "+cmd+".")
             pass
 
 
     #! === HELP COMMAND ===
 
-    def helpPrompt(self):
+    def _help(self):
         '''
         Reads from provided manual.txt regarding the _item passed by
         user, given that the _command was 'help'.
@@ -1777,12 +1908,12 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                     else:
                         print(line,end='')       
             else:
-                self.defaultPrompt()
+                self._default()
 
         pass
 
 
-    def defaultPrompt(self):
+    def _default(self):
         '''
         Display quick overview of legoHDL capabilites/commands.
 
@@ -1822,273 +1953,286 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         pass
 
 
-    def commandHelp(self, cmd):
-        '''
-        This method performs the help command. It prints additional information
-        regarding a requrest command, such as description, format, and 
-        arguments.
-        '''
-        def printFmt(cmd,val,options='',quiet=False):
-            if(not quiet):
-                print("USAGE:")
-            print("\tlegohdl "+cmd+" "+val+" "+options)
-            pass
+def main():
+    legoHDL()
 
-        def rollover(txt,limit=60):
-            cur_line = 0
-            print("\nDESCRIPTION:")
-            for word in txt.split():
-                cur_line = cur_line + len(word) + 1
-                if(cur_line > limit):
-                    cur_line = len(word) + 1
-                    print()
-                print(word,end=' ')
-            print()
-            print("\nARGUMENTS:")
-            pass
+#entry-point
+if __name__ == "__main__":
+    main()
 
-        if(cmd == ''):
-            return
-        elif(cmd == "init"):
-            printFmt("init", "<block>","[-<remote>]")
-            printFmt("init","<value>","(-market | -remote | -summary)",quiet=True)
-            printFmt("init","<file>","-file [-<template-file>]",quiet=True)
-            rollover("""
+
+
+
+# ===== ARCHIVED CODE....TO DELETE ======
+
+@DeprecationWarning
+def commandHelp(self, cmd):
+    '''
+    This method performs the help command. It prints additional information
+    regarding a requrest command, such as description, format, and 
+    arguments.
+    '''
+    def printFmt(cmd,val,options='',quiet=False):
+        if(not quiet):
+            print("USAGE:")
+        print("\tlegohdl "+cmd+" "+val+" "+options)
+        pass
+
+    def rollover(txt,limit=60):
+        cur_line = 0
+        print("\nDESCRIPTION:")
+        for word in txt.split():
+            cur_line = cur_line + len(word) + 1
+            if(cur_line > limit):
+                cur_line = len(word) + 1
+                print()
+            print(word,end=' ')
+        print()
+        print("\nARGUMENTS:")
+        pass
+
+    if(cmd == ''):
+        return
+    elif(cmd == "init"):
+        printFmt("init", "<block>","[-<remote>]")
+        printFmt("init","<value>","(-market | -remote | -summary)",quiet=True)
+        printFmt("init","<file>","-file [-<template-file>]",quiet=True)
+        rollover("""
 If no flags are raised, transform the working directory into a valid block. This will
 create a git repository if not available, and create the Block.cfg file. If there is a git
 repository and it is linked to a remote, the remote will also automatically be configured within the
 Block.cfg file. If providing a market name, prepend it to the block's title. If there is a supported 
 raised flag for <value>, then the block's respective field will be altered with the <value>. 
-            """)
-            print('{:<16}'.format("<block>"),"the block's title to be initialized from the current folder")
-            print('{:<16}'.format("<value>"),"value to be given to current block based on the flag raised")
-            print('{:<16}'.format("<file>"),"file path to create new file within block")
-            print()
-            print('{:<16}'.format("-<remote>"),"an empty git url to set for this block")
-            print('{:<16}'.format("-market"),"provide a market name as <value> available from the workspace")
-            print('{:<16}'.format("-remote"),"provide a valid git URL as <value> to set for this block")
-            print('{:<16}'.format("-summary"),"provide a string as <value> to set for this block's summary")
-            print('{:<16}'.format("-file"),"create a new file for the current block")
-            print('{:<16}'.format("-<template-file>"),"define template file to use upon file creation")
-            pass
-        elif(cmd == "new"):
-            printFmt("new","<block>","[-open -<remote> -no-template]")
-            rollover("""
+        """)
+        print('{:<16}'.format("<block>"),"the block's title to be initialized from the current folder")
+        print('{:<16}'.format("<value>"),"value to be given to current block based on the flag raised")
+        print('{:<16}'.format("<file>"),"file path to create new file within block")
+        print()
+        print('{:<16}'.format("-<remote>"),"an empty git url to set for this block")
+        print('{:<16}'.format("-market"),"provide a market name as <value> available from the workspace")
+        print('{:<16}'.format("-remote"),"provide a valid git URL as <value> to set for this block")
+        print('{:<16}'.format("-summary"),"provide a string as <value> to set for this block's summary")
+        print('{:<16}'.format("-file"),"create a new file for the current block")
+        print('{:<16}'.format("-<template-file>"),"define template file to use upon file creation")
+        pass
+    elif(cmd == "new"):
+        printFmt("new","<block>","[-open -<remote> -no-template]")
+        rollover("""
 Create a new block into the base of the workspace's local path. The block's default 
 created path is <workspace-path>/<block-library>/<block-name>. The template folder 
 will be copied and a git repository will be created. If providing a remote git URL, make sure
 it is an empty repository. If you have a nonempty repository, try the 'init' command. If
 providing a market name, prepend it to the block's title.
-            """)
-            print('{:<16}'.format("<block>"),"the block's title to be created")
-            print()
-            print('{:<16}'.format("-open"),"open the new block upon creation")
-            print('{:<16}'.format("-<remote>"),"provide a blank git URL to be configured")
-            print('{:<16}'.format("-no-template"),"do not import configured template")
-            pass
-        elif(cmd == "open"):
-            printFmt("open","<block>")
-            printFmt("open","[<script-name>] -script",quiet=True)
-            printFmt("open","<profile-name> -profile",quiet=True)
-            printFmt("open","(-template | -settings)",quiet=True)
-            rollover("""
+        """)
+        print('{:<16}'.format("<block>"),"the block's title to be created")
+        print()
+        print('{:<16}'.format("-open"),"open the new block upon creation")
+        print('{:<16}'.format("-<remote>"),"provide a blank git URL to be configured")
+        print('{:<16}'.format("-no-template"),"do not import configured template")
+        pass
+    elif(cmd == "open"):
+        printFmt("open","<block>")
+        printFmt("open","[<script-name>] -script",quiet=True)
+        printFmt("open","<profile-name> -profile",quiet=True)
+        printFmt("open","(-template | -settings)",quiet=True)
+        rollover("""
 Open a variety of legohdl folders/files. With no flags raised, the block will be opened if
 it is found in the workspace's local path. If the script flag is raised with no <script>,
 it will open the built-in script folder. If a valid <script-name> is specified with the script 
 flag raised, it will directly open its file. If a valid <profile-name> is specified with the profile
 flag raised, it will open the profile to make edits.
-            """)
-            print('{:<16}'.format("<block>"),"the block's title to be opened by the text-editor")
-            print('{:<16}'.format("<script-name>"),"script's name found in legohdl settings")
-            print('{:<16}'.format("<profile-name>"),"available profile found in legohdl settings")
-            print()
-            print('{:<16}'.format("-template"),"open the template folder")
-            print('{:<16}'.format("-script"),"open the built-in script folder if no script specified")
-            print('{:<16}'.format("-profile"),"open the specified profile to edit")
-            print('{:<16}'.format("-settings"),"open the settings CFG file")
-            pass
-        elif(cmd == "release"):
-            printFmt("release","[<message>]","(-v0.0.0 | -maj | -min | -fix) [-strict -soft]")
-            rollover("""
+        """)
+        print('{:<16}'.format("<block>"),"the block's title to be opened by the text-editor")
+        print('{:<16}'.format("<script-name>"),"script's name found in legohdl settings")
+        print('{:<16}'.format("<profile-name>"),"available profile found in legohdl settings")
+        print()
+        print('{:<16}'.format("-template"),"open the template folder")
+        print('{:<16}'.format("-script"),"open the built-in script folder if no script specified")
+        print('{:<16}'.format("-profile"),"open the specified profile to edit")
+        print('{:<16}'.format("-settings"),"open the settings CFG file")
+        pass
+    elif(cmd == "release"):
+        printFmt("release","[<message>]","(-v0.0.0 | -maj | -min | -fix) [-strict -soft]")
+        rollover("""
 Creates a valid legohdl release point to be used in other designs. This will auto-detect 
 the toplevel unit, testbench unit, and determine the exact version dependencies required. 
 It will then stage, commit, and tag any changes. If the block has a valid remote, it will 
 push to the remote. If the block has a valid market, the Block.cfg file will be updated there.
 If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.
-            """)
-            print('{:<16}'.format("<message>"),"the message for the release point's tagged commit")
-            print()
-            print('{:<16}'.format("-v0.0.0"),"manual setting for the next version (replace 0's)")
-            print('{:<16}'.format("-maj"),"bump version to next major ^.0.0")
-            print('{:<16}'.format("-min"),"bump version to next minor -.^.0")
-            print('{:<16}'.format("-fix"),"bump version to next patch -.-.^")
-            print('{:<16}'.format("-strict"),"won't add any unstaged changes into the release")
-            print('{:<16}'.format("-soft"),"push a side branch to the linked market for merge")
-            pass
-        elif(cmd == "list"):
-            printFmt("list","[[<search>]","[-alpha -install -download]] [-script | -label | -market | -workspace | -profile | -template]")
-            rollover("""
+        """)
+        print('{:<16}'.format("<message>"),"the message for the release point's tagged commit")
+        print()
+        print('{:<16}'.format("-v0.0.0"),"manual setting for the next version (replace 0's)")
+        print('{:<16}'.format("-maj"),"bump version to next major ^.0.0")
+        print('{:<16}'.format("-min"),"bump version to next minor -.^.0")
+        print('{:<16}'.format("-fix"),"bump version to next patch -.-.^")
+        print('{:<16}'.format("-strict"),"won't add any unstaged changes into the release")
+        print('{:<16}'.format("-soft"),"push a side branch to the linked market for merge")
+        pass
+    elif(cmd == "list"):
+        printFmt("list","[[<search>]","[-alpha -install -download]] [-script | -label | -market | -workspace | -profile | -template]")
+        rollover("""
 Provide a formatted view for a variety of groups. The default is to list the active
 workspace's blocks. When listing blocks, you can also search by providing a partial block 
 title  as <search> and alphabetically organize results with the alpha flag. Raising script, 
 label, market, or workspace, will print their respective group found within the settings.
-            """)
-            print('{:<16}'.format("<search>"),"partial or full block title to be searched")
-            print()
-            print('{:<16}'.format("-alpha"),"alphabetically organize blocks")
-            print('{:<16}'.format("-script"),"view scripts as name, command, path")
-            print('{:<16}'.format("-label"),"view labels as label, extension, recursive")
-            print('{:<16}'.format("-market"),"view markets as market, url, linked to workspace")
-            print('{:<16}'.format("-workspace"),"view workspaces as workspace, active, path, markets")
-            print('{:<16}'.format("-profile"),"view available profiles to overload configurations")
-            print('{:<16}'.format("-template"),"list all available files found in current template")
-            pass
-        elif(cmd == "install"):
-            printFmt("install","((<block>","[-v0.0.0]) | -requirements)")
-            rollover("""
+        """)
+        print('{:<16}'.format("<search>"),"partial or full block title to be searched")
+        print()
+        print('{:<16}'.format("-alpha"),"alphabetically organize blocks")
+        print('{:<16}'.format("-script"),"view scripts as name, command, path")
+        print('{:<16}'.format("-label"),"view labels as label, extension, recursive")
+        print('{:<16}'.format("-market"),"view markets as market, url, linked to workspace")
+        print('{:<16}'.format("-workspace"),"view workspaces as workspace, active, path, markets")
+        print('{:<16}'.format("-profile"),"view available profiles to overload configurations")
+        print('{:<16}'.format("-template"),"list all available files found in current template")
+        pass
+    elif(cmd == "install"):
+        printFmt("install","((<block>","[-v0.0.0]) | -requirements)")
+        rollover("""
 Clones the block's main branch to the cache. If the main branch is already found in the cache,
 it will not clone/pull from the remote repository (see 'update' command). Checkouts and copies 
 the version (default is latest if unspecified) to have its own location in the cache. The 
 entities of the install version are appeneded with its appropiate version (_v0_0_0). Each 
 version install may also update the location for its major value (_v0) if its the highest yet.
 If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.
-            """)
-            print('{:<16}'.format("<block>"),"the block's title to be installed to cache")
-            print()
-            print('{:<16}'.format("-v0.0.0"),"specify what version to install (replace 0's)")
-            print('{:<16}'.format('-requirements'),'reads the "derives" list and installs all dependent blocks')
-            pass
-        elif(cmd == "uninstall"):
-            printFmt("uninstall","<block>","[-v0.0.0]")
-            rollover("""
+        """)
+        print('{:<16}'.format("<block>"),"the block's title to be installed to cache")
+        print()
+        print('{:<16}'.format("-v0.0.0"),"specify what version to install (replace 0's)")
+        print('{:<16}'.format('-requirements'),'reads the "derives" list and installs all dependent blocks')
+        pass
+    elif(cmd == "uninstall"):
+        printFmt("uninstall","<block>","[-v0.0.0]")
+        rollover("""
 Removes installed versions from the cache. If no version is specified, then ALL versions will be
 removed as well as the cached main branch. Specifying a version will only remove that one, if its
 been installed. Can also remove by major version value (ex: -v1). If the -v0.0.0 flag is not 
 properly working, -v0_0_0 is also valid.
-            """)
-            print('{:<16}'.format("<block>"),"the block's title to be uninstalled from cache")
-            print()
-            print('{:<16}'.format("-v0.0.0"),"specify what version to uninstall (replace 0's)")
-            pass
-        elif(cmd == "download"):
-            printFmt("download","<block>","[-open]")
-            rollover("""
+        """)
+        print('{:<16}'.format("<block>"),"the block's title to be uninstalled from cache")
+        print()
+        print('{:<16}'.format("-v0.0.0"),"specify what version to uninstall (replace 0's)")
+        pass
+    elif(cmd == "download"):
+        printFmt("download","<block>","[-open]")
+        rollover("""
 Grab a block from either its remote url (found via market) or from the cache. The block will
 be downloaded to <workspace-path>/<block-library>/<block-name>. If the block is not installed to
 the cache, it will also install the latest version to the cache.
-            """)
-            print('{:<16}'.format("<block>"),"the block's title to be downloaded to the local path")
-            print()
-            print('{:<16}'.format("-open"),"open the block after download for development")
-            pass
-        elif(cmd == "run"):
-            printFmt("run","[+<script-name>]","[...]")
-            rollover("""
+        """)
+        print('{:<16}'.format("<block>"),"the block's title to be downloaded to the local path")
+        print()
+        print('{:<16}'.format("-open"),"open the block after download for development")
+        pass
+    elif(cmd == "run"):
+        printFmt("run","[+<script-name>]","[...]")
+        rollover("""
 Generate a blueprint file through 'export' and then build the design with a custom configured script
 through 'build' all in this command. The toplevel and testbench will be auto-detected and ask
 the user to select one if multiple exist. If no script name is specified, it will default look for
 the script named 'master'. If only 1 script is configured, it will default to that script regardless of name.
-            """)
-            print('{:<16}'.format("+<script-name>"),"the script name given by the user to legohdl")
-            print()
-            print('{:<16}'.format("..."),"arguments to be passed to the called script")
-        elif(cmd == "graph"):
-            printFmt("graph","[<toplevel>] [-ignore-tb]")
-            rollover("""
+        """)
+        print('{:<16}'.format("+<script-name>"),"the script name given by the user to legohdl")
+        print()
+        print('{:<16}'.format("..."),"arguments to be passed to the called script")
+    elif(cmd == "graph"):
+        printFmt("graph","[<toplevel>] [-ignore-tb]")
+        rollover("""
 Create the dependency tree for the current design. This command is used as an aide and will not
 alter the Block.cfg file. The toplevel and testbench will be auto-detected and ask
 the user to select one if multiple exist. It helps the user gain a better picture of how the design
 will be ultimately combined. If the toplevel is not a testbench, legohdl will attempt to find its
 respective testbench and add it to the graph.
-            """)
-            print('{:<16}'.format("<toplevel>"),"explicitly set the toplevel entity/module")
-            print()
-            print('{:<16}'.format("-ignore-tb"),"do not include toplevel testbenchs")
-        elif(cmd == "update"):
-            printFmt("update","<block>")
-            printFmt("update","<profile> -profile",quiet=True)
-            rollover("""
+        """)
+        print('{:<16}'.format("<toplevel>"),"explicitly set the toplevel entity/module")
+        print()
+        print('{:<16}'.format("-ignore-tb"),"do not include toplevel testbenchs")
+    elif(cmd == "update"):
+        printFmt("update","<block>")
+        printFmt("update","<profile> -profile",quiet=True)
+        rollover("""
 Update an installed block to have the latest version available. In order for a block to be updated
 it must be installed. All previous version installations will be unaffected. Can also update a profile
 if it is a repository and has a remote URL.
-            """)
-            print('{:<16}'.format("<block>"),"the cached block to have its tracking master branch updated")
-            print('{:<16}'.format("<profile>"),"the profile to be updated from its remote git URL")
-            print()
-            print('{:<16}'.format("-profile"),"indicate that a profile is being targeted for an update")
-            pass
-        elif(cmd == "export"):
-            printFmt("export","[<toplevel>] [-ignore-tb]")
-            rollover("""
+        """)
+        print('{:<16}'.format("<block>"),"the cached block to have its tracking master branch updated")
+        print('{:<16}'.format("<profile>"),"the profile to be updated from its remote git URL")
+        print()
+        print('{:<16}'.format("-profile"),"indicate that a profile is being targeted for an update")
+        pass
+    elif(cmd == "export"):
+        printFmt("export","[<toplevel>] [-ignore-tb]")
+        rollover("""
 Create the dependency tree for the current design and generate the blueprint file. The blueprint is stored
 into a clean directory called 'build' on every export. It will update the Block.cfg files with the
 current dependencies being used to export the design. The toplevel and testbench will be auto-detected and ask
 the user to select one if multiple exist. If the toplevel is not a testbench, legohdl will attempt to find its
 respective testbench and add it to the graph.
-            """)
-            print('{:<16}'.format("<toplevel>"),"explicitly set the toplevel entity/module")
-            print()
-            print('{:<16}'.format("-ignore-tb"),"do not include toplevel testbenchs")
-            pass
-        elif(cmd == "build"):
-            printFmt("build","[+<script-name>]","[...]")
-            rollover("""
+        """)
+        print('{:<16}'.format("<toplevel>"),"explicitly set the toplevel entity/module")
+        print()
+        print('{:<16}'.format("-ignore-tb"),"do not include toplevel testbenchs")
+        pass
+    elif(cmd == "build"):
+        printFmt("build","[+<script-name>]","[...]")
+        rollover("""
 Build the design with a custom configured script. If no script name is specified, it will default look for
 the script named 'master'. If only 1 script is configured and no script name is specified, it will default 
 to that script regardless of name.
-            """)
-            print('{:<16}'.format("+<script-name>"),"the script name given by the user to legohdl")
-            print()
-            print('{:<16}'.format("..."),"arguments to be passed to the called script")
-            pass
-        elif(cmd == "del"):
-            printFmt("del","<block>","[-uninstall]")
-            printFmt("del","<value>","(-market | -script | -label | -workspace | -profile)",quiet=True)
-            rollover("""
+        """)
+        print('{:<16}'.format("+<script-name>"),"the script name given by the user to legohdl")
+        print()
+        print('{:<16}'.format("..."),"arguments to be passed to the called script")
+        pass
+    elif(cmd == "del"):
+        printFmt("del","<block>","[-uninstall]")
+        printFmt("del","<value>","(-market | -script | -label | -workspace | -profile)",quiet=True)
+        rollover("""
 Delete a block from the local path, typically used after releasing a new version and development
 is complete. If deleting a workspace, the local path will be preserved but all legohdl settings and structure
 regarding the workspace will be forgotten. If deleting a market, it will be no longer available
 for any workspaces. If deleting a script or label, the set values will be removed. A script
 will not be deleted from its path.
-            """)
-            print('{:<16}'.format("<block>"),"the block's title to remove from local path")
-            print('{:<16}'.format("<value>"),"a previously defined legohdl setting value")
-            print()
-            print('{:<16}'.format("-uninstall"),"fully uninstall the block from cache")
-            print('{:<16}'.format("-market"),"delete the market from all workspaces and settings")
-            print('{:<16}'.format("-script"),"forget the script")
-            print('{:<16}'.format("-label"),"forget the label")
-            print('{:<16}'.format("-workspace"),"keeps local path, but remove from settings")
-            print('{:<16}'.format("-profile"),"remove the folder found in legoHDL containing this profile")
-        elif(cmd == "port"):
-            printFmt("port","<block>[:<entity>]","[(-map -instance) | -arch]")
-            rollover("""
+        """)
+        print('{:<16}'.format("<block>"),"the block's title to remove from local path")
+        print('{:<16}'.format("<value>"),"a previously defined legohdl setting value")
+        print()
+        print('{:<16}'.format("-uninstall"),"fully uninstall the block from cache")
+        print('{:<16}'.format("-market"),"delete the market from all workspaces and settings")
+        print('{:<16}'.format("-script"),"forget the script")
+        print('{:<16}'.format("-label"),"forget the label")
+        print('{:<16}'.format("-workspace"),"keeps local path, but remove from settings")
+        print('{:<16}'.format("-profile"),"remove the folder found in legoHDL containing this profile")
+    elif(cmd == "port"):
+        printFmt("port","<block>[:<entity>]","[(-map -instance) | -arch]")
+        rollover("""
 Print component information needed by an upper-level design to instantiate an entity. The output is
 designed to be copied and pasted into a source file with little-to-no modification. A specific
 entity can be requested by appending it to its block name.
-            """)
-            print('{:<16}'.format("<block>"),"the block's title telling where to get the entity")
-            print('{:<16}'.format("<entity>"),"explicitly indicate what entity to display")
-            print()
-            print('{:<16}'.format("-map"),"additionally display IO signals and component instantation")
-            print('{:<16}'.format("-instance"),"additionally display IO signals and direct entity instantation")
-            pass
-        elif(cmd == "show"):
-            printFmt("show","<block>","[-version | -v0.0.0]")
-            rollover("""
+        """)
+        print('{:<16}'.format("<block>"),"the block's title telling where to get the entity")
+        print('{:<16}'.format("<entity>"),"explicitly indicate what entity to display")
+        print()
+        print('{:<16}'.format("-map"),"additionally display IO signals and component instantation")
+        print('{:<16}'.format("-instance"),"additionally display IO signals and direct entity instantation")
+        pass
+    elif(cmd == "show"):
+        printFmt("show","<block>","[-version | -v0.0.0]")
+        rollover("""
 Print detailed information (Block.cfg) about a block. Can also print a specific
 version's information if it is intstalled to the cache. Can also show by major version 
 value (ex: -v1). If the -v0.0.0 flag is not properly working, -v0_0_0 is also valid.            
-            """)
-            print('{:<16}'.format("<block>"),"the block's title to show metdata about")
-            print()
-            print('{:<16}'.format("-version"),"List the available versions and which ones are installed.")
-            print('{:<16}'.format("-v0.0.0"),"Show this specific version or constrain the version list to this version")
-            pass
-        elif(cmd == "config"):
-            printFmt("config","<value>","(-market (-add | -remove) | -active-workspace | -author | -editor | -template | -multi-develop | -overlap-recursive | -refresh-rate | -profile)")
-            printFmt("config","<key>="+'"<value>"',"(-script [-link] | -label [-recursive] | -workspace | -market [-add | -remove])",quiet=True)
-            rollover("""
+        """)
+        print('{:<16}'.format("<block>"),"the block's title to show metdata about")
+        print()
+        print('{:<16}'.format("-version"),"List the available versions and which ones are installed.")
+        print('{:<16}'.format("-v0.0.0"),"Show this specific version or constrain the version list to this version")
+        pass
+    elif(cmd == "config"):
+        printFmt("config","<value>","(-market (-add | -remove) | -active-workspace | -author | -editor | -template | -multi-develop | -overlap-recursive | -refresh-rate | -profile)")
+        printFmt("config","<key>="+'"<value>"',"(-script [-link] | -label [-recursive] | -workspace | -market [-add | -remove])",quiet=True)
+        rollover("""
 Configure settings for legoHDL. This is the command-line alternative to opening 
 the legohdl.cfg file for visual editing. If only a market name is given as <value>, then it will
 be used as a reference to either -add or -remove the market from the current workspace. If raising
@@ -2098,48 +2242,40 @@ reference the built-in template folder. Valid <value> for -multi-develop and -ov
 to automatically refresh the markets tied to the workspace. If <value> is -1, then it will perform refresh on every
 legohdl command. Any other value (up to 1440) will evenly space out that many intervals throughout the day to 
 perform refresh.
-            """)
-            print('{:<16}'.format("<value>"),"respective to the raised flag")
-            print('{:<16}'.format("<key>"),"an identifier/name respective to the raised flag")
-            print()
-            print('{:<16}'.format("-market"),"indicate the key or value to be a market")
-            print('{:<16}'.format("-add"),"add the market to the active workspace")
-            print('{:<16}'.format("-remove"),"remove the market from the active workspace")
-            print('{:<16}'.format("-active-workspace"),"the current workspace")
-            print('{:<16}'.format("-author"),"the user's preferred name")
-            print('{:<16}'.format("-editor"),"a text-editor to open various folders and files")
-            print('{:<16}'.format("-template"),"indicate where the template folder is found")
-            print('{:<16}'.format("-profile"),"create a new blank profile with the name from <value>")
-            print('{:<16}'.format("-multi-develop"),"prioritize using downloaded blocks over installed blocks")
-            print('{:<16}'.format("-overlap-recursive"),"include all found labels regardless of possible duplication")
-            print('{:<16}'.format("-refresh-rate"),"integer for how often to automatically refresh markets per day")
-            print('{:<16}'.format("-script"),"indicate the key/value to be a script name and the command")
-            print('{:<16}'.format("-link"),"reference the script from its original location")
-            print('{:<16}'.format("-label"),"indicate the key/value to be a label and glob-pattern")
-            print('{:<16}'.format("-recursive"),"categorize this label to be searched for in all dependencies")
-            print('{:<16}'.format("-workspace"),"provide a workspace name and a local path for key/value")
-            pass
-        elif(cmd == 'profile'):
-            printFmt("profile","<profile>","[-ask]")
-            rollover("""
+        """)
+        print('{:<16}'.format("<value>"),"respective to the raised flag")
+        print('{:<16}'.format("<key>"),"an identifier/name respective to the raised flag")
+        print()
+        print('{:<16}'.format("-market"),"indicate the key or value to be a market")
+        print('{:<16}'.format("-add"),"add the market to the active workspace")
+        print('{:<16}'.format("-remove"),"remove the market from the active workspace")
+        print('{:<16}'.format("-active-workspace"),"the current workspace")
+        print('{:<16}'.format("-author"),"the user's preferred name")
+        print('{:<16}'.format("-editor"),"a text-editor to open various folders and files")
+        print('{:<16}'.format("-template"),"indicate where the template folder is found")
+        print('{:<16}'.format("-profile"),"create a new blank profile with the name from <value>")
+        print('{:<16}'.format("-multi-develop"),"prioritize using downloaded blocks over installed blocks")
+        print('{:<16}'.format("-overlap-recursive"),"include all found labels regardless of possible duplication")
+        print('{:<16}'.format("-refresh-rate"),"integer for how often to automatically refresh markets per day")
+        print('{:<16}'.format("-script"),"indicate the key/value to be a script name and the command")
+        print('{:<16}'.format("-link"),"reference the script from its original location")
+        print('{:<16}'.format("-label"),"indicate the key/value to be a label and glob-pattern")
+        print('{:<16}'.format("-recursive"),"categorize this label to be searched for in all dependencies")
+        print('{:<16}'.format("-workspace"),"provide a workspace name and a local path for key/value")
+        pass
+    elif(cmd == 'profile'):
+        printFmt("profile","<profile>","[-ask]")
+        rollover("""
 Import configuration settings, template, and/or scripts from one location. This is
 the fast and more efficient way to share settings and save different configurations.
 <profile> can be an existing profile, a git remote url pointing to a valid profile, or
 a local path to a valid profile. A profile is valid if the folder contains a .prfl file.
 The name of the .prfl file is the name of the profile itself.            
-            """)
-            print('{:<16}'.format("<profile>"),"an existing profile name, git repository, or path")
-            print()
-            print('{:<16}'.format("-ask"),"prompt the user what portions of profile to import")
-            pass
+        """)
+        print('{:<16}'.format("<profile>"),"an existing profile name, git repository, or path")
         print()
-        exit()
-    pass
-
-
-def main():
-    legoHDL()
-
-#entry-point
-if __name__ == "__main__":
-    main()
+        print('{:<16}'.format("-ask"),"prompt the user what portions of profile to import")
+        pass
+    print()
+    exit()
+pass

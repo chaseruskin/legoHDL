@@ -879,6 +879,11 @@ scripts)?", warning=False)
         tail,_ = os.path.split(file_path)
         return cls.fs(tail)
 
+    
+    @classmethod
+    def getEditor(cls):
+        return cls.SETTINGS['general']['editor']
+
 
     @classmethod
     def rmReadOnly(cls, func, path, execinfo):
