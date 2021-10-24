@@ -727,289 +727,7 @@ scripts)?", warning=False)
         pass
 
     #! === CONFIG COMMAND ===
-
-    def configure(self, options, choice, delete=False):
-        '''
-        This method performs the config command. It is in charge of handling
-        setting settings through the command-line interface.
-        '''
-        if(len(options) == 0):
-            log.error("No field was flagged to as an option to modify.")
-            return
-        
-        choice = choice.replace(apt.ENV_NAME,apt.HIDDEN[:len(apt.HIDDEN)-1])
-
-        eq = choice.find("=")
-        key = choice[:eq]
-        val = choice[eq+1:] #write whole value
-        if(eq == -1):
-            val = None
-            key = choice
-        #chosen to delete setting from legohdl.cfg
-        if(delete):
-            possibles = ['label', 'workspace', 'market', 'script', 'profile']
-            st = options[0].lower()
-            if(st not in possibles):
-                exit(log.error("Cannot use del command on "+st+" setting."))
-            #ensure this is a valid key to remove
-            if(st != 'profile' and choice not in apt.SETTINGS[st].keys()):
-                #check within both branches of label setting, 'shallow' and 'recursive'
-                if(st == 'label'):
-                    if(choice not in apt.SETTINGS[st]['shallow'].keys() and choice not in apt.SETTINGS[st]['recursive'].keys()):
-                        exit(log.error("No key '"+choice+"' exists under '"+st+"' setting."))
-                else:
-                    exit(log.error("No key '"+choice+"' exists under '"+st+"' setting."))
-
-            #delete a key/value pair from the labels
-            if(st == 'label'):
-                if(choice in apt.SETTINGS[st]['recursive'].keys()):
-                    del apt.SETTINGS[st]['recursive'][choice]
-                if(choice in apt.SETTINGS[st]['shallow'].keys()):
-                    del apt.SETTINGS[st]['shallow'][choice]
-            elif(st == 'profile'):
-                choice = choice.lower()
-                if(choice in apt.getProfiles()):
-                    #remove directory
-                    shutil.rmtree(apt.getProfiles()[choice], onerror=apt.rmReadOnly)
-                    #remove from settings
-                    apt.SETTINGS['general'][st+'s'].remove(choice)
-                else:
-                    exit(log.error("Profile "+choice+" does not exist."))
-            #delete a key/value pair from the scripts or workspaces
-            elif(st == 'script' or st == 'workspace' or st == 'market'):
-                if(choice in apt.SETTINGS[st].keys()):
-                    #print("delete")
-                    #update active workspace if user deleted the current workspace
-                    if(st == 'workspace'):
-                        if(apt.SETTINGS['general']['active-workspace'] == choice):
-                            apt.SETTINGS['general']['active-workspace'] = None
-                            #prompt user to verify to delete active workspace
-                            verify = apt.confirmation("Are you sure you want to delete the active workspace?")
-                            if(not verify):
-                                log.info("Command cancelled.")
-                                return
-                        #move forward with workspace removal
-                        bad_directory = apt.HIDDEN+"workspaces/"+choice
-                        #print(bad_directory)
-                        if(os.path.isdir(bad_directory)):
-                            shutil.rmtree(bad_directory, onerror=apt.rmReadOnly)
-                            log.info("Deleted workspace directory: "+bad_directory)
-                    elif(st == 'market'):
-                        #case insensitive
-                        key = key.lower()
-                        Market(key,val).delete()
-                        #remove from all workspace configurations
-                        for nm in apt.SETTINGS['workspace'].keys():
-                            #traverse through all markets listed for this workspace
-                            for mrkt_nm in apt.SETTINGS['workspace'][nm]['market']:
-                                #remove any matches to this newly deleted workspace
-                                if(key == mrkt_nm.lower()):
-                                    apt.SETTINGS['workspace'][nm]['market'].remove(mrkt_nm)
-                            pass
-                    del apt.SETTINGS[st][choice]
-
-            apt.save()
-            log.info("Setting saved successfully.")
-            return
-
-        #chosen to config a setting in legohdl.cfg
-        if(options[0] == 'active-workspace'):
-            if(choice not in apt.SETTINGS['workspace'].keys()):
-                exit(log.error("Workspace "+choice+" not found!"))
-
-        #invalid option flag
-        if(options[0] not in apt.OPTIONS and options[0] != 'profile'):
-            exit(log.error("No field exists as '"+options[0]+"' that can be modified."))
-        elif(options[0] == 'market'):
-            #try to link existing market into markets
-            if(val == None):
-                if(key.lower() not in apt.getMarketNames().keys()):
-                    result = apt.loadMarket(key)
-                    if(result == False):
-                        exit(log.error("Setting not saved."))
-                    key = result
-                    val = apt.getMarkets(workspace_level=False)[key]
-                else:
-                    key = apt.getMarketNames()[key]
-            else:
-                if(val == cfg.NULL):
-                    val = None
-                if(key.lower() in apt.getMarketNames().keys()):
-                    if(key != apt.getMarketNames()[key.lower()]):
-                        exit(log.error("Market name conflicts with market "+apt.getMarketNames()[key.lower()]+"."))
-                    #only create remote in the list
-                    else:
-                        #market name already exists
-                        confirm = apt.confirmation("You are about to reconfigure the already existing market "+key+". Are you sure you want to do this?")
-                        if(not confirm):
-                            exit(log.info("Setting not saved."))
-                    pass
-                else:
-                    log.info("Creating new market "+key+"...")
-                #create market object!  
-                mkt = Market(key,val) 
-                #set to null if the tried remote DNE
-                if(not mkt.isRemote()):
-                    val = None
-                val = mkt.setRemote(val)
-                #update settings to accurately reflect
-                apt.SETTINGS['market'][key] = val
-            
-            # add to active workspace markets
-            if(options.count("add") and key not in apt.getWorkspace('market')): 
-                log.info("Adding "+key+" market to active workspace...")
-                apt.getWorkspace('market').append(key)
-            # remove from active workspace markets
-            elif(options.count("remove") and key in apt.getWorkspace('market')):
-                log.info("Removing "+key+" market to active workspace...")
-                apt.getWorkspace('market').remove(key)
-        # WORKSPACE CONFIGURATION
-        elif(options[0] == 'workspace'):
-            #create entire new workspace settings
-            if(not isinstance(apt.SETTINGS[options[0]],dict)):
-                apt.SETTINGS[options[0]] = dict()
-            #insertion
-            if(val != None):
-                #ensure there is no conflict with making this workspace key/val pair
-                if(apt.isConflict(apt.getWorkspaceNames(), key) == True):
-                    exit(log.error("Setting not saved."))
-                #create new workspace profile
-                for lp in apt.SETTINGS[options[0]].values():
-                    if(lp['path'] != cfg.NULL and lp['path'].lower() == apt.fs(val).lower()):
-                        exit(log.error("A workspace already exists with this path."))
-                #initialize the workspace folders and structure
-                apt.initializeWorkspace(key, apt.fs(val))
-                
-                # :todo: needs to override local path as the newly configured path to perform this functionality
-                #are there any blocks already there at local path?
-                # print(apt.getLocal())
-                # #go through all the found blocks in this already existing path and see if any are "released"
-                # blks = self.db.getBlocks("local")
-                # print(blks)
-                # for sects in blks.values():
-                #     for blk in sects.values():
-                #         #temporarily set the workspace path to properly install any found blocks to cache
-                #         apt.WORKSPACE = apt.HIDDEN+"workspaces/"+key+"/"
-                #         if(Block.biggerVer(blk.getVersion(),'0.0.0') != '0.0.0'):
-                #             #install to cache
-                #             log.info("Found "+blk.getTitle()+" as an already a released block.")
-                #             self.install(blk.getTitle())
-                #    pass
-                for rem in options:
-                    if rem == options[0]:
-                        continue
-                    if rem not in apt.SETTINGS[options[0]][key]['market']:
-                        apt.SETTINGS[options[0]][key]['market'].append(rem)
-            else:
-                exit(log.error("Workspace not added. Provide a local path for the workspace"))
-            pass
-        elif(options[0] == 'profile'):
-            if(choice.lower() not in apt.getProfileNames().keys()):
-                #add to settings
-                apt.loadProfile(choice, append=True)
-            else:
-                exit(log.error("A profile already exists as "+apt.getProfileNames()[choice.lower()]+"."))
-        # BUILD SCRIPT CONFIGURATION
-        elif(options[0] == 'script'):
-            if(val == None):
-                val = ''
-            #parse into cmd and filepath
-            val = val.replace("\"","").replace("\'","")
-            parsed = val.split()
-            if(len(parsed) == 1):
-                exit(log.error("At a minimum requires a command and a path"))
-            #take first component to be the command
-            cmd = parsed[0]
-            filepath = ''
-            file_index = -1
-            for pt in parsed:
-                if(pt == cmd):
-                    continue
-                if(os.path.isfile(os.path.expanduser(pt))):
-                    filepath = os.path.realpath(os.path.expanduser(pt)).replace("\\", "/")
-                    #reinsert nice formatted path into the list of args
-                    file_index = parsed.index(pt)
-                    parsed[file_index] = filepath
-                    break
-            if(filepath == ''):
-                exit(log.error("No script path found in value"))
-
-            _,ext = os.path.splitext(filepath)
-
-            #skip link option- copy file and rename it same as name 
-            if(options.count("link") == 0 and val != ''):   
-                dst = apt.HIDDEN+"scripts/"+key+ext
-                #try to copy and catch exception if its the same file
-                try:
-                    shutil.copyfile(filepath, dst)
-                except shutil.SameFileError:
-                    pass
-                dst = filepath.replace(filepath, dst)
-                #reassign the value for the filepath
-                parsed[file_index] = dst
-
-            #reassemble val with new file properly formatted filepath
-            val = apt.fs(cmd)
-            for pt in parsed:
-                if(pt == cmd):
-                    continue
-                val = val + " " + apt.fs(pt)
-                
-            #initialization
-            if(not isinstance(apt.SETTINGS[options[0]],dict)):
-                apt.SETTINGS[options[0]] = dict()
-            #insertion
-            if(filepath != ''):
-                apt.SETTINGS[options[0]][key] = "\""+val+"\""
-            #deletion
-            elif(isinstance(apt.SETTINGS[options[0]],dict) and key in apt.SETTINGS[options[0]].keys()):
-                val = apt.SETTINGS[options[0]][key]
-                _,ext = os.path.splitext(val)
-                del apt.SETTINGS[options[0]][key]
-                try:
-                    os.remove(apt.HIDDEN+"scripts/"+key+ext)
-                except:
-                    pass
-            pass
-        elif(options[0] == 'multi-develop' or options[0] == 'overlap-recursive'):
-            apt.SETTINGS['general'][options[0]] = cfg.castBoolean(choice)
-            pass
-        elif(options[0] == 'template'):
-            apt.SETTINGS['general'][options[0]] = apt.fs(choice)
-            pass
-        elif(options[0] == 'refresh-rate'):
-            if(choice.isdecimal()):
-                digit_choice = int(choice)
-                if(digit_choice > apt.MAX_RATE):
-                    digit_choice = apt.MAX_RATE
-                elif(digit_choice < apt.MIN_RATE):
-                    digit_choice = apt.MIN_RATE
-                apt.SETTINGS[options[0]] = digit_choice
-            else:
-                exit(log.error("refresh-rate option takes an integer value"))
-        # LABEL CONFIGURATION
-        elif(options[0] == 'label'):
-            depth = "shallow"
-            if(options.count("recursive")):
-                depth = "recursive"
-            if(not isinstance(apt.SETTINGS[options[0]],dict)):
-                apt.SETTINGS[options[0]] = dict()
-                apt.SETTINGS[options[0]]["shallow"] = dict()
-                apt.SETTINGS[options[0]]["recursive"] = dict()
-            if(val != None):
-                if(depth == "shallow" and key in apt.SETTINGS[options[0]]["recursive"].keys()):
-                    del apt.SETTINGS[options[0]]["recursive"][key]
-                if(depth == "recursive" and key in apt.SETTINGS[options[0]]["shallow"].keys()):
-                    del apt.SETTINGS[options[0]]["shallow"][key]
-                apt.SETTINGS[options[0]][depth][key] = val
-            pass
-        # ALL OTHER CONFIGURATION
-        else:
-            apt.SETTINGS['general'][options[0]] = choice
-        
-        apt.save()
-        log.info("Setting saved successfully.")
-        pass
+    
 
     #! === INIT COMMAND ===
     
@@ -1704,7 +1422,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             if(k == 'script'):
                 #verify proper format is passed in
                 if(var_key == ''):
-                    log.error("Must at least provide a script alias.")
+                    log.error("Must provide a script alias.")
                     continue
 
                 #modify existing script
@@ -1720,8 +1438,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             #modify label
             elif(k == 'label'):
                 #verify proper format is passed in
-                if(var_key == '' or var_val == ''):
-                    log.error("Must at least provide a label name and file extensions.")
+                if(var_key == ''):
+                    log.error("Must provide a label name.")
                     continue
 
                 #modify existing label
@@ -1816,6 +1534,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         pass
 
 
+    # [!] REFRESH COMMAND
     def _refresh(self):
         '''Run 'refresh' command.'''
 
@@ -1834,6 +1553,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         pass
 
 
+    # [!] LIST COMMAND
     def _list(self):
         '''Run 'list' command.'''
 
@@ -1857,6 +1577,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         pass
 
 
+    # [!] OPEN COMMAND
     def _open(self):
         '''Run 'open' command.'''
 
@@ -1921,6 +1642,85 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             self.blockPKG.load()
         else:
             exit(log.error("No block "+self._item+" exists in your workspace."))
+        pass
+
+
+    # [!] HELP COMMAND
+    def _help(self):
+        '''
+        Reads from provided manual.txt regarding the _item passed by
+        user, given that the _command was 'help'.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        #open the manual.txt
+        with open(apt.getProgramPath()+'data/manual.txt', 'r') as man:
+            info = man.readlines()
+
+            disp = False
+            for line in info:
+                sep = line.split()
+                #skip comments and empty lines
+                if(len(sep) == 0):
+                    if(disp == True):
+                        print()
+                    continue
+                if(sep[0].startswith(';')):
+                    continue
+                #find where to start
+                if(len(sep) > 1 and sep[0] == '*' and sep[1] == self._item.lower()):
+                    disp = True
+                elif(disp == True):
+                    if(sep[0] == '*'):
+                        break
+                    else:
+                        print(line,end='')       
+            else:
+                self._default()
+        pass
+    
+
+    # [!] DEFAULT COMMAND
+    def _default(self):
+        '''
+        Display quick overview of legoHDL capabilites/commands.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        print('USAGE: \
+        \n\tlegohdl <command> [argument] [flags]\
+        \n')
+        print("COMMANDS:\n")
+        def formatHelp(cmd, des):
+            print('  ','{:<12}'.format(cmd),des)
+            pass
+        print("Development")
+        formatHelp("new","create a new legohdl block (project)")
+        formatHelp("init","initialize existing code into a legohdl block")
+        formatHelp("open","open a block with the configured text-editor")
+        formatHelp("get","print instantiation code for an HDL entity")
+        formatHelp("graph","visualize HDL dependency graph")
+        formatHelp("export","generate a blueprint file")
+        formatHelp("build","execute a custom configured script")
+        formatHelp("release","set a newer version for the current block")
+        formatHelp("del","delete a block from the local workspace path")
+        print()
+        print("Management")
+        formatHelp("list","print list of all blocks available")
+        formatHelp("refresh","sync local markets with their remotes")
+        formatHelp("install","bring a block to the cache for dependency use")
+        formatHelp("uninstall","remove a block from the cache")
+        formatHelp("download","bring a block to the workspace path for development")
+        formatHelp("update","update an installed block to be its latest version")
+        formatHelp("info","read further detail about a block")
+        formatHelp("config","modify legohdl settings")
+        print("\nType \'legohdl help <command>\' to read more on entered command.")
         pass
 
 
@@ -2008,105 +1808,34 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             self._help()
             pass
         
-        else:
+        elif('' == cmd):
             self._default()
-            #notify user when a bad command was entered
-            if(cmd != ''):
-                log.error("Unknown command: "+cmd+".")
+            pass
+        #notify user when a unknown command was entereds
+        else: 
+            log.error("Unknown command - "+cmd+".")
             pass
 
-
-    #! === HELP COMMAND ===
-
-    def _help(self):
-        '''
-        Reads from provided manual.txt regarding the _item passed by
-        user, given that the _command was 'help'.
-
-        Parameters:
-            None
-        Returns:
-            None
-        '''
-        #open the manual.txt
-        with open(apt.getProgramPath()+'data/manual.txt', 'r') as man:
-            info = man.readlines()
-
-            disp = False
-            for line in info:
-                sep = line.split()
-                #skip comments and empty lines
-                if(len(sep) == 0):
-                    if(disp == True):
-                        print()
-                    continue
-                if(sep[0].startswith(';')):
-                    continue
-                #find where to start
-                if(len(sep) > 1 and sep[0] == '*' and sep[1] == self._item.lower()):
-                    disp = True
-                elif(disp == True):
-                    if(sep[0] == '*'):
-                        break
-                    else:
-                        print(line,end='')       
-            else:
-                self._default()
-
-        pass
-
-
-    def _default(self):
-        '''
-        Display quick overview of legoHDL capabilites/commands.
-
-        Parameters:
-            None
-        Returns:
-            None
-        '''
-        print('USAGE: \
-        \n\tlegohdl <command> [argument] [flags]\
-        \n')
-        print("COMMANDS:\n")
-        def formatHelp(cmd, des):
-            print('  ','{:<12}'.format(cmd),des)
-            pass
-        print("Development")
-        formatHelp("new","create a new legohdl block (project)")
-        formatHelp("init","initialize existing code into a legohdl block")
-        formatHelp("open","open a block with the configured text-editor")
-        formatHelp("get","print instantiation code for an HDL entity")
-        formatHelp("graph","visualize HDL dependency graph")
-        formatHelp("export","generate a blueprint file")
-        formatHelp("build","execute a custom configured script")
-        formatHelp("release","set a newer version for the current block")
-        formatHelp("del","delete a block from the local workspace path")
-        print()
-        print("Management")
-        formatHelp("list","print list of all blocks available")
-        formatHelp("refresh","sync local markets with their remotes")
-        formatHelp("install","bring a block to the cache for dependency use")
-        formatHelp("uninstall","remove a block from the cache")
-        formatHelp("download","bring a block to the workspace path for development")
-        formatHelp("update","update an installed block to be its latest version")
-        formatHelp("info","read further detail about a block")
-        formatHelp("config","modify legohdl settings")
-        print("\nType \'legohdl help <command>\' to read more on entered command.")
         pass
 
 
 def main():
     legoHDL()
 
+
 #entry-point
 if __name__ == "__main__":
     main()
 
 
-
-
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
 # ===== ARCHIVED CODE....TO DELETE ======
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
+
 
 @DeprecationWarning
 def commandHelp(self, cmd):
@@ -2422,3 +2151,287 @@ The name of the .prfl file is the name of the profile itself.
     print()
     exit()
 pass
+
+@DeprecationWarning
+def configure(self, options, choice, delete=False):
+    '''
+    This method performs the config command. It is in charge of handling
+    setting settings through the command-line interface.
+    '''
+    if(len(options) == 0):
+        log.error("No field was flagged to as an option to modify.")
+        return
+    
+    choice = choice.replace(apt.ENV_NAME,apt.HIDDEN[:len(apt.HIDDEN)-1])
+
+    eq = choice.find("=")
+    key = choice[:eq]
+    val = choice[eq+1:] #write whole value
+    if(eq == -1):
+        val = None
+        key = choice
+    #chosen to delete setting from legohdl.cfg
+    if(delete):
+        possibles = ['label', 'workspace', 'market', 'script', 'profile']
+        st = options[0].lower()
+        if(st not in possibles):
+            exit(log.error("Cannot use del command on "+st+" setting."))
+        #ensure this is a valid key to remove
+        if(st != 'profile' and choice not in apt.SETTINGS[st].keys()):
+            #check within both branches of label setting, 'shallow' and 'recursive'
+            if(st == 'label'):
+                if(choice not in apt.SETTINGS[st]['shallow'].keys() and choice not in apt.SETTINGS[st]['recursive'].keys()):
+                    exit(log.error("No key '"+choice+"' exists under '"+st+"' setting."))
+            else:
+                exit(log.error("No key '"+choice+"' exists under '"+st+"' setting."))
+
+        #delete a key/value pair from the labels
+        if(st == 'label'):
+            if(choice in apt.SETTINGS[st]['recursive'].keys()):
+                del apt.SETTINGS[st]['recursive'][choice]
+            if(choice in apt.SETTINGS[st]['shallow'].keys()):
+                del apt.SETTINGS[st]['shallow'][choice]
+        elif(st == 'profile'):
+            choice = choice.lower()
+            if(choice in apt.getProfiles()):
+                #remove directory
+                shutil.rmtree(apt.getProfiles()[choice], onerror=apt.rmReadOnly)
+                #remove from settings
+                apt.SETTINGS['general'][st+'s'].remove(choice)
+            else:
+                exit(log.error("Profile "+choice+" does not exist."))
+        #delete a key/value pair from the scripts or workspaces
+        elif(st == 'script' or st == 'workspace' or st == 'market'):
+            if(choice in apt.SETTINGS[st].keys()):
+                #print("delete")
+                #update active workspace if user deleted the current workspace
+                if(st == 'workspace'):
+                    if(apt.SETTINGS['general']['active-workspace'] == choice):
+                        apt.SETTINGS['general']['active-workspace'] = None
+                        #prompt user to verify to delete active workspace
+                        verify = apt.confirmation("Are you sure you want to delete the active workspace?")
+                        if(not verify):
+                            log.info("Command cancelled.")
+                            return
+                    #move forward with workspace removal
+                    bad_directory = apt.HIDDEN+"workspaces/"+choice
+                    #print(bad_directory)
+                    if(os.path.isdir(bad_directory)):
+                        shutil.rmtree(bad_directory, onerror=apt.rmReadOnly)
+                        log.info("Deleted workspace directory: "+bad_directory)
+                elif(st == 'market'):
+                    #case insensitive
+                    key = key.lower()
+                    Market(key,val).delete()
+                    #remove from all workspace configurations
+                    for nm in apt.SETTINGS['workspace'].keys():
+                        #traverse through all markets listed for this workspace
+                        for mrkt_nm in apt.SETTINGS['workspace'][nm]['market']:
+                            #remove any matches to this newly deleted workspace
+                            if(key == mrkt_nm.lower()):
+                                apt.SETTINGS['workspace'][nm]['market'].remove(mrkt_nm)
+                        pass
+                del apt.SETTINGS[st][choice]
+
+        apt.save()
+        log.info("Setting saved successfully.")
+        return
+
+    #chosen to config a setting in legohdl.cfg
+    if(options[0] == 'active-workspace'):
+        if(choice not in apt.SETTINGS['workspace'].keys()):
+            exit(log.error("Workspace "+choice+" not found!"))
+
+    #invalid option flag
+    if(options[0] not in apt.OPTIONS and options[0] != 'profile'):
+        exit(log.error("No field exists as '"+options[0]+"' that can be modified."))
+    elif(options[0] == 'market'):
+        #try to link existing market into markets
+        if(val == None):
+            if(key.lower() not in apt.getMarketNames().keys()):
+                result = apt.loadMarket(key)
+                if(result == False):
+                    exit(log.error("Setting not saved."))
+                key = result
+                val = apt.getMarkets(workspace_level=False)[key]
+            else:
+                key = apt.getMarketNames()[key]
+        else:
+            if(val == cfg.NULL):
+                val = None
+            if(key.lower() in apt.getMarketNames().keys()):
+                if(key != apt.getMarketNames()[key.lower()]):
+                    exit(log.error("Market name conflicts with market "+apt.getMarketNames()[key.lower()]+"."))
+                #only create remote in the list
+                else:
+                    #market name already exists
+                    confirm = apt.confirmation("You are about to reconfigure the already existing market "+key+". Are you sure you want to do this?")
+                    if(not confirm):
+                        exit(log.info("Setting not saved."))
+                pass
+            else:
+                log.info("Creating new market "+key+"...")
+            #create market object!  
+            mkt = Market(key,val) 
+            #set to null if the tried remote DNE
+            if(not mkt.isRemote()):
+                val = None
+            val = mkt.setRemote(val)
+            #update settings to accurately reflect
+            apt.SETTINGS['market'][key] = val
+        
+        # add to active workspace markets
+        if(options.count("add") and key not in apt.getWorkspace('market')): 
+            log.info("Adding "+key+" market to active workspace...")
+            apt.getWorkspace('market').append(key)
+        # remove from active workspace markets
+        elif(options.count("remove") and key in apt.getWorkspace('market')):
+            log.info("Removing "+key+" market to active workspace...")
+            apt.getWorkspace('market').remove(key)
+    # WORKSPACE CONFIGURATION
+    elif(options[0] == 'workspace'):
+        #create entire new workspace settings
+        if(not isinstance(apt.SETTINGS[options[0]],dict)):
+            apt.SETTINGS[options[0]] = dict()
+        #insertion
+        if(val != None):
+            #ensure there is no conflict with making this workspace key/val pair
+            if(apt.isConflict(apt.getWorkspaceNames(), key) == True):
+                exit(log.error("Setting not saved."))
+            #create new workspace profile
+            for lp in apt.SETTINGS[options[0]].values():
+                if(lp['path'] != cfg.NULL and lp['path'].lower() == apt.fs(val).lower()):
+                    exit(log.error("A workspace already exists with this path."))
+            #initialize the workspace folders and structure
+            apt.initializeWorkspace(key, apt.fs(val))
+            
+            # :todo: needs to override local path as the newly configured path to perform this functionality
+            #are there any blocks already there at local path?
+            # print(apt.getLocal())
+            # #go through all the found blocks in this already existing path and see if any are "released"
+            # blks = self.db.getBlocks("local")
+            # print(blks)
+            # for sects in blks.values():
+            #     for blk in sects.values():
+            #         #temporarily set the workspace path to properly install any found blocks to cache
+            #         apt.WORKSPACE = apt.HIDDEN+"workspaces/"+key+"/"
+            #         if(Block.biggerVer(blk.getVersion(),'0.0.0') != '0.0.0'):
+            #             #install to cache
+            #             log.info("Found "+blk.getTitle()+" as an already a released block.")
+            #             self.install(blk.getTitle())
+            #    pass
+            for rem in options:
+                if rem == options[0]:
+                    continue
+                if rem not in apt.SETTINGS[options[0]][key]['market']:
+                    apt.SETTINGS[options[0]][key]['market'].append(rem)
+        else:
+            exit(log.error("Workspace not added. Provide a local path for the workspace"))
+        pass
+    elif(options[0] == 'profile'):
+        if(choice.lower() not in apt.getProfileNames().keys()):
+            #add to settings
+            apt.loadProfile(choice, append=True)
+        else:
+            exit(log.error("A profile already exists as "+apt.getProfileNames()[choice.lower()]+"."))
+    # BUILD SCRIPT CONFIGURATION
+    elif(options[0] == 'script'):
+        if(val == None):
+            val = ''
+        #parse into cmd and filepath
+        val = val.replace("\"","").replace("\'","")
+        parsed = val.split()
+        if(len(parsed) == 1):
+            exit(log.error("At a minimum requires a command and a path"))
+        #take first component to be the command
+        cmd = parsed[0]
+        filepath = ''
+        file_index = -1
+        for pt in parsed:
+            if(pt == cmd):
+                continue
+            if(os.path.isfile(os.path.expanduser(pt))):
+                filepath = os.path.realpath(os.path.expanduser(pt)).replace("\\", "/")
+                #reinsert nice formatted path into the list of args
+                file_index = parsed.index(pt)
+                parsed[file_index] = filepath
+                break
+        if(filepath == ''):
+            exit(log.error("No script path found in value"))
+
+        _,ext = os.path.splitext(filepath)
+
+        #skip link option- copy file and rename it same as name 
+        if(options.count("link") == 0 and val != ''):   
+            dst = apt.HIDDEN+"scripts/"+key+ext
+            #try to copy and catch exception if its the same file
+            try:
+                shutil.copyfile(filepath, dst)
+            except shutil.SameFileError:
+                pass
+            dst = filepath.replace(filepath, dst)
+            #reassign the value for the filepath
+            parsed[file_index] = dst
+
+        #reassemble val with new file properly formatted filepath
+        val = apt.fs(cmd)
+        for pt in parsed:
+            if(pt == cmd):
+                continue
+            val = val + " " + apt.fs(pt)
+            
+        #initialization
+        if(not isinstance(apt.SETTINGS[options[0]],dict)):
+            apt.SETTINGS[options[0]] = dict()
+        #insertion
+        if(filepath != ''):
+            apt.SETTINGS[options[0]][key] = "\""+val+"\""
+        #deletion
+        elif(isinstance(apt.SETTINGS[options[0]],dict) and key in apt.SETTINGS[options[0]].keys()):
+            val = apt.SETTINGS[options[0]][key]
+            _,ext = os.path.splitext(val)
+            del apt.SETTINGS[options[0]][key]
+            try:
+                os.remove(apt.HIDDEN+"scripts/"+key+ext)
+            except:
+                pass
+        pass
+    elif(options[0] == 'multi-develop' or options[0] == 'overlap-recursive'):
+        apt.SETTINGS['general'][options[0]] = cfg.castBoolean(choice)
+        pass
+    elif(options[0] == 'template'):
+        apt.SETTINGS['general'][options[0]] = apt.fs(choice)
+        pass
+    elif(options[0] == 'refresh-rate'):
+        if(choice.isdecimal()):
+            digit_choice = int(choice)
+            if(digit_choice > apt.MAX_RATE):
+                digit_choice = apt.MAX_RATE
+            elif(digit_choice < apt.MIN_RATE):
+                digit_choice = apt.MIN_RATE
+            apt.SETTINGS[options[0]] = digit_choice
+        else:
+            exit(log.error("refresh-rate option takes an integer value"))
+    # LABEL CONFIGURATION
+    elif(options[0] == 'label'):
+        depth = "shallow"
+        if(options.count("recursive")):
+            depth = "recursive"
+        if(not isinstance(apt.SETTINGS[options[0]],dict)):
+            apt.SETTINGS[options[0]] = dict()
+            apt.SETTINGS[options[0]]["shallow"] = dict()
+            apt.SETTINGS[options[0]]["recursive"] = dict()
+        if(val != None):
+            if(depth == "shallow" and key in apt.SETTINGS[options[0]]["recursive"].keys()):
+                del apt.SETTINGS[options[0]]["recursive"][key]
+            if(depth == "recursive" and key in apt.SETTINGS[options[0]]["shallow"].keys()):
+                del apt.SETTINGS[options[0]]["shallow"][key]
+            apt.SETTINGS[options[0]][depth][key] = val
+        pass
+    # ALL OTHER CONFIGURATION
+    else:
+        apt.SETTINGS['general'][options[0]] = choice
+    
+    apt.save()
+    log.info("Setting saved successfully.")
+    pass
