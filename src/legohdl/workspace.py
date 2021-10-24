@@ -383,9 +383,9 @@ class Workspace:
         apt.SETTINGS['workspace'] = serialized
         #update active workspace
         if(cls.getActive() != None):
-            apt.SETTINGS['active-workspace'] = cls.getActive().getName()
+            apt.SETTINGS['general']['active-workspace'] = cls.getActive().getName()
         else:
-            apt.SETTINGS['active-workspace'] = ''
+            apt.SETTINGS['general']['active-workspace'] = ''
 
         apt.save()
         pass

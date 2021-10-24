@@ -1804,8 +1804,15 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 if(k == 'active-workspace'):
                     Workspace.setActiveWorkspace(v)
                     Workspace.save()
+                elif(k == 'refresh-rate'):
+                    apt.setRefreshRate(v)
                 else:
+                    #convert to booleans values for these settings
+                    if(k == 'multi-develop' or k == 'overlap-recursive'):
+                        v = cfg.castBool(v)
                     apt.SETTINGS['general'][k] = v
+                #save settings adjusments
+                apt.save()
         pass
 
 

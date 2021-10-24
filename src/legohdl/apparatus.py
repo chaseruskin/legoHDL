@@ -220,10 +220,7 @@ scripts)?", warning=False)
         cls.generateDefault(list,"profiles",header="general")
 
         #constrain the refresh-rate
-        if(cls.SETTINGS['general']['refresh-rate'] > cls.MAX_RATE):
-            cls.SETTINGS['general']['refresh-rate'] = cls.MAX_RATE
-        elif(cls.SETTINGS['general']['refresh-rate'] < cls.MIN_RATE):
-            cls.SETTINGS['general']['refresh-rate'] = cls.MIN_RATE
+        cls.setRefreshRate(cls.getRefreshRate())
 
         if(cls.SETTINGS['general']['template'] != cfg.NULL and os.path.isdir(cls.SETTINGS['general']['template'])):
             cls.SETTINGS['general']['template'] = cls.fs(cls.SETTINGS['general']['template'])
@@ -541,6 +538,19 @@ scripts)?", warning=False)
     @classmethod
     def getRefreshRate(cls):
         return cls.SETTINGS['general']['refresh-rate']
+
+
+    @classmethod
+    def setRefreshRate(cls, r):
+        #convert to integer
+        cfg.castInt(r)
+        #clamp upper and lower bounds
+        if(r > cls.MAX_RATE):
+            r = cls.MAX_RATE
+        elif(r < cls.MIN_RATE):
+            r = cls.MIN_RATE
+        #set in settings
+        cls.SETTINGS['general']['refresh-rate'] = r
     
 
     @classmethod
