@@ -32,6 +32,7 @@ class Vhdl(Language):
         super().__init__(fpath, M, L, N, V)
         self._comment = "--"
         self._multi_comment = None
+        self._std_delimiters = "(",")",":",";",","
 
         #run with VHDL decoder
         self.identifyDesigns()
@@ -386,7 +387,6 @@ class Vhdl(Language):
         Returns:
             None
         '''
-
         #trim off surrounding '(' ')'
         words = words[1:len(words)-1]
         #pivot on every ':'
@@ -420,7 +420,7 @@ class Vhdl(Language):
         Returns:
             None
         '''
-
+        
         #trim off surrounding '(' ')'
         words = words[1:len(words)-1]
         while (words.count(':') > 0):
@@ -613,7 +613,7 @@ class Vhdl(Language):
     #write out the entity but as a component
     def writeComponentDeclaration(self):
         declaration_txt = ''
-        with open(self._file_path, 'r') as file:
+        with open(self.getPath(), 'r') as file:
             in_entity = False
             #iterate through file lines
             for line in file.readlines():

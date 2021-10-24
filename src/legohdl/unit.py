@@ -77,7 +77,7 @@ class Unit:
         self._config = None
 
         #create an empty interface
-        self._interface = Interface()
+        self._interface = Interface(name=self.E(), library=self.L(), default_form=self._language)
 
         #add to Jar!
 
@@ -288,14 +288,142 @@ class Unit:
 class Generic:
 
 
+    def __init__(self, name, flavor, value):
+        self._name = name
+        self._flavor = flavor
+        self._value = value
+        pass
+
+
+    def writeMapping(self, form, spaces=0):
+        '''
+        Create the compatible code for mapping a given generic.
+
+        Parameters:
+            form (Unit.Language): VHDL or VERILOG compatible code
+            spaces (int): number of spaces required between name and '=>'
+        Returns:
+            m_txt (str): compatible line of code to be printed
+        '''
+        r_space = 1 if(spaces > 0) else 0
+
+        if(form == Unit.Language.VHDL):
+            m_txt = "    "+self._name+(spaces*' ')+"=>"+(r_space*' ')+self._name
+        elif(form == Unit.Language.VERILOG):
+            m_txt = ""
+        return m_txt
+        
+
+    def writeConstant(self, form, spaces=1):
+        '''
+        Create the compatible code for declaring a constant from the given generic.
+
+        Parameters:
+            form (Unit.Language): VHDL or VERILOG compatible code
+            spaces (int): number of spaces required between name and ':'
+        Returns:
+            c_txt (str): compatible line of code to be printed
+        '''
+        c_txt = ''
+        #write VHDL-style code
+        if(form == Unit.Language.VHDL):
+            #write beginning of constant declaration
+            c_txt = 'constant '+self._name+(spaces*' ')+': '
+            remaining = apt.listToStr(self._flavor)
+            #properly format the remaining of the constant
+            fc = remaining.find(',(')
+            if(fc > -1):
+                remaining = remaining[:fc] + remaining[fc+1:]
+            remaining = remaining.replace('(,', '(')
+            remaining = remaining.replace(',)', ')')
+            remaining = remaining.replace(',', ' ')
+            #add type
+            c_txt = c_txt + remaining
+            #give default value
+            c_txt = c_txt + ' := ' + apt.listToStr(self._value)
+            #add final ';'
+            c_txt = c_txt + ';'
+            pass
+        #write VERILOG-style code
+        elif(form == Unit.Language.VERILOG):
+
+            pass
+
+        return c_txt
+
+
+    def getName(self):
+        return self._name
+
     pass
 
 
-class Signal:
+class Port:
 
-    def __init__(self, name, type, init_value=None):
+
+    def __init__(self, name, way, flavor, value=None):
+        self._name = name
+        self._way = way
+        self._flavor = flavor
+        self._value = value
         pass
 
+    
+    def writeMapping(self, form, spaces=0):
+        '''
+        Create the compatible code for mapping a given port.
+
+        Parameters:
+            form (Unit.Language): VHDL or VERILOG compatible code
+            spaces (int): number of spaces required between name and '=>'
+        Returns:
+            m_txt (str): compatible line of code to be printed
+        '''
+        r_space = 1 if(spaces > 0) else 0
+
+        if(form == Unit.Language.VHDL):
+            m_txt = "    "+self._name+(spaces*' ')+"=>"+(r_space*' ')+self._name
+        elif(form == Unit.Language.VERILOG):
+            m_txt = ""
+        return m_txt
+
+
+    def writeSignal(self, form, spaces=1):
+        '''
+        Create the compatible code for declaring a signal from the given port.
+
+        Parameters:
+            form (Unit.Language): VHDL or VERILOG compatible code
+            spaces (int): number of spaces required between name and ':'
+        Returns:
+            s_txt (str): compatible line of code to be printed
+        '''
+        s_txt = ''
+        #write VHDL-style code
+        if(form == Unit.Language.VHDL):
+            #write beginning of signal declaration
+            s_txt = 'signal '+self._name+(spaces*' ')+': '
+            remaining = apt.listToStr(self._flavor)
+            #properly format the remaining of the signal
+            fc = remaining.find(',')
+            if(fc > -1):
+                remaining = remaining[:fc] + remaining[fc+1:]
+            remaining = remaining.replace('(,', '(')
+            remaining = remaining.replace(',)', ')')
+            remaining = remaining.replace(',', ' ')
+            s_txt = s_txt + remaining + ';'
+            pass
+        #write VERILOG-style code
+        elif(form == Unit.Language.VERILOG):
+
+            pass
+            
+        return s_txt
+
+
+    def getName(self):
+        return self._name
+    
     pass
 
 
@@ -303,19 +431,24 @@ class Signal:
 class Interface:
     'An interface has generics and port signals. An entity will have an interface.'
 
-    def __init__(self):
-        self._ports = []
-        self._generics = []
+    def __init__(self, name, library, default_form):
+        self._name = name
+        self._library = library
+        self._ports = {}
+        self._generics = {}
+        self._default_form = default_form
         pass
 
 
     def addPort(self, name, way, flavor):
         print("Port:",name,"going",way,"of type",flavor)
+        self._ports[name] = Port(name, way, flavor)
         pass
 
 
     def addGeneric(self, name, flavor, value):
         print("Generic:",name,"of type",flavor,"has value",value)
+        self._generics[name] = Generic(name, flavor, value)
         pass
 
 
@@ -326,4 +459,168 @@ class Interface:
     def getGenerics(self):
         return self._generics
 
+
+    def getName(self):
+        return self._name
+
+
+    def getLibrary(self):
+        return self._library
+
+
+    def getMappingNames(self, mapping, lower_case=False):
+        'Return a list of the collected dictionary keys for the mapping parameter.'
+
+        g_list = list(mapping.keys())
+        if(lower_case):
+            for i in range(len(g_list)):
+                g_list[i] = g_list[i].lower()
+        return g_list
+
+
+    def computeLongestWord(self, words):
+        '''
+        Computes the longest word length from a list of words. Returns -1 if
+        no words are in the list.
+
+        Parameters:
+            words ([str]): list of words to compare
+        Returns:
+            farthest (int): length of longest word in the list
+        '''
+        farthest = -1
+        for s in words:
+            if(len(s) > farthest):
+                farthest = len(s)
+        return farthest
+
+
+    def writeConnections(self, form=None, align=True):
+        '''
+        Write the necessary constants (from generics) and signals (from ports)
+        for the given entity.
+
+        Parameters:
+            form (Unit.Language): VHDL or VERILOG compatible code style
+            align (bool): determine if names should be all equally spaced
+        Returns:
+            connect_txt (str): compatible code to be printed
+        '''
+        if(form == None):
+            form = self._default_form
+        connect_txt = ''
+        spaces = 1 #default number of spaces when not aligning
+        #do not write anything if no interface!
+        if(len(self.getGenerics()) == 0 and len(self.getPorts()) == 0):
+                return connect_txt
+        
+        #determine farthest reach constant name
+        farthest = self.computeLongestWord(self.getMappingNames(self.getGenerics()))
+                
+        #write constants
+        for g in self.getGenerics().values():
+            if(align):
+                spaces = farthest - len(g.getName()) + 1
+            connect_txt = connect_txt + g.writeConstant(form, spaces) +'\n'
+        
+        #add spacer between generics and signals
+        if(len(self.getGenerics())):
+            connect_txt = connect_txt + '\n'
+
+        #determine farthest reach signal name
+        farthest = self.computeLongestWord(self.getMappingNames(self.getPorts()))
+
+        #write signals
+        for p in self.getPorts().values():
+            if(align):
+                spaces = farthest - len(p.getName()) + 1
+            connect_txt = connect_txt + p.writeSignal(form, spaces) +'\n'
+
+        return connect_txt
+    
+
+    def writeInstance(self, form=None, entity_inst=False, inst_name='uX', align=False, hang_end=False):
+        '''
+        Write the correct compatible code for an instantiation of the given
+        entity.
+
+        Parameters:
+            form (Unit.Language): VHDL or VERILOG compatible code style
+            entity_inst (bool): if VHDL, use entity instantiation
+            inst_name (str): the name to give the instance
+            align (bool): determine if names should be all equally spaced
+            hand_end (bool): false if ) deserves its own line
+        Returns:
+            mapping_txt (str): the compatible code to be printed
+        '''
+        if(form == None):
+            form = self._default_form
+        mapping_txt = ''
+        spaces = 0 #default number of spaces when not aligning
+        #do not write anything if no interface!
+        if(len(self.getGenerics()) == 0 and len(self.getPorts()) == 0):
+                return mapping_txt
+        
+        #write VHDL-style code
+        if(form == Unit.Language.VHDL):
+            mapping_txt = inst_name + " : "+self.getName()+"\n"
+            #reassign beginning of mapping to be a pure entity instance
+            if(entity_inst):
+                mapping_txt = inst_name+" : entity "+self.getLibrary()+"."+self.getName()+"\n"
+
+            #generics to map
+            if(len(self.getGenerics())):
+                mapping_txt = mapping_txt + "generic map(\n"
+
+                gens = self.getMappingNames(self.getGenerics())
+                farthest = self.computeLongestWord(self.getMappingNames(self.getGenerics()))
+
+                for i in range(len(gens)):
+                    if(align):
+                        spaces = farthest - len(gens[i]) + 1
+                    line =  self._generics[gens[i]].writeMapping(form, spaces)
+                    #add a comma if not on last generic
+                    if(i != len(gens)-1):
+                        line = line + ","
+                    #don't add \n to last map if hang_end
+                    elif(hang_end == True):
+                        mapping_txt = mapping_txt + line
+                        continue
+                    mapping_txt = mapping_txt + line+"\n"
+                #add necessary closing
+                mapping_txt = mapping_txt + ")"
+
+            #ports to map
+            if(len(self.getPorts())):
+                #add new line if generics were written
+                if(len(self.getGenerics())):
+                    mapping_txt = mapping_txt + "\n"
+                mapping_txt = mapping_txt + "port map(\n"
+
+                ports = self.getMappingNames(self.getPorts())
+                farthest = self.computeLongestWord(self.getMappingNames(self.getPorts()))
+                
+                for i in range(len(ports)):
+                    if(align):
+                        spaces = farthest - len(ports[i]) + 1
+                    line = self._ports[ports[i]].writeMapping(form, spaces)
+                    #add a comma if not on the last signal
+                    if(i != len(ports)-1):
+                        line = line + ","
+                    #don't add \n to last map if hang_end
+                    elif(hang_end == True):
+                        mapping_txt = mapping_txt + line
+                        continue
+                    mapping_txt = mapping_txt + line+"\n"
+                #add necessary closing
+                mapping_txt = mapping_txt + ")"
+
+            mapping_txt = mapping_txt + ";\n"
+            pass
+        #write VERILOG-style code
+        elif(form == Unit.Language.VERILOG):
+
+            pass
+        #print(mapping_txt)
+        return mapping_txt
     pass

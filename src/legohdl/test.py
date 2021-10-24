@@ -231,10 +231,12 @@ def main():
         v1.decipher()
         v5.decipher()
 
-        #print(Unit.Jar['']['EEL4712C']['LAB1']['fA'])
+        print(Unit.Jar['']['EEL4712C']['LAB1']['adder'].getInterface().writeInstance(Unit.Language.VHDL))
+        print(Unit.Jar['']['EEL4712C']['LAB1']['adder'].getInterface().writeConnections(Unit.Language.VHDL))
         print("__Processed__")
         print(Language._ProcessedFiles)
-
+        print(Unit.Jar['']['projects']['LED_animation']['led_animation'].getInterface().writeInstance(entity_inst=True, align=True, inst_name='DUT'))
+        print(Unit.Jar['']['projects']['LED_animation']['led_animation'].getInterface().writeConnections(align=True))
         #print(Unit.allL())
 
         #print(Unit.FlippedJar)
