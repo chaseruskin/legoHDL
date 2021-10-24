@@ -88,7 +88,7 @@ class legoHDL:
         #initialize all Labels
         Label.load()
 
-        Workspace.printAll()
+        #Workspace.printAll()
 
         #save all legohdl.cfg changes
         apt.save()
@@ -111,6 +111,10 @@ class legoHDL:
                 exit(log.error("Failed to run command because active workspace is not set."))
         else:
             Workspace.getActive().autoRefresh(rate=apt.getRefreshRate())
+
+        #ensure the item is not a flag
+        if(len(self._item)):
+            self._item = '' if(self._item[1:] in self._flags) else self._item
 
         print(self)
 
@@ -1569,10 +1573,13 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             Profile.printList()
         elif(self._flags.count("template")):
             apt.getTemplateFiles()
+        elif(self._flags.count('entity')):
+            Unit.printList()
             #categorize by hidden files (skipped)
             #and visible files (files that are copied in on using template)
         else:
             M,L,N,_ = Block.snapTitle(self._item)
+            print(M,L,N)
             self.inventory(M,L,N,self._flags)
         pass
 

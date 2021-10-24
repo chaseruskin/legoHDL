@@ -79,9 +79,7 @@ class Label:
         recursive = apt.SETTINGS['label']['recursive']
         for lbl,exts in recursive.items():
             Label(lbl, exts, is_recur=True)
-
-        for t in cls.Jar.values():
-            print(t)
+        pass
 
 
     @classmethod
