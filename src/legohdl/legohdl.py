@@ -1,15 +1,14 @@
-################################################################################
-#   Project: legohdl
-#   Script: legohdl.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script is the entry-point to the legohdl program. It parses the
+# Project: legohdl
+# Script: legohdl.py
+# Author: Chase Ruskin
+# Description:
+#   This script is the entry-point to the legohdl program. It parses the
 #   command-line arguments and contains a method for each valid command.
-################################################################################
 
 import os, sys, shutil
 import git
 import logging as log
+from enum import Enum
 from .block import Block
 from .__version__ import __version__
 from .registry import Registry
@@ -25,36 +24,55 @@ from .workspace import Workspace
 from .profile import Profile
 from .script import Script
 from .label import Label
+from .map import Map
 
 class legoHDL:
+
+    class CMD(Enum):
+
+
+        pass
 
     #! === INITIALIZE ===
 
     def __init__(self):
         '''
-        Initialize the legoHDL tool. This method specifically parses the command
-        line arguments, loads tool-wide settings, and initializes the registry.
-        '''
+        Initialize the legoHDL tool. 
+        
+        This method specifically parses the command line arguments, loads tool-wide settings, 
+        and initializes the registry.
 
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        #load the logging format
         log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.INFO)
 
-        command = package = ""
-        options = []
+        #parse arguments
+        self._command = self._item = ""
+
         #store args accordingly from command-line
-        for i, arg in enumerate(sys.argv):
+        for i, arg in enumerate(sys.argv[1:]):
+            #first is the command
             if(i == 0):
-                continue
+                self._command = arg.lower()
+            #next is the "item" (may not be used for all commands)
             elif(i == 1):
-                command = arg.lower()
-            elif(len(arg) and arg[0] == '-'):
-                options.append(arg[1:])
-            elif(package == ''):
-                package = arg
+                self._item = arg
 
         #only display the program's version and exit
-        if(command == '--version'):
+        if(self._command == '--version'):
             print(__version__)
             exit()
+
+        #parse any remaining arguments
+        self.parseArgs(sys.argv[1:])
+
+        print(self)
+
+        exit()
 
         #load legohdl.cfg
         #ensure all necessary hidden folder structures exist
@@ -102,6 +120,43 @@ class legoHDL:
         else:
             self.parse(command, package, options)
         pass
+
+
+    def parseArgs(self, args):
+        '''
+        Creates a dictionary of arguments separated into 'flags' and 'vars'.
+
+        Parameters:
+            args ([str]): list of arguments to identify
+        Returns:
+            None
+        '''
+        self._flags = []
+        self._vars = Map()
+
+        for arg in args:
+            #a flag/var begins with a '-' character
+            if(arg[0] == '-' and len(arg) > 1):
+                #a pair has a '=' character
+                if(arg.find('=') > -1):
+                    #find the first '=' and partition into key,value
+                    eq_i = arg.find('=')
+                    key, val = arg[1:eq_i], arg[eq_i+1:]
+                    self._vars[key] = val
+                else:
+                    #store lower-case of flag for evaluation purposes
+                    self._flags.append(arg[1:].lower())
+                pass
+        pass
+
+
+    def __str__(self):
+        return f'''
+        command: {self._command}
+        item: {self._item}
+        flags: {self._flags}
+        vars: {self._vars}
+        '''
 
 
     def runSetup(self):

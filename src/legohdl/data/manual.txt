@@ -421,18 +421,33 @@ EXAMPLES:
 
 * refresh
 NAME:
+        refresh - Synchronize local market repositories with their remotes
 
 SYNOPSIS:
+        legohdl refresh [<market>] [-all]
 
 DESCRIPTION:
+        Checks for updates from market remote repositories and pulls them down
+        to stay up-to-date.
+
+        If no arguments are given, by default all markets available to the
+        current workspace will try to refresh. If -all is given, every possible
+        market, even outside workspace availability, will sync with its remote (if exists).
 
 OPTIONS:
+        <market>
+                The name of the known market to synchronize.
+
+        -all
+                Synchronize all markets across all workspaces.
 
 
 * install
 NAME:
+        install - Bring a block to the workspace's cache for usage
 
 SYNOPSIS:
+        legohdl install <block> [-<version> | -requirements]
 
 DESCRIPTION:
 
@@ -441,18 +456,35 @@ OPTIONS:
 
 * uninstall
 NAME:
+        uninstall - Remove a block from the workspace's cache
 
 SYNOPSIS:
+        legohdl uninstall <block> [-<version>]
 
 DESCRIPTION:
+        Removes installed block versions from the workspace cache. 
+        
+        If -<version> is omitted, then ALL versions for the specified block will be 
+        removed. Specifying -<version> will only remove it and no others, given it 
+        is installed. 
+        
+        Can also remove by major version values by passing only the MAJOR number
+        to -<version>.
 
 OPTIONS:
+        <block>
+                :ref:
+        
+        -<version>
+                Specific version to uninstall.
 
 
 * download
 NAME:
+        download - Bring a block to the local workspace for development
 
 SYNOPSIS:
+        legohdl download <block> [-open]
 
 DESCRIPTION:
 
@@ -461,12 +493,44 @@ OPTIONS:
 
 * update
 NAME:
+        update - Get the latest installed block or profile
 
 SYNOPSIS:
+        legohdl update <block>
+        legohdl update <profile-name> -profile
 
 DESCRIPTION:
+        <block>
+                :ref:
+
+        <profile-name>
+                :todo:
+
+        -profile
+                :todo:
 
 OPTIONS:
+
+
+* info
+NAME:
+        info - Read detailed information about a block
+
+SYNOPSIS:
+        legohdl info <block> [-version]
+
+DESCRIPTION:
+        By default, will print the metadata about the given block. 
+        
+        If -version is applied, it will list all the available versions for installation,
+        and hightlight which versions are installed under the workspace cache.
+
+OPTIONS:
+        <block>
+                :ref:
+        
+        -version
+                List all available versions for the specified block.
 
 
 * config
