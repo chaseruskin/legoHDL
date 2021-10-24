@@ -8,6 +8,7 @@
 import os, webbrowser
 import logging as log
 from .apparatus import Apparatus as apt
+from .profile import Profile
 
 
 import_success = True
@@ -217,8 +218,6 @@ settings that will be merged in when importing that profile. A profile directory
                     #copy list back to settings
                     apt.SETTINGS['general'][name] = self._tk_vars[name][name].copy()
 
-                    #dynamically create/remove any changed profiles
-                    apt.dynamicProfiles()
                     pass
                 # --- LABELS ----
                 elif(key == 'label'):

@@ -173,6 +173,26 @@ class Script:
         pass
 
 
+    @classmethod
+    def save(cls):
+        '''
+        Serializes the Script objects and saves them to the settings dictionary.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        serialized = {}
+        #serialize the Workspace objects into dictionary format for settings
+        for scpt in cls.Jar.values():
+            serialized[scpt.getAlias()] = scpt.getCommand()
+        #update settings dictionary
+        apt.SETTINGS['script'] = serialized
+        apt.save()
+        pass
+
+
     def __str__(self):
         return f'''
         ID: {hex(id(self))}

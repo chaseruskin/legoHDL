@@ -22,6 +22,7 @@ from .workspace import Workspace
 from .profile import Profile
 from .script import Script
 from .label import Label
+from .git import Git
 
 
 class legoHDL:
@@ -64,10 +65,6 @@ class legoHDL:
 
         #parse any remaining arguments
         self.parseArgs(sys.argv[1:])
-
-        print(self)
-
-        self._help()
 
         #load legohdl.cfg
         #ensure all necessary hidden folder structures exist
@@ -115,7 +112,9 @@ class legoHDL:
         else:
             Workspace.getActive().autoRefresh(rate=apt.getRefreshRate())
 
-        if(sys.argv[1:].count('debug')):
+        print(self)
+
+        if('debug' == self._command):
             test()
         else:
             self.runCommand()
@@ -1664,6 +1663,25 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         else:
             return val == self._vars[key]
 
+    
+    def splitVar(self, val, delim=':'):
+        '''
+        Splits the value of the variable into two parts based
+        on the delimiter.
+
+        Parameters:
+            val (str): the variable value
+            delim (str): the substring to find in val
+        Returns:
+            key (str): first component of val
+            val (str): second component of val
+        '''
+        d_i = val.find(delim)
+        if(d_i > -1):
+            return val[0:d_i], val[d_i+1:]
+        else:
+            return val, ''
+
 
     def itemEmpty(self):
         return self._item == ''
@@ -1672,6 +1690,122 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
     def _config(self):
         '''Run 'config' command.'''
 
+        #import a profile if a profile name is given as item.
+        if(self.itemEmpty() == False and self._item in Profile.Jar.keys()):
+            Profile.Jar[self._item].importLoadout(ask=self._flags.count('ask'))
+            return
+
+        #set each setting listed in flags try to modify it
+        for k,v in self._vars.items():
+            #split the variable into two components (if applicable)
+            var_key, var_val = self.splitVar(v)
+            #print(var_key, var_val)
+            #modify script
+            if(k == 'script'):
+                #verify proper format is passed in
+                if(var_key == ''):
+                    log.error("Must at least provide a script alias.")
+                    continue
+
+                #modify existing script
+                if(var_key.lower() in Script.Jar.keys()):
+                    Script.Jar[var_key].setCommand(var_val)
+                #create a new script
+                else:
+                    Script(var_key, var_val)
+
+                #save script modifications
+                Script.save()
+                pass
+            #modify label
+            elif(k == 'label'):
+                #verify proper format is passed in
+                if(var_key == '' or var_val == ''):
+                    log.error("Must at least provide a label name and file extensions.")
+                    continue
+
+                #modify existing label
+                if(var_key.lower() in Label.Jar.keys()):
+                    Label.Jar[var_key].setExtensions(apt.strToList(var_val))
+                    Label.Jar[var_key].setRecursive(self._flags.count('recursive'))
+                #create new label
+                else:
+                    Label(var_key, apt.listToStr(var_val), self._flags.count('recursive'))
+                #save any changes
+                Label.save()
+                pass
+            #modify profile
+            elif(k == 'profile'):
+                #try to create a profile!
+                if(v != ''):
+                    #try url
+                    if(Git.isValidRepo(v, remote=True) or Git.isValidRepo(v, remote=False)):
+                        Profile('', url=v)
+                    #try just new name
+                    elif(v.lower() not in Profile.Jar.keys()):
+                        log.info("Creating new empty profile "+v+"...")
+                        Profile(v)
+                    else:
+                        log.error("Profile "+v+" already exists.")
+                        continue
+                    
+                Profile.save()
+                pass
+            #modify market
+            elif(k == 'market'):
+                #ensure a market name is given
+                if(var_key == ''):
+                    log.error("Must provide a market name.")
+                    continue
+
+                mrkt = None
+                #modify an existing market
+                if(var_key.lower() in Market.Jar.keys()):
+                    mrkt = Market.Jar[var_key]
+
+                    #if its local and remote given try to set a remote
+                    if(mrkt.isRemote() == False and var_val != ''):
+                        mrkt.setRemoteURL(var_val)
+                #market name is not found
+                else:
+                    #try to create from the url
+                    if(var_val != ''):
+                        mrkt = Market(var_key, var_val)
+               
+                #alter the workspace's connections to markets
+                if(mrkt != None and Workspace.inWorkspace()):
+                    ws = Workspace.getActive()
+                    if(self._flags.count('unlink')):
+                        ws.unlinkMarket(mrkt.getName())
+                    elif(self._flags.count('link')):
+                        ws.linkMarket(mrkt.getName())
+                    pass
+                    Workspace.save()
+        
+                #save adjustments
+                Market.save()
+                pass
+            #modify workspace
+            elif(k == 'workspace'):
+                #verify proper format is passed in
+                if(var_key == ''):
+                    log.error("Must provide a workspace name.")
+                    continue
+                #modify existing workspace's path
+                if(var_key.lower() in Workspace.Jar.keys()):
+                    Workspace.Jar[var_key].setPath(var_val)
+                #create new workspace!
+                else:
+                    Workspace(var_key, var_val)
+                #save adjustments
+                Workspace.save()
+                pass
+            elif(k in apt.SETTINGS['general'].keys()):
+                if(k == 'active-workspace'):
+                    Workspace.setActiveWorkspace(v)
+                    Workspace.save()
+                else:
+                    apt.SETTINGS['general'][k] = v
         pass
 
 
@@ -1734,6 +1868,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             if(valid_editor and gui_mode == False):
                 log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
                 apt.execute(apt.getEditor(), apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
+            elif(gui_mode == True):
+                return
             pass
         #cannot open anything without a text-editor!
         if(valid_editor == False):

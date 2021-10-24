@@ -83,6 +83,30 @@ class Label:
         for t in cls.Jar.values():
             print(t)
 
+
+    @classmethod
+    def save(cls):
+        '''
+        Serializes the Label objects and saves them to the settings dictionary.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        serialized = {'recursive' : {}, 'shallow' : {}}
+        #serialize the Workspace objects into dictionary format for settings
+        for lbl in cls.Jar.values():
+            if(lbl.isRecursive()):
+                serialized['recursive'][lbl.getName()] = apt.listToStr(lbl.getExtensions())
+            else:
+                serialized['shallow'][lbl.getName()] = apt.listToStr(lbl.getExtensions())
+        #update settings dictionary
+        apt.SETTINGS['label'] = serialized
+        apt.save()
+        pass
+
+
     @classmethod
     def printList(cls):
         '''
@@ -97,9 +121,9 @@ class Label:
         print("-"*20+" "+"-"*24+" "+"-"*14+" ")
         for lbl in cls.Jar.values():
             rec = 'yes' if(lbl.isRecursive()) else '-'
-            print('{:<20}'.format(lbl.getName()),'{:<24}'.format(apt.ListToStr(lbl.getExtensions())),'{:<14}'.format(rec))
+            print('{:<20}'.format(lbl.getName()),'{:<24}'.format(apt.listToStr(lbl.getExtensions())),'{:<14}'.format(rec))
         pass
-        pass
+
 
     def setExtensions(self, exts):
         '''
@@ -116,6 +140,10 @@ class Label:
         #set the new extensions
         self._exts = exts
         return True
+
+    
+    def setRecursive(self, r):
+        self._is_recur = r
 
 
     def isRecursive(self):

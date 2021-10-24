@@ -298,6 +298,20 @@ class Market:
 
 
     @classmethod
+    def save(cls):
+        '''
+        Save markets to settings.
+        '''
+        serialize = {}
+        for mrkt in cls.Jar.values():
+            serialize[mrkt.getName()] = mrkt._repo.getRemoteURL()
+            
+        apt.SETTINGS['market'] = serialize
+        apt.save()
+        pass
+
+
+    @classmethod
     def printList(cls, active_markets=[]):
         '''
         Prints formatted list for markets with availability to active-workspace

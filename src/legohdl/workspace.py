@@ -57,9 +57,17 @@ class Workspace:
                 return
             else:
                 #keep asking to set path until one is decided/input
-                path = input("Enter workspace "+self.getName()+"'s path: ")
+                try:
+                    path = input("Enter path for workspace "+self.getName()+": ")
+                except KeyboardInterrupt:
+                    print()
+                    exit(log.info("Workspace not created."))
                 while(self.setPath(path) == False):
-                    path = input("Enter workspace "+self.getName()+"'s path: ")
+                    try:
+                        path = input("Enter path for workspace "+self.getName()+": ")
+                    except KeyboardInterrupt:
+                        print()
+                        exit(log.info("Workspace not created."))
         
         self._ws_dir = apt.fs(self.DIR+self.getName()+"/")
         
@@ -99,7 +107,7 @@ class Workspace:
         '''
         #cannot set an empty path
         if(p == '' or p == None):
-            log.info("Workspace "+self.getName()+"'s local path cannot be empty.")
+            log.info("Local path for workspace "+self.getName()+" cannot be empty.")
             return False
 
         p = apt.fs(p)
@@ -183,10 +191,10 @@ class Workspace:
         if(mrkt.lower() in Market.Jar.keys()):
             mrkt_obj = Market.Jar[mrkt]
             if(mrkt_obj in self.getMarkets()):
-                log.info("Market "+mrkt_obj.getName(low=False)+" is already linked to this workspace.")
+                log.info("Market "+mrkt_obj.getName()+" is already linked to this workspace.")
                 return False
             else:
-                log.info("Linking market "+mrkt_obj.getName(low=False)+" to the workspace...")
+                log.info("Linking market "+mrkt_obj.getName()+" to the workspace...")
                 self._markets += [mrkt_obj]
                 return True
         else:
@@ -206,10 +214,10 @@ class Workspace:
         if(mrkt.lower() in Market.Jar.keys()):
             mrkt_obj = Market.Jar[mrkt]
             if(mrkt_obj not in self.getMarkets()):
-                log.info("Market "+mrkt_obj.getName(low=False)+" is already unlinked from the workspace.")
+                log.info("Market "+mrkt_obj.getName()+" is already unlinked from the workspace.")
                 return False
             else:
-                log.info("Unlinking market "+mrkt_obj.getName(low=False)+" from the workspace...")
+                log.info("Unlinking market "+mrkt_obj.getName()+" from the workspace...")
                 self._markets.remove(mrkt_obj)
                 return True
         else:
@@ -373,6 +381,12 @@ class Workspace:
             serialized[ws.getName()]['market'] = ws.getMarkets(returnnames=True, lowercase=False)
         #update settings dictionary
         apt.SETTINGS['workspace'] = serialized
+        #update active workspace
+        if(cls.getActive() != None):
+            apt.SETTINGS['active-workspace'] = cls.getActive().getName()
+        else:
+            apt.SETTINGS['active-workspace'] = ''
+
         apt.save()
         pass
 
@@ -395,13 +409,14 @@ class Workspace:
         '''
         Set the active workspace after initializing all workspaces into Jar. If
         the input name is invalid, it will set the first workspace in the Jar as
-        active.
+        active if one is not already assigned.
 
         Parameters:
             ws (str): workspace name
         Returns:
             (bool): true if active-workspace was set
         '''
+        #properly set the active workspace from one found in Jar
         if(ws != None and ws.lower() in cls.Jar.keys()):
             re_assign = (cls._ActiveWorkspace != None)
             #set the active workspace obj from found workspace
@@ -411,15 +426,18 @@ class Workspace:
                 log.info("Assigning workspace "+cls._ActiveWorkspace.getName()+" as active workspace...")
 
             return True
+        #try to randomly assign active workspace if not already assigned.
         elif(len(cls.Jar.keys()) and cls._ActiveWorkspace == None):
             random_ws = list(cls.Jar.keys())[0]
             cls._ActiveWorkspace = cls.Jar[random_ws]
             log.info("Workspace "+ws+" does not exist. Auto-assigning active workspace to "+cls._ActiveWorkspace.getName()+"...")
             return True
+        #still was not able to set the active workspace with the given argument
         elif(cls._ActiveWorkspace != None):
             log.info("Workspace "+ws+" does not exist. Keeping "+cls._ActiveWorkspace.getName()+" as active.")
         else:
             log.error("No workspace set as active.")
+
         return False
 
 
@@ -475,7 +493,7 @@ class Workspace:
         print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Markets"))
         print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
         for ws in cls.Jar.values():
-            mrkts = apt.ListToStr(ws.getMarkets(returnnames=True))
+            mrkts = apt.listToStr(ws.getMarkets(returnnames=True))
             act = 'yes' if(ws == cls.getActive()) else '-'
             print('{:<16}'.format(ws.getName()),'{:<6}'.format(act),'{:<40}'.format(ws.getPath()),'{:<14}'.format(mrkts))
             pass

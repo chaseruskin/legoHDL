@@ -224,7 +224,7 @@ scripts)?", warning=False)
             cls.SETTINGS['general']['refresh-rate'] = cls.MAX_RATE
         elif(cls.SETTINGS['general']['refresh-rate'] < cls.MIN_RATE):
             cls.SETTINGS['general']['refresh-rate'] = cls.MIN_RATE
-#
+
         if(cls.SETTINGS['general']['template'] != cfg.NULL and os.path.isdir(cls.SETTINGS['general']['template'])):
             cls.SETTINGS['general']['template'] = cls.fs(cls.SETTINGS['general']['template'])
             cls.TEMPLATE = cls.SETTINGS['template']
@@ -498,7 +498,7 @@ scripts)?", warning=False)
 
 
     @classmethod
-    def StrToList(self, c_str, delim=','):
+    def strToList(self, c_str, delim=','):
         '''
         Converts a string seperated by `delim` to a list of its string values.
         Strips off whitespace for each value.
@@ -518,7 +518,7 @@ scripts)?", warning=False)
 
 
     @classmethod
-    def ListToStr(self, in_list, delim=','):
+    def listToStr(self, in_list, delim=','):
         '''
         Converts a list to a string separated by `delim`.
 

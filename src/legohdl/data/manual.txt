@@ -539,9 +539,9 @@ NAME:
 
 SYNOPSIS:
         legohdl config <profile-name> [-ask]
-        legohdl config [-market=<mrkt>[:<url>] [-add | -remove]] [-active-workspace=<ws>] [-author=<name>] 
+        legohdl config [-market=<mrkt>[:<url>] [-link | -unlink]] [-active-workspace=<ws>] [-author=<name>] 
                 [-editor=<cmd>] [-template=<dir>] [-multi-develop=<bool>] [-overlap-recursive=<bool>]
-                [-refresh-rate=<rt>] [-profile=<profile-name>] [-script=<alias>:<cmd> [-link]] 
+                [-refresh-rate=<rt>] [-profile=<profile-name>] [-script=<alias>:<cmd>] 
                 [-label=<label>:<extensions> [-recursive]] [-workspace=<ws>:<path>]
 
 DESCRIPTION:
