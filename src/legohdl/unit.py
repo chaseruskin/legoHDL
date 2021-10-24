@@ -39,7 +39,7 @@ class Unit:
         VERILOG = 2
 
 
-    def __init__(self, filepath, dsgn, M, L, N, V, E):
+    def __init__(self, filepath, dsgn, M, L, N, V, E, about_txt=''):
         '''
         Create a design unit object.
 
@@ -54,6 +54,7 @@ class Unit:
         '''
 
         self._filepath = apt.fs(filepath)
+        self.setAbout(about_txt)
 
         _,ext = os.path.splitext(self.getFile())
         ext = '*'+ext.lower()
@@ -120,6 +121,10 @@ class Unit:
             self.Hierarchy.addLeaf(self)
         self._checked = c
         pass
+
+    
+    def setAbout(self, a_txt):
+        self._about_txt = a_txt
     
 
     def isChecked(self):
@@ -155,6 +160,10 @@ class Unit:
         else:
             txt = "No architectures are defined for "+self.getFull()+"!\n"
         return txt+'\n'
+
+
+    def readAbout(self):
+        return self._about_txt
 
 
     def getLanguageType(self):

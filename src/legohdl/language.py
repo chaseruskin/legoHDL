@@ -282,6 +282,56 @@ class Language(ABC):
         return code_stream
 
 
+    def getCommentBlock(self):
+        '''
+        Read the beginning of the file and return all the text hidden in comments,
+        as-is.
+
+        Parameters:
+            None
+        Returns:
+            a_txt (str): the text behind the first continuous block of comments
+        '''
+        a_txt = ''
+        in_cmts = False
+        with open(self.getPath(), 'r') as file:
+            for line in file.readlines():
+                line = line.strip()
+                #skip empty lines
+                if(len(line) == 0):
+                    continue
+
+                #is this line a comment line?
+                c_start = line.find(self._comment)
+                #is this line a multi-line comment?
+                if(self._multi_comment != None):
+                    mc_start = line.find(self._multi_comment[0])
+                    if(mc_start > -1):
+                        if(mc_start < c_start or c_start <= -1):
+                            c_start = mc_start
+                            in_cmts = True
+                
+                #stop collecting text if outside of comments
+                if(c_start <= -1 and in_cmts == False):
+                    break
+
+                #by default capture the rest of the line as text
+                c_end = len(line)
+                #handle leaving multi-line comment sections
+                if(self._multi_comment != None):
+                    mc_end = line.find(self._multi_comment[1])
+                    if(mc_end > -1):
+                        in_cmts = False
+                        c_end = mc_end
+                #trim to relevant text accordingly
+                line = line[c_start+len(self._comment):c_end]
+                #append this line to the info text
+                a_txt = a_txt + line + '\n'
+                pass
+            pass
+        return a_txt
+
+
     def getPath(self):
         return self._file_path
 

@@ -34,6 +34,8 @@ class Vhdl(Language):
         self._multi_comment = None
         self._std_delimiters = "(",")",":",";",","
 
+        self._about_txt = self.getCommentBlock()
+
         #run with VHDL decoder
         self.identifyDesigns()
         pass
@@ -73,13 +75,13 @@ class Vhdl(Language):
             if(token == 'entity' and cs[i+1] != ':'): #ensure its not a entity instaniation
                 if(not in_scope): 
                     name = cs[i+1]
-                    self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cs[i+1])]
+                    self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cs[i+1], about_txt=self._about_txt)]
                 in_scope = not in_scope
             #search for packages
             elif(token == 'package' and cs[i+1].lower() != 'body'): #ensure its not a package body
                 if(not in_scope):
                     name = cs[i+1]
-                    self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cs[i+1])]
+                    self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cs[i+1], about_txt=self._about_txt)]
                 in_scope = not in_scope
             
             if(token == 'end'):
@@ -420,7 +422,7 @@ class Vhdl(Language):
         Returns:
             None
         '''
-        
+
         #trim off surrounding '(' ')'
         words = words[1:len(words)-1]
         while (words.count(':') > 0):

@@ -222,7 +222,7 @@ def main():
 
         v1 = Vhdl(fp4, L='eel4712c', N='lab1')
         #v2= Vhdl(fp2, L='eel4712c', N='lab3')
-        v3 = Vhdl(fp3, M='uf-ece', L='eel4712c', N='lab2')
+        v3 = Vhdl(fp3, M='uf-ece', L='eel4712c', N='lab4')
 
         v5 = Vhdl(fp5, M='',L='projects',N='LED_animation')
         print(v1)
@@ -238,7 +238,8 @@ def main():
         print(Unit.Jar['']['projects']['LED_animation']['led_animation'].getInterface().writeInstance(entity_inst=True, align=True, inst_name='DUT'))
         print(Unit.Jar['']['projects']['LED_animation']['led_animation'].getInterface().writeConnections(align=True))
         #print(Unit.allL())
-
+        print(Unit.Jar['uf-ece']['eel4712c']['lab4']['top_level'].readAbout())
+        print(Unit.Jar['']['eel4712c']['lab1']['adder'].readAbout())
         #print(Unit.FlippedJar)
 
         #print(Unit.shortcut(e='fa', n='lab1'))
