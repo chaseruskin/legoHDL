@@ -78,7 +78,7 @@ class Unit:
         self._config = None
 
         #create an empty interface
-        self._interface = Interface(name=self.E(), library=self.L(), default_form=self._language)
+        self._interface = Interface(name=self.E(), library=self.L(), default_form=self.getLang())
 
         #add to Jar!
 
@@ -166,7 +166,7 @@ class Unit:
         return self._about_txt
 
 
-    def getLanguageType(self):
+    def getLang(self):
         return self._language
 
 
@@ -249,9 +249,9 @@ class Unit:
 
 
     def isTB(self):
-        # a testbench must have ports
+        # a testbench must have zero ports
         return (self._dsgn == self.Design.ENTITY and \
-            len(self.getInterface().getPorts()))
+            len(self.getInterface().getPorts()) == 0)
 
 
     def addArchitecture(self, a):
@@ -276,6 +276,28 @@ class Unit:
             return []
 
 
+    @classmethod
+    def printList(cls, M='', L='', N='', show_all_versions=False):
+        '''
+        Prints formatted list for entities.
+
+        Parameters:
+            show_all_versions (bool): print every available entity even with appended version
+        Returns:
+            None
+        '''
+        # :todo: add -filter to allow for user to prefer what they want to see about each entity?
+        print('{:<14}'.format("Library"),'{:<14}'.format("Unit"),'{:<8}'.format("Type"),'{:<14}'.format("Block"),'{:<10}'.format("Language"))
+        print("-"*14+" "+"-"*14+" "+"-"*8+" "+"-"*14+" "+"-"*10+" ")
+        for m in cls.Jar.values():
+            for l in m.values():
+                for n in l.values():
+                    for e in n.values():
+                        print('{:<14}'.format(e.L()),'{:<14}'.format(e.E()),'{:<8}'.format(e._dsgn.name),'{:<14}'.format(e.N()),'{:<10}'.format(e.getLang().name))
+            pass
+        pass
+
+
     def __str__(self):
         reqs = '\n'
         for dep in self.getRequirements():
@@ -285,7 +307,7 @@ class Unit:
         full name: {self.M()}.{self.L()}.{self.N()}:{self.E()}
         file: {self._filepath}
         dsgn: {self._dsgn}
-        lang: {self._language}
+        lang: {self.getLang()}
         arch: {self._arcs}
         tb?   {self.isTB()}
         conf? {self.getConfig()}

@@ -244,4 +244,6 @@ def main():
 
         #print(Unit.shortcut(e='fa', n='lab1'))
 
+        Unit.printList()
+
     pass
