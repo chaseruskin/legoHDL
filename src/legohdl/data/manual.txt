@@ -299,7 +299,7 @@ OPTIONS:
 ;       the tag will still live on and eventually get picked up by legohdl.
 * release
 NAME:
-        release -
+        release - Set a newer version for the current block
 
 SYNOPSIS:
         legohdl release <version> [-msg=<msg>] [-strict] [-soft] [-dry-run]
@@ -556,4 +556,6 @@ OPTIONS:
                 if the following should be imported and overloaded.
 
         :todo:
-        
+
+
+*

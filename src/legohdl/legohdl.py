@@ -120,7 +120,6 @@ class legoHDL:
         if(sys.argv[1:].count('debug')):
             test()
         else:
-            exit()
             self.runCommand()
         pass
 
@@ -1647,49 +1646,108 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
         
         elif(command == "help" or command == ''):
-            #list all of command details
-            self.commandHelp(package.lower())
-            print('USAGE: \
-            \n\tlegohdl <command> [argument] [flags]\
-            \n')
-            print("COMMANDS:\n")
-            def formatHelp(cmd, des):
-                print('  ','{:<12}'.format(cmd),des)
-                pass
-            print("Development")
-            formatHelp("new","create a templated empty block into workspace")
-            formatHelp("init","initialize the current folder into a valid block format")
-            formatHelp("open","opens the downloaded block with the configured text-editor")
-            formatHelp("port","print ports list of specified entity")
-            formatHelp("graph","visualize dependency graph for reference")
-            formatHelp("export","generate a blueprint file from labels")
-            formatHelp("build","execute a custom configured script")
-            formatHelp("run","export and build in a single step")
-            formatHelp("release","release a new version of the current block")
-            formatHelp("del","deletes a configured setting or a block from local workspace")
-            print()
-            print("Management")
-            formatHelp("list","print list of all blocks available")
-            formatHelp("refresh","sync local markets with their remotes")
-            formatHelp("install","grab block from its market for dependency use")
-            formatHelp("uninstall","remove block from cache")
-            formatHelp("download","grab block from its market for development")
-            formatHelp("update","update installed block to be to the latest version")
-            formatHelp("show","read further detail about a specified block")
-            formatHelp("config","set package manager settings")
-            formatHelp("profile","import configurations for scripts, settings, and template")
-            print("\nType \'legohdl help <command>\' to read more on entered command.")
-        else:
-            print("Invalid command; type \"legohdl help\" to see a list of available commands")
+            pass
     pass
+
+
+    def runCommand(self):
+        '''
+        Select from available commands what method to run.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+
+        cmd = self._command
+
+        if('new' == cmd):
+
+            pass
+
+        elif('init' == cmd):
+
+            pass
+
+        elif('open' == cmd):
+
+            pass
+
+        elif('get' == cmd):
+
+            pass
+
+        elif('graph' == cmd):
+            
+            pass
+
+        elif('export' == cmd):
+            
+            pass
+
+        elif('build' == cmd):
+            
+            pass
+
+        elif('release' == cmd):
+            
+            pass
+
+        elif('del' == cmd):
+            
+            pass
+
+        elif('list' == cmd):
+            
+            pass
+
+        elif('refresh' == cmd):
+            
+            pass
+
+        elif('install' == cmd):
+            
+            pass
+
+        elif('uninstall' == cmd):
+            
+            pass
+
+        elif('download' == cmd):
+            
+            pass
+
+        elif('update' == cmd):
+            
+            pass
+
+        elif('info' == cmd):
+            
+            pass
+
+        elif('config' == cmd):
+            
+            pass
+
+        elif('help' == cmd):
+            self.helpPrompt()
+            pass
+        
+        else:
+            self.defaultPrompt()
+            #notify user when a bad command was entered
+            if(cmd != ''):
+                log.error("Unknown command: "+cmd)
+            pass
 
 
     #! === HELP COMMAND ===
 
     def helpPrompt(self):
         '''
-        Reads from provided manual.txt regarding the _command passed by
-        user.
+        Reads from provided manual.txt regarding the _item passed by
+        user, given that the _command was 'help'.
 
         Parameters:
             None
@@ -1711,15 +1769,56 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 if(sep[0].startswith(';')):
                     continue
                 #find where to start
-                if(sep[0] == '*' and sep[1] == self._command):
+                if(len(sep) > 1 and sep[0] == '*' and sep[1] == self._item.lower()):
                     disp = True
                 elif(disp == True):
                     if(sep[0] == '*'):
                         break
                     else:
                         print(line,end='')       
-            pass
+            else:
+                self.defaultPrompt()
 
+        pass
+
+
+    def defaultPrompt(self):
+        '''
+        Display quick overview of legoHDL capabilites/commands.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        print('USAGE: \
+        \n\tlegohdl <command> [argument] [flags]\
+        \n')
+        print("COMMANDS:\n")
+        def formatHelp(cmd, des):
+            print('  ','{:<12}'.format(cmd),des)
+            pass
+        print("Development")
+        formatHelp("new","create a new legohdl block (project)")
+        formatHelp("init","initialize existing code into a legohdl block")
+        formatHelp("open","open a block with the configured text-editor")
+        formatHelp("get","print instantiation code for an HDL entity")
+        formatHelp("graph","visualize HDL dependency graph")
+        formatHelp("export","generate a blueprint file")
+        formatHelp("build","execute a custom configured script")
+        formatHelp("release","set a newer version for the current block")
+        formatHelp("del","delete a block from the local workspace path")
+        print()
+        print("Management")
+        formatHelp("list","print list of all blocks available")
+        formatHelp("refresh","sync local markets with their remotes")
+        formatHelp("install","bring a block to the cache for dependency use")
+        formatHelp("uninstall","remove a block from the cache")
+        formatHelp("download","bring a block to the workspace path for development")
+        formatHelp("update","update an installed block to be its latest version")
+        formatHelp("info","read further detail about a block")
+        formatHelp("config","modify legohdl settings")
+        print("\nType \'legohdl help <command>\' to read more on entered command.")
         pass
 
 
