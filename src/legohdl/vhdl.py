@@ -205,10 +205,26 @@ class Vhdl(Language):
                     config_name = cs[i+1]
                     current_map[unit_name].setConfig(config_name)
                 pass
+            elif(code_word == 'generic'):
+                #this entity has generics
+                if(in_entity):
+                    # iterate through from here to collect data on an interface
+                    if('end' in cs[i:]):
+                        end_i = cs[i:].index('end')
+                    if('port' in cs[i:] and cs[i:].index('port') < end_i):
+                        end_i = cs[i:].index('port')
+                    #update unit's interface
+                    self.collectGenerics(current_map[unit_name], cs[i+1:i+end_i])  
             elif(code_word == 'port'):
                 #this entity has a ports list and therefore is not a testbench
                 if(in_entity):
-                    current_map[unit_name].unsetTB()
+                    # iterate through from here to collect data on an interface
+                    if('end' in cs[i:]):
+                        end_i = cs[i:].index('end')
+                    if('generic' in cs[i:] and cs[i:].index('generic') < end_i):
+                        end_i = cs[i:].index('generic')
+                    #update uint's interface
+                    self.collectPorts(current_map[unit_name], cs[i+1:i+end_i])
             elif(code_word == ":"):
                 # :todo: entity instantiations from within deep architecture using full title (library.pkg.entity)
                 if(in_true_arch):
@@ -357,6 +373,79 @@ class Vhdl(Language):
         #restore file path back to its original assignment
         self._file_path = tmp_file
         return comps
+
+
+    def collectPorts(self, unit, words):
+        '''
+        From a subset of the code stream, parse through and create HDL Port
+        objects. Modifies unit's _interface attribute.
+
+        Parameters:
+            unit (Unit): the unit who's interface the ports belong to
+            words ([str]): the subset of code stream
+        Returns:
+            None
+        '''
+
+        #trim off surrounding '(' ')'
+        words = words[1:len(words)-1]
+        #pivot on every ':'
+        s_cnt = words.count(':')
+        for s in range(s_cnt):
+            sep = words.index(':')
+            #name is one position before ':'
+            sig_name = words[sep-1]
+            #way is one position after ':'
+            sig_way = words[sep+1]
+            #go up to the next seperator - 1 for the port type
+            stop_bit = len(words)
+            if(':' in words[sep+2:]):
+                stop_bit = sep+2 + words[sep+2:].index(':')-1
+            #get the list of remaining things for this port's type
+            sig_type = words[sep+2:stop_bit]
+            #proceed to next delimiter
+            unit.getInterface().addPort(sig_name, sig_way, sig_type)
+            words = words[sep+1:]
+        pass
+
+
+    def collectGenerics(self, unit, words):
+        '''
+        From a subset of the code stream, parse through and create HDL Generic
+        objects. Modifies unit's _interface attribute.
+
+        Parameters:
+            unit (Unit): the unit who's interface the generics belong to
+            words ([str]): the subset of code stream
+        Returns:
+            None
+        '''
+
+        #trim off surrounding '(' ')'
+        words = words[1:len(words)-1]
+        while (words.count(':') > 0):
+            sep = words.index(':')
+            #store the generic's name
+            gen_name = words[sep-1]
+            #extract the generic's type
+            stop_bit = len(words)
+            next_sep = words[sep+1:].index('=') - 1
+            stop_bit = sep+1 + next_sep
+
+            #store the generic's type
+            gen_type = words[sep+1:stop_bit]
+            #continue to next delimiter
+            words = words[stop_bit+2:]
+
+            #extract the initial value for the generic
+            stop_bit = len(words)
+            if(':' in words):
+                stop_bit = words.index(':') - 1
+            gen_value = words[:stop_bit]
+
+            unit.getInterface().addGeneric(gen_name, gen_type, gen_value)
+            pass
+        pass
 
 
     #append a signal/generic string to a list of its respective type

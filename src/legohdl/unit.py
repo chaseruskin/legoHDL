@@ -73,9 +73,11 @@ class Unit:
         self._V = V
         self._E = E
 
-        self._isTB = True
         self._checked = False
         self._config = None
+
+        #create an empty interface
+        self._interface = Interface()
 
         #add to Jar!
 
@@ -197,6 +199,7 @@ class Unit:
         return all_libs
 
 
+    # :todo: fix
     @classmethod
     def shortcut(cls, e, m='', l='', n=''):
         'Try to guess the remaining fields if unambigious.'
@@ -221,11 +224,7 @@ class Unit:
 
 
     def getFull(self):
-        return self.getLib()+"."+self.getName(low=True)
-
-
-    def unsetTB(self):
-        self._isTB = False
+        return self.L().lower()+"."+self.N().lower()
 
 
     def setConfig(self, config_name):
@@ -236,8 +235,14 @@ class Unit:
         return self._config
 
 
+    def getInterface(self):
+        return self._interface
+
+
     def isTB(self):
-        return (self._dsgn == self.Design.ENTITY and self._isTB)
+        # a testbench must have ports
+        return (self._dsgn == self.Design.ENTITY and \
+            len(self.getInterface().getPorts()))
 
 
     def addArchitecture(self, a):
@@ -277,4 +282,48 @@ class Unit:
         conf? {self.getConfig()}
         reqs: {reqs}
         '''
-        
+    pass
+
+
+class Generic:
+
+
+    pass
+
+
+class Signal:
+
+    def __init__(self, name, type, init_value=None):
+        pass
+
+    pass
+
+
+
+class Interface:
+    'An interface has generics and port signals. An entity will have an interface.'
+
+    def __init__(self):
+        self._ports = []
+        self._generics = []
+        pass
+
+
+    def addPort(self, name, way, flavor):
+        print("Port:",name,"going",way,"of type",flavor)
+        pass
+
+
+    def addGeneric(self, name, flavor, value):
+        print("Generic:",name,"of type",flavor,"has value",value)
+        pass
+
+
+    def getPorts(self):
+        return self._ports
+
+
+    def getGenerics(self):
+        return self._generics
+
+    pass

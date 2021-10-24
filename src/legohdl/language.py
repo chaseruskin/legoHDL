@@ -155,7 +155,7 @@ class Language(ABC):
 
     
     # :todo: refactor and polish
-    def generateCodeStream(self, keep_case, keep_term, *extra_parsers):
+    def generateCodeStream(self, keep_case, keep_term, *extra_parsers, keep_parenth=True):
         '''
         Turn an HDL file into a list of its words.
 
@@ -272,7 +272,7 @@ class Language(ABC):
                     chopped = chopSticks(word)
                     #drop all parentheses
                     for sliced in chopped:
-                        if(not keep_term):
+                        if(not keep_parenth):
                             sliced = sliced.replace("(","")
                             sliced = sliced.replace(")","")
                         if(len(sliced)):
