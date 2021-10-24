@@ -17,8 +17,7 @@ from .label import Label
 
 
 def main():
-    apt.load()
-    #run tests (flip to false to deactivate)
+    'Run tests (flip to false to deactivate).'
 
     if(False):
         print("\n--- SCRIPT.PY ---")
@@ -102,7 +101,7 @@ def main():
         print('\n---MARKET CLASS---')
         print(Market.Jar)
 
-    if(True):
+    if(False):
         print('\n---WORKSPACE CLASS---')
         #create workspaces
         tmp_ws = "super_WS"
@@ -144,7 +143,7 @@ def main():
         tmp.remove()
         other.remove()
 
-    if(True):
+    if(False):
         print('\n---PROFILE CLASS---')
 
         tmp = Profile("Loadout_I")
@@ -189,8 +188,9 @@ def main():
         t.setName("PYTHON-CODE")
 
         print(Label.Jar[t.getName()])
-    if(True):
-        print('\n---MARKET CLASS (under as Market2)---')
+
+    if(False):
+        print('\n---MARKET CLASS---')
 
         Market("open-ip")
 
@@ -206,6 +206,9 @@ def main():
 
         Market.tidy()
 
-
         #shutil.rmtree(Market.Jar['soc-blocks'].getMarketDir(), onerror=apt.rmReadOnly)
+    
+    if(True):
+        print('\n---ENTITY CLASS---')
+
     pass
