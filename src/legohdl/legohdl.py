@@ -69,6 +69,8 @@ class legoHDL:
 
         print(self)
 
+        self.helpPrompt()
+
         #load legohdl.cfg
         #ensure all necessary hidden folder structures exist
         intial_setup = apt.initialize()
@@ -1681,7 +1683,45 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             print("Invalid command; type \"legohdl help\" to see a list of available commands")
     pass
 
+
     #! === HELP COMMAND ===
+
+    def helpPrompt(self):
+        '''
+        Reads from provided manual.txt regarding the _command passed by
+        user.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        #open the manual.txt
+        with open(apt.getProgramPath()+'data/manual.txt', 'r') as man:
+            info = man.readlines()
+
+            disp = False
+            for line in info:
+                sep = line.split()
+                #skip comments and empty lines
+                if(len(sep) == 0):
+                    if(disp == True):
+                        print()
+                    continue
+                if(sep[0].startswith(';')):
+                    continue
+                #find where to start
+                if(sep[0] == '*' and sep[1] == self._command):
+                    disp = True
+                elif(disp == True):
+                    if(sep[0] == '*'):
+                        break
+                    else:
+                        print(line,end='')       
+            pass
+
+        pass
+
 
     def commandHelp(self, cmd):
         '''
