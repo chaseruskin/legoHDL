@@ -1,14 +1,12 @@
-################################################################################
-#   Project: legohdl
-#   Script: unit.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script describes the attributes and functions for a HDL design 
+# Project: legohdl
+# Script: unit.py
+# Author: Chase Ruskin
+# Description:
+#   This script describes the attributes and functions for a HDL design 
 #   unit. In verilog, this is called a 'module', and in VHDL, this is called an 
 #   'entity'. Other design units include 'packages', which are available in both
 #   VHDL and verilog. Units are used to help gather data on the type of HDL
 #   dependency tree that will be generated for the current design.
-################################################################################
 
 from enum import Enum
 import os
@@ -17,6 +15,7 @@ from .vhdl import Vhdl
 from .verilog import Verilog
 from .graph import Graph
 from .apparatus import Apparatus as apt
+
 
 class Unit:
 
@@ -168,11 +167,19 @@ class Unit:
         else:
             return []
 
-    def __repr__(self):
-        report = f'''
-{self._lib}.{self._block}:{self._unit} | {self._filepath} | {self._dtype} | {self._language} | {self._arcs} | TB: {self.isTB()} | CFG: {self.getConfig()}
-requires:\n'''
+
+    def __str__(self):
+        reqs = '\n'
         for dep in self.getRequirements():
-            report = report + '-'+dep.getLib()+'.'+dep.getBlock()+'.'+dep.getName()+"\n"
+            reqs = reqs + '-'+dep.getLib()+'.'+dep.getBlock()+'.'+dep.getName()+"\n"
+        return f'''
+        full name: {self._lib}.{self._block}:{self._unit}
+        file: {self._filepath}
+        type: {self._dtype}
+        lang: {self._language}
+        arch: {self._arcs}
+        tb?   {self.isTB()}
+        conf? {self.getConfig()}
+        reqs: {reqs}
+        '''
         
-        return report
