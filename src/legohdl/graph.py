@@ -101,7 +101,7 @@ class Graph:
         if(first):
             print('---DEPENDENCY TREE---')
         #start with top level
-        if(top not in self._unit_bank.keys()):
+        if(top.lower() not in self._unit_bank.keys()):
             exit(log.error('Entity '+top+' may be missing an architecture.'))
         if(not self._unit_bank[top].isPKG()):
             #uncomment this next line to print market along with entity
@@ -110,6 +110,8 @@ class Graph:
             #skip first bar because everything is under top-level entity
             if(not first):
                 temp_leaf = ' '+leaf[1:]
+            else:
+                temp_leaf = temp_leaf.replace('+','\\')
             #print to console
             print(temp_leaf,top)
         if(len(self.__adj_list) == 0):
@@ -120,9 +122,13 @@ class Graph:
             if(leaf.count('\\')):
                 last_bar = next_leaf.rfind('|')
                 next_leaf = next_leaf[:last_bar] + ' ' + next_leaf[last_bar+1:]
+            
+            next_leaf = next_leaf.replace('\\', '+')
+                
             #add trailing slant if end of the branch
             if(sub_entity == self.__adj_list[top][-1]):
                 next_leaf = next_leaf.replace('+','\\')
+                pass
 
             self.output(sub_entity, next_leaf)
         pass
