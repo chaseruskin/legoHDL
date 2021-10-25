@@ -1,12 +1,10 @@
-################################################################################
-#   Project: legohdl
-#   Script: block.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script describes the attributes and behaviors for a "block" within
+# Project: legohdl
+# Script: block.py
+# Author: Chase Ruskin
+# Description:
+#   This script describes the attributes and behaviors for a "block" within
 #   the legohdl framework. A block is a HDL project with a marker file at the 
 #   root folder.
-################################################################################
 
 import os, shutil, stat
 from datetime import date
@@ -37,6 +35,7 @@ class Block:
                 'market' : cfg.NULL,
                 'derives' : []}
             }
+
 
     def __init__(self, title=None, path=None, remote=None, excludeGit=False, market=None):
         self.__metadata = {'block' : {}}
@@ -76,12 +75,14 @@ class Block:
             self.loadMeta()
         pass
 
+
     #return the block's root path
     def getPath(self, low=False):
         if(low):
             return self.__local_path.lower()
         else:
             return self.__local_path
+
 
     #download block from a url (can be from cache or remote)
     def downloadFromURL(self, rem, in_place=False):
@@ -134,21 +135,23 @@ class Block:
 
         return success
 
-    #return the full block name (library.name)
+
     def getTitle(self, low=True, mrkt=False):
         '''
-        Returns the L.N of block.
+        Returns the full block title combined.
         
         Parameters:
-        ---
-        low (bool) : enable case-sensitivity
-        mrkt (bool) : prepend market name, if available
+            low (bool): enable case-sensitivity
+            mrkt (bool): prepend market name, if available
+        Returns:
+            (str): M.L.N format
         '''
         m = ''
         if(mrkt and self.getMeta('market') != None):
             m = self.getMeta('market')+'.'
             
         return m+self.getLib(low=low)+'.'+self.getName(low=low)
+
 
     #return the version as only digit string, ex: 1.2.3
     def getVersion(self):
@@ -186,8 +189,11 @@ class Block:
                     exit('\nExited prompt.')
         return
 
-    #release the block as a new version
+
     def release(self, msg=None, ver=None, options=[]):
+        '''
+        Release the block as a new version.
+        '''
         #dynamically link on release
         if(self.grabGitRemote() != None and hasattr(self,"_repo")):
             if(apt.isValidURL(self.grabGitRemote())):
@@ -287,36 +293,41 @@ class Block:
             log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
     
+
     def sortVersions(self, unsorted_vers):
         '''
-        Mergesort (1/2) - returns a list from highest to lowest.
+        Returns a list from highest to lowest using merge sort.
         '''
+
+
+        def mergeSort(l1, r1):
+            '''
+            Mergesort (2/2) - begin merging lists.
+            '''
+            sorting = []
+            while len(l1) and len(r1):
+                if(Block.biggerVer(l1[0],r1[0]) == r1[0]):
+                    sorting.append(r1.pop(0))
+                else:
+                    sorting.append(l1.pop(0))
+            if(len(l1)):
+                sorting = sorting + l1
+            if(len(r1)):
+                sorting = sorting + r1
+            return sorting
+
+
         #split list
         midpoint = int(len(unsorted_vers)/2)
         l1 = unsorted_vers[:midpoint]
         r1 = unsorted_vers[midpoint:]
         #recursive call to continually split list
         if(len(unsorted_vers) > 1):
-            return self.mergeSort(self.sortVersions(l1), self.sortVersions(r1))
+            return mergeSort(self.sortVersions(l1), self.sortVersions(r1))
         else:
             return unsorted_vers
-        pass
 
-    def mergeSort(self, l1, r1):
-        '''
-        Mergesort (2/2) - begin merging lists.
-        '''
-        sorting = []
-        while len(l1) and len(r1):
-            if(Block.biggerVer(l1[0],r1[0]) == r1[0]):
-                sorting.append(r1.pop(0))
-            else:
-                sorting.append(l1.pop(0))
-        if(len(l1)):
-            sorting = sorting + l1
-        if(len(r1)):
-            sorting = sorting + r1
-        return sorting
+
 
     def getTaggedVersions(self):
         '''
@@ -340,12 +351,14 @@ class Block:
         #return all tags
         return tags
 
+
     @classmethod
     def stdVer(cls, ver):
         '''
         Standardize the version argument by swapping _ with .
         '''
         return ver.replace("_",".")
+
 
     @classmethod
     def biggerVer(cls, lver, rver):
@@ -361,6 +374,7 @@ class Block:
         elif(l1 == r1 and l2 == r2 and l3 <= r3):
             return rver
         return lver
+
 
     @classmethod
     def validVer(cls, ver, maj_place=False):
@@ -386,10 +400,18 @@ class Block:
                 ver[f_dot+1:l_dot].isdecimal() and \
                 ver[l_dot+1:].isdecimal())
     
+
     @classmethod
     def sepVer(cls, ver):
         '''
         Separate a version into 3 integer values.
+
+        Parameters:
+            ver (str): any type of string, can also be None
+        Returns:
+            r_major (int): biggest version number
+            r_minor (int): middle version number
+            r_patch (int): smallest version number
         '''
         ver = cls.stdVer(ver)
         if(ver == '' or ver == None):
@@ -413,6 +435,7 @@ class Block:
         except:
             r_patch = 0
         return r_major,r_minor,r_patch
+
 
     def isMarket(self):
         return apt.isSubPath(apt.MARKETS, self.getPath())
@@ -441,9 +464,18 @@ class Block:
     def getAvailableVers(self):
         return ['v'+self.getHighestTaggedVersion()]
     
+
     def loadMeta(self):
         '''
         Load the metadata from the Block.cfg file into the __metadata dictionary.
+
+        Also creates backup data _initial_metadata for later comparison to determine
+        if to save (write to file).
+
+        Parameters:
+            None
+        Returns:
+            None
         '''
         with open(self.metadataPath(), "r") as file:
             self.__metadata = cfg.load(file, ignore_depth=True)
@@ -514,8 +546,17 @@ class Block:
         self._L = self.getLib(low=False)
         pass
 
-    #create a new file from a template file to an already existing block
+
     def fillTemplateFile(self, newfile, templateFile):
+        '''
+        Create a new file from a template file to an already existing block.
+
+        Parameters:
+            newfile (str): the file to create
+            templateFile (str): the file to copy from
+        Returns:
+            None
+        '''
         #grab name of file
         filename = os.path.basename(newfile)
         file,_ = os.path.splitext(filename)
@@ -547,7 +588,6 @@ class Block:
         if(author == None):
             author = ''
 
-        
         #grab name of template file
         template_name = os.path.basename(templateFile)
         template_name,_ = os.path.splitext(template_name)
@@ -576,16 +616,19 @@ class Block:
         log.info("success")
         pass
 
+
     def create(self, fresh=True, git_exists=False, remote=None, fork=False, inc_template=True):
         '''
         Create a new block using the template and attempt to set up a remote.
 
-        Parameters
-        ---
-        fresh : if creating a block from scratch (no existing files)
-        git_exists : if the current folder already has a git repository
-        remote : the url to the remote repository (None if DNE)
-        fork : if wanting to not attach the remote that was used to initialize
+        Parameters:
+            fresh (bool): if creating a block from scratch (no existing files)
+            git_exists (bool): if the current folder already has a git repository
+            remote (str): the url to the remote repository (None if DNE)
+            fork (bool): if wanting to not attach the remote that was used to initialize
+            inc_template (bool): determine if to copy the template files
+        Returns:
+            None
         '''
         log.info('Initializing new block...')
         #copy template folder to new location if its a fresh project
@@ -706,6 +749,7 @@ class Block:
             log.info('No remote code base attached to local repository')
         pass
 
+
     #dynamically grab the origin url if it has been changed/added by user using git
     def grabGitRemote(self, newValue=None, override=False):
         if(hasattr(self, "_remote") and not override):
@@ -789,16 +833,17 @@ class Block:
         else:
             return self.__lib
 
-    #return the value stored in metadata, else return None if DNE
+
     def getMeta(self, key=None, every=False):
         '''
         Returns the value stored in the block metadata, else retuns None if
         DNE.
 
         Parameters:
-        ---
-        key (str)  : the case-sensitive key to the cfg dictionary
-        all (bool) : return entire dictionary
+            key (str): the case-sensitive key to the cfg dictionary
+            all (bool): return entire dictionary
+        Returns:
+            val (str): the value behind the corresponding key
         '''
         #return everything, even things outside the block: scope
         if(every):
@@ -812,28 +857,39 @@ class Block:
         else:
             return None
 
+
     def setMeta(self, key, value):
-        '''
-        Updates the block metatdata dictionary.
-        '''
+        '''Updates the block metatdata dictionary.'''
         self.__metadata['block'][key] = value
         pass
 
-    #return true if the requested project folder is a valid block
+
     def isValid(self):
+        '''Returns true if the requested project folder is a valid block.'''
         return os.path.isfile(self.metadataPath())
 
-    #return path to marker file
+
     def metadataPath(self):
+        '''Return the path to the marker file.'''
         return self.getPath()+apt.MARKER
 
+
     def getChangeLog(self, path):
+        '''
+        Return the contents of the changelog, if exists. Returns None otherwise.
+
+        Parameters:
+            path (str): path that should lead to the changelog file
+        Returns:
+            (str): contents of the changelog lines
+        '''
         path = path+"/"+apt.CHANGELOG
         if(os.path.isfile(path)):
                 with open(path,'r') as f:
                     return f.readlines()
         else:
             return None
+
 
     #print out the metadata for this block
     def show(self, listVers=False, ver=None, dispChange=False):
@@ -903,14 +959,14 @@ class Block:
 
                     print()
     
+
     def load(self):
-        '''
-        Opens this block with the configured text-editor.
-        '''
+        '''Opens this block with the configured text-editor.'''
         log.info("Opening "+self.getTitle()+" at... "+self.getPath())
-        apt.execute(apt.SETTINGS['general']['editor'], self.getPath())
+        apt.execute(apt.getEditor(), self.getPath())
         pass
     
+
     def save(self, meta=None):
         '''
         Write the metadata back to the marker file only if the data has changed
@@ -936,10 +992,9 @@ class Block:
         pass
 
     def isLinked(self):
-        '''
-        Returns true if a remote repository is linked/attached to this block.
-        '''
+        '''Returns true if a remote repository is linked/attached to this block.'''
         return self.grabGitRemote() != None
+
 
     def copyVersionCache(self, ver, folder):
         '''
@@ -1015,14 +1070,17 @@ class Block:
             self._repo.git.checkout('-')
         pass
 
+
     def modWritePermissions(self, enable, path=None):
         '''
         Disable modification/write permissions of all files specified on this
         block's path.
 
-        Parameters
-        ---
-        path : path to file or directory to change (default = block's path)
+        Parameters:
+            enable (bool): determine if files to have write permissions
+            path (str): path to file or directory to change (default = block's path)
+        Returns:
+            None
         '''
         if(path == None):
             path = self.getPath()
@@ -1044,6 +1102,7 @@ class Block:
                 os.chmod(f, cur_permissions & w_permissions)
             pass
         pass
+
 
     def install(self, cache_dir, ver=None, src=None):
         '''
@@ -1101,8 +1160,6 @@ class Block:
         self._repo = git.Repo(self.getPath())
         self.loadMeta()
 
-
-
         #2. now perform install from cache
         instl_vers = os.listdir(base_cache_dir)       
         if(self.validVer(ver)):
@@ -1151,10 +1208,16 @@ class Block:
                 log.error("Version "+ver+" is not available to install.")
         pass
 
+
     def updateDerivatives(self, block_list):
         '''
         Updates the metadata section 'derives' for required blocks needed by
         the current block.
+
+        Parameters:
+            block_list ([str]): a list of block titles
+        Returns:
+            None
         '''
         #print("Derives:",block_list)
         update = False
@@ -1172,15 +1235,17 @@ class Block:
             self.save()
         pass
 
+
     def gatherSources(self, ext=apt.SRC_CODE, path=None):
         '''
         Return all files associated with the given extensions from the specified
         path.
 
-        Parameters
-        ---
-        ext : a list of extensions (use * to signify all files of given ext)
-        path : where to begin searching for files
+        Parameters:
+            ext  ([str]): a list of extensions (use * to signify all files of given ext)
+            path (str) : where to begin searching for files. Defaults to block's path.
+        Returns:
+            srcs ([str]): a list of files matching the given ext's
         '''
         srcs = []
         if(path == None):
@@ -1190,16 +1255,21 @@ class Block:
         #print(srcs)
         return srcs
 
+
     @classmethod
     def snapTitle(cls, title, lower=True):
         '''
         Break a title into its 4 components, if possible. Returns M,L,N,V as
         strings.
 
-        Parameters
-        ---
-        title : the string to be parsed into title components
-        lower : return components as all lower-case (true) or normal (false)
+        Parameters:
+            title (str): the string to be parsed into title components
+            lower (bool):return components as all lower-case (true) or normal (false)
+        Returns:
+            M (str): block market
+            L (str): block library
+            N (str): block name
+            V (str): bloc version
         '''
         delimiter = '.'
         def parseDelimiter(t):
@@ -1241,21 +1311,28 @@ class Block:
             return M.lower(),L.lower(),N.lower(),V.lower()
         return M,L,N,V
 
+
     def identifyTop(self):
         '''
         Auto-detects the top-level design entity. Returns None if not found.
+
+        Parameters:
+            None
+        Returns:
+            self._top (Unit): unit object that is the top-level for this block
         '''
+        #return if already identified
         if(hasattr(self, "_top")):
             return self._top
+        
+        self._top = None
         #first fill out all data on each unit
         self.grabUnits()
         #constrain to only using the current block's design units
         units = self.grabCurrentDesigns()
-        
         #only grab from project-level design units
         top_contenders = list(self.grabCurrentDesigns().keys())
 
-        self._top = None
         for name,unit in units.items():
             #if the entity is value under this key, it is lower-level
             if(unit.isTB() or unit.isPKG()):
@@ -1266,7 +1343,6 @@ class Block:
             for dep in unit.getRequirements():
                 if(dep.E().lower() in top_contenders):
                     top_contenders.remove(dep.E().lower())
-
 
         if(len(top_contenders) == 0):
             log.warning("No top level detected.")
@@ -1296,27 +1372,39 @@ class Block:
 
         return self._top
 
+
     def identifyBench(self, entity_name, save=False):
         '''
         Determine what testbench is used for the top-level design entity (if 
         found). Returns None if not found.
+
+        Parameters:
+            entity_name (str): name of entity to be under test
+            save (bool): determine if to record the changes to the metadata
+        Returns:
+            self._bench (Unit): testbench unit object
         '''
+        #return if already identified
         if(hasattr(self, "_bench")):
             return self._bench
+
+        self._bench = None 
+        #load all units
         self.grabUnits()
         units = self.grabCurrentDesigns()
         benches = []
-        for name,unit in units.items():
+        for unit in units.values():
             for dep in unit.getRequirements():
                 if(dep.L().lower() == self.getLib().lower() and dep.E().lower() == entity_name and unit.isTB()):
                     benches.append(unit)
-        self._bench = None    
+        #perfect; only 1 was found  
         if(len(benches) == 1):
             self._bench = benches[0]
+        #prompt user to select a testbench
         elif(len(benches) > 1):
             top_contenders = []
             for b in benches:
-                top_contenders.append(b.getName())
+                top_contenders.append(b.E())
             log.warning("Multiple top level testbenches detected. "+str(top_contenders))
             try:
                 validTop = input("Enter a valid toplevel testbench: ").lower()
@@ -1405,6 +1493,7 @@ class Block:
         print("===END UNIT BOOK===")
         pass
 
+
     def grabUnits(self, toplevel=None, override=False):
         '''
         Color in (fill/complete) all units found in the design book.
@@ -1444,64 +1533,6 @@ class Block:
             self.grabCacheDesigns(override)
             pass
         pass
-
-    # :todo: use generateCodeStream
-    def skimVHDL(self, designs, filepath, L, N, M):
-        '''
-        Return an updated dictionary object with any blank units found in the
-        file (VHDL syntax).
-        '''
-        with open(filepath, 'r') as file:
-            for line in file.readlines():
-                words = line.split()
-                #skip if its a blank line
-                if(len(words) == 0): 
-                    continue
-                #create new library dictionary if DNE
-                if(L not in designs.keys()):
-                    designs[L] = dict()
-                #add entity units
-                if(words[0].lower() == "entity"):
-                    designs[L][words[1].lower()] = Unit(filepath, Unit.Type.ENTITY, L, N, words[1].lower(), M)
-                #add package units
-                elif((words[0].lower() == "package" and words[1].lower() != 'body')):
-                    designs[L][words[1].lower()] = Unit(filepath, Unit.Type.PACKAGE, L, N, words[1].lower(), M)
-        file.close()
-        return designs
-
-    # :todo: use generateCodeStream
-    def skimVerilog(self, designs, filepath, L, N, M):
-        '''
-        Return an updated dictionary object with any blank units found in the 
-        file (verilog syntax).
-        '''
-        with open(filepath, 'r') as file:
-            for line in file.readlines():
-                words = line.split()
-                #skip if its a blank line
-                if(len(words) == 0): 
-                    continue
-                #create new library dictionary if DNE
-                if(L not in designs.keys()):
-                    designs[L] = dict()
-                #add entity units
-                for i in range(len(words)):
-                    #find the module keyword, the next name
-                    if(words[i].lower() == "module"):
-                        ports_start = words[i+1].find("(")
-                        params_start = words[i+1].find("#")
-                        if(params_start > -1 and params_start < ports_start):
-                            ports_start = params_start
-                        #cut off at the beginning of a ports list
-                        if(ports_start > -1):
-                            mod_name = words[i+1][:ports_start]
-                        else:
-                            mod_name = words[i+1]
-                        mod_name = mod_name.replace(";","")
-                        #keep case sensitivity in unit constructor
-                        designs[L][mod_name.lower()] = Unit(filepath, Unit.Type.ENTITY, L, N, mod_name, M)
-        file.close()
-        return designs
 
     #return dictionary of entities with their respective files as values
     #all possible entities or packages to be used in current project
