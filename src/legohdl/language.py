@@ -55,6 +55,11 @@ class Language(ABC):
         #add to processed list
         self._ProcessedFiles[self.getPath().lower()] = self
         pass
+    
+    
+    @abstractmethod
+    def identifyDesigns(self):
+        pass
 
 
     @abstractmethod

@@ -244,6 +244,17 @@ def main():
 
         #print(Unit.shortcut(e='fa', n='lab1'))
 
+        
+
+        fp01 = '/Users/chase/Develop/eel4712c/experimental/testv/src/andgate.v'
+        fp02 = '/Users/chase/Develop/eel4712c/experimental/testv/src/OtherC.v'
+        fp03 = '/Users/chase/Develop/eel4712c/experimental/testv/src/TestV.v'
+
+        vl1 = Verilog(fp01, M='', L='Sample', N='Test')
+        vl2 = Verilog(fp02, M='', L='Sample', N='Test')
+
+        vl1.decipher()
+        vl2.decipher()
         Unit.printList()
 
     pass

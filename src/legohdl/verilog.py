@@ -1,34 +1,92 @@
-################################################################################
-#   Project: legohdl
-#   Script: verilog.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script inherits language.py and implements the behaviors for
+# Project: legohdl
+# Script: verilog.py
+# Author: Chase Ruskin
+# Description:
+#   This script inherits language.py and implements the behaviors for
 #   verilog/systemverilog code files (syntax, deciphering).
-################################################################################
 
+from typing_extensions import ParamSpecArgs
 from .language import Language
 import logging as log
+from .unit import Unit
+
 
 class Verilog(Language):
 
-    def __init__(self, fpath, ):
-        super().__init__(fpath)
-        #run with VERILOG decoder
+
+    def __init__(self, fpath, M='', L='', N='', V=''):
+        '''
+        Create a VERILOG language file object.
+
+        Parameters:
+            fpath (str): HDL file path
+            M (str): the legohdl block market the file belongs to
+            L (str): the legohdl block library the file belongs to
+            N (str): the legohdl block name the file belongs to
+            V (str): the legohdl block version the file belongs to
+        Returns:
+            None
+        '''
+        super().__init__(fpath, M, L, N, V)
         self._comment = "//"
         self._multi_comment = ("/*","*/")
+        self._std_delimiters = *self._std_delimiters,'#','[',']','='
         
-        self._std_delimiters = *self._std_delimiters,'#','[',']'
+        self._param_begin = -1
         self._param_end = -1
+        self._port_begin = -1
         self._port_end = -1
 
-    def decipher(self, design_book, cur_lib, verbose):
+        self._about_txt = self.getCommentBlock()
+
+        #run with VERILOG decoder
+        self.identifyDesigns()
+        pass
+
+
+    def identifyDesigns(self):
+        '''
+        Analyzes the current VERILOG file to only identify design units and not
+        complete their data. Dynamically creates self._designs attribute.
+
+        Parameters:
+            None
+        Returns:
+            self._designs ([Unit]): list of units found in this file
+        '''
+        if(hasattr(self, "_designs")):
+            return self._designs
+
+        cs = self.generateCodeStream(True, False, *self._std_delimiters)
+        self._designs = []
+
+        #looking for design units
+        for i in range(len(cs)-1):
+            token = cs[i]
+            #search for entities
+            if(token == 'module'):
+                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cs[i+1], about_txt=self._about_txt)]
+            #search for packages
+            elif(token == 'package'):
+                self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cs[i+1], about_txt=self._about_txt)]
+
+        return self._designs
+
+
+    def decipher(self, design_book=dict(), cur_lib='', verbose=False):
+        '''
+        Analyzes the current VERILOG file to collect data for all identified design 
+        units.
+        '''
+        current_map = Unit.Jar[self.M()][self.L()][self.N()]
+
         if(verbose):
-            log.info("Deciphering VERILOG file...")
-            log.info(self._file_path)
+            log.info("Deciphering VERILOG file..."+self.getPath())
+
         #keep case sensitivity
-        c_stream = self.generateCodeStream(True,True,*self._std_delimiters)
+        c_stream = self.generateCodeStream(True, True, *self._std_delimiters)
         #print(c_stream)
+
         #store a list of all available module names
         all_available_modules = []
         for g in design_book.values():
@@ -43,15 +101,17 @@ class Verilog(Language):
                 module_name = c_stream[i+1]
                 #print(module_name)
                 in_ports = True
+                self._port_begin = i+3
             elif(c_stream[i] == "endmodule"):
                 #the current module is now finished deciphering
-                design_book[cur_lib][module_name.lower()].setChecked(True)
+                current_map[module_name].setChecked(True)
                 in_module = False
                 module_name == None
             elif(c_stream[i] != module_name and in_ports):
                 #entering parameters
                 if(c_stream[i] == "#"):
                     in_params = True
+                    self._param_begin = i+2
                     continue
 
                 #stack up/down the parentheses to get to the bottom of ports or params list
@@ -66,41 +126,125 @@ class Verilog(Language):
                     if(not in_params):
                         in_ports = False
                         self._port_end = i
+                        self.collectPorts(current_map[module_name], c_stream[self._port_begin:i])
                     else:
+                        self._port_begin = i+2
                         self._param_end = i
+                        self.collectGenerics(current_map[module_name], c_stream[self._param_begin:i])
                     in_params = False
                     in_module = True
                 #if we find anything or than an empty ports list, its not a testbench
                 elif(c_stream[i] != ';' and not in_params):
-                    design_book[cur_lib][module_name.lower()].unsetTB()
+                    # :todo: write interface
+                    #current_map[module_name]
+                    pass
+                    pass
             #inside the module "architecture"
             elif(in_module):
                 #check with every possible unit if its an instance
                 # :todo: count the number of modules that share that name, then prompt user to select which one
                 # to resolve ambiguity
                 for u in all_available_modules:
-                    ignore_case = False
                     m_name = c_stream[i]
+                    u_name = u.getName()
                     #if the unit is from vhdl, ignore case-sensitivity
-                    if(u.getLanguageType() == u.Language.VHDL):
-                        ignore_case = True
+                    if(u.getLang() == u.Language.VHDL):
                         m_name = m_name.lower()
+                        u_name = u.getName().lower()
                     #print(m_name)
                     #print(u.getName(False))
-                    if(m_name == u.getName(low=ignore_case)):
+                    if(m_name == u_name):
                         #add if not already added to the requirements for this module
-                        if(u not in design_book[cur_lib][module_name.lower()].getRequirements()):
-                            design_book[cur_lib][module_name.lower()].addRequirement(u)
+                        if(u not in current_map[module_name].getRequirements()):
+                            current_map[module_name].addRequirement(u)
                             pass
                         #only enter recursion if the unit has not already been completed ("checked")
-                        if(not design_book[u.getLib()][u.getName()].isChecked()):
-                            u.getLang().decipher(design_book, u.getLib(), verbose)
+                        if(not Unit.Jar[u.M()][u.L()][u.N()][u.E()].isChecked()):
+                            u.getLang().decipher(dict(), u.getLib(), verbose)
                             pass
                 pass
             pass
 
         return design_book
-    
+
+
+    def collectPorts(self, unit, words):
+        '''
+        From a subset of the code stream, parse through and create HDL Port
+        objects. Modifies unit's _interface attribute.
+
+        Parameters:
+            unit (Unit): the unit who's interface the ports belong to
+            words ([str]): the subset of code stream
+        Returns:
+            None
+        '''
+        #add comma to end
+        last_flavor = []
+        last_way = ''
+
+        words = words + [',']
+        while words.count(','):
+            sep = words.index(',')
+            piece = words[:sep]
+            if(len(piece) == 0):
+                words = words[sep+1:]
+                continue
+            #complete fields backward from comma
+            port_name = piece[-1]
+            #scrap together what is left
+            next_flavor = []
+            for w in piece[0:len(piece)-1]:
+                if(w == 'input' or w == 'output' or w == 'inout'):
+                    last_way = w
+                else:
+                    next_flavor += [w]
+            #use last type if this type is unspecified
+            if(len(next_flavor) == 0):
+                next_flavor = last_flavor
+            #update last flavor to the most recent type found
+            else:
+                last_flavor = next_flavor
+
+            unit.getInterface().addPort(port_name, last_way, next_flavor)
+
+            words = words[sep+1:]
+
+        pass
+
+
+    def collectGenerics(self, unit, words):
+        '''
+        From a subset of the code stream, parse through and create HDL Generic
+        objects. Modifies unit's _interface attribute.
+
+        Parameters:
+            unit (Unit): the unit who's interface the generics belong to
+            words ([str]): the subset of code stream
+        Returns:
+            None
+        '''
+        #add additional comma to end to make iteration easier
+        #pivot on '='
+        while words.count('='):
+            sep = words.index('=')
+            param_name = words[sep-1]
+            value = words[sep+1]
+
+            flavor = ['integer']
+
+            #anything between name and 'parameter' keyword? -> thats the type
+            
+            # :todo: allow for searching rest of document for these parameters and ports and
+            #filling in the data as the file gets read down the road in 'decipher'
+
+            unit.getInterface().addGeneric(param_name, flavor, value)
+
+            #step through the remaining words
+            words = words[sep+1:]
+        pass
+
+
     #generate string of component's signal declarations to be interfaced with the port
     def writeComponentSignals(self, return_names=False):
         #print("writing signals")
@@ -141,6 +285,7 @@ class Verilog(Language):
             return (signals, parameters)
         else:
             return signals_txt
+
 
     #append a signal/generic string to a list of its respective type
     def addSignal(self, stash, c, true_stream, declare=False):
@@ -215,6 +360,7 @@ class Verilog(Language):
                 stash.append(s_type+n+";")
         return stash
 
+
     #write out the mapping instance of an entity (can be pure instance using 'entity' keyword also)
     def writeComponentMapping(self, pureEntity=True, lib=''):
         #get parsed case-sensitive code stream with terminators
@@ -254,6 +400,7 @@ class Verilog(Language):
                     r = r + "    ."+sig+"("+sig+"),\n"
         r = r + ';'
         return r
+
 
     #write out the entity but as a component
     def writeComponentDeclaration(self):
