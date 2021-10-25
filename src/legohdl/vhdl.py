@@ -10,8 +10,9 @@
 from legohdl.language import Language
 import logging as log
 from .language import Language
+from .apparatus import Apparatus as apt
 from .unit import Unit
-
+from .map import Map
 
 class Vhdl(Language):
 
@@ -92,7 +93,7 @@ class Vhdl(Language):
 
 
     #function to determine required modules for self units
-    def decipher(self, design_book=Unit.Jar, cur_lib='', verbose=False):
+    def decipher(self, verbose=False):
         '''
         Analyzes the current VHDL file to collect data for all identified design 
         units.
@@ -116,14 +117,14 @@ class Vhdl(Language):
 
 
         #key: library.package, value: list of component names
-        components_on_standby = dict()
+        components_on_standby = Map()
 
         def resetNamespace(uses):
             'Log all collected information to the correct design unit as exiting its scope.'
             global components_on_standby
 
             #reset to no available components at disposal from any package files
-            components_on_standby = dict()
+            components_on_standby = Map()
             #the current unit is now complete ("checked")
             current_map[unit_name].setChecked(True)
             #now try to check the unit's dependencies
@@ -131,7 +132,7 @@ class Vhdl(Language):
                 if(u not in current_map[unit_name].getRequirements()):
                     current_map[unit_name].addRequirement(u)
                 #only enter recursion if the unit has not already been completed ("checked")
-                if(not Unit.Jar[u.M()][u.L()][u.N()][u.getName()].isChecked()):
+                if(not Unit.Jar[u.M()][u.L()][u.N()][u.E()].isChecked()):
                     #find out what Language file object has this design?
                     self._ProcessedFiles[u.getFile()].decipher()
                     
@@ -144,14 +145,16 @@ class Vhdl(Language):
 
         #parse into words
         cs = self.generateCodeStream(False, False, *self._std_delimiters)
+        #true_cs = self.generateCodeStream(True, False, *self._std_delimiters)
 
-        #find all design unit names (package calls or entity calls) and trace it back in design_book to the
+        #find all design unit names (package calls or entity calls) and trace it back in Unit.Bottle to the
         #block that is covers, this is a dependency,
 
         #libraries found with the "library" keyword span over all units in the current file
         library_declarations = [] 
         #units being used with the "use" keyword span over the following unit in the file and resets
-        use_packages = []
+        #STORES ANY DEPENDENCIES AS UNIT OBJECTS
+        using_units = []
 
         in_pkg = in_body = in_true_body = False
         in_entity = in_arch = in_true_arch = in_config = False
@@ -159,7 +162,7 @@ class Vhdl(Language):
         isEnding = False
 
         #print("###")
-        #print(design_book)
+        #print(Unit.Bottle)
 
         #iterate through the code stream, identifying keywords as they come
         for i in range(0,len(cs)):
@@ -176,10 +179,10 @@ class Vhdl(Language):
                     #add this package as a key/value pair with its components if it has the ".all"
                     if(cs[i+1].endswith(".all")):
                         # [!] :todo: use a "locate" method using shortcutting and prompting user if multiple components are in question
-                        components_on_standby[L+'.'+U] = self.grabComponents(Unit.Jar[L][U].getFile())
+                        components_on_standby[L+'.'+U] = self.grabComponents(Unit.loc(u=U, l=L).getFile())
                     #add the package unit itself
                     # [!] :todo: use a "locate" method using shortcutting and prompting user if multiple components are in question
-                    use_packages.append(Unit.Jar[L][U])
+                    using_units.append(Unit.loc(u=U, l=L))
             elif(code_word == 'entity'):
                 # this is ending a entity declaration
                 if(isEnding):
@@ -192,10 +195,10 @@ class Vhdl(Language):
                 elif(in_arch and in_true_arch):
                     L,U,_ = splitBlock(cs[i+1])
                     #print(L,U)
-                    if(L in design_book.keys()):
-                        #print(design_book[L][U])
-                        if(U in design_book[L].keys()):
-                            use_packages.append(design_book[L][U])
+                    if(L in Unit.allL()):
+                        #print(Unit.Bottle[L][U])
+                        if(U in Unit.Bottle[L].keys()): #:todo:
+                            using_units.append(Unit.loc(u=U, l=L))
                     pass
                 pass
             elif(code_word == 'configuration'):
@@ -233,29 +236,33 @@ class Vhdl(Language):
                 if(in_true_arch):
                     #the instance has a package and unit with it
                     P,U,_ = splitBlock(cs[i+1])
-                    for lib in library_declarations:
-                        if(P in design_book[lib].keys()):
-                            use_packages.append(design_book[lib][U])
+                    print(P,U)
+                    for L in library_declarations:
+                        if(P in Unit.Bottle[L].keys()):
+                            using_units.append(Unit.loc(u=U, l=L))
                             continue
                     #the instance may belong to a previously called package that used .all
                     entity_name = cs[i+1]
+
                     for pkg,comps in components_on_standby.items():
                         L,U,_ = splitBlock(pkg)
                         if(entity_name in comps):
                             #now add the unit for the entity instance itself
-                            if(entity_name in design_book[L].keys()):
-                                use_packages.append(design_book[L][entity_name])
+                            if(entity_name in Unit.Bottle[L].keys()): #:todo:
+                                pl, gl = self.collectInstanceMaps(cs[i:])
+                                using_units.append(Unit.loc(u=entity_name, l=L, ports=pl, gens=gl))
                             else:
                                 log.warning("No entity "+entity_name+" is found in source code.")
                     #or if the plain old entity name is indeed with a library
-                    for lib in design_book.keys():
-                        if(entity_name in design_book[lib].keys()):
-                            use_packages.append(design_book[lib][entity_name])
+                    for L in Unit.allL():
+                        if(entity_name in Unit.Bottle[L].keys()):
+                            pl, gl = self.collectInstanceMaps(cs[i:])
+                            using_units.append(Unit.loc(u=entity_name, l=L, ports=pl, gens=gl))
                 pass
             elif(code_word == 'architecture'):
                 # this is ending an architecture section
                 if(isEnding):
-                    use_packages = resetNamespace(use_packages)
+                    using_units = resetNamespace(using_units)
                     in_arch = in_true_arch = isEnding = False
                 # this is the architecture naming
                 else:
@@ -271,7 +278,7 @@ class Vhdl(Language):
                 # :todo: - component declarations from within shallow architecture
                 #the entity exists in the current library
                 if(in_arch and cs[i+1] in current_map.keys()):
-                    use_packages.append(current_map[cs[i+1]])
+                    using_units.append(current_map[cs[i+1]])
                 pass
             elif(code_word == "begin"):
                 # this is entering the deep architecture
@@ -282,7 +289,7 @@ class Vhdl(Language):
                     in_true_body = True
             elif(code_word == 'package'):
                 if(isEnding):
-                    use_packages = resetNamespace(use_packages)
+                    using_units = resetNamespace(using_units)
                     in_pkg = in_body = in_true_body = isEnding = False
                 else:
                     in_pkg = True
@@ -301,21 +308,21 @@ class Vhdl(Language):
                 # this is ending the unit declaration
                 if(isEnding):
                     if(in_true_body):
-                        use_packages = resetNamespace(use_packages)
+                        using_units = resetNamespace(using_units)
                     in_entity = in_pkg = in_body = in_true_body = isEnding = False
                 else:
                     pass
             elif(code_word == arch_name):
                 # this is ending the architecture section
                 if(isEnding):
-                    use_packages = resetNamespace(use_packages)
+                    using_units = resetNamespace(using_units)
                     in_arch = in_true_arch = isEnding = False
                 else:
                     pass
             elif(code_word == body_name):
                 # this is ending the package body section
                 if(isEnding):
-                    use_packages = resetNamespace(use_packages)
+                    using_units = resetNamespace(using_units)
                     in_body = in_true_body = isEnding = False
                 else:
                     pass
@@ -330,28 +337,33 @@ class Vhdl(Language):
                 if(in_entity or in_arch or in_pkg or in_body):
                     L,U,E = splitBlock(code_word)
                     #append if the package exists
-                    if(L in design_book.keys() and U != unit_name):
-                        if(U in design_book[L].keys()):
-                            use_packages.append(design_book[L][U])
+                    if(L in Unit.Bottle.keys() and U != unit_name):
+                        if(U in Unit.Bottle[L].keys()):
+                            using_units.append(Unit.loc(u=U, l=L))
                     #append if the entity exists (three-part unit name (library.package.entity))
-                    if(L in design_book.keys() and E != unit_name):
-                        if(E in design_book[L].keys()):
-                            use_packages.append(design_book[L][E])
+                    if(L in Unit.Bottle.keys() and E != unit_name):
+                        if(E in Unit.Bottle[L].keys()):
+                            using_units.append(Unit.loc(u=E, l=L))
             pass
 
-        #print("===UNIT====",cur_lib,unit_name)
-
-        #print("===USING===",use_packages)
+        #print("===USING===",using_units)
         #print("===LIBS====",library_declarations)
-        return design_book
+        pass
 
 
-    #return a list of components available by this package
     def grabComponents(self, filepath):
-        #reassign file path so code stream comes from right file
-        tmp_file = self._file_path
-        self._file_path = filepath
-        cs = self.generateCodeStream(False, False, *self._std_delimiters)
+        '''
+        Return a list of components (entity names) that are available in this package.
+
+        Parameters:
+            filepath (str): path to VHDL package unit
+        Returns:
+            comps ([str]): entity names found as component declarations in package
+        '''
+        #get the vhdl file object that uses this file
+        vhd = self._ProcessedFiles[apt.fs(filepath).lower()]
+        #generate the code stream
+        cs = vhd.generateCodeStream(False, False, *self._std_delimiters)
 
         in_pkg = False
         entity_name = pkg_name = None
@@ -374,7 +386,6 @@ class Vhdl(Language):
             pass
         #print("Components from this package:",comps)
         #restore file path back to its original assignment
-        self._file_path = tmp_file
         return comps
 
 
@@ -450,7 +461,63 @@ class Vhdl(Language):
         pass
 
 
+    def collectInstanceMaps(self, words):
+        '''
+        Parse entity instantiation mappings to form a generics list and ports list.
+
+        Parameters:
+            words ([str]): list of vhdl words to parse
+        Returns:
+            p_list ([str]): list of ports identified
+            g_list ([str]): list of generics identified
+        '''
+        p_list = []
+        g_list = []
+        in_ports = False
+        in_gens = False
+        stack = 0 #stack of parentheses
+        for i in range(len(words)):
+            token = words[i].lower()
+            if(token == 'map'):
+                if(words[i-1].lower() == 'port'):
+                    in_ports = True
+                elif(words[i-1].lower() == 'generic'):
+                    in_gens = True
+                continue
+            elif(token == '=>'):
+                if(in_gens):
+                    g_list += [words[i-1]]
+                elif(in_ports):
+                    p_list += [words[i-1]]
+            elif(token == '('):
+                stack += 1
+            elif(token == ')'):
+                stack -= 1
+            #exit if stack is all popped
+            if(stack == 0):
+                in_gens = False
+                if(in_ports):
+                    break
+                
+        return p_list, g_list
+
+
+
+
+
+
+
+
+
+
+
+
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
+
     #append a signal/generic string to a list of its respective type
+    @DeprecationWarning
     def addSignal(self, stash, c, stream, true_stream, declare=False, isSig=False):
         names = []
         #no signals are found on this line if ':' is not present
@@ -495,6 +562,7 @@ class Vhdl(Language):
 
 
     #generate string of component's signal declarations to be interfaced with the port
+    @DeprecationWarning
     def writeComponentSignals(self):
         #keep cases and keep terminators
         true_code = self.generateCodeStream(True, True, *self._std_delimiters)
@@ -540,6 +608,7 @@ class Vhdl(Language):
 
 
     #write out the mapping instance of an entity (can be pure instance using 'entity' keyword also)
+    @DeprecationWarning
     def writeComponentMapping(self, pureEntity=False, lib=''):
         true_code = self.generateCodeStream(True, True, "(",")",":",";",',')
         cs = self.generateCodeStream(False, True, "(",")",":",";",',')
@@ -612,7 +681,9 @@ class Vhdl(Language):
         mapping_txt = mapping_txt + ";\n"
         return mapping_txt
 
+
     #write out the entity but as a component
+    @DeprecationWarning
     def writeComponentDeclaration(self):
         declaration_txt = ''
         with open(self.getPath(), 'r') as file:

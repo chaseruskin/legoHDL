@@ -220,30 +220,31 @@ def main():
         fp3 = '/Users/chase/Develop/eel4712c/lab4/src/top_level.vhd'
         fp5 = '/Users/chase/Develop/eel4712c/demo/led_animation/src/led_animation.vhd'
 
-        v1 = Vhdl(fp4, L='eel4712c', N='lab1')
+        v1 = Vhdl(fp1, L='eel4712c', N='lab1')
+        v4 = Vhdl(fp4, L='eel4712c', N='lab1')
         #v2= Vhdl(fp2, L='eel4712c', N='lab3')
         v3 = Vhdl(fp3, M='uf-ece', L='eel4712c', N='lab4')
 
         v5 = Vhdl(fp5, M='',L='projects',N='LED_animation')
         print(v1)
         #print(v3)
-
         v1.decipher()
+        v4.decipher()
         v5.decipher()
 
-        print(Unit.Jar['']['EEL4712C']['LAB1']['adder'].getInterface().writeInstance(Unit.Language.VHDL))
-        print(Unit.Jar['']['EEL4712C']['LAB1']['adder'].getInterface().writeConnections(Unit.Language.VHDL))
-        print("__Processed__")
-        print(Language._ProcessedFiles)
-        print(Unit.Jar['']['projects']['LED_animation']['led_animation'].getInterface().writeInstance(entity_inst=True, align=True, inst_name='DUT'))
-        print(Unit.Jar['']['projects']['LED_animation']['led_animation'].getInterface().writeConnections(align=True))
+        # print(Unit.Jar['']['EEL4712C']['LAB1']['adder'].getInterface().writeInstance(Unit.Language.VHDL))
+        # print(Unit.Jar['']['EEL4712C']['LAB1']['adder'].getInterface().writeConnections(Unit.Language.VHDL))
+        # print("__Processed__")
+        # print(Language._ProcessedFiles)
+        # print(Unit.Jar['']['projects']['LED_animation']['led_animation'].getInterface().writeInstance(entity_inst=True, align=True, inst_name='DUT'))
+        # print(Unit.Jar['']['projects']['LED_animation']['led_animation'].getInterface().writeConnections(align=True))
         #print(Unit.allL())
-        print(Unit.Jar['uf-ece']['eel4712c']['lab4']['top_level'].readAbout())
-        print(Unit.Jar['']['eel4712c']['lab1']['adder'].readAbout())
+        # print(Unit.Jar['uf-ece']['eel4712c']['lab4']['top_level'].readAbout())
+        # print(Unit.Jar['']['eel4712c']['lab1']['adder'].readAbout())
         #print(Unit.FlippedJar)
 
         #print(Unit.shortcut(e='fa', n='lab1'))
-
+        print(Unit.Jar['']['EEL4712C']['LAB1']['adder'])
         
 
         fp01 = '/Users/chase/Develop/eel4712c/experimental/testv/src/andgate.v'
@@ -255,10 +256,10 @@ def main():
 
        
 
-        vl1.decipher()
-        vl2.decipher()
-        Unit.printList()
-        print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeConnections())
-        print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeInstance(form=Unit.Language.VHDL))
-        print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeInstance(form=Unit.Language.VERILOG))
+        #vl1.decipher()
+        #vl2.decipher()
+        #Unit.printList()
+        #print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeConnections())
+        #print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeInstance(form=Unit.Language.VHDL))
+        #print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeInstance(form=Unit.Language.VERILOG))
     pass

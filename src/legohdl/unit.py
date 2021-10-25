@@ -27,6 +27,8 @@ class Unit:
     #mult-level class container upside-down of Jar container for shortcutting
     FlippedJar = Map()
 
+    #2-level class container
+    Bottle = Map()
 
     class Design(Enum):
         ENTITY = 1,
@@ -111,6 +113,16 @@ class Unit:
         #store entity at this nested level (upside-down)
         if(self.M().lower() not in self.FlippedJar[self.E()][self.N()][self.L()].keys()):
             self.FlippedJar[self.E()][self.N()][self.L()][self.M()] = self
+
+
+        #create new library level if libray DNE
+        if(self.L().lower() not in self.Bottle.keys()):
+             self.Bottle[self.L()] = Map()
+        #create new unit level if unit DNE
+        if(self.E().lower() not in self.Bottle[self.L()].keys()):
+             self.Bottle[self.L()][self.E()] = []
+        #add entity to a list
+        self.Bottle[self.L()][self.E()] += [self]
 
         pass
 
@@ -208,6 +220,26 @@ class Unit:
         return all_libs
 
 
+    @classmethod
+    def loc(cls, u, l=None, ports=[], gens=[]):
+        '''
+        Locate the entity given the library and unit name. 
+        
+        Also uses intelligent component recognition to try and decide between 
+        what entity is trying to be used.
+
+        Parameters:
+            u (str): entity name
+            l (str): library name
+            ports ([str]): list of ports that were instantiated
+            gens ([str]): list of generics that were instantiated
+        Returns:
+            (Unit): unit object from the Jar
+        '''
+
+        return cls.Bottle[l][u][0]
+
+
     # :todo: fix
     @classmethod
     def shortcut(cls, e, m='', l='', n=''):
@@ -261,8 +293,15 @@ class Unit:
 
     #add a unit as a requirement for itself
     def addRequirement(self, u):
+        '''
+        Add a unit as a requirement for this object.
+
+        Parameters:
+            u (Unit): unit object that is used by unit calling the method
+        Returns:
+            None
+        '''
         #add new edge
-        #print(self.getFull())
         self.Hierarchy.addEdge(self.getFull(), u.getFull())
         self._requirements = self.getRequirements() + [u]
         pass
@@ -301,7 +340,8 @@ class Unit:
     def __str__(self):
         reqs = '\n'
         for dep in self.getRequirements():
-            reqs = reqs + '-'+dep.getLib()+'.'+dep.getBlock()+'.'+dep.getName()+"\n"
+            reqs = reqs + '-'+dep.M()+'.'+dep.L()+'.'+dep.N()+':'+dep.E()+" "
+            reqs = reqs + hex(id(dep)) + "\n"
         return f'''
         ID: {hex(id(self))}
         full name: {self.M()}.{self.L()}.{self.N()}:{self.E()}
@@ -480,13 +520,13 @@ class Interface:
 
 
     def addPort(self, name, way, flavor):
-        print("Port:",name,"going",way,"of type",flavor)
+        #print("Port:",name,"going",way,"of type",flavor)
         self._ports[name] = Port(name, way, flavor)
         pass
 
 
     def addGeneric(self, name, flavor, value):
-        print("Generic:",name,"of type",flavor,"has value",value)
+        #print("Generic:",name,"of type",flavor,"has value",value)
         self._generics[name] = Generic(name, flavor, value)
         pass
 

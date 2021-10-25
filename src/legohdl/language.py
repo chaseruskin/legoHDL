@@ -52,6 +52,8 @@ class Language(ABC):
         self._N = N
         self._V = V
 
+        #self.KEYWORDS = []
+
         #add to processed list
         self._ProcessedFiles[self.getPath().lower()] = self
         pass
