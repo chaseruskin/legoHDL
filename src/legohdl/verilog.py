@@ -5,7 +5,6 @@
 #   This script inherits language.py and implements the behaviors for
 #   verilog/systemverilog code files (syntax, deciphering).
 
-from typing_extensions import ParamSpecArgs
 from .language import Language
 import logging as log
 from .unit import Unit

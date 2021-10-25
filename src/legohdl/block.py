@@ -17,6 +17,7 @@ from .cfgfile import CfgFile as cfg
 from .apparatus import Apparatus as apt
 from .graph import Graph 
 from .unit import Unit
+from .language import Language
 
 from .workspace import Workspace
 
@@ -45,7 +46,7 @@ class Block:
             self._remote = remote
         self.__market = market
 
-        self.__local_path = apt.fs(path)
+        self._path = apt.fs(path)
         if(path != None):
             if(self.isValid()):
                 if(not excludeGit):
@@ -57,7 +58,7 @@ class Block:
                 self.loadMeta()
                 return
         elif(path == None):
-            self.__local_path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
+            self._path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
 
         #try to see if this directory is indeed a git repo
         self._repo = None
@@ -106,7 +107,7 @@ class Block:
         if(self._path != ''):
             #load from metadata
             pass
-
+        return(self.isValid())
         #print(self.isValid())
         pass
 
@@ -116,9 +117,9 @@ class Block:
     #return the block's root path
     def getPath(self, low=False):
         if(low):
-            return self.__local_path.lower()
+            return self._path.lower()
         else:
-            return self.__local_path
+            return self._path
 
 
     #download block from a url (can be from cache or remote)
@@ -140,7 +141,7 @@ class Block:
         #clone project
         git.Git(tmp_dir).clone(rem)
 
-        self.__local_path = new_path+self.getName(low=False)
+        self._path = new_path+self.getName(low=False)
 
         #this is a remote url, so when it clones we must make sure to rename the base folder
         if(rem.endswith(".git")):
@@ -1049,7 +1050,7 @@ class Block:
         #delete the git repository for saving space and is not needed
         shutil.rmtree(version_path+"/.git/", onerror=apt.rmReadOnly)
         #temp set local path to be inside version
-        self.__local_path = version_path
+        self._path = version_path
         #enable write permissions
         self.modWritePermissions(enable=True)
         #now get project sources, rename the entities and packages
@@ -1100,7 +1101,7 @@ class Block:
         self.modWritePermissions(enable=False)
 
         #change local path back to base install
-        self.__local_path = base_path
+        self._path = base_path
 
         #switch back to latest version in cache
         if(ver[1:] != self.getMeta("version")):
@@ -1188,7 +1189,7 @@ class Block:
                 url_name = cut_slash[cut_slash.rfind('/'):]
 
             shutil.move(cache_dir+url_name, specific_cache_dir)
-            self.__local_path = specific_cache_dir+"/"
+            self._path = specific_cache_dir+"/"
             base_installed = True
 
             # :todo: 1a. modify all project files to become read-only
@@ -1531,6 +1532,56 @@ class Block:
         pass
 
 
+    def loadHDL(self):
+        '''
+        Identify all HDL files within the current block and all designs within each file.
+        
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        #open each found source file and identify their units
+        #load all VHDL files
+        vhd_files = self.gatherSources(apt.VHDL_CODE, path=self.getPath())
+        for v in vhd_files:
+            Vhdl(v, M=self.M(), L=self.L(), N=self.N())
+        #load all VERILOG files
+        verilog_files = self.gatherSources(apt.VERILOG_CODE, path=self.getPath())
+        for v in verilog_files:
+            Verilog(v, M=self.M(), L=self.L(), N=self.N())
+
+        self._units = Unit.Jar[self.M()][self.L()][self.N()]
+        pass
+
+    
+    def getUnits(self, top=None):
+        '''
+        Returns a map for all filled HDL units found within the given block.
+        
+        If a top is specified, it will start deciphering from that Unit. Else, all
+        HDL files within the block will be deciphered.
+
+        Parameters:
+            top (str): unit name to start with
+        Returns:
+            None
+        '''
+        print(self._units)
+        
+        for u in self._units.values():
+            if(u.isChecked() == False):
+                Language.ProcessedFiles[u.getFile()].decipher()
+
+        self.printUnits()
+        pass
+
+
+    def printUnits(self):
+        for u in self._units.values():
+            print(u)
+
+
     def grabUnits(self, toplevel=None, override=False):
         '''
         Color in (fill/complete) all units found in the design book.
@@ -1550,7 +1601,7 @@ class Block:
         for name,unit in project_level_units.items():
             #start with top-level unit and complete all required units in unit bank
             if(toplevel == None or name == toplevel.lower()):
-                self.dynamicDecipher(unit)
+                Language.ProcessedFiles[unit.getFile()].decipher()
                 
         #self.printUnits()
         print(Unit.printList())
@@ -1573,6 +1624,8 @@ class Block:
 
     #return dictionary of entities with their respective files as values
     #all possible entities or packages to be used in current project
+    # :todo: remove this and merge it into workspace
+    @DeprecationWarning
     def grabCacheDesigns(self, override=False):
         '''
         Gathers all VHDL and verilog source files found at cache
@@ -1725,15 +1778,6 @@ class Block:
  
         return M,L,N
 
-
-    def dynamicDecipher(self, unit):
-        '''Pass a unit object in to decipher its file, whether its VHDL or Verilog.'''
-        if(unit.getLang() == Unit.Language.VHDL):
-            Vhdl._ProcessedFiles[apt.fs(unit.getFile()).lower()].decipher()
-        elif(unit.getLang() == Unit.Language.VERILOG):
-            Verilog._ProcessedFiles[apt.fs(unit.getFile()).lower()].decipher()
-        pass
-
         
     def ports(self, mapp, lib, pure_entity, entity=None, ver=None, showArc=False):
         '''
@@ -1754,7 +1798,7 @@ class Block:
             if(showArc):
                 #fill out decipher to get architectures
                 u = Unit.Bottle[self.L()][entity]
-                self.dynamicDecipher(u)
+                Language.ProcessedFiles[u.getFile()].decipher()
                 info = u.writeArchitectures()
             #display the port interface
             else:

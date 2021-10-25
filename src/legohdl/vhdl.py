@@ -142,7 +142,7 @@ class Vhdl(Language):
                 #only enter recursion if the unit has not already been completed ("checked")
                 if(not Unit.Jar[u.M()][u.L()][u.N()][u.E()].isChecked()):
                     #find out what Language file object has this design?
-                    self._ProcessedFiles[u.getFile()].decipher()
+                    self.ProcessedFiles[u.getFile()].decipher()
                     
             uses = []
             return uses
@@ -364,12 +364,12 @@ class Vhdl(Language):
         Return a list of components (entity names) that are available in this package.
 
         Parameters:
-            filepath (str): path to VHDL package unit
+            filepath (str): path to VHDL package unit (assumed to already have apt.fs() applied)
         Returns:
             comps ([str]): entity names found as component declarations in package
         '''
         #get the vhdl file object that uses this file
-        vhd = self._ProcessedFiles[apt.fs(filepath).lower()]
+        vhd = self.ProcessedFiles[filepath]
         #generate the code stream
         cs = vhd.generateCodeStream(False, False, *self._std_delimiters)
 

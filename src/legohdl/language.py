@@ -20,7 +20,7 @@ from .map import Map
 class Language(ABC):
 
     #class container to store a list of all known files
-    _ProcessedFiles = Map()
+    ProcessedFiles = Map()
 
     def __init__(self, fpath, M='', L='', N='', V=''):
         '''
@@ -39,7 +39,7 @@ class Language(ABC):
         #format the file path
         self._file_path = apt.fs(fpath)
 
-        if(self.getPath().lower() in self._ProcessedFiles.keys()):
+        if(self.getPath().lower() in self.ProcessedFiles.keys()):
             log.info("Already processed: "+self.getPath())
             return
         
@@ -55,7 +55,7 @@ class Language(ABC):
         #self.KEYWORDS = []
 
         #add to processed list
-        self._ProcessedFiles[self.getPath().lower()] = self
+        self.ProcessedFiles[self.getPath()] = self
         pass
     
     

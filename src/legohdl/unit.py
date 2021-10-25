@@ -344,6 +344,7 @@ class Unit:
             reqs = reqs + hex(id(dep)) + "\n"
         return f'''
         ID: {hex(id(self))}
+        Completed? {self._checked}
         full name: {self.M()}.{self.L()}.{self.N()}:{self.E()}
         file: {self._filepath}
         dsgn: {self._dsgn}

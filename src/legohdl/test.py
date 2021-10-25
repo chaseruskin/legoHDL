@@ -14,10 +14,10 @@ from .apparatus import Apparatus as apt
 import os
 from .workspace import Workspace
 from .label import Label
-from .language import Language
 from .vhdl import Vhdl
 from .verilog import Verilog
 from .unit import Unit
+from .block import Block
 
 
 def main():
@@ -212,7 +212,7 @@ def main():
 
         #shutil.rmtree(Market.Jar['soc-blocks'].getMarketDir(), onerror=apt.rmReadOnly)
     
-    if(True):
+    if(False):
         print('\n---ENTITY CLASS---')
         fp1 = '/Users/chase/Develop/eel4712c/lab1/src/fa.vhd'
         fp4 = '/Users/chase/Develop/eel4712c/lab1/src/adder.vhd'
@@ -253,7 +253,6 @@ def main():
 
         vl1 = Verilog(fp01, M='', L='Sample', N='Test')
         vl2 = Verilog(fp02, M='', L='Sample', N='Test')
-
        
 
         #vl1.decipher()
@@ -262,4 +261,13 @@ def main():
         #print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeConnections())
         #print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeInstance(form=Unit.Language.VHDL))
         #print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeInstance(form=Unit.Language.VERILOG))
+    
+    if(True):
+        print('\n---BLOCK CLASS---')
+        b1 = Block(path='/Users/chase/Develop/eel4712c/lab1/')
+        print(b1.init2('/Users/chase/Develop/eel4712c/lab1/'))
+
+        b1.loadHDL()
+        b1.getUnits()
+
     pass
