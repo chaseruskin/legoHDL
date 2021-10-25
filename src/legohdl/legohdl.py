@@ -118,6 +118,13 @@ class legoHDL:
 
         print(self)
 
+        Workspace.getActive().loadLocalBlocks()
+        Workspace.getActive().loadCacheBlocks()
+        Workspace.getActive().loadMarketBlocks()
+
+        b = Block()
+        b.init2('/Users/chase/.legohdl/workspaces/eel4712c/cache/eel4712c/lab4/v1/')
+
         if('debug' == self._command):
             test()
         else:

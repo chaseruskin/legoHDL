@@ -76,6 +76,43 @@ class Block:
         pass
 
 
+    def init2(self, path, title=''):
+        '''
+        Create a legohdl Block object. 
+        
+        If a valid Block.cfg file is found as the path or within the direct
+        path directory, title is ignored and data is loaded from metadata.
+
+        Parameters:
+            path (str): the filepath to the Block's root directory
+            title (str): M.L.N.V format
+        '''
+        path = apt.fs(path)
+         #is this a valid Block marker?
+        fname = os.path.basename(path)
+        self._path = ''
+        if(fname == apt.MARKER):
+            #load from metadata
+            self._path,_ = os.path.split(path)
+            pass
+        #try to see if a Block marker is within this directory
+        elif(os.path.isdir(path)):
+            files = os.listdir(path)
+            for f in files:
+                if(f == apt.MARKER):
+                    self._path = path
+                    break
+        #check if valid
+        if(self._path != ''):
+            #load from metadata
+            pass
+
+        #print(self.isValid())
+        pass
+
+
+
+
     #return the block's root path
     def getPath(self, low=False):
         if(low):

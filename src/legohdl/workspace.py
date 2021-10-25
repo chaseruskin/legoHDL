@@ -6,7 +6,7 @@
 #   markets. This is what the user keeps their work's scope within for a given
 #   "organization".
 
-import os, shutil
+import os, shutil, glob
 import logging as log
 from datetime import datetime
 from .market import Market
@@ -223,6 +223,58 @@ class Workspace:
         else:
             log.warning("Could not unlink unknown market "+mrkt+" from "+self.getName()+".")
             return False
+
+    
+    def loadLocalBlocks(self):
+        '''
+        Find all valid blocks within the local workspace path. Updates the 
+        _local_blocks Map.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        #glob on the local workspace path
+        print("Local Blocks on:",self.getPath())
+        marker_files = glob.glob(self.getPath()+"**/*/"+apt.MARKER, recursive=True)
+        print(marker_files)
+        pass
+
+
+    def loadCacheBlocks(self):
+        '''
+        Find all valid blocks within the workspace cache. Updates the 
+        _cache_blocks Map.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        #glob on the workspace cache path
+        print("Cache Blocks on:",self.getCachePath())
+        marker_files = glob.glob(self.getCachePath()+"**/*/"+apt.MARKER, recursive=True)
+        print(marker_files)
+        pass
+
+    
+    def loadMarketBlocks(self):
+        '''
+        Find all valid blocks within the workspace cache. Updates the 
+        _market_blocks Map.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        #glob on each market path
+        marker_files = []
+        for mrkt in self.getMarkets():
+            marker_files += glob.glob(mrkt.getMarketDir()+"**/*/"+apt.MARKER, recursive=True)
+        print(marker_files)
+        pass
 
 
     @classmethod
@@ -453,8 +505,16 @@ class Workspace:
         return self._ws_dir
 
 
+    def getCachePath(self):
+        return self.getDir()+"cache/"
+
+
     def getName(self):
         return self._name
+
+
+    def isActive(self):
+        return self == self.getActive()
 
 
     def getMarkets(self, returnnames=False, lowercase=True):
@@ -498,10 +558,6 @@ class Workspace:
             print('{:<16}'.format(ws.getName()),'{:<6}'.format(act),'{:<40}'.format(ws.getPath()),'{:<14}'.format(mrkts))
             pass
         pass
-
-
-    def isActive(self):
-        return self == self.getActive()
 
 
     @classmethod
