@@ -70,24 +70,32 @@ class Vhdl(Language):
 
         #looking for design units
         in_scope = False
+        arch_name = ''
         for i in range(len(cs)-1):
             token = cs[i].lower()
-            #search for entities
-            if(token == 'entity' and cs[i+1] != ':'): #ensure its not a entity instaniation
+            #search for entities           
+            if(token == 'end'):
+                if(in_scope and cs[i+1].lower() == name.lower()):
+                    in_scope = False
+                if(cs[i+1].lower() == arch_name.lower() or cs[i+1] == 'architecture'):
+                    arch_name = ''
+            #skip while inside an architecture
+            elif(arch_name != ''):
+                continue
+            elif(token == 'entity' and cs[i+1] != ':'): #ensure its not a entity instaniation
                 if(not in_scope): 
                     name = cs[i+1]
                     self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cs[i+1], about_txt=self._about_txt)]
                 in_scope = not in_scope
+            elif(token == 'architecture'):
+                arch_name = cs[i+1]
+                in_scope = True
             #search for packages
             elif(token == 'package' and cs[i+1].lower() != 'body'): #ensure its not a package body
                 if(not in_scope):
                     name = cs[i+1]
                     self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cs[i+1], about_txt=self._about_txt)]
                 in_scope = not in_scope
-            
-            if(token == 'end'):
-                if(in_scope and cs[i+1].lower() == name.lower()):
-                    in_scope = False
 
         return self._designs
 

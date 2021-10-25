@@ -11,6 +11,8 @@
 import os, shutil, stat
 from datetime import date
 import glob, git
+from .vhdl import Vhdl
+from .verilog import Verilog
 import logging as log
 from .market import Market
 from .cfgfile import CfgFile as cfg
@@ -1243,20 +1245,30 @@ class Block:
         self.grabUnits()
         #constrain to only using the current block's design units
         units = self.grabCurrentDesigns()
+        
         #only grab from project-level design units
-        top_contenders = list(units[self.getLib()].keys())
+        exclusions = []
 
         self._top = None
-        for name,unit in list(units[self.getLib()].items()):
+        for unit in units:
             #if the entity is value under this key, it is lower-level
-            if(unit.isTB() or unit.isPKG()): 
-                if(name in top_contenders):
-                    top_contenders.remove(name)
+            if(unit.isTB() or unit.isPKG()):
+                if(unit not in exclusions):
+                    exclusions += [unit]
                 continue
                 
             for dep in unit.getRequirements():
-                if(dep.getName() in top_contenders):
-                    top_contenders.remove(dep.getName())
+                if(dep not in exclusions):
+                    exclusions += [dep]
+
+        print(exclusions)
+        print(units)
+        top_contenders = []
+        for u in units:
+            if(u in exclusions):
+                continue
+            else:
+                top_contenders += [u]
 
         if(len(top_contenders) == 0):
             log.warning("No top level detected.")
@@ -1274,14 +1286,14 @@ class Block:
             
             top_contenders = [validTop]
         if(len(top_contenders) == 1):
-            self._top = units[self.getLib()][top_contenders[0]]
+            self._top = top_contenders[0]
 
-            log.info("DETECTED TOP-LEVEL ENTITY: "+self._top.getName(low=False))
-            self.identifyBench(self._top.getName(), save=True)
+            log.info("DETECTED TOP-LEVEL ENTITY: "+self._top.E())
+            self.identifyBench(self._top.E(), save=True)
             #break up into src_dir and file name
             #add to metadata, ensure to push meta data if results differ from previously loaded
-            if(self._top.getName(low=False) != self.getMeta("toplevel")):
-                self.setMeta('toplevel', self._top.getName(low=False))
+            if(self._top.E() != self.getMeta("toplevel")):
+                self.setMeta('toplevel', self._top.E())
                 self.save()
 
         return self._top
@@ -1296,9 +1308,9 @@ class Block:
         self.grabUnits()
         units = self.grabCurrentDesigns()
         benches = []
-        for unit in units[self.getLib()].values():
+        for unit in units:
             for dep in unit.getRequirements():
-                if(dep.getLib() == self.getLib() and dep.getName() == entity_name and unit.isTB()):
+                if(dep.L().lower() == self.getLib().lower() and dep.E().lower() == entity_name and unit.isTB()):
                     benches.append(unit)
         self._bench = None    
         if(len(benches) == 1):
@@ -1322,7 +1334,7 @@ class Block:
             self._bench = units[self.getLib()][validTop]
         #print what the detected testbench is
         if(self._bench != None):
-            log.info("DETECTED TOP-LEVEL BENCH: "+self._bench.getName())
+            log.info("DETECTED TOP-LEVEL BENCH: "+self._bench.E())
         else:
             log.warning("No testbench detected.")
         #update the metadata is saving
@@ -1330,7 +1342,7 @@ class Block:
             if(self._bench == None):
                 self.setMeta('bench', None)
             else:
-                self.setMeta('bench', self._bench.getName(low=False))
+                self.setMeta('bench', self._bench.E())
             self.save()
         #return the entity
         return self._bench
@@ -1340,18 +1352,23 @@ class Block:
         Determine what unit is utmost highest, whether it be a testbench
         (if applicable) or entity.
         '''
-        cur_lib = self.grabCurrentDesigns()[self.getLib()]
+        cur_names = []
+        for e in self.grabCurrentDesigns():
+            cur_names += [e.E().lower()]
 
         if(top == None):
             top = self.identifyTop()
             if(top != None):
-                top = top.getName()
+                top = top.E()
         
-        if(top == None or top.lower() not in cur_lib.keys()):
+        if(top == None or top.lower() not in cur_names):
             exit(log.error("Entity "+top+" not found in current block."))
         
         #get the unit from the currently available project-level blocks
-        top_entity = cur_lib[top.lower()]
+        for e in self.grabCurrentDesigns():
+            if(e.E().lower() == top.lower()):
+                top_entity = e
+                break
         #fill in all unit data
         self.grabUnits()
 
@@ -1362,12 +1379,12 @@ class Block:
         else:
             top = top_dog
             if(inc_sim):
-                tb = self.identifyBench(top.getName())
+                tb = self.identifyBench(top.E())
                 if(tb != None):
                     top_dog = tb
         #return the name of the top entity
         if(isinstance(top_dog, Unit)):
-            top_dog = top_dog.getName()
+            top_dog = top_dog.E()
         # :todo: save appropiate changes to Block.cfg file?
         return top_dog,top,tb
 
@@ -1398,13 +1415,18 @@ class Block:
         #self.printUnits()
         # :todo: only start from top-level unit if it exists
         #gather all project-level units
-        project_level_units = self.grabDesigns(False, "current")[self.getLib()]
-        for unit in project_level_units.values():
+        project_level_units = self.grabDesigns(False, "current")
+        print(project_level_units)
+        for unit in project_level_units:
+            print(unit)
             #start with top-level unit and complete all required units in unit bank
-            if(unit.getName() == toplevel or toplevel == None):
-                self._unit_bank = unit.getLang().decipher(self._unit_bank, self.getLib(), override)
+            if(unit.E() == toplevel or toplevel == None):
+                Vhdl._ProcessedFiles[apt.fs(unit.getFile()).lower()].decipher()#Vhdl(, M='', L=self.getLib(), N=self.getName()).decipher()
+                
         #self.printUnits()
+        print(Unit.printList())
         return self._unit_bank
+
 
     def grabDesigns(self, override, *args):
         '''
@@ -1412,12 +1434,12 @@ class Block:
         (not mutually exclusive). Override is passed to the grabCurrent and
         grabCache methods.
         '''
-        design_book = dict()
+        design_book = []
         if("current" in args):
-            design_book = self.grabCurrentDesigns(override).copy()
+            design_book = self.grabCurrentDesigns(override)
             pass
         if("cache" in args):
-            design_book = apt.merge(self.grabCacheDesigns(override),design_book)
+            design_book += self.grabCacheDesigns(override)
             pass
         return design_book
 
@@ -1490,7 +1512,7 @@ class Block:
         if(hasattr(self, "_cache_designs") and not override):
             return self._cache_designs
 
-        self._cache_designs = dict()
+        self._cache_designs = []
         #locate VHDL cache files
         files = self.gatherSources(apt.VHDL_CODE, apt.WORKSPACE+"cache/")
         for f in files:
@@ -1499,7 +1521,8 @@ class Block:
             if(L == self.getLib() and N == self.getName()):
                 continue
             #print(f)
-            self._cache_designs = self.skimVHDL(self._cache_designs, f, L, N, M)
+            vhd = Vhdl(f, M=M, L=L, N=N)
+            self._cache_designs += [vhd.identifyDesigns()]
         
         #locate verilog cache files
         files = self.gatherSources(apt.VERILOG_CODE, apt.WORKSPACE+"cache/")
@@ -1509,7 +1532,8 @@ class Block:
             if(L == self.getLib() and N == self.getName()):
                 continue
             #print(f)
-            self._cache_designs = self.skimVerilog(self._cache_designs, f, L, N, M)
+            vlg = Verilog(f, M=M, L=L, N=N)
+            self._cache_designs += [vlg.identifyDesigns()]
 
         #print("Cache-Level designs: "+str(self._cache_designs))
 
@@ -1534,11 +1558,14 @@ class Block:
                 #3. open each found source file and insert units into cache design
                 vhd_files = self.gatherSources(apt.VHDL_CODE, path=f_dir)
                 for v in vhd_files:
-                    self._cache_designs = self.skimVHDL(self._cache_designs, v, L, N, M)
+                    vhd = Vhdl(v, M=M, L=L, N=N)
+                    self._cache_designs += vhd.identifyDesigns()
                 
                 verilog_files = self.gatherSources(apt.VERILOG_CODE, path=f_dir)
                 for v in verilog_files:
-                    self._cache_designs = self.skimVerilog(self._cache_designs, v, L, N, M)
+                    vlg = Verilog(v, M=M, L=L, N=N)
+                    self._cache_designs += vlg.identifyDesigns()
+
         #print("Cache-Level designs: "+str(self._cache_designs))
         return self._cache_designs
 
@@ -1550,21 +1577,21 @@ class Block:
         if(hasattr(self, "_cur_designs") and not override):
             return self._cur_designs
 
-        self._cur_designs = dict()
+        self._cur_designs = []
 
         _,L,N,_ = self.snapTitle(self.getTitle(low=True))
         M = self.getMeta('market')
-        #create new library dictionary if DNE
-        if(L not in self._cur_designs.keys()):
-            self._cur_designs[L] = dict()
+        
         #locate vhdl sources
         files = self.gatherSources(apt.VHDL_CODE)
         for f in files:
-            self._cur_designs = self.skimVHDL(self._cur_designs, f, L, N, M)
+            vhd = Vhdl(f, M=M, L=L, N=N)
+            self._cur_designs += vhd.identifyDesigns()
         #locate verilog sources
         files = self.gatherSources(apt.VERILOG_CODE)
         for f in files:
-            self._cur_designs = self.skimVerilog(self._cur_designs, f, L, N, M)
+            vlg = Verilog(f, M=M, L=L, N=N)
+            self._cur_designs += vlg.identifyDesigns()
 
         #print("Project-Level Designs: "+str(self._cur_designs))
         return self._cur_designs

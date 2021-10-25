@@ -47,10 +47,10 @@ class Language(ABC):
         self._std_delimiters = "(",")",":",";",",","="
 
         #remember what block owns this file
-        self._M = M
-        self._L = L
-        self._N = N
-        self._V = V
+        self._M = M if(M != None) else ''
+        self._L = L if(L != None) else ''
+        self._N = N if(N != None) else ''
+        self._V = V if(V != None) else ''
 
         #self.KEYWORDS = []
 

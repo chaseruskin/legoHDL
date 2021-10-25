@@ -187,7 +187,7 @@ class Unit:
 
 
     def isPKG(self):
-        return (self._dtype == self.Type.PACKAGE)
+        return (self._dsgn == self.Design.PACKAGE)
 
 
     def getFile(self):
@@ -265,7 +265,7 @@ class Unit:
 
 
     def getFull(self):
-        return self.L().lower()+"."+self.N().lower()
+        return self.L().lower()+"."+self.E().lower()
 
 
     def setConfig(self, config_name):

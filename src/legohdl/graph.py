@@ -8,12 +8,13 @@
 ################################################################################
 
 import logging as log
+from .map import Map
 
 class Graph:
     def __init__(self):
         #store with adj list (list of vertices)
-        self.__adj_list = dict()
-        self._unit_bank = dict()
+        self.__adj_list = Map()
+        self._unit_bank = Map()
         pass
     
     #takes in two entities and connects them [entity, dep-name]
@@ -47,7 +48,7 @@ class Graph:
             nonlocal block_order, block_tracker
 
             mrkt_prepend = ''
-            if(m != None):
+            if(m != None and m != ''):
                 mrkt_prepend = m+'.'
             #check if block has already been added
             title = mrkt_prepend+l+'.'+n
@@ -66,7 +67,7 @@ class Graph:
             log.warning("No edges found.")
             for u in self._unit_bank.values():
                 order.append(u)
-                addBlock(u.getMarket(), u.getLib(low=False), u.getBlock(low=False))
+                addBlock(u.M(), u.L(), u.N())
   
         #continue until all are transferred
         while len(order) < len(self.__adj_list):
@@ -79,7 +80,7 @@ class Graph:
                         #add actual unit object to list
                         order.append(unit) 
                     #add block name to list
-                    addBlock(unit.getMarket(), unit.getLib(low=False), unit.getBlock(low=False))
+                    addBlock(unit.M(), unit.L(), unit.N())
                     #will not be recounted
                     nghbr_count[v] = -1 
                     #who all depends on this module?

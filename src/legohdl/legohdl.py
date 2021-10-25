@@ -460,7 +460,7 @@ scripts)?", warning=False)
         output = open(blueprint_filepath, 'w')   
 
         #mission: recursively search through every src VHD file for what else needs to be included
-        unit_order,block_order = self.formGraph(block, top_dog)
+        unit_order,block_order = self._graph(block, top_dog)
         file_order = self.compileList(block, unit_order)  
 
         #add labels in order from lowest-projects to top-level project
@@ -574,18 +574,21 @@ scripts)?", warning=False)
         log.info("success")
         pass
 
-    def formGraph(self, block, top):
-        '''
-        This method performs the graph command. It generates the unit order
-        through a topologically sorted graph and prints it to the user for
-        visual aide. It is a inner part to the export command.
-        '''
+    def _graph(self):
+        '''Run the 'graph' command.'''
+
+        top = self._item if(self._item != '') else None
+        block = self.blockCWD
+
+        top_dog,_,_ = self.blockCWD.identifyTopDog(top, inc_sim=True)
+        
         log.info("Generating dependency tree...")
         #start with top unit (returns all units if no top unit is found (packages case))
-        block.grabUnits(top, override=True)
+        block.grabUnits(top_dog, override=False)
         hierarchy = Unit.Hierarchy
+
         #print the dependency tree
-        hierarchy.output(block.getLib(low=True)+'.'+top)
+        hierarchy.output(block.getLib(low=True)+'.'+top_dog)
         
         unit_order,block_order = hierarchy.topologicalSort()
 
@@ -720,7 +723,7 @@ scripts)?", warning=False)
         # :todo: allow user to specify what is top level explictly?
         top_dog,_,_ = block.identifyTopDog(None)
         #update block requirements
-        _,block_order = self.formGraph(block, top_dog)
+        _,block_order = self._graph(block, top_dog)
         block.updateDerivatives(block_order)
         block.release(msg, ver, options)
         #don't look to market when updating if the block does not link to market anymore
@@ -1645,7 +1648,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 log.error("Profile "+self._item+" does not exist.")
             pass
         #open block
-        elif(False): # :todo:
+        elif(self.db.blockExists(self._item, "local")): # :todo:
             self.blockPKG.load()
         else:
             exit(log.error("No block "+self._item+" exists in your workspace."))
@@ -1743,6 +1746,22 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
         cmd = self._command
 
+        #check if we are in a project directory (necessary to run a majority of commands)
+        self.blockCWD = Block(path=os.getcwd()+"/")
+
+        M,L,N,V = Block.snapTitle(self._item)
+        if(Workspace.inWorkspace() and L == '' and cmd != 'new' and self.db.canShortcut(N)):
+            #rewrite MLNV based on shortcut if possible
+            M,L,N,_ = self.db.shortcut(N)
+            if(cmd != 'export' and cmd != 'graph' and cmd != 'run' and cmd != 'build'):
+                self._item = L+'.'+N
+
+        if(Workspace.inWorkspace()):
+            if(self.db.blockExists(self._item,"local")):
+                self.blockPKG = self.db.getBlocks("local")[L][N]
+            else:
+                self.blockPKG = None
+
         if('new' == cmd):
 
             pass
@@ -1760,7 +1779,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
 
         elif('graph' == cmd):
-            
+            self._graph()
             pass
 
         elif('export' == cmd):
