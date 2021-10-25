@@ -244,7 +244,7 @@ class Vhdl(Language):
                 if(in_true_arch):
                     #the instance has a package and unit with it
                     P,U,_ = splitBlock(cs[i+1])
-                    print(P,U)
+                    #print(P,U)
                     for L in library_declarations:
                         if(P in Unit.Bottle[L].keys()):
                             using_units.append(Unit.loc(u=U, l=L))
