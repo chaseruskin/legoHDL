@@ -146,11 +146,11 @@ class Verilog(Language):
                 # to resolve ambiguity
                 for u in all_available_modules:
                     m_name = c_stream[i]
-                    u_name = u.getName()
+                    u_name = u.E()
                     #if the unit is from vhdl, ignore case-sensitivity
                     if(u.getLang() == u.Language.VHDL):
                         m_name = m_name.lower()
-                        u_name = u.getName().lower()
+                        u_name = u.E().lower()
                     #print(m_name)
                     #print(u.getName(False))
                     if(m_name == u_name):

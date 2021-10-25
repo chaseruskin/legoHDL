@@ -253,8 +253,12 @@ def main():
         vl1 = Verilog(fp01, M='', L='Sample', N='Test')
         vl2 = Verilog(fp02, M='', L='Sample', N='Test')
 
+       
+
         vl1.decipher()
         vl2.decipher()
         Unit.printList()
-
+        print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeConnections())
+        print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeInstance(form=Unit.Language.VHDL))
+        print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeInstance(form=Unit.Language.VERILOG))
     pass

@@ -341,7 +341,7 @@ class Generic:
         if(form == Unit.Language.VHDL):
             m_txt = "    "+self._name+(spaces*' ')+"=>"+(r_space*' ')+self._name
         elif(form == Unit.Language.VERILOG):
-            m_txt = ""
+            m_txt = "    ."+self._name+(spaces*' ')+"("+self._name+")"
         return m_txt
         
 
@@ -415,7 +415,7 @@ class Port:
         if(form == Unit.Language.VHDL):
             m_txt = "    "+self._name+(spaces*' ')+"=>"+(r_space*' ')+self._name
         elif(form == Unit.Language.VERILOG):
-            m_txt = ""
+            m_txt = "    ."+self._name+(spaces*' ')+"("+self._name+")"
         return m_txt
 
 
@@ -446,7 +446,17 @@ class Port:
             pass
         #write VERILOG-style code
         elif(form == Unit.Language.VERILOG):
+            #skip over type declaration
+            if('reg' in self._flavor or 'wire' in self._flavor):
+                flav = self._flavor[1:]
+            if(len(flav)):
+                s_txt = apt.listToStr(flav)
+                s_txt = s_txt.replace(',[', ' [')
+                s_txt = s_txt.replace(',', '')
+                s_txt = s_txt + " "
 
+            s_txt = 'wire ' + s_txt + self._name
+            s_txt = s_txt + ';'
             pass
             
         return s_txt
@@ -454,9 +464,7 @@ class Port:
 
     def getName(self):
         return self._name
-    
     pass
-
 
 
 class Interface:
@@ -570,7 +578,7 @@ class Interface:
         return connect_txt
     
 
-    def writeInstance(self, form=None, entity_inst=False, inst_name='uX', align=False, hang_end=False):
+    def writeInstance(self, form=None, entity_inst=False, inst_name='uX', align=False, hang_end=True):
         '''
         Write the correct compatible code for an instantiation of the given
         entity.
@@ -580,7 +588,7 @@ class Interface:
             entity_inst (bool): if VHDL, use entity instantiation
             inst_name (str): the name to give the instance
             align (bool): determine if names should be all equally spaced
-            hand_end (bool): false if ) deserves its own line
+            hand_end (bool): true if ) deserves its own line
         Returns:
             mapping_txt (str): the compatible code to be printed
         '''
@@ -614,7 +622,7 @@ class Interface:
                     if(i != len(gens)-1):
                         line = line + ","
                     #don't add \n to last map if hang_end
-                    elif(hang_end == True):
+                    elif(hang_end == False):
                         mapping_txt = mapping_txt + line
                         continue
                     mapping_txt = mapping_txt + line+"\n"
@@ -639,7 +647,7 @@ class Interface:
                     if(i != len(ports)-1):
                         line = line + ","
                     #don't add \n to last map if hang_end
-                    elif(hang_end == True):
+                    elif(hang_end == False):
                         mapping_txt = mapping_txt + line
                         continue
                     mapping_txt = mapping_txt + line+"\n"
@@ -650,7 +658,40 @@ class Interface:
             pass
         #write VERILOG-style code
         elif(form == Unit.Language.VERILOG):
-
+            mapping_txt = self.getName()
+            #write out parameter section
+            params = self.getMappingNames(self.getGenerics())
+            if(len(params)):
+                farthest = self.computeLongestWord(params)
+                mapping_txt = mapping_txt + ' #(\n'
+                for p in params:
+                    if(align):
+                        spaces = farthest - len(p) + 1
+                    if(p == params[-1]):
+                        mapping_txt = mapping_txt + self.getGenerics()[p].writeMapping(form, spaces)
+                        if(hang_end == True):
+                            mapping_txt = mapping_txt + "\n"
+                        mapping_txt = mapping_txt + ")\n" + inst_name
+                    else:
+                        mapping_txt = mapping_txt + self.getGenerics()[p].writeMapping(form, spaces)+",\n"
+            else:
+                mapping_txt = mapping_txt + " " + inst_name
+            #write out port section
+            ports = self.getMappingNames(self.getPorts())
+            if(len(ports)):
+                mapping_txt = mapping_txt + ' (\n'
+                farthest = self.computeLongestWord(ports)
+                for p in ports:
+                    if(align):
+                        spaces = farthest - len(p) + 1
+                    if(p == ports[-1]):
+                        mapping_txt = mapping_txt + self.getPorts()[p].writeMapping(form, spaces)
+                        if(hang_end == True):
+                            mapping_txt = mapping_txt + "\n"
+                        mapping_txt = mapping_txt + ")"
+                    else:
+                        mapping_txt = mapping_txt + self.getPorts()[p].writeMapping(form, spaces)+",\n"
+            mapping_txt = mapping_txt + ';'
             pass
         #print(mapping_txt)
         return mapping_txt
