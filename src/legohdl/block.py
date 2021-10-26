@@ -40,7 +40,7 @@ class Block:
             }
 
 
-    def __init__(self, title=None, path=None, remote=None, excludeGit=False, market=None):
+    def init_old(self, title=None, path=None, remote=None, excludeGit=False, market=None):
         self.__metadata = {'block' : {}}
         #split title into library and block name
         _,self.__lib,self.__name,_ = Block.snapTitle(title, lower=False)
@@ -79,7 +79,7 @@ class Block:
         pass
 
 
-    def init2(self, path, title=''):
+    def __init__(self, path, title=''):
         '''
         Create a legohdl Block object. 
         
@@ -91,11 +91,10 @@ class Block:
             title (str): M.L.N.V format
         '''
         self._path = apt.fs(path)
-         #is this a valid Block marker?
+        #is this a valid Block marker?
         fname = os.path.basename(path)
         
         if(fname == apt.MARKER):
-            #load from metadata
             self._path,_ = os.path.split(path)
             pass
         #try to see if a Block marker is within this directory
@@ -106,12 +105,13 @@ class Block:
                     self._path = path
                     break
         #check if valid
-        if(self._path != ''):
+        if(self.isValid()):
+            self._repo = Git(self.getPath())
             #load from metadata
+            self.loadMeta()
             pass
 
-        return(self.isValid())
-        #print(self.isValid())
+        print(self.isValid())
         pass
 
 
@@ -173,6 +173,9 @@ class Block:
             self._repo.git.checkout("-b","master")
 
         return success
+
+
+    
 
 
     def getTitle(self, low=True, mrkt=False):
@@ -373,7 +376,8 @@ class Block:
         Returns a list of all version #'s that had a valid TAG_ID appended from
         the git repository tags.
         '''
-        all_tags = self._repo.git.tag(l=True)
+        all_tags,_ = self._repo.git('tag','-l')
+        print(all_tags)
         #split into list
         all_tags = all_tags.split("\n")
         tags = []
@@ -539,9 +543,9 @@ class Block:
                 
 
         #cast blank values '' -> None
-        blanks_to_none = ['remote', 'name', 'market', 'library', 'bench', 'toplevel']
-        for field in blanks_to_none:
-            self.setMeta(field, cfg.castNone(self.getMeta(field)))
+        #blanks_to_none = ['remote', 'name', 'market', 'library', 'bench', 'toplevel']
+        #for field in blanks_to_none:
+            #self.setMeta(field, cfg.castNone(self.getMeta(field)))
             
         #remember what the metadata looked like initially to compare for determining
         #   if needing to write file for saving
@@ -551,7 +555,7 @@ class Block:
         #check if this block is a local block
         if(self.isLocal()):
             #grab list of available versions
-            avail_vers = self.getAvailableVers()       
+            avail_vers = self.getAvailableVers()     
             #dynamically determine the latest valid release point
             self.setMeta('version', avail_vers[0][1:])
 
@@ -559,36 +563,16 @@ class Block:
         if(self.getMeta('derives') == cfg.NULL):
             self.setMeta('derives',list())
 
-        if('remote' in self.getMeta().keys()):
-            #upon every boot up, try to grab the remote from this git repo if it exists
-            self.grabGitRemote()
-            #print(self.getName(),"REMOTE:",self._remote)
-            #set it if it was set by constructor
-            if(self._remote != None):
-                self.setMeta('remote', self._remote)
-            #else set it based on the read-in value
-            else:
-                self._remote = self.getMeta('remote')
-            
-        if('market' in self.getMeta().keys()):
-            #did an actual market object already get passed in?
-            if(self.__market != None):
-                self.setMeta('market', self.__market.getName())
-            #see if the market is bound to your workspace
-            elif(self.getMeta("market") != None):
-                if self.getMeta("market") in Workspace.getActive().getMarkets(returnnames=True):
-                    self.__market = Market(self.getMeta('market'), apt.SETTINGS['market'][self.getMeta('market')])
-                else:
-                    log.warning("Market "+self.getMeta('market')+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
-                    self.setMeta('market', None)
-                    self.__market = self.getMeta('market')
+        if(hasattr(self, "_repo")):
+            self.setMeta('remote', self._repo.getRemoteURL())
+
+        if(self.getMeta('market') != ''):
+            m = self.getMeta('market')
+            if(m.lower() not in Workspace.getActive().getMarkets(returnnames=True)):
+                log.warning("Market "+m+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
+                self.setMeta('market', '')
 
         self.save()
-
-        self._N = self.getName(low=False)
-        self._M = self.getMeta('market')
-        self._M = '' if(self._M == None) else self._M
-        self._L = self.getLib(low=False)
         pass
 
 
@@ -675,9 +659,6 @@ class Block:
         Returns:
             success (bool): determine if the operation executed with no flaws
         '''
-        #break into 4 title sections
-        M,L,N,V = Block.snapTitle(title)
-
         #make sure block is invalid here
         if(self.isValid()):
             log.info("Block already exists here!")
@@ -709,11 +690,6 @@ class Block:
             for d in dirs:
                 if(os.path.isdir(self.getPath()+d) and d[0] == '.'):
                     shutil.rmtree(self.getPath()+d, onerror=apt.rmReadOnly)
-            #fill in all placeholders
-            template_files = glob.glob(self.getPath()+"/**/*", recursive=True)
-            for tf in template_files:
-                if(os.path.isfile(tf)):
-                    self.fillPlaceholders(tf, N)
         #ensure this path exists before beginning to create the block
         else:
             os.makedirs(self.getPath(), exist_ok=True)
@@ -726,6 +702,10 @@ class Block:
         #fill in data for Block.cfg :todo:
         #load in empty meta
         self.loadMeta()
+
+        #break into 4 title sections
+        M,L,N,_ = Block.snapTitle(title)
+
         #check if market is in an allowed market
         if(M != ''):
             if(M.lower() in Workspace.getActive().getMarkets(returnnames=True)):
@@ -737,22 +717,29 @@ class Block:
         self.setMeta('version', '0.0.0')
         #determine top-level and bench designs
 
+        #fill in placeholders
+        if(cp_template):
+            template_files = glob.glob(self.getPath()+"/**/*", recursive=True)
+            for tf in template_files:
+                if(os.path.isfile(tf)):
+                    self.fillPlaceholders(tf, self.N())
+
         #configure the remote repository to be origin for new git repo
-        repo = Git(self.getPath(), clone=remote)
+        self._repo = Git(self.getPath(), clone=remote)
 
         #update meta's remote url
-        self.setMeta('remote', repo.getRemoteURL())
+        self.setMeta('remote', self._repo.getRemoteURL())
 
         print(self.getMeta(every=True))
         #save all changes to meta
         self.save()
 
         #commit all file changes
-        repo.add('.')
-        repo.commit('Creates legohdl block')
+        self._repo.add('.')
+        self._repo.commit('Creates legohdl block')
 
         #push to remote repository
-        repo.push()
+        self._repo.push()
         #operation was successful
         return True
 
@@ -796,7 +783,7 @@ class Block:
         today = date.today().strftime("%B %d, %Y")
 
         placeholders = [("TEMPLATE", template_val), ("%DATE%", today), \
-            ("%AUTHOR%", author), ("%BLOCK%", self.getTitle())] + extra_placeholders
+            ("%AUTHOR%", author), ("%BLOCK%", self.getFull())] + extra_placeholders
 
         #go through file and update with special placeholders
         fdata = []
@@ -1694,12 +1681,19 @@ class Block:
         return top_dog,top,tb
 
 
+    def getFull(self, inc_ver=False):
+        if(inc_ver == False):
+            return self.M()+'.'+self.L()+'.'+self.N()
+        else:
+             return self.M()+'.'+self.L()+'.'+self.N()+"("+self.V()+")"
+
+
     def M(self):
         if(hasattr(self, "_M")):
             return self._M 
         #read from metadata
         self._M = self.getMeta('market')
-        return self._M
+        return self._M if(self._M != None) else ''
 
 
     def L(self):
@@ -1716,6 +1710,14 @@ class Block:
         #read from metadata
         self._N = self.getMeta('name')
         return self._N
+
+
+    def V(self):
+        if(hasattr(self, "_V")):
+            return self._V
+        #read from metadata
+        self._V = 'v'+self.getMeta('version')
+        return self._V
 
 
     def loadHDL(self):

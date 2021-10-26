@@ -98,7 +98,11 @@ class legoHDL:
         self.blockCWD = None
         #initialize registry with the workspace-level markets
         if(Workspace.inWorkspace()):
-            self.db = Registry(Workspace.getActive().getMarkets())
+            #self.db = Registry(Workspace.getActive().getMarkets())
+            Workspace.getActive().loadLocalBlocks()
+            Workspace.getActive().loadCacheBlocks()
+            Workspace.getActive().loadMarketBlocks()
+            pass
 
         #limit functionality if not in a workspace
         if(not Workspace.inWorkspace()):
@@ -118,12 +122,8 @@ class legoHDL:
 
         print(self)
 
-        Workspace.getActive().loadLocalBlocks()
-        Workspace.getActive().loadCacheBlocks()
-        Workspace.getActive().loadMarketBlocks()
 
-        b = Block()
-        b.init2('/Users/chase/.legohdl/workspaces/eel4712c/cache/eel4712c/lab4/v1/')
+        b = Block('/Users/chase/develop/eel4712c/lab4/')
 
         if('debug' == self._command):
             test()
@@ -923,19 +923,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         #delete the module remotely?
         pass
 
-    #! === LIST COMMAND ===
-
-    def inventory(self, M, N, L, options):
-        '''
-        This method perfoms the list command for blocks.
-        '''
-        self.db.listBlocks(M, N, L, options)
-        print()
-        pass
-
 
     #! === UPDATE COMMAND ===
-
     def update(self, title, ver=None, bypassMrkt=False):
         '''
         This method perfoms the update command for blocks and/or profiles. The
@@ -1547,6 +1536,28 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 apt.save()
         pass
 
+    # [!] NEW COMMAND
+    def _new(self):
+        '''Run 'new' command.'''
+        M,L,N,V = Block.snapTitle(self._item)
+
+        if(L == ''):
+            exit(log.error("New block must have a library."))
+        if(N == ''):
+            exit(log.error("New block must have a name."))
+
+        #default path to make a new block
+        block_path = Workspace.getActive().getPath()+L+"/"+N+"/"
+        #create block object
+        b = Block(block_path)
+        #grab the remote url if specified
+        rem = None
+        if('remote' in self._vars.keys()):
+            rem = self._vars['remote']
+        #create the new block
+        b.create2(self._item, cp_template=(self._flags.count('no-template') == 0), remote=rem)
+    pass
+
 
     # [!] REFRESH COMMAND
     def _refresh(self):
@@ -1589,8 +1600,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             #and visible files (files that are copied in on using template)
         else:
             M,L,N,_ = Block.snapTitle(self._item)
-            print(M,L,N)
-            self.inventory(M,L,N,self._flags)
+            Workspace.getActive().listBlocks(M, N, L)
         pass
 
 
@@ -1756,21 +1766,21 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         #check if we are in a project directory (necessary to run a majority of commands)
         self.blockCWD = Block(path=os.getcwd()+"/")
 
-        M,L,N,V = Block.snapTitle(self._item)
-        if(Workspace.inWorkspace() and L == '' and cmd != 'new' and self.db.canShortcut(N)):
+        
+        #if(Workspace.inWorkspace() and L == '' and cmd != 'new' and self.db.canShortcut(N)):
             #rewrite MLNV based on shortcut if possible
-            M,L,N,_ = self.db.shortcut(N)
-            if(cmd != 'export' and cmd != 'graph' and cmd != 'run' and cmd != 'build'):
-                self._item = L+'.'+N
+        #    M,L,N,_ = self.db.shortcut(N)
+        #    if(cmd != 'export' and cmd != 'graph' and cmd != 'run' and cmd != 'build'):
+        #        self._item = L+'.'+N
 
-        if(Workspace.inWorkspace()):
-            if(self.db.blockExists(self._item,"local")):
-                self.blockPKG = self.db.getBlocks("local")[L][N]
-            else:
-                self.blockPKG = None
+        #if(Workspace.inWorkspace()):
+        #    if(self.db.blockExists(self._item,"local")):
+        #        self.blockPKG = self.db.getBlocks("local")[L][N]
+        #    else:
+         #       self.blockPKG = None
 
         if('new' == cmd):
-
+            self._new()
             pass
 
         elif('init' == cmd):

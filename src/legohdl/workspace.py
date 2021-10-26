@@ -299,6 +299,20 @@ class Workspace:
         pass
 
 
+    def listBlocks(self, M, L, N, alpha=False, instl=False, dnld=False):
+        '''
+        Print a formatted table of the available blocks.
+
+        Parameters:
+            :todo:
+        Returns:
+            None
+        '''
+        print('{:<12}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<8}'.format("Version"),'{:<16}'.format("Market"))
+        print("-"*12+" "+"-"*20+" "+"-"*8+" "+"-"*8+" "+"-"*16)
+        pass
+
+
     @classmethod
     def tidy(cls):
         '''
