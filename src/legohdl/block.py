@@ -662,7 +662,7 @@ class Block:
         pass
 
     
-    def create2(self, title, cp_template=True, remote=None, fork=False):
+    def create2(self, title, cp_template=True, remote=None):
         '''
         Create a new block at _path. Creates git repository if DNE and the Block.cfg
         file.
@@ -687,6 +687,14 @@ class Block:
         if(apt.isSubPath(Workspace.getActive().getPath(), self.getPath()) == False):
             log.info("Path is not within the workspace!")
             return False
+
+        #make sure a git repository is empty if passing in a remote
+        if(remote != None and Git.isBlankRepo(remote) == False):
+            if(Git.isValidRepo(remote, remote=True)):
+                log.error("Cannot create a new block from an existing remote repository; see the 'init' command.")
+                return False
+            else:
+                log.warning("Skipping invalid remote repository "+remote+"...")
         
         #will create path if DNE and copy in template files
         if(cp_template and os.path.exists(self.getPath()) == False):
@@ -715,15 +723,54 @@ class Block:
             with open(self.getPath()+apt.MARKER, 'w') as mdf:
                 cfg.save(self.LAYOUT, mdf, ignore_depth=True, space_headers=True)
 
-        #fill in data for Block.cfg
+        #fill in data for Block.cfg :todo:
+        #load in empty meta
+        self.loadMeta()
+        #check if market is in an allowed market
+        if(M != ''):
+            if(M.lower() in Workspace.getActive().getMarkets(returnnames=True)):
+                self.setMeta("market", M)
+            else:
+                log.warning("Skipping invalid market name "+M+"...")
+        self.setMeta('library', L)
+        self.setMeta('name', N)
+        self.setMeta('version', '0.0.0')
+        #determine top-level and bench designs
 
-        #create a git repository here
+        #configure the remote repository to be origin for new git repo
         repo = Git(self.getPath(), clone=remote)
+
+        #update meta's remote url
+        self.setMeta('remote', repo.getRemoteURL())
+
+        print(self.getMeta(every=True))
+        #save all changes to meta
+        self.save()
 
         #commit all file changes
         repo.add('.')
-        repo.commit('Initializes legohdl block')
+        repo.commit('Creates legohdl block')
 
+        #push to remote repository
+        repo.push()
+        #operation was successful
+        return True
+
+
+    def initialize(self, title, remote=None, fork=False):
+        '''
+        Initializes an existing remote repository or current working directory
+        into a legohdl block.
+
+        Parameters:
+            remote (str): a git url to try to hook up with the new block
+            fork (bool): determine if to drop the given remote url from the block
+        Returns:
+            success (bool): determine if initialization was successful
+        '''
+
+
+        #operation was successful
         return True
 
 
@@ -757,7 +804,7 @@ class Block:
             lines = rf.readlines()
             for l in lines:
                 for ph in placeholders:
-                    print(ph[0], ph[1])
+                    #print(ph[0], ph[1])
                     l = l.replace(ph[0], ph[1])
                 fdata.append(l)
             rf.close()
@@ -776,7 +823,7 @@ class Block:
         fname_new = fname.replace('TEMPLATE', template_val)
         if(fname != fname_new):
             os.rename(base_path+"/"+fname, base_path+"/"+fname_new)
-            
+
         #operation was successful
         return True
 
@@ -1022,9 +1069,18 @@ class Block:
             return None
 
 
-    def setMeta(self, key, value):
-        '''Updates the block metatdata dictionary.'''
-        self.__metadata['block'][key] = value
+    def setMeta(self, key, value, sect='block'):
+        '''
+        Updates the block metatdata dictionary.
+        
+        Parameters:
+            key (str): key within sect that covers the value in dictionary
+            value (str): value to be at location key
+            sect (str): the cfg section header that key belongs to
+        Returns:
+            None
+        '''
+        self.__metadata[sect][key] = value
         pass
 
 
@@ -1137,17 +1193,20 @@ class Block:
         since initializing this block as an object in python.
         '''
         #do no rewrite meta data if nothing has changed
-        if(self._initial_metadata == self.getMeta() and meta == None):
-            return
+        if(hasattr(self, "_initial_metadata")):
+            if(self._initial_metadata == self.getMeta() and meta == None):
+                return
+
         #default is to load the block's metadata
         if(meta == None):
             meta = self.getMeta(every=True)
 
-        if(self._initial_metadata != self.getMeta()):
-            #print("its different!")
-            #print(self._initial_metadata)
-            #print(self.getMeta())
-            pass
+        if(hasattr(self, "_initial_metadata")):
+            if(self._initial_metadata != self.getMeta()):
+                #print("its different!")
+                #print(self._initial_metadata)
+                #print(self.getMeta())
+                pass
 
         #write back cfg values with respect to order
         with open(self.metadataPath(), 'w') as file:

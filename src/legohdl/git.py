@@ -110,6 +110,7 @@ class Git:
             None
         '''
         if(self.remoteExists()):
+            log.info("Pushing changes to remote url "+self.getRemoteURL()+"...")
             self.git('push','--set-upstream',self.getRemoteName(),self.getBranch(),'--tags')
         pass
         

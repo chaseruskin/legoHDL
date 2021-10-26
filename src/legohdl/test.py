@@ -270,8 +270,13 @@ def main():
         b1.loadHDL()
         b1.getUnits()
 
+        test_path = '/Users/chase/Develop/eel4712c/library1/labX/'
         b2 = Block()
-        b2.init2('/Users/chase/Develop/eel4712c/library1/labX/')
-        b2.create2("sample.myblock")
+        b2.init2(test_path)
+        success = b2.create2("open-ip2.sample.myblock", remote='https://gitlab.com/chase800/block.git')
+
+        #clean up test block
+        if(success):
+            shutil.rmtree(test_path, onerror=apt.rmReadOnly)
 
     pass
