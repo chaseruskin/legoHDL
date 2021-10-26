@@ -70,9 +70,6 @@ class Market:
 
         #add to class container
         self.Jar[self.getName()] = self
-
-        #compute the block count by finding how many cfg block files are in market
-        self._block_count = len(glob.glob(self.getMarketDir()+"**/*"+apt.MARKER, recursive=True))
         pass
 
 
@@ -359,6 +356,10 @@ class Market:
 
 
     def getBlockCount(self):
+        if(hasattr(self, "_block_count")):
+            return self._block_count
+        #compute the block count by finding how many cfg block files are in market
+        self._block_count = len(glob.glob(self.getMarketDir()+"**/*"+apt.MARKER, recursive=True))
         return self._block_count
 
 
