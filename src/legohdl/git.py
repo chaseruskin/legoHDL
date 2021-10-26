@@ -92,7 +92,7 @@ class Git:
         Adds files from working level to staging level.
 
         Parameters:
-            files ([str]): list of files to add
+            files (*str): list of files to add
         Returns:
             None
         '''

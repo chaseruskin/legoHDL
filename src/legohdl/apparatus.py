@@ -297,6 +297,15 @@ scripts)?", warning=False)
             return True
 
 
+    @classmethod
+    def getAuthor(cls):
+        'Return the author string from the settings.'
+        author = cls.SETTINGS['general']['author']
+        if(author == None):
+            author = ''
+        return author
+
+
     #[!] TO MOVE TO MARKET CLASS
     @classmethod
     def loadMarket(cls, value):
@@ -551,6 +560,16 @@ scripts)?", warning=False)
             r = cls.MIN_RATE
         #set in settings
         cls.SETTINGS['general']['refresh-rate'] = r
+
+
+    @classmethod
+    def getTemplatePath(cls):
+        #load template path from settings
+        tmp = cls.SETTINGS['general']['template']
+        #return built-in template folder if invalid folder in settings
+        if(tmp == '' or os.path.exists(tmp) == False):
+            tmp = cls.TEMPLATE
+        return tmp
     
 
     @classmethod

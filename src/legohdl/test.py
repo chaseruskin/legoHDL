@@ -270,4 +270,8 @@ def main():
         b1.loadHDL()
         b1.getUnits()
 
+        b2 = Block()
+        b2.init2('/Users/chase/Develop/eel4712c/library1/labX/')
+        b2.create2("sample.myblock")
+
     pass

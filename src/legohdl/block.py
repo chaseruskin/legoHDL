@@ -7,6 +7,7 @@
 #   root folder.
 
 import os, shutil, stat
+from re import S
 from datetime import date
 import glob, git
 from .vhdl import Vhdl
@@ -18,6 +19,7 @@ from .apparatus import Apparatus as apt
 from .graph import Graph 
 from .unit import Unit
 from .language import Language
+from .git import Git
 
 from .workspace import Workspace
 
@@ -675,11 +677,108 @@ class Block:
         '''
         #break into 4 title sections
         M,L,N,V = Block.snapTitle(title)
-        
-        if(cp_template):
-            log.info("Copying in template...")
 
-        pass
+        #make sure block is invalid here
+        if(self.isValid()):
+            log.info("Block already exists here!")
+            return False
+
+        #make sure path is within the workspace path
+        if(apt.isSubPath(Workspace.getActive().getPath(), self.getPath()) == False):
+            log.info("Path is not within the workspace!")
+            return False
+        
+        #will create path if DNE and copy in template files
+        if(cp_template and os.path.exists(self.getPath()) == False):
+            log.info("Copying in template...")
+            template = apt.getTemplatePath()
+            shutil.copytree(template, self.getPath())
+            #delete any previous git repository that was attached to template
+            if(Git.isValidRepo(self.getPath())):
+                shutil.rmtree(self.getPath()+"/.git/", onerror=apt.rmReadOnly)
+            #delete all folders that start with '.'
+            dirs = os.listdir(self.getPath())
+            for d in dirs:
+                if(os.path.isdir(self.getPath()+d) and d[0] == '.'):
+                    shutil.rmtree(self.getPath()+d, onerror=apt.rmReadOnly)
+            #fill in all placeholders
+            template_files = glob.glob(self.getPath()+"/**/*", recursive=True)
+            for tf in template_files:
+                if(os.path.isfile(tf)):
+                    self.fillPlaceholders(tf, N)
+        #ensure this path exists before beginning to create the block
+        else:
+            os.makedirs(self.getPath(), exist_ok=True)
+
+        #create the Block.cfg file if DNE
+        if(self.isValid() == False):
+            with open(self.getPath()+apt.MARKER, 'w') as mdf:
+                cfg.save(self.LAYOUT, mdf, ignore_depth=True, space_headers=True)
+
+        #fill in data for Block.cfg
+
+        #create a git repository here
+        repo = Git(self.getPath(), clone=remote)
+
+        #commit all file changes
+        repo.add('.')
+        repo.commit('Initializes legohdl block')
+
+        return True
+
+
+    def fillPlaceholders(self, path, template_val, extra_placeholders=[]):
+        '''
+        Replace all placeholders in a given file.
+
+        Parameters:
+            path (str): the file path who's data to be transformed
+            template_val (str): the value to replace the word "template"
+            extra_placeholders ([(str, str)]]): additional placeholders to find/replace
+        Returns:
+            success (bool): determine if operation was successful
+        '''
+        #make sure the file path exists
+        if(os.path.isfile(path) == False):
+            log.error(path+" does not exist.")
+            return False
+    
+        #determine the author
+        author = apt.getAuthor()
+        #determine the date
+        today = date.today().strftime("%B %d, %Y")
+
+        placeholders = [("TEMPLATE", template_val), ("%DATE%", today), \
+            ("%AUTHOR%", author), ("%BLOCK%", self.getTitle())] + extra_placeholders
+
+        #go through file and update with special placeholders
+        fdata = []
+        with open(path, 'r') as rf:
+            lines = rf.readlines()
+            for l in lines:
+                for ph in placeholders:
+                    print(ph[0], ph[1])
+                    l = l.replace(ph[0], ph[1])
+                fdata.append(l)
+            rf.close()
+        
+        #write new lines
+        with open(path, 'w') as wf:
+            for line in fdata:
+                wf.write(line)
+            wf.close()
+
+        #replace all file name if contains the word 'TEMPLATE'
+        #get the file name
+        base_path,fname = os.path.split(path)
+
+        #replace 'template' in file name
+        fname_new = fname.replace('TEMPLATE', template_val)
+        if(fname != fname_new):
+            os.rename(base_path+"/"+fname, base_path+"/"+fname_new)
+            
+        #operation was successful
+        return True
 
 
     def create(self, fresh=True, git_exists=False, remote=None, fork=False, inc_template=True):
