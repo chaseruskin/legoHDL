@@ -1045,7 +1045,7 @@ class Block:
             return self.__lib
 
 
-    def getMeta(self, key=None, every=False):
+    def getMeta(self, key=None, every=False, sect='block'):
         '''
         Returns the value stored in the block metadata, else retuns None if
         DNE.
@@ -1053,6 +1053,7 @@ class Block:
         Parameters:
             key (str): the case-sensitive key to the cfg dictionary
             all (bool): return entire dictionary
+            sect (str): the cfg header that key belongs to in the dictionary
         Returns:
             val (str): the value behind the corresponding key
         '''
@@ -1061,10 +1062,10 @@ class Block:
             return self.__metadata
 
         if(key == None):
-            return self.__metadata['block']
+            return self.__metadata[sect]
         #check if the key is valid
-        elif('block' in self.__metadata.keys() and key in self.__metadata['block'].keys()):
-            return self.__metadata['block'][key]
+        elif(sect in self.__metadata.keys() and key in self.__metadata[sect].keys()):
+            return self.__metadata[sect][key]
         else:
             return None
 

@@ -6,6 +6,7 @@
 #   for settings and blocks.
 
 import logging as log
+#from .map import Map
 
 
 class CfgFile:
@@ -83,7 +84,7 @@ class CfgFile:
             return cnt, tmp
 
         #dictionary to fill and return as end result
-        map = dict()
+        mapp = dict()
 
         scope = [] # stores levels of scope keys for map dictionary
         tmp = [] # temporary list used to store an assigned list
@@ -135,7 +136,7 @@ class CfgFile:
                 scope = scope[0:lvl]
                     
                 #create new dictionary spot scoped to specific location
-                map = tunnel(map, key, scope)
+                mapp = tunnel(mapp, key, scope)
                 #append to scope
                 scope.append(key)
                 continue
@@ -167,7 +168,7 @@ class CfgFile:
                     #print(value)
                     last_var['key'] = key
                     last_var['val'] = value
-                    map = tunnel(map, key, scope, value)
+                    mapp = tunnel(mapp, key, scope, value)
                     
             elif(bracket_cnt):
                 #strip excessive whitespae and quotes
@@ -179,7 +180,7 @@ class CfgFile:
                 #finalize into dictionary
                 if(bracket_cnt == 0):
                     value = tmp
-                    map = tunnel(map, key, scope, value)
+                    mapp = tunnel(mapp, key, scope, value)
             #evaluate if no '=' sign is on this line and not a header line
             elif(last_var['key'] != None):
                 #extended line string
@@ -188,11 +189,11 @@ class CfgFile:
                     in_quote = in_quote ^ (ext_value.count(cls.QUOTES[0]) + ext_value.count(cls.QUOTES[1])) % 2 == 1
                     #automatically insert space between the different lines
                     last_var['val'] = last_var['val'] + ' ' +ext_value
-                    map = tunnel(map, last_var['key'], scope, last_var['val'])
+                    mapp = tunnel(mapp, last_var['key'], scope, last_var['val'])
             else:
                 exit(log.error("Syntax: Line "+str(line_cnt)))
 
-        return map
+        return mapp
 
 
     @classmethod
@@ -384,10 +385,10 @@ class CfgFile:
         '''
 
 
-        def fieldSearch(map, fields=[]):
-            for k in map.keys():
-                if(isinstance(map[k], dict)):
-                    fields = fieldSearch(map[k],fields)
+        def fieldSearch(mapp, fields=[]):
+            for k in mapp.keys():
+                if(isinstance(mapp[k], dict)):
+                    fields = fieldSearch(mapp[k],fields)
                 else:
                     fields += [k]
             return fields
