@@ -12,6 +12,7 @@ from datetime import datetime
 from .market import Market
 from .apparatus import Apparatus as apt
 from .map import Map
+from .git import Git
 
 
 class Workspace:
@@ -224,6 +225,20 @@ class Workspace:
             log.warning("Could not unlink unknown market "+mrkt+" from "+self.getName()+".")
             return False
 
+
+    def getsAvailableBlocks(self, multi_develop=False):
+        '''
+        Returns all available blocks. Some may be hidden under others (cache overwrites
+        positions of downloaded blocks when multi-develop is False).
+        
+        Parameters:
+            multi_develop (bool): determine if download blocks have precedence over cache
+        Returns:
+            map
+        '''
+
+        pass
+
     
     def loadLocalBlocks(self):
         '''
@@ -255,7 +270,14 @@ class Workspace:
         #glob on the workspace cache path
         print("Cache Blocks on:",self.getCachePath())
         marker_files = glob.glob(self.getCachePath()+"**/*/"+apt.MARKER, recursive=True)
-        print(marker_files)
+       
+        cache_markers = []
+        for mf in marker_files:
+            #the block must also be a valid git repository at its root
+            root,_ = os.path.split(mf)
+            if(Git.isValidRepo(root, remote=False)):
+                cache_markers += [mf]
+        print(cache_markers)
         pass
 
     

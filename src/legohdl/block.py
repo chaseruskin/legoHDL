@@ -88,10 +88,10 @@ class Block:
             path (str): the filepath to the Block's root directory
             title (str): M.L.N.V format
         '''
-        path = apt.fs(path)
+        self._path = apt.fs(path)
          #is this a valid Block marker?
         fname = os.path.basename(path)
-        self._path = ''
+        
         if(fname == apt.MARKER):
             #load from metadata
             self._path,_ = os.path.split(path)
@@ -107,11 +107,10 @@ class Block:
         if(self._path != ''):
             #load from metadata
             pass
+
         return(self.isValid())
         #print(self.isValid())
         pass
-
-
 
 
     #return the block's root path
@@ -215,7 +214,7 @@ class Block:
                 f.close()
             #print(change_file)
             #open the changelog and wait for the developer to finish writing changes
-            apt.execute(apt.SETTINGS['general']['editor'], change_file)
+            apt.execute(apt.getEditor(), change_file)
             try:
                 resp = input("Enter 'k' when done writing CHANGELOG.md to proceed...")
             except KeyboardInterrupt:
@@ -402,6 +401,12 @@ class Block:
     def biggerVer(cls, lver, rver):
         '''
         Compare two versions. Retuns the higher version, or RHS if both equal.
+
+        Parameters:
+            lver (str): lhs version
+            rver (str): rhs version
+        Returns:
+            ver (str): version of higher values MAJOR.MINOR.PATCH
         '''
         l1,l2,l3 = cls.sepVer(lver)
         r1,r2,r3 = cls.sepVer(rver)
@@ -652,6 +657,28 @@ class Block:
             file_out.close()
 
         log.info("success")
+        pass
+
+    
+    def create2(self, title, cp_template=True, remote=None, fork=False):
+        '''
+        Create a new block at _path. Creates git repository if DNE and the Block.cfg
+        file.
+
+        Parameters:
+            title (str): M.L.N.V format
+            cp_template (bool): determine if to copy in the template to this location
+            remote (str): a git url to try to hook up with the new block
+            fork (bool): determine if to drop the given remote url from the block
+        Returns:
+            success (bool): determine if the operation executed with no flaws
+        '''
+        #break into 4 title sections
+        M,L,N,V = Block.snapTitle(title)
+        
+        if(cp_template):
+            log.info("Copying in template...")
+
         pass
 
 
@@ -1471,6 +1498,7 @@ class Block:
         #return the entity
         return self._bench
 
+
     def identifyTopDog(self, top, inc_sim=True):
         '''
         Determine what unit is utmost highest, whether it be a testbench
@@ -1508,28 +1536,27 @@ class Block:
 
 
     def M(self):
+        if(hasattr(self, "_M")):
+            return self._M 
+        #read from metadata
+        self._M = self.getMeta('market')
         return self._M
 
 
     def L(self):
+        if(hasattr(self, "_L")):
+            return self._L
+        #read from metadata
+        self._L = self.getMeta('library')
         return self._L 
     
 
     def N(self):
+        if(hasattr(self, "_N")):
+            return self._N 
+        #read from metadata
+        self._N = self.getMeta('name')
         return self._N
-
-
-    def printUnits(self):
-        '''
-        Helpful method for readable design book debugging.
-        '''
-        print("===UNIT BOOK===")
-        for L in self.grabUnits().keys():
-            print("===LIBRARY===",L)
-            for U in self.grabUnits()[L]:
-                print(self.grabUnits()[L][U])
-        print("===END UNIT BOOK===")
-        pass
 
 
     def loadHDL(self):
