@@ -1648,7 +1648,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         elif(self._flags.count("profile")):
             #open the specified path to the profile if it exists
             if(self._item.lower() in Profile.Jar.keys()):
-                prfl_path = Profile.Jar[self._item].getPath()
+                prfl_path = Profile.Jar[self._item].getProfileDir()
                 log.info("Opening profile "+self._item+" at... "+prfl_path)
                 apt.execute(apt.getEditor(), prfl_path)
             else:
