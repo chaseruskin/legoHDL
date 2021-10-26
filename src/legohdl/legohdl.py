@@ -95,7 +95,8 @@ class legoHDL:
         Workspace.save()
         
         self.blockPKG = None
-        self.blockCWD = None
+        self.working_block = Block(os.getcwd())
+        
         #initialize registry with the workspace-level markets
         if(Workspace.inWorkspace()):
             #self.db = Registry(Workspace.getActive().getMarkets())
@@ -109,7 +110,7 @@ class legoHDL:
             if(self._command == '' or \
                 self._command == 'config' or \
                 self._command == 'help' or \
-                self._command == 'open' and (self._flags.count('settings') or self._flags.count('template'))):
+                self._command == 'open' and (self.hasFlag('settings') or self.hasFlag('template'))):
                 pass
             else:
                 exit(log.error("Failed to run command because active workspace is not set."))
@@ -123,7 +124,7 @@ class legoHDL:
         print(self)
 
 
-        b = Block('/Users/chase/develop/eel4712c/lab4/')
+        Block('/Users/chase/develop/eel4712c/lab4/')
 
         if('debug' == self._command):
             test()
@@ -158,6 +159,33 @@ class legoHDL:
                 self._flags.append(arg[1:].lower())
                 pass
         pass
+
+
+    def getVar(self, key):
+        '''
+        Get the value for the desired key. Returns None if DNE.
+        
+        Parameters:
+            key (str): var's key
+        Returns:
+            val (str):
+        '''
+        if(key.lower() in self._vars.keys()):
+            return self._vars[key]
+        else:
+            return None
+
+
+    def hasFlag(self, flag):
+        '''
+        See if the flag is found within _flags.
+
+        Parameters:
+            flag (str): flag
+        Returns:
+            (bool): determine if flag is in _flags
+        '''
+        return (self._flags.count(flag) > 0)
 
 
     def __str__(self):
@@ -1407,13 +1435,25 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
     def itemEmpty(self):
         return self._item == ''
 
+    
+    def _init(self):
+        '''Run the 'init' command.'''
+        
+        #create a new file
+        if(self.hasFlag('file')):
+            #make sure we are in a valid block
+            if(self.working_block.isValid()):
+                self.working_block.newFile(self._item, self.getVar("file"), self.hasFlag('force'))
+            else:
+                exit(log.error("Cannot create files outside a block directory!"))
+
 
     def _config(self):
         '''Run 'config' command.'''
 
         #import a profile if a profile name is given as item.
         if(self.itemEmpty() == False and self._item in Profile.Jar.keys()):
-            Profile.Jar[self._item].importLoadout(ask=self._flags.count('ask'))
+            Profile.Jar[self._item].importLoadout(ask=self.hasFlag('ask'))
             return
 
         #set each setting listed in flags try to modify it
@@ -1448,10 +1488,10 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 #modify existing label
                 if(var_key.lower() in Label.Jar.keys()):
                     Label.Jar[var_key].setExtensions(apt.strToList(var_val))
-                    Label.Jar[var_key].setRecursive(self._flags.count('recursive'))
+                    Label.Jar[var_key].setRecursive(self.hasFlag('recursive'))
                 #create new label
                 else:
-                    Label(var_key, apt.listToStr(var_val), self._flags.count('recursive'))
+                    Label(var_key, apt.listToStr(var_val), self.hasFlag('recursive'))
                 #save any changes
                 Label.save()
                 pass
@@ -1496,9 +1536,9 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 #alter the workspace's connections to markets
                 if(mrkt != None and Workspace.inWorkspace()):
                     ws = Workspace.getActive()
-                    if(self._flags.count('unlink')):
+                    if(self.hasFlag('unlink')):
                         ws.unlinkMarket(mrkt.getName())
-                    elif(self._flags.count('link')):
+                    elif(self.hasFlag('link')):
                         ws.linkMarket(mrkt.getName())
                     pass
                     Workspace.save()
@@ -1550,12 +1590,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         block_path = Workspace.getActive().getPath()+L+"/"+N+"/"
         #create block object
         b = Block(block_path)
-        #grab the remote url if specified
-        rem = None
-        if('remote' in self._vars.keys()):
-            rem = self._vars['remote']
         #create the new block
-        b.create2(self._item, cp_template=(self._flags.count('no-template') == 0), remote=rem)
+        b.create2(self._item, cp_template=(self.hasFlag('no-template') == 0), remote=self.getVar('remote'))
     pass
 
 
@@ -1565,7 +1601,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
         #package value is the market looking to refresh
         #if package value is null then all markets tied to this workspace refresh by default
-        if(self._flags.count('all')):
+        if(self.hasFlag('all')):
             log.info("Refreshing all markets...")
             for mkrt in Market.Jar.values():
                 mkrt.refresh()
@@ -1582,19 +1618,19 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
     def _list(self):
         '''Run 'list' command.'''
 
-        if(self._flags.count("script")):
+        if(self.hasFlag("script")):
             Script.printList()
-        elif(self._flags.count("label")):
+        elif(self.hasFlag("label")):
             Label.printList()
-        elif(self._flags.count("market")):
+        elif(self.hasFlag("market")):
             Market.printList(Workspace.getActive().getMarkets())
-        elif(self._flags.count("workspace")):
+        elif(self.hasFlag("workspace")):
             Workspace.printList()
-        elif(self._flags.count("profile")):
+        elif(self.hasFlag("profile")):
             Profile.printList()
-        elif(self._flags.count("template")):
+        elif(self.hasFlag("template")):
             apt.getTemplateFiles()
-        elif(self._flags.count('entity')):
+        elif(self.hasFlag('entity')):
             Unit.printList()
             #categorize by hidden files (skipped)
             #and visible files (files that are copied in on using template)
@@ -1610,7 +1646,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
         valid_editor = apt.getEditor() != cfg.NULL
         #open the settings (default is gui mode)
-        if(self._flags.count("settings")):
+        if(self.hasFlag("settings")):
             gui_mode = True
             if('settings' in self._vars.keys()):
                 gui_mode = not self.checkVar('settings', 'file')
@@ -1631,12 +1667,12 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             exit(log.error("No text-editor configured!"))
             pass
         #open template
-        if(self._flags.count("template")):
+        if(self.hasFlag("template")):
             log.info("Opening block template folder at... "+apt.fs(apt.TEMPLATE))
             apt.execute(apt.getEditor(), apt.fs(apt.TEMPLATE))
             pass
         #open scripts
-        elif(self._flags.count("script")):
+        elif(self.hasFlag("script")):
             #want to open the specified script?
             script_path = apt.fs(apt.HIDDEN+"scripts")
 
@@ -1655,7 +1691,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             apt.execute(apt.getEditor(),script_path)
             pass
         #open profile
-        elif(self._flags.count("profile")):
+        elif(self.hasFlag("profile")):
             #open the specified path to the profile if it exists
             if(self._item.lower() in Profile.Jar.keys()):
                 prfl_path = Profile.Jar[self._item].getProfileDir()
@@ -1784,7 +1820,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
 
         elif('init' == cmd):
-
+            self._init()
             pass
 
         elif('open' == cmd):

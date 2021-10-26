@@ -102,7 +102,7 @@ class Block:
             files = os.listdir(path)
             for f in files:
                 if(f == apt.MARKER):
-                    self._path = path
+                    self._path = apt.fs(path)
                     break
         #check if valid
         if(self.isValid()):
@@ -175,9 +175,6 @@ class Block:
         return success
 
 
-    
-
-
     def getTitle(self, low=True, mrkt=False):
         '''
         Returns the full block title combined.
@@ -199,6 +196,7 @@ class Block:
     def getVersion(self):
         return self.getMeta('version')
 
+
     #return highest tagged version for this block's repository
     def getHighestTaggedVersion(self):
         all_vers = self.getTaggedVersions()
@@ -207,6 +205,7 @@ class Block:
             if(self.biggerVer(highest,v[1:]) == v[1:]):
                 highest = v[1:]
         return highest
+
 
     def waitOnChangelog(self):
         change_file = self.getPath()+apt.CHANGELOG
@@ -576,74 +575,49 @@ class Block:
         pass
 
 
-    def fillTemplateFile(self, newfile, templateFile):
+    def newFile(self, fpath, tmplt_fpath=None, force=False):
         '''
         Create a new file from a template file to an already existing block.
 
         Parameters:
-            newfile (str): the file to create
-            templateFile (str): the file to copy from
+            fpath (str): the file to create
+            tmpltfpath (str): the file to copy from
+            force (bool): determine if to overwrite an existing file of same desired name
         Returns:
-            None
+            success (bool): determine if operation was successful
         '''
-        #grab name of file
-        filename = os.path.basename(newfile)
-        file,_ = os.path.splitext(filename)
-        
-        #ensure this file doesn't already exist
-        if(os.path.isfile(newfile)):
-            log.info("File "+newfile+" already exists.")
-            return
-        log.info("Creating new file "+newfile+" from "+templateFile+"...")
+        fpath = apt.fs(fpath)
+        base_path,fname = os.path.split(fpath)
+        #remove extension from file's name to get template placeholder value
+        fname,_ = os.path.splitext(fname)
 
-        replacements = glob.glob(apt.TEMPLATE+"**/"+templateFile, recursive=True)
-        #copy the template file into the proper location
-        if(len(replacements) < 1):
-            exit(log.error("Could not find "+templateFile+" file in current template."))
-        else:
-            templateFile = replacements[0]
-        #make any necessary directories
-        newdirs = newfile.replace(filename,"")
-        if(len(newdirs)):
-            os.makedirs(newdirs, exist_ok=True)
-        #copy file to the new location
-        shutil.copyfile(templateFile, self.getPath()+newfile)
-        #reassign file to be the whole path
-        newfile = self.getPath()+newfile
-        #generate today's date
-        today = date.today().strftime("%B %d, %Y")
-        #write blank if no author configured
-        author = apt.SETTINGS['general']["author"]
-        if(author == None):
-            author = ''
+        #make sure file doesn't already exist
+        if(force == False and os.path.exists(fpath)):
+            log.error("File already exists.")
+            return False
+        #make sure if using template file that it does exist
+        if(tmplt_fpath != None and tmplt_fpath not in apt.getTemplateFiles(returnlist=True)):
+            log.error(tmplt_fpath+" does not exist in the current template.")
+            return False
 
-        #grab name of template file
-        template_name = os.path.basename(templateFile)
-        template_name,_ = os.path.splitext(template_name)
-        template_name = template_name.lower()
-        
-        replace_name = template_name.count("template")
+        #create any non-existing directory paths
+        os.makedirs(base_path, exist_ok=True)
 
-        #store the file data to be transformed and rewritten
-        lines = []
-        #find and replace all proper items
-        with open(newfile, 'r') as file_in:
-            for line in file_in.readlines():
-                if(replace_name):
-                    line = line.replace(template_name, file)
-                line = line.replace("%DATE%", today)
-                line = line.replace("%AUTHOR%", author)
-                line = line.replace("%BLOCK%", self.getTitle(low=False))
-                lines.append(line)
-            file_in.close()
-        #rewrite file to have new lines
-        with open(newfile, 'w') as file_out:
-            for line in lines:
-                file_out.write(line)
-            file_out.close()
+        #only create a new empty file
+        if(tmplt_fpath == None):
+            log.info("Creating empty file "+fpath+"...")
+            with open(fpath, 'w') as f:
+                f.close()
+            return True
+        #get full path for template file
+        tmplt_fpath = apt.fs(apt.getTemplatePath()+tmplt_fpath)
+        #create file from template file
+        log.info("Creating file "+fpath+" from "+tmplt_fpath+"...")
 
-        log.info("success")
-        pass
+        #copy file
+        shutil.copyfile(tmplt_fpath, fpath)
+        #fill in placeholder values
+        return self.fillPlaceholders(fpath, template_val=fname)
 
     
     def create2(self, title, cp_template=True, remote=None):

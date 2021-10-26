@@ -444,20 +444,21 @@ scripts)?", warning=False)
 
 
     @classmethod
-    def getTemplateFiles(cls):
+    def getTemplateFiles(cls, returnlist=False):
         '''
         Returns a list of all available files within the template, excluding the
         .git folder (if exists). Paths are relative to the template base path.
 
         Parameters:
-            None
+            returnlist (bool): determine if to return list or print to console
         Returns:
             ([str]): list of all available files within the current template.
         '''
         #get all files
-        log.info("All available files in the current template:")
         cls.TEMPLATE = cls.fs(cls.TEMPLATE)
         files = glob.glob(cls.TEMPLATE+"/**/*", recursive=True)
+        
+        tmplt_files = []
         for f in files:
             f = cls.fs(f)
             #skip all hidden git files
@@ -465,12 +466,19 @@ scripts)?", warning=False)
                 continue
             #only print files
             if(os.path.isfile(f)):
-                #it is an invisible file
-                if(f.count('/.')):
-                    pass
-                print('\t',f.replace(cls.TEMPLATE, '/'))
-
-        pass
+                # :todo: it is an invisible file do something special?
+                #if(f.startswith('/.')):
+                #   pass
+                f = f.replace(cls.TEMPLATE,'/')
+                tmplt_files += [f]
+        #print files to the console
+        if(returnlist == False):
+            log.info("All available files in the current template:")
+            for tf in tmplt_files:
+                print('\t',tf)
+        #return the files as a list
+        else:
+            return tmplt_files
 
 
     @classmethod
