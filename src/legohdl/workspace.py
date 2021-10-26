@@ -13,7 +13,7 @@ from .market import Market
 from .apparatus import Apparatus as apt
 from .map import Map
 from .git import Git
-
+from .block import Block
 
 class Workspace:
 
@@ -250,11 +250,20 @@ class Workspace:
         Returns:
             None
         '''
+        if(hasattr(self, "_local_blocks")):
+            return self._local_blocks
+
+        self._local_blocks = []
         #glob on the local workspace path
         print("Local Blocks on:",self.getPath())
         marker_files = glob.glob(self.getPath()+"**/*/"+apt.MARKER, recursive=True)
         print(marker_files)
+        for mf in marker_files:
+            self._local_blocks += [Block(mf, ws_path=self.getPath(), ws_markets=self.getMarkets(returnnames=True))]
+        print(self._local_blocks)
+        
         pass
+
 
 
     def loadCacheBlocks(self):

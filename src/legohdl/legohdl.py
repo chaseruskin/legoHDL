@@ -95,14 +95,14 @@ class legoHDL:
         Workspace.save()
         
         self.blockPKG = None
-        self.working_block = Block(os.getcwd())
+        #self.working_block = Block(os.getcwd())
         
         #initialize registry with the workspace-level markets
         if(Workspace.inWorkspace()):
             #self.db = Registry(Workspace.getActive().getMarkets())
-            Workspace.getActive().loadLocalBlocks()
-            Workspace.getActive().loadCacheBlocks()
-            Workspace.getActive().loadMarketBlocks()
+            #Workspace.getActive().loadLocalBlocks()
+            #Workspace.getActive().loadCacheBlocks()
+            #Workspace.getActive().loadMarketBlocks()
             pass
 
         #limit functionality if not in a workspace
@@ -124,7 +124,7 @@ class legoHDL:
         print(self)
 
 
-        Block('/Users/chase/develop/eel4712c/lab4/')
+        Block('/Users/chase/develop/eel4712c/lab4/', ws_path=Workspace.getActive().getPath())
 
         if('debug' == self._command):
             test()
@@ -1441,11 +1441,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         
         #create a new file
         if(self.hasFlag('file')):
-            #make sure we are in a valid block
-            if(self.working_block.isValid()):
-                self.working_block.newFile(self._item, self.getVar("file"), self.hasFlag('force'))
-            else:
-                exit(log.error("Cannot create files outside a block directory!"))
+            Block(os.getcwd(), ws_path=Workspace.getActive().getPath(), ws_markets=Workspace.getActive().getMarkets(returnnames=True))
+            Block.getCurrent().newFile(self._item, self.getVar("file"), self.hasFlag('force'))
 
 
     def _config(self):
@@ -1799,10 +1796,6 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
         cmd = self._command
 
-        #check if we are in a project directory (necessary to run a majority of commands)
-        self.blockCWD = Block(path=os.getcwd()+"/")
-
-        
         #if(Workspace.inWorkspace() and L == '' and cmd != 'new' and self.db.canShortcut(N)):
             #rewrite MLNV based on shortcut if possible
         #    M,L,N,_ = self.db.shortcut(N)

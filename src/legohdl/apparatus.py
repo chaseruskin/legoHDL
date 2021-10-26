@@ -267,6 +267,27 @@ scripts)?", warning=False)
 
         return cls.fs(path).startswith(cls.fs(inner_path)) and (path != inner_path)
 
+    
+    @classmethod
+    def isEqualPath(cls, path1, path2):
+        '''
+        Tests if one `path1` is identical to `path2`. If called on Linux, 
+        the paths are not evaluated as case-insensitive.
+
+        Parameters:
+            path1 (str): the lhs path
+            path2 (str): the rhs path
+        Returns:
+            (bool): true if path1 == path2
+        '''
+        kernel = platform.system()
+        #must be careful to exactly match paths within Linux OS
+        if(kernel != "Linux"):
+            path1 = path1.lower()
+            path2 = path2.lower()
+
+        return cls.fs(path1) == cls.fs(path2)
+
 
     #[!] PREPARING FOR REMOVAL $
     @classmethod

@@ -21,8 +21,6 @@ from .unit import Unit
 from .language import Language
 from .git import Git
 
-from .workspace import Workspace
-
 
 #a Block is a package/module that is signified by having the marker file
 class Block:
@@ -39,47 +37,49 @@ class Block:
                 'derives' : []}
             }
 
+    #class attribute that is a block object found on current path
+    _Current = None
 
-    def init_old(self, title=None, path=None, remote=None, excludeGit=False, market=None):
-        self.__metadata = {'block' : {}}
-        #split title into library and block name
-        _,self.__lib,self.__name,_ = Block.snapTitle(title, lower=False)
-        if(remote != None):
-            self._remote = remote
-        self.__market = market
+    # def init_old(self, title=None, path=None, remote=None, excludeGit=False, market=None):
+    #     self.__metadata = {'block' : {}}
+    #     #split title into library and block name
+    #     _,self.__lib,self.__name,_ = Block.snapTitle(title, lower=False)
+    #     if(remote != None):
+    #         self._remote = remote
+    #     self.__market = market
 
-        self._path = apt.fs(path)
-        if(path != None):
-            if(self.isValid()):
-                if(not excludeGit):
-                    try:
-                        self._repo = git.Repo(self.getPath())
-                    #make git repository if DNE
-                    except git.exc.InvalidGitRepositoryError:
-                        self._repo = git.Repo.init(self.getPath())
-                self.loadMeta()
-                return
-        elif(path == None):
-            self._path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
+    #     self._path = apt.fs(path)
+    #     if(path != None):
+    #         if(self.isValid()):
+    #             if(not excludeGit):
+    #                 try:
+    #                     self._repo = git.Repo(self.getPath())
+    #                 #make git repository if DNE
+    #                 except git.exc.InvalidGitRepositoryError:
+    #                     self._repo = git.Repo.init(self.getPath())
+    #             self.loadMeta()
+    #             return
+    #     elif(path == None):
+    #         self._path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
 
-        #try to see if this directory is indeed a git repo
-        self._repo = None
-        try:
-            self._repo = git.Repo(self.getPath())
-        except:
-            pass
+    #     #try to see if this directory is indeed a git repo
+    #     self._repo = None
+    #     try:
+    #         self._repo = git.Repo(self.getPath())
+    #     except:
+    #         pass
 
-        if(remote != None):
-            self.grabGitRemote(remote)
+    #     if(remote != None):
+    #         self.grabGitRemote(remote)
 
-        #is this block already existing?
-        if(self.isValid()):
-            #load in metadata from cfg
-            self.loadMeta()
-        pass
+    #     #is this block already existing?
+    #     if(self.isValid()):
+    #         #load in metadata from cfg
+    #         self.loadMeta()
+    #     pass
 
 
-    def __init__(self, path, title=''):
+    def __init__(self, path, ws_path, ws_markets=[], title=''):
         '''
         Create a legohdl Block object. 
         
@@ -88,14 +88,22 @@ class Block:
 
         Parameters:
             path (str): the filepath to the Block's root directory
+            ws_path (str): the workspace's local path
+            ws_markets ([str]): list of workspace's available markets
             title (str): M.L.N.V format
         '''
+        #store the block's workspace path
+        self._ws_path = ws_path
+        #store the block's available markets from its workspace
+        self._ws_markets = ws_markets
+        
         self._path = apt.fs(path)
         #is this a valid Block marker?
         fname = os.path.basename(path)
         
         if(fname == apt.MARKER):
             self._path,_ = os.path.split(path)
+            self._path = apt.fs(self._path)
             pass
         #try to see if a Block marker is within this directory
         elif(os.path.isdir(path)):
@@ -109,10 +117,24 @@ class Block:
             self._repo = Git(self.getPath())
             #load from metadata
             self.loadMeta()
-            pass
 
-        print(self.isValid())
+            #are the two paths equal to each other?
+            if(apt.isEqualPath(self.getPath(), os.getcwd())):
+                self.setCurrent(self)
+            pass
         pass
+
+
+    @classmethod
+    def setCurrent(cls, b):
+        cls._Current = b
+
+
+    @classmethod
+    def getCurrent(cls):
+        if(cls._Current == None):
+            exit(log.error("Not in a valid block!"))
+        return cls._Current
 
 
     #return the block's root path
@@ -135,7 +157,7 @@ class Block:
 
         rem = apt.fs(rem)
         #new path is default to local/library/
-        new_path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/")
+        new_path = None #apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/")
         os.makedirs(new_path, exist_ok=True)
         #create temp directory to clone project into
         os.makedirs(tmp_dir, exist_ok=True)
@@ -376,7 +398,7 @@ class Block:
         the git repository tags.
         '''
         all_tags,_ = self._repo.git('tag','-l')
-        print(all_tags)
+        #print(all_tags)
         #split into list
         all_tags = all_tags.split("\n")
         tags = []
@@ -489,7 +511,7 @@ class Block:
         return apt.isSubPath(apt.MARKETS, self.getPath())
 
     def isLocal(self):
-        return apt.isSubPath(Workspace.getActive().getDir(), self.getPath())
+        return apt.isSubPath(self._ws_path, self.getPath())
 
     def bindMarket(self, mkt):
         if(mkt != None):
@@ -567,7 +589,7 @@ class Block:
 
         if(self.getMeta('market') != ''):
             m = self.getMeta('market')
-            if(m.lower() not in Workspace.getActive().getMarkets(returnnames=True)):
+            if(m.lower() not in self._ws_markets):
                 log.warning("Market "+m+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
                 self.setMeta('market', '')
 
@@ -639,7 +661,7 @@ class Block:
             return False
 
         #make sure path is within the workspace path
-        if(apt.isSubPath(Workspace.getActive().getPath(), self.getPath()) == False):
+        if(apt.isSubPath(self._ws_path, self.getPath()) == False):
             log.info("Path is not within the workspace!")
             return False
 
@@ -682,7 +704,7 @@ class Block:
 
         #check if market is in an allowed market
         if(M != ''):
-            if(M.lower() in Workspace.getActive().getMarkets(returnnames=True)):
+            if(M.lower() in self._ws_markets):
                 self.setMeta("market", M)
             else:
                 log.warning("Skipping invalid market name "+M+"...")
@@ -1827,7 +1849,7 @@ class Block:
         if(apt.SETTINGS['general']['multi-develop'] == True):
             log.info("Multi-develop is enabled")
             #1. first find all Block.cfg files (roots of blocks)
-            files = glob.glob(Workspace.getActive().getPath()+"**/"+apt.MARKER, recursive=True)
+            files = []#glob.glob(Workspace.getActive().getPath()+"**/"+apt.MARKER, recursive=True)
             #print(files)
             #2. go through each recursive search within these roots for vhd files (skip self block root)
             for f in files:
