@@ -226,7 +226,7 @@ class Workspace:
             return False
 
 
-    def getsAvailableBlocks(self, multi_develop=False):
+    def getAvailableBlocks(self, multi_develop=False):
         '''
         Returns all available blocks. Some may be hidden under others (cache overwrites
         positions of downloaded blocks when multi-develop is False).
@@ -253,14 +253,16 @@ class Workspace:
         if(hasattr(self, "_local_blocks")):
             return self._local_blocks
 
-        self._local_blocks = []
+        self._local_blocks = dict()
         #glob on the local workspace path
         print("Local Blocks on:",self.getPath())
         marker_files = glob.glob(self.getPath()+"**/*/"+apt.MARKER, recursive=True)
         print(marker_files)
         for mf in marker_files:
-            self._local_blocks += [Block(mf, ws_path=self.getPath(), ws_markets=self.getMarkets(returnnames=True))]
-        print(self._local_blocks)
+            pass
+            b = Block(mf, ws_path=self.getPath(), ws_markets=self.getMarkets(returnnames=True))
+            #self._local_blocks[mf] = mf
+        #print(self._local_blocks)
         
         pass
 
@@ -319,6 +321,8 @@ class Workspace:
         '''
         print('{:<12}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<8}'.format("Version"),'{:<16}'.format("Market"))
         print("-"*12+" "+"-"*20+" "+"-"*8+" "+"-"*8+" "+"-"*16)
+        blocks = self.loadLocalBlocks()
+        print(blocks)
         pass
 
 
@@ -614,6 +618,8 @@ class Workspace:
 
     @classmethod
     def getActive(cls):
+        if(cls._ActiveWorkspace == None):
+            exit(log.error("Not in a workspace!"))
         return cls._ActiveWorkspace
 
 

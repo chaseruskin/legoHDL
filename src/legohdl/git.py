@@ -32,9 +32,10 @@ class Git:
             None
         '''
         self._path = apt.fs(path)
+
         #create directory if DNE
         os.makedirs(self.getPath(), exist_ok=True)
-
+        
         #are we trying to clone?
         if(clone != None):
             #verify its a valid URL

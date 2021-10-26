@@ -7,7 +7,6 @@
 #   root folder.
 
 import os, shutil, stat
-from re import S
 from datetime import date
 import glob, git
 from .vhdl import Vhdl
@@ -115,12 +114,12 @@ class Block:
         #check if valid
         if(self.isValid()):
             self._repo = Git(self.getPath())
-            #load from metadata
-            self.loadMeta()
-
-            #are the two paths equal to each other?
+            #are the two paths equal to each other? then this is the current block
             if(apt.isEqualPath(self.getPath(), os.getcwd())):
                 self.setCurrent(self)
+
+            #load from metadata
+            self.loadMeta()
             pass
         pass
 
@@ -131,8 +130,8 @@ class Block:
 
 
     @classmethod
-    def getCurrent(cls):
-        if(cls._Current == None):
+    def getCurrent(cls, bypass=False):
+        if(bypass == False and cls._Current == None):
             exit(log.error("Not in a valid block!"))
         return cls._Current
 
@@ -540,7 +539,8 @@ class Block:
         Load the metadata from the Block.cfg file into the __metadata dictionary.
 
         Also creates backup data _initial_metadata for later comparison to determine
-        if to save (write to file).
+        if to save (write to file). Only performs safety checks (like reading a remote
+        url) if the block loaded is the current working directory block
 
         Parameters:
             None
@@ -556,42 +556,40 @@ class Block:
         self._initial_metadata = None
 
         #ensure all pieces are there
-        for key in apt.META:
+        for key in self.LAYOUT['block'].keys():
             if(key not in self.getMeta().keys()):
                 #will force to save the changed file
                 self._initial_metadata = self.getMeta().copy()
-                self.setMeta(key, None)
+                self.setMeta(key, '')
                 
+        #performs safety checks only on the block that is current directory
+        if(self == self.getCurrent(bypass=True)):
+            #remember what the metadata looked like initially to compare for determining
+            #  if needing to write file for saving
+            if(self._initial_metadata == None):
+                self._initial_metadata = self.getMeta().copy()
 
-        #cast blank values '' -> None
-        #blanks_to_none = ['remote', 'name', 'market', 'library', 'bench', 'toplevel']
-        #for field in blanks_to_none:
-            #self.setMeta(field, cfg.castNone(self.getMeta(field)))
-            
-        #remember what the metadata looked like initially to compare for determining
-        #   if needing to write file for saving
-        if(self._initial_metadata == None):
-            self._initial_metadata = self.getMeta().copy()
+            #ensure derives is a proper list format
+            if(self.getMeta('derives') == cfg.NULL):
+                self.setMeta('derives',list())
 
-        #check if this block is a local block
-        if(self.isLocal()):
-            #grab list of available versions
-            avail_vers = self.getAvailableVers()     
-            #dynamically determine the latest valid release point
-            self.setMeta('version', avail_vers[0][1:])
+            if(hasattr(self, "_repo")):
+                #grab list of available versions
+                avail_vers = self.getAvailableVers()     
+                #dynamically determine the latest valid release point
+                self.setMeta('version', avail_vers[0][1:])
 
-        #ensure derives is a proper list format
-        if(self.getMeta('derives') == cfg.NULL):
-            self.setMeta('derives',list())
+                #set the remote correctly
+                self.setMeta('remote', self._repo.getRemoteURL())
+                pass
 
-        if(hasattr(self, "_repo")):
-            self.setMeta('remote', self._repo.getRemoteURL())
-
-        if(self.getMeta('market') != ''):
-            m = self.getMeta('market')
-            if(m.lower() not in self._ws_markets):
-                log.warning("Market "+m+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
-                self.setMeta('market', '')
+            #ensure the market is valid
+            if(self.getMeta('market') != ''):
+                m = self.getMeta('market')
+                if(m.lower() not in self._ws_markets):
+                    log.warning("Market "+m+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
+                    self.setMeta('market', '')
+                pass
 
         self.save()
         pass

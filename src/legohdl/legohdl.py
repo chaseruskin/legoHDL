@@ -10,7 +10,6 @@ import git
 import logging as log
 from .__version__ import __version__
 from .block import Block
-from .registry import Registry
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
 from .map import Map
@@ -115,7 +114,7 @@ class legoHDL:
             else:
                 exit(log.error("Failed to run command because active workspace is not set."))
         else:
-            Workspace.getActive().autoRefresh(rate=apt.getRefreshRate())
+            self.WS().autoRefresh(rate=apt.getRefreshRate())
 
         #ensure the item is not a flag
         if(len(self._item)):
@@ -123,8 +122,7 @@ class legoHDL:
 
         print(self)
 
-
-        Block('/Users/chase/develop/eel4712c/lab4/', ws_path=Workspace.getActive().getPath())
+        #Block('/Users/chase/develop/eel4712c/lab4/', ws_path=Workspace.getActive().getPath())
 
         if('debug' == self._command):
             test()
@@ -159,6 +157,11 @@ class legoHDL:
                 self._flags.append(arg[1:].lower())
                 pass
         pass
+
+
+    def WS(self):
+        'Returns the active workspace.'
+        return Workspace.getActive()
 
 
     def getVar(self, key):
@@ -1172,7 +1175,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             elif(options.count("label")):
                 Label.printList()
             elif(options.count("market")):
-                Market.printList(Workspace.getActive().getMarkets())
+                Market.printList(self.WS().getMarkets())
             elif(options.count("workspace")):
                 Workspace.printList()
             elif(options.count("profile")):
@@ -1441,7 +1444,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         
         #create a new file
         if(self.hasFlag('file')):
-            Block(os.getcwd(), ws_path=Workspace.getActive().getPath(), ws_markets=Workspace.getActive().getMarkets(returnnames=True))
+            Block(os.getcwd(), ws_path=self.WS().getPath(), ws_markets=self.WS().getMarkets(returnnames=True))
             Block.getCurrent().newFile(self._item, self.getVar("file"), self.hasFlag('force'))
 
 
@@ -1532,11 +1535,10 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                
                 #alter the workspace's connections to markets
                 if(mrkt != None and Workspace.inWorkspace()):
-                    ws = Workspace.getActive()
                     if(self.hasFlag('unlink')):
-                        ws.unlinkMarket(mrkt.getName())
+                        self.WS().unlinkMarket(mrkt.getName())
                     elif(self.hasFlag('link')):
-                        ws.linkMarket(mrkt.getName())
+                        self.WS().linkMarket(mrkt.getName())
                     pass
                     Workspace.save()
         
@@ -1584,9 +1586,9 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             exit(log.error("New block must have a name."))
 
         #default path to make a new block
-        block_path = Workspace.getActive().getPath()+L+"/"+N+"/"
+        block_path = self.WS().getPath()+L+"/"+N+"/"
         #create block object
-        b = Block(block_path)
+        b = Block(block_path, ws_path=self.WS().getPath(), ws_markets=self.WS().getMarkets(returnnames=True))
         #create the new block
         b.create2(self._item, cp_template=(self.hasFlag('no-template') == 0), remote=self.getVar('remote'))
     pass
@@ -1604,7 +1606,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 mkrt.refresh()
         elif(self.itemEmpty()):
             log.info("Refreshing all workspace markets...")
-            for mrkt in Workspace.getActive().getMarkets():
+            for mrkt in self.WS().getMarkets():
                 mrkt.refresh()
         elif(self._item.lower() in Market.Jar.keys()):
             Market.Jar[self._item].refresh()
@@ -1620,7 +1622,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         elif(self.hasFlag("label")):
             Label.printList()
         elif(self.hasFlag("market")):
-            Market.printList(Workspace.getActive().getMarkets())
+            Market.printList(self.WS().getMarkets())
         elif(self.hasFlag("workspace")):
             Workspace.printList()
         elif(self.hasFlag("profile")):
@@ -1633,7 +1635,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             #and visible files (files that are copied in on using template)
         else:
             M,L,N,_ = Block.snapTitle(self._item)
-            Workspace.getActive().listBlocks(M, N, L)
+            self.WS().listBlocks(M, N, L)
         pass
 
 
