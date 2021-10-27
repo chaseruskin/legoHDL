@@ -663,7 +663,7 @@ class Block:
         return self.fillPlaceholders(fpath, template_val=fname)
 
     
-    def create2(self, title, cp_template=True, remote=None):
+    def create(self, title, cp_template=True, remote=None):
         '''
         Create a new block at _path. Creates git repository if DNE and the Block.cfg
         file.
@@ -832,7 +832,7 @@ class Block:
         return True
 
 
-    def create(self, fresh=True, git_exists=False, remote=None, fork=False, inc_template=True):
+    def create2(self, fresh=True, git_exists=False, remote=None, fork=False, inc_template=True):
         '''
         Create a new block using the template and attempt to set up a remote.
 

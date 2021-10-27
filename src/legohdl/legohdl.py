@@ -1620,7 +1620,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         #create block object
         b = Block(block_path, ws_path=self.WS().getPath(), ws_markets=self.WS().getMarkets(returnnames=True))
         #create the new block
-        b.create2(title, cp_template=(self.hasFlag('no-template') == 0), remote=self.getVar('remote'))
+        b.create(title, cp_template=(self.hasFlag('no-template') == 0), remote=self.getVar('remote'))
     pass
 
 
