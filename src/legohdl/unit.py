@@ -24,9 +24,6 @@ class Unit:
     #multi-level class container to store all entities
     Jar = Map()
 
-    #mult-level class container upside-down of Jar container for shortcutting
-    FlippedJar = Map()
-
     #2-level class container
     Bottle = Map()
 
@@ -107,19 +104,6 @@ class Unit:
         else:
             log.error("An entity at this level already exists as: "+self.E()+"!")
             return
-
-        #create new entity level if entity DNE
-        if(self.E().lower() not in self.FlippedJar.keys()):
-            self.FlippedJar[self.E()] = Map()
-        #create new library level if libray DNE
-        if(self.N().lower() not in self.FlippedJar[self.E()].keys()):
-             self.FlippedJar[self.E()][self.N()] = Map()
-        #create new block name level if name DNE
-        if(self.L().lower() not in self.FlippedJar[self.E()][self.N()].keys()):
-             self.FlippedJar[self.E()][self.N()][self.L()] = Map()
-        #store entity at this nested level (upside-down)
-        if(self.M().lower() not in self.FlippedJar[self.E()][self.N()][self.L()].keys()):
-            self.FlippedJar[self.E()][self.N()][self.L()][self.M()] = self
 
 
         #create new library level if libray DNE
@@ -264,30 +248,6 @@ class Unit:
         return cls.Bottle[l][u][0]
 
 
-    # :todo: fix
-    @classmethod
-    def shortcut(cls, e, m='', l='', n=''):
-        'Try to guess the remaining fields if unambiguous.'
-        
-        #identify name
-        if(e != '' and e.lower() in cls.FlippedJar[e].keys()):
-            route = list(cls.FlippedJar[e].keys())
-            if(len(route) == 1):
-                n = route[0]
-        #identify library
-        if(n != '' and n.lower() in cls.FlippedJar[e][n].keys()):
-            route = list(cls.FlippedJar[n].keys())
-            if(len(route) == 1):
-                l = route[0]
-        #identify market
-        if(l != '' and l.lower() in cls.FlippedJar[e][n][l].keys()):
-            route = list(cls.FlippedJar[e][n][l].keys())
-            if(len(route) == 1):
-                m = route[0]
-
-        return m,l,n,e
-
-
     def getFull(self):
         return self.L().lower()+"."+self.E().lower()
 
@@ -305,17 +265,26 @@ class Unit:
 
 
     def isTB(self):
-        # a testbench must have zero ports
+        '''Returns true if the design is an entity and has zero ports.'''
+        #testbench must have zero ports as an entity unit
         return (self._dsgn == self.Design.ENTITY and \
             len(self.getInterface().getPorts()) == 0)
 
 
-    def addArchitecture(self, a):
-        if(a not in self.getArchitectures()):
-            self._arcs.append(a)
+    def addArchitecture(self, arch):
+        '''
+        Adds an architecture name to the unit's architectures.
+        
+        Parameters:
+            arch (str): architecture name
+        Returns:
+            None
+        '''
+        if(arch not in self.getArchitectures()):
+            self._arcs.append(arch)
+        pass
 
 
-    #add a unit as a requirement for itself
     def addRequirement(self, u):
         '''
         Add a unit as a requirement for this object.
@@ -331,8 +300,15 @@ class Unit:
         pass
     
 
-    #returns a list of units required for itself
     def getRequirements(self):
+        '''
+        Returns a list of Unit objects directly required for this unit.
+
+        Parameters:
+            None
+        Returns:
+            _reqs ([Unit]): list of required Units
+        '''
         if(hasattr(self, "_requirements")):
             return self._requirements
         else:
