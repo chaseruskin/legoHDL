@@ -1787,6 +1787,7 @@ class Block:
             self._units = Unit.Jar[self.M()][self.L()][self.N()]
         else:
             self._units = Map()
+            
         if(returnnames):
             return list(self._units.keys())
         return self._units
@@ -2022,7 +2023,7 @@ class Block:
         return M,L,N
 
 
-    def get(self, entity, about, listArch):
+    def get(self, entity, about, listArch, inst, lang=None):
         '''
         Get various pieces of information about a given entity as well as any
         compatible code for instantiations.
@@ -2031,6 +2032,8 @@ class Block:
             entity (str): name of entity to be fetched
             about (bool): determine if to print the comment header
             listArch (bool): determine if to list the architectures
+            inst (bool): determine if to print instantiation
+            lang (str): VHDL or VLOG style language
         Returns:
             success (bool): determine if operation was successful
         '''
@@ -2049,6 +2052,15 @@ class Block:
         #print list of architectures
         if(listArch):
             print(ent.readArchitectures())
+        if(inst):
+            #determine the language to output instance
+            if(lang != None):
+                if(lang.lower() == 'vhdl'):
+                    lang = Unit.Language.VHDL
+                elif(lang.lower() == 'vlog'):
+                    lang = Unit.Language.VERILOG
+            print(ent.getInterface().writeConnections(form=lang))
+            print(ent.getInterface().writeInstance(form=lang))
 
         return True
 

@@ -355,7 +355,6 @@ class Workspace:
             reg[entity] = []
             for bk in l_blocks:
                 es = bk.loadHDL(returnnames=True)
-                print(es)
                 for e in es:
                     if(e.lower() not in reg.keys()):
                         reg[e] = []
@@ -363,11 +362,12 @@ class Workspace:
                 
             num_blocks = len(reg[entity])
             if(num_blocks == 1):
+                #:todo: make sure rest of sections are correct before returning result
                 return reg[entity][0]
             elif(num_blocks > 1):
                 possible_blocks = reg[entity]
                 if(len(sects[2]) == 0):
-                    log.info("Ambigious title; conflicts with")
+                    log.info("Ambiguous title; conflicts with")
                     for bk in reg[entity]:
                         print('\t'+bk.getFull()+":"+entity)
                     exit(print())
@@ -385,11 +385,11 @@ class Workspace:
                 if(t.lower() not in reg.keys()):
                     reg[t] = []
                 reg[t] += [bk]
-            if(start == 1): print(reg['demo'])
             #count how many blocks occupy this same name
             num_blocks = len(reg[term])
             if(num_blocks == 1):
-                print("FOUND:",reg[term][0].getTitle(index=2, dist=2))
+                #print("FOUND:",reg[term][0].getTitle(index=2, dist=2))
+                #:todo: make sure rest of sections are correct before returning result
                 return reg[term][0]
             elif(num_blocks > 1):
                 #compare with blocks for a match and dwindle down choices
@@ -399,7 +399,7 @@ class Workspace:
                         next_blocks += [bk]
                 #dwindled down to a single block
                 if(len(next_blocks) == 1):
-                    print("FOUND:",next_blocks[0].getTitle(index=2, dist=2))
+                    #print("FOUND:",next_blocks[0].getTitle(index=2, dist=2))
                     return next_blocks[0]
                 #carry on to using next title section
                 if(len(sects[start-1])):
@@ -408,9 +408,9 @@ class Workspace:
                     continue
                 else:
                     #ran out of guesses...report the conflicting titles
-                    log.info("Ambigious title; conflicts with")
+                    log.info("Ambiguous title; conflicts with")
                     for bk in reg[term]:
-                        print('\t\t'+bk.getFull())
+                        print('\t'+bk.getFull())
                     exit(print())
             pass
         #using the current block if title is empty string
@@ -429,12 +429,38 @@ class Workspace:
         Returns:
             None
         '''
+        # [!] load the necessary blocks
+        blocks = self.loadLocalBlocks()
+        
         print('{:<12}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<8}'.format("Version"),'{:<16}'.format("Market"))
         print("-"*12+" "+"-"*20+" "+"-"*8+" "+"-"*8+" "+"-"*16)
-        blocks = self.loadLocalBlocks()
-        print(blocks)
+        for bk in blocks:
+            v = '' if(bk.getVersion() == '0.0.0') else bk.getVersion()
+            print('{:<12}'.format(bk.L()),'{:<20}'.format(bk.N()),'{:<8}'.format("dnld"),'{:<8}'.format(v),'{:<16}'.format(bk.M()))
         pass
 
+
+    def listUnits(self):
+        '''
+        Print a formatted table of all the available entities.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        # [!] load the necessary blocks
+        blocks = self.loadLocalBlocks()
+        
+        #collect all units
+        units = []
+        for bk in blocks:
+            units += bk.loadHDL(returnnames=False).values()
+        print(units)
+        print('{:<14}'.format("Library"),'{:<14}'.format("Unit"),'{:<8}'.format("Type"),'{:<14}'.format("Block"),'{:<10}'.format("Language"))
+        print("-"*14+" "+"-"*14+" "+"-"*8+" "+"-"*14+" "+"-"*10+" ")
+        for u in units:
+            print('{:<14}'.format(u.L()),'{:<14}'.format(u.E()),'{:<8}'.format(u._dsgn.name),'{:<14}'.format(u.N()),'{:<10}'.format(u.getLang().name))
 
     @classmethod
     def tidy(cls):

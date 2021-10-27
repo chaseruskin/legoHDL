@@ -82,7 +82,14 @@ class Unit:
         #create an empty interface
         self._interface = Interface(name=self.E(), library=self.L(), default_form=self.getLang())
 
-        #add to Jar!
+        # add to Jar! :todo: clean up (I think only a 2-level Map with values as lists will suffice)
+        # effectively binning units together
+
+        # :note: printing component declarations needs to be done, as well as allowing package's to 
+        # print their information like a component can
+
+        # by default, look at the entities available in download section? or look at entities
+        # in installation section.
 
         #create new market level if market DNE
         if(self.M().lower() not in self.Jar.keys()):
@@ -252,6 +259,7 @@ class Unit:
         Returns:
             (Unit): unit object from the Jar
         '''
+        # :todo: implement
 
         return cls.Bottle[l][u][0]
 
@@ -259,7 +267,7 @@ class Unit:
     # :todo: fix
     @classmethod
     def shortcut(cls, e, m='', l='', n=''):
-        'Try to guess the remaining fields if unambigious.'
+        'Try to guess the remaining fields if unambiguous.'
         
         #identify name
         if(e != '' and e.lower() in cls.FlippedJar[e].keys()):
@@ -332,6 +340,7 @@ class Unit:
 
 
     @classmethod
+    @DeprecationWarning
     def printList(cls, M='', L='', N='', show_all_versions=False):
         '''
         Prints formatted list for entities.
@@ -428,13 +437,14 @@ class Generic:
             #add type
             c_txt = c_txt + remaining
             #give default value
-            c_txt = c_txt + ' := ' + apt.listToStr(self._value)
+            if(len(self._value)):
+                c_txt = c_txt + ' := ' + apt.listToStr(self._value)
             #add final ';'
             c_txt = c_txt + ';'
             pass
         #write VERILOG-style code
         elif(form == Unit.Language.VERILOG):
-
+            print('Here is where verilog parameters would be declared.')
             pass
 
         return c_txt
@@ -504,6 +514,7 @@ class Port:
         #write VERILOG-style code
         elif(form == Unit.Language.VERILOG):
             #skip over type declaration
+            flav = self._flavor
             if('reg' in self._flavor or 'wire' in self._flavor):
                 flav = self._flavor[1:]
             if(len(flav)):

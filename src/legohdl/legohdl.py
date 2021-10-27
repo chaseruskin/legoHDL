@@ -1428,7 +1428,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         _,_,_,_,ent = Block.snapTitle(self.getItem(), inc_ent=True)
         if(block == None):
             exit(log.error("Could not identify a block with "+self.getItem()))
-        block.get(ent, self.hasFlag('about'), self.hasFlag('arch'))
+        block.get(ent, self.hasFlag('about'), self.hasFlag('arch'), self.hasFlag('inst'), lang=(self.getVar('inst')))
         pass
 
 
@@ -1660,7 +1660,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         elif(self.hasFlag("template")):
             apt.getTemplateFiles()
         elif(self.hasFlag('entity')):
-            Unit.printList()
+            self.WS().listUnits()
             #categorize by hidden files (skipped)
             #and visible files (files that are copied in on using template)
         else:
