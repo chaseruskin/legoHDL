@@ -1682,6 +1682,7 @@ class Block:
         return top_dog,top,tb
 
 
+    # :todo: store MLNV as tuple and use single function for full-access
     def getFull(self, inc_ver=False):
         title = ''
         #prepend market if not blank
@@ -1801,10 +1802,10 @@ class Block:
         #gather all project-level units
         #project_level_units = self.grabCurrentDesigns()
         
-        for name,unit in project_level_units.items():
-            #start with top-level unit and complete all required units in unit bank
-            if(toplevel == None or name == toplevel.lower()):
-                Language.ProcessedFiles[unit.getFile()].decipher()
+        # for name,unit in project_level_units.items():
+        #    start with top-level unit and complete all required units in unit bank
+            # if(toplevel == None or name == toplevel.lower()):
+                # Language.ProcessedFiles[unit.getFile()].decipher()
                 
         #self.printUnits()
         print(Unit.printList())

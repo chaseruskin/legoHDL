@@ -45,7 +45,6 @@ class legoHDL:
 
         #parse arguments
         self._command = self._item = ""
-
         #store args accordingly from command-line
         for i, arg in enumerate(sys.argv[1:]):
             #first is the command
@@ -116,10 +115,6 @@ class legoHDL:
         else:
             self.WS().autoRefresh(rate=apt.getRefreshRate())
 
-        #ensure the item is not a flag
-        if(len(self._item)):
-            self._item = '' if(self._item[1:] in self._flags) else self._item
-
         print(self)
 
         #Block('/Users/chase/develop/eel4712c/lab4/', ws_path=Workspace.getActive().getPath())
@@ -178,6 +173,28 @@ class legoHDL:
         else:
             return None
 
+    
+    def getItem(self, raw=False):
+        '''
+        Get the value of the item argument. Returns None if item is empty
+        string or item is a flag.
+
+        Parameters:
+            raw (bool): determine if to strictly return item
+        Returns:
+            (str): the item passed into legohdl
+        '''
+        it = self._item
+        if(raw):
+            return it
+        #make sure the item is not a flag
+        if(len(it) and it[1:] in self._flags):
+            it = None
+        #make sure the item is not a blank string
+        if(it == ''):
+            it = None
+        return it
+
 
     def hasFlag(self, flag):
         '''
@@ -194,7 +211,7 @@ class legoHDL:
     def __str__(self):
         return f'''
         command: {self._command}
-        item: {self._item}
+        item: {self.getItem()}
         flags: {self._flags}
         vars: {self._vars}
         '''
@@ -618,8 +635,7 @@ scripts)?", warning=False)
 
         block = Block.getCurrent()
 
-        top = self._item if(self._item != '') else None
-
+        top = self.getItem()
         top_dog,_,_ = block.identifyTopDog(top, inc_sim=True)
         
         log.info("Generating dependency tree...")
@@ -1405,9 +1421,9 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         '''Run the 'get' command.'''
         self.WS().loadLocalBlocks()
         #make sure an entity is being requested
-        if(self.itemEmpty()):
+        if(self.getItem() == None):
             exit(log.error("Pass an entity name to get."))
-        Block.getCurrent().get(self._item, self.hasFlag('about'), self.hasFlag('arch'))
+        Block.getCurrent().get(self.getItem(), self.hasFlag('about'), self.hasFlag('arch'))
         pass
 
 
@@ -1446,10 +1462,6 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         else:
             return val, ''
 
-
-    def itemEmpty(self):
-        return self._item == ''
-
     
     def _init(self):
         '''Run the 'init' command.'''
@@ -1457,15 +1469,15 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         #create a new file
         if(self.hasFlag('file')):
             Block(os.getcwd(), ws_path=self.WS().getPath(), ws_markets=self.WS().getMarkets(returnnames=True))
-            Block.getCurrent().newFile(self._item, self.getVar("file"), self.hasFlag('force'))
+            Block.getCurrent().newFile(self.getItem(raw=True), self.getVar("file"), self.hasFlag('force'))
 
 
     def _config(self):
         '''Run 'config' command.'''
 
         #import a profile if a profile name is given as item.
-        if(self.itemEmpty() == False and self._item in Profile.Jar.keys()):
-            Profile.Jar[self._item].importLoadout(ask=self.hasFlag('ask'))
+        if(self.getItem(raw=True) in Profile.Jar.keys()):
+            Profile.Jar[self.getItem(raw=True)].importLoadout(ask=self.hasFlag('ask'))
             return
 
         #set each setting listed in flags try to modify it
@@ -1590,7 +1602,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
     # [!] NEW COMMAND
     def _new(self):
         '''Run 'new' command.'''
-        M,L,N,V = Block.snapTitle(self._item)
+        title = self.getItem()
+        M,L,N,V = Block.snapTitle(title)
 
         if(L == ''):
             exit(log.error("New block must have a library."))
@@ -1602,7 +1615,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         #create block object
         b = Block(block_path, ws_path=self.WS().getPath(), ws_markets=self.WS().getMarkets(returnnames=True))
         #create the new block
-        b.create2(self._item, cp_template=(self.hasFlag('no-template') == 0), remote=self.getVar('remote'))
+        b.create2(title, cp_template=(self.hasFlag('no-template') == 0), remote=self.getVar('remote'))
     pass
 
 
@@ -1616,12 +1629,12 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             log.info("Refreshing all markets...")
             for mkrt in Market.Jar.values():
                 mkrt.refresh()
-        elif(self.itemEmpty()):
+        elif(self.getItem() == None):
             log.info("Refreshing all workspace markets...")
             for mrkt in self.WS().getMarkets():
                 mrkt.refresh()
-        elif(self._item.lower() in Market.Jar.keys()):
-            Market.Jar[self._item].refresh()
+        elif(self.getItem() in Market.Jar.keys()):
+            Market.Jar[self.getItem()].refresh()
         pass
 
 
@@ -1646,7 +1659,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             #categorize by hidden files (skipped)
             #and visible files (files that are copied in on using template)
         else:
-            M,L,N,_ = Block.snapTitle(self._item)
+            M,L,N,_ = Block.snapTitle(self.getItem())
             self.WS().listBlocks(M, N, L)
         pass
 
@@ -1676,7 +1689,6 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         #cannot open anything without a text-editor!
         if(valid_editor == False):
             exit(log.error("No text-editor configured!"))
-            pass
         #open template
         if(self.hasFlag("template")):
             log.info("Opening block template folder at... "+apt.fs(apt.TEMPLATE))
@@ -1696,7 +1708,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                     log.info("Opening script "+self._item+" at... "+script_path)
                 else:
                     exit(log.error("Script "+self._item+" has no path to open."))
-            elif(self.itemEmpty() == False):
+            elif(self.getItem() == None):
                 exit(log.error("Script "+self._item+" does not exist."))
 
             apt.execute(apt.getEditor(),script_path)
