@@ -1473,6 +1473,14 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         
         pass
 
+    
+    def _info(self):
+        '''Run the 'info' command.'''
+        block = self.WS().shortcut(self.getItem())
+        if(block != None):
+            print(block.readInfo(self.hasFlag('all'), self.hasFlag('stats'), self.hasFlag('versions'))) 
+        pass
+
 
     def _config(self):
         '''Run 'config' command.'''
@@ -1911,7 +1919,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
 
         elif('info' == cmd):
-            
+            self._info()
             pass
 
         elif('config' == cmd):

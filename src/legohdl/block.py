@@ -570,7 +570,7 @@ class Block:
         Returns:
             None
         '''
-        with open(self.metadataPath(), "r") as file:
+        with open(self.getMetaFile(), "r") as file:
             self.__metadata = cfg.load(file, ignore_depth=True)
             #print(self.__metadata)
             file.close()
@@ -1091,10 +1091,10 @@ class Block:
 
     def isValid(self):
         '''Returns true if the requested project folder is a valid block.'''
-        return os.path.isfile(self.metadataPath())
+        return os.path.isfile(self.getMetaFile())
 
 
-    def metadataPath(self):
+    def getMetaFile(self):
         '''Return the path to the marker file.'''
         return self.getPath()+apt.MARKER
 
@@ -1138,7 +1138,7 @@ class Block:
         #print out the block's current metadata (found in local path)
         if(listVers == False and ver == None):
             #print(self.getMeta(every=True))
-            with open(self.metadataPath(), 'r') as file:
+            with open(self.getMetaFile(), 'r') as file:
                 for line in file:
                     print(line,sep='',end='')
         #print out specific metadata about version if installed in cache
@@ -1214,7 +1214,7 @@ class Block:
                 pass
 
         #write back cfg values with respect to order
-        with open(self.metadataPath(), 'w') as file:
+        with open(self.getMetaFile(), 'w') as file:
             cfg.save(meta, file, ignore_depth=True, space_headers=True)
             file.close()
         pass
@@ -2063,6 +2063,63 @@ class Block:
             print(ent.getInterface().writeInstance(form=lang))
 
         return True
+
+
+    def readInfo(self, readall, stats=False, versions=False):
+        '''
+        Return information relevant to the current block (metadata).
+
+        Parameters:
+            readall (bool): determine if to print ALL metadata
+            stats (bool): determine if to print additional stats
+            versions (bool): determine if to print the available versions
+        Returns:
+            info_txt (str): information text to be printed to console
+        '''
+        #get the metadata
+        info_txt = ''
+        with open(self.getMetaFile(), 'r') as file:
+            for line in file:
+                info_txt = info_txt + line
+                #stop reading :todo:
+                if(not readall and False):
+                    break
+        
+        if(stats):
+            txt = '\n'
+            txt = txt + 'Number of Units: '+str(len(self.loadHDL()))
+            info_txt = info_txt + txt
+
+        if(versions):
+            #get installation versions
+            instl_versions = []
+
+            info_txt = ''
+            # sort versions
+            all_versions = self.sortVersions(self.getTaggedVersions())
+            #track what major versions have been identified
+            maj_vers = []
+            for x in all_versions:
+                #constrain the list to what the user inputted
+                #if(ver != None and x.startswith(ver) == False):
+                    #continue
+                info_txt = info_txt + x + '\t'
+                #notify user of the installs in cache
+                if(x in instl_versions):
+                    info_txt = info_txt + '*'
+                    #notify that it is a parent version
+                    parent_ver = x[:x.find('.')]
+                    if(parent_ver in instl_versions and parent_ver not in maj_vers):
+                        info_txt = info_txt + '\t' + parent_ver
+                    maj_vers.append(parent_ver)
+                    
+                    #get the highest version from instl_versions (that is what's called latest) :todo:
+                    if(x == instl_versions[0]):
+                        info_txt = info_txt + '\t' + 'latest'
+                pass
+                #add new line for next version to be formatted
+                info_txt = info_txt + '\n'
+        return info_txt
 
 
     @DeprecationWarning
