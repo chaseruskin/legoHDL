@@ -152,12 +152,12 @@ OPTIONS:
 
 ; other names in contention: checkout, check, scope, probe, connect, grab, explore, 
 ;                       investigate, view, utilize, use, get, fetch                  
-* port
+* get
 NAME:
-        port - Print the compatible code for the ports list of a specified entity
+        get - Print the compatible code for the ports list of a specified entity
 
 SYNOPSIS:
-        legohdl port [<block>:]<entity> [-comp[=<lang>] | -inst[=<lang>]] [-arch] [-about]
+        legohdl get [<block>:]<entity> [-comp[=<lang>] | -inst[=<lang>]] [-arch] [-about]
 
 DESCRIPTION:
         When trying to access current block-level entities, the <block>

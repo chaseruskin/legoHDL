@@ -40,44 +40,6 @@ class Block:
     #class attribute that is a block object found on current path
     _Current = None
 
-    # def init_old(self, title=None, path=None, remote=None, excludeGit=False, market=None):
-    #     self.__metadata = {'block' : {}}
-    #     #split title into library and block name
-    #     _,self.__lib,self.__name,_ = Block.snapTitle(title, lower=False)
-    #     if(remote != None):
-    #         self._remote = remote
-    #     self.__market = market
-
-    #     self._path = apt.fs(path)
-    #     if(path != None):
-    #         if(self.isValid()):
-    #             if(not excludeGit):
-    #                 try:
-    #                     self._repo = git.Repo(self.getPath())
-    #                 #make git repository if DNE
-    #                 except git.exc.InvalidGitRepositoryError:
-    #                     self._repo = git.Repo.init(self.getPath())
-    #             self.loadMeta()
-    #             return
-    #     elif(path == None):
-    #         self._path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
-
-    #     #try to see if this directory is indeed a git repo
-    #     self._repo = None
-    #     try:
-    #         self._repo = git.Repo(self.getPath())
-    #     except:
-    #         pass
-
-    #     if(remote != None):
-    #         self.grabGitRemote(remote)
-
-    #     #is this block already existing?
-    #     if(self.isValid()):
-    #         #load in metadata from cfg
-    #         self.loadMeta()
-    #     pass
-
 
     def __init__(self, path, ws_path, ws_markets=[], title=''):
         '''
@@ -555,7 +517,51 @@ class Block:
 
     def getAvailableVers(self):
         return ['v'+self.getHighestTaggedVersion()]
-    
+
+
+    def secureMeta(self):
+        '''
+        Performs safety measures on the block's metadata. Only runs once before
+        dynamically creating an attr.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        if(hasattr(self, "_is_secure")):
+            return
+        #remember what the metadata looked like initially to compare for determining
+        #  if needing to write file for saving
+        if(self._initial_metadata == None):
+            self._initial_metadata = self.getMeta().copy()
+
+        #ensure derives is a proper list format
+        if(self.getMeta('derives') == cfg.NULL):
+            self.setMeta('derives',list())
+
+        if(hasattr(self, "_repo")):
+            #grab list of available versions
+            avail_vers = self.getAvailableVers()     
+            #dynamically determine the latest valid release point
+            self.setMeta('version', avail_vers[0][1:])
+
+            #set the remote correctly
+            self.setMeta('remote', self._repo.getRemoteURL())
+            pass
+
+        #ensure the market is valid
+        if(self.getMeta('market') != ''):
+            m = self.getMeta('market')
+            if(m.lower() not in self._ws_markets):
+                log.warning("Market "+m+" is removed from "+self.getTitle_old()+" because the market is not available in this workspace.")
+                self.setMeta('market', '')
+            pass
+
+        #dynamically create attr to only allow operation to occur once
+        self._is_secure = True
+        return
+      
 
     def loadMeta(self):
         '''
@@ -587,32 +593,7 @@ class Block:
                 
         #performs safety checks only on the block that is current directory
         if(self == self.getCurrent(bypass=True)):
-            #remember what the metadata looked like initially to compare for determining
-            #  if needing to write file for saving
-            if(self._initial_metadata == None):
-                self._initial_metadata = self.getMeta().copy()
-
-            #ensure derives is a proper list format
-            if(self.getMeta('derives') == cfg.NULL):
-                self.setMeta('derives',list())
-
-            if(hasattr(self, "_repo")):
-                #grab list of available versions
-                avail_vers = self.getAvailableVers()     
-                #dynamically determine the latest valid release point
-                self.setMeta('version', avail_vers[0][1:])
-
-                #set the remote correctly
-                self.setMeta('remote', self._repo.getRemoteURL())
-                pass
-
-            #ensure the market is valid
-            if(self.getMeta('market') != ''):
-                m = self.getMeta('market')
-                if(m.lower() not in self._ws_markets):
-                    log.warning("Market "+m+" is removed from "+self.getTitle_old()+" because the market is not available in this workspace.")
-                    self.setMeta('market', '')
-                pass
+            self.secureMeta()
 
         self.save()
         pass
@@ -830,139 +811,6 @@ class Block:
 
         #operation was successful
         return True
-
-
-    def create2(self, fresh=True, git_exists=False, remote=None, fork=False, inc_template=True):
-        '''
-        Create a new block using the template and attempt to set up a remote.
-
-        Parameters:
-            fresh (bool): if creating a block from scratch (no existing files)
-            git_exists (bool): if the current folder already has a git repository
-            remote (str): the url to the remote repository (None if DNE)
-            fork (bool): if wanting to not attach the remote that was used to initialize
-            inc_template (bool): determine if to copy the template files
-        Returns:
-            None
-        '''
-        log.info('Initializing new block...')
-        #copy template folder to new location if its a fresh project
-        if(fresh):
-            if(os.path.isdir(apt.TEMPLATE)):
-                if(inc_template):
-                    log.info("Copying template...")
-                    #copy all files from template project
-                    shutil.copytree(apt.TEMPLATE, self.getPath())
-                    #delete any previous git repository that was attached to template
-                    if(os.path.isdir(self.getPath()+"/.git/")):
-                        shutil.rmtree(self.getPath()+"/.git/", onerror=apt.rmReadOnly)
-                    #delete all folders that start with '.'
-                    dirs = os.listdir(self.getPath())
-                    for d in dirs:
-                        if(os.path.isdir(self.getPath()+'/'+d) and d[0] == '.'):
-                            shutil.rmtree(self.getPath()+'/'+d, onerror=apt.rmReadOnly)
-                else:
-                    log.info("Skipping template...")
-            else:
-                os.makedirs(self.getPath(), exist_ok=True)
-
-        #clone from existing remote repo
-        if(not fresh and self.grabGitRemote() != None and ((self._repo != None and not apt.isRemoteBare(self.grabGitRemote()))  or self._repo == None)):
-            log.info("Cloning project from remote url...")
-            self.downloadFromURL(self.grabGitRemote(), in_place=True)
-        #make a new repo
-        elif(not git_exists):
-            self._repo = git.Repo.init(self.getPath())
-        #there is already a repo here
-        elif(fresh):
-            self._repo = git.Repo(self.getPath())
-            #does a remote exist?
-            if(self.grabGitRemote(override=True) != None):
-                #ensure we have the latest version before creating marker file
-                self._repo.git.pull()
-
-        #create the marker file
-        with open(self.getPath()+apt.MARKER, 'w') as f:
-            cfg.save(self.LAYOUT, f, ignore_depth=True, space_headers=True)
-
-        #search through all templated files and fill in placeholders
-        if(fresh):
-            #replace all file names that contain the word 'template'
-            replacements = glob.glob(self.getPath()+"/**/*template*", recursive=True)
-            for f in replacements:
-                if(os.path.isfile(f)):
-                    os.rename(f, f.replace('template', self.getName(low=False)))
-            #determine the author
-            author = apt.SETTINGS['general']["author"]
-            if(author == None):
-                author = ''
-            #determie the date
-            today = date.today().strftime("%B %d, %Y")
-
-            #go through all files and update with special placeholders
-            allFiles = glob.glob(self.getPath()+"/**/*", recursive=True)
-            for f in allFiles:
-                file_data = []
-                #store and transform lines into file dictionary
-                if(os.path.isfile(f) == False):
-                    continue
-                with open(f, 'r') as read_file:
-                    for line in read_file.readlines():
-                        line = line.replace("template", self.getName(low=False))
-                        line = line.replace("%DATE%", today)
-                        line = line.replace("%AUTHOR%", author)
-                        line = line.replace("%BLOCK%", self.getTitle_old(low=False))
-                        file_data.append(line)
-                    read_file.close()
-                #write new lines
-                with open(f, 'w') as write_file:
-                    for line in file_data:
-                        write_file.write(line)
-                    write_file.close()
-                pass
-            pass
-
-        #generate fresh metadata fields
-        self.loadMeta() 
-        self.setMeta('name', self.getName(low=False))
-        self.setMeta('library', self.getLib(low=False))
-        self.setMeta('version', '0.0.0')
-        #log.info("Remote status: "+self.getMeta("remote"))
-        self.identifyTop()
-        log.debug(self.getName())
-        #set the remote if not None
-        if(remote != None):
-            self.setRemote(remote, push=False)
-        #save current progress into cfg
-        self.save() 
-        #add and commit to new git repository
-        self._repo.git.add('.') #self._repo.index.add(self._repo.untracked_files)
-        try:
-            self._repo.git.commit('-m','Initializes block')
-        except git.exc.GitCommandError:
-            log.warning("Nothing new to commit.")
-
-        #set it up to track origin
-        if(self.grabGitRemote() != None):
-            #sync with remote repository if not forking
-            if(fork == False):
-                log.info('Pushing to remote repository...')
-                try:
-                    self._repo.git.push("-u","origin",str(self._repo.head.reference))
-                except git.exc.GitCommandError:
-                    log.warning("Cannot configure remote origin because it is not empty!")
-                    #remove remote url from existing areas
-                    self._repo.delete_remote('origin')
-                    self.setRemote(None, push=False)
-                    self.save()
-            else:
-                log.info("Detaching remote from block...")
-                self._repo.delete_remote('origin')
-                self.setRemote(None, push=False)
-                self.save()
-        else:
-            log.info('No remote code base attached to local repository')
-        pass
 
 
     #dynamically grab the origin url if it has been changed/added by user using git
@@ -1218,6 +1066,7 @@ class Block:
             cfg.save(meta, file, ignore_depth=True, space_headers=True)
             file.close()
         pass
+
 
     def isLinked(self):
         '''Returns true if a remote repository is linked/attached to this block.'''
@@ -1823,6 +1672,113 @@ class Block:
             print(u)
 
 
+    def get(self, entity, about, listArch, inst, lang=None):
+        '''
+        Get various pieces of information about a given entity as well as any
+        compatible code for instantiations.
+
+        Parameters:
+            entity (str): name of entity to be fetched
+            about (bool): determine if to print the comment header
+            listArch (bool): determine if to list the architectures
+            inst (bool): determine if to print instantiation
+            lang (str): VHDL or VLOG style language
+        Returns:
+            success (bool): determine if operation was successful
+        '''
+        #get quick idea of what units exist for this block
+        units = self.loadHDL()
+        if(entity.lower() not in units.keys()):
+            log.error("Entity "+entity+" not found in this block!")
+            return False
+        #collect data about requested entity
+        self.getUnits(top=entity)
+        #grab the desired entity from the Map
+        ent = units[entity]
+
+        #print comment header (about)
+        print(ent.readAbout())
+        #print list of architectures
+        if(listArch):
+            print(ent.readArchitectures())
+        if(inst):
+            #determine the language to output instance
+            if(lang != None):
+                if(lang.lower() == 'vhdl'):
+                    lang = Unit.Language.VHDL
+                elif(lang.lower() == 'vlog'):
+                    lang = Unit.Language.VERILOG
+            print(ent.getInterface().writeConnections(form=lang))
+            print(ent.getInterface().writeInstance(form=lang))
+
+        return True
+
+
+    def readInfo(self, readall, stats=False, versions=False):
+        '''
+        Return information relevant to the current block (metadata).
+
+        Parameters:
+            readall (bool): determine if to print ALL metadata
+            stats (bool): determine if to print additional stats
+            versions (bool): determine if to print the available versions
+        Returns:
+            info_txt (str): information text to be printed to console
+        '''
+        #make sure the metadata is properly formatted
+        self.secureMeta()
+        #get the metadata
+        info_txt = ''
+        with open(self.getMetaFile(), 'r') as file:
+            for line in file:
+                info_txt = info_txt + line
+                #stop reading :todo:
+                if(not readall and False):
+                    break
+        
+        if(stats):
+            txt = '\n'
+            txt = txt + 'Number of Units: '+str(len(self.loadHDL()))
+            info_txt = info_txt + txt
+
+        if(versions):
+            #get installation versions
+            instl_versions = []
+
+            info_txt = ''
+            # sort versions
+            all_versions = self.sortVersions(self.getTaggedVersions())
+            #track what major versions have been identified
+            maj_vers = []
+            for x in all_versions:
+                #constrain the list to what the user inputted
+                #if(ver != None and x.startswith(ver) == False):
+                    #continue
+                info_txt = info_txt + x + '\t'
+                #notify user of the installs in cache
+                if(x in instl_versions):
+                    info_txt = info_txt + '*'
+                    #notify that it is a parent version
+                    parent_ver = x[:x.find('.')]
+                    if(parent_ver in instl_versions and parent_ver not in maj_vers):
+                        info_txt = info_txt + '\t' + parent_ver
+                    maj_vers.append(parent_ver)
+                    
+                    #get the highest version from instl_versions (that is what's called latest) :todo:
+                    if(x == instl_versions[0]):
+                        info_txt = info_txt + '\t' + 'latest'
+                pass
+                #add new line for next version to be formatted
+                info_txt = info_txt + '\n'
+        return info_txt
+
+
+
+# ==============================================================================
+# ==============================================================================
+# === ARCHIVED CODE... TO DELETE ===============================================
+# ==============================================================================
+# ==============================================================================
     @DeprecationWarning
     def grabUnits(self, toplevel=None, override=False):
         '''
@@ -1863,7 +1819,6 @@ class Block:
             self.grabCacheDesigns(override)
             pass
         pass
-
 
     #return dictionary of entities with their respective files as values
     #all possible entities or packages to be used in current project
@@ -1963,7 +1918,7 @@ class Block:
         print("Project-Level Designs: "+str(self._cur_designs))
         return self._cur_designs
     
-
+    @DeprecationWarning
     def grabExternalProject(cls, path):
         '''
         Uses the file path to determine what block owns this file in the cache.
@@ -2022,106 +1977,6 @@ class Block:
  
         return M,L,N
 
-
-    def get(self, entity, about, listArch, inst, lang=None):
-        '''
-        Get various pieces of information about a given entity as well as any
-        compatible code for instantiations.
-
-        Parameters:
-            entity (str): name of entity to be fetched
-            about (bool): determine if to print the comment header
-            listArch (bool): determine if to list the architectures
-            inst (bool): determine if to print instantiation
-            lang (str): VHDL or VLOG style language
-        Returns:
-            success (bool): determine if operation was successful
-        '''
-        #get quick idea of what units exist for this block
-        units = self.loadHDL()
-        if(entity.lower() not in units.keys()):
-            log.error("Entity "+entity+" not found in this block!")
-            return False
-        #collect data about requested entity
-        self.getUnits(top=entity)
-        #grab the desired entity from the Map
-        ent = units[entity]
-
-        #print comment header (about)
-        print(ent.readAbout())
-        #print list of architectures
-        if(listArch):
-            print(ent.readArchitectures())
-        if(inst):
-            #determine the language to output instance
-            if(lang != None):
-                if(lang.lower() == 'vhdl'):
-                    lang = Unit.Language.VHDL
-                elif(lang.lower() == 'vlog'):
-                    lang = Unit.Language.VERILOG
-            print(ent.getInterface().writeConnections(form=lang))
-            print(ent.getInterface().writeInstance(form=lang))
-
-        return True
-
-
-    def readInfo(self, readall, stats=False, versions=False):
-        '''
-        Return information relevant to the current block (metadata).
-
-        Parameters:
-            readall (bool): determine if to print ALL metadata
-            stats (bool): determine if to print additional stats
-            versions (bool): determine if to print the available versions
-        Returns:
-            info_txt (str): information text to be printed to console
-        '''
-        #get the metadata
-        info_txt = ''
-        with open(self.getMetaFile(), 'r') as file:
-            for line in file:
-                info_txt = info_txt + line
-                #stop reading :todo:
-                if(not readall and False):
-                    break
-        
-        if(stats):
-            txt = '\n'
-            txt = txt + 'Number of Units: '+str(len(self.loadHDL()))
-            info_txt = info_txt + txt
-
-        if(versions):
-            #get installation versions
-            instl_versions = []
-
-            info_txt = ''
-            # sort versions
-            all_versions = self.sortVersions(self.getTaggedVersions())
-            #track what major versions have been identified
-            maj_vers = []
-            for x in all_versions:
-                #constrain the list to what the user inputted
-                #if(ver != None and x.startswith(ver) == False):
-                    #continue
-                info_txt = info_txt + x + '\t'
-                #notify user of the installs in cache
-                if(x in instl_versions):
-                    info_txt = info_txt + '*'
-                    #notify that it is a parent version
-                    parent_ver = x[:x.find('.')]
-                    if(parent_ver in instl_versions and parent_ver not in maj_vers):
-                        info_txt = info_txt + '\t' + parent_ver
-                    maj_vers.append(parent_ver)
-                    
-                    #get the highest version from instl_versions (that is what's called latest) :todo:
-                    if(x == instl_versions[0]):
-                        info_txt = info_txt + '\t' + 'latest'
-                pass
-                #add new line for next version to be formatted
-                info_txt = info_txt + '\n'
-        return info_txt
-
-
     @DeprecationWarning
     def ports(self, mapp, lib, pure_entity, entity=None, ver=None, showArc=False):
         '''
@@ -2154,6 +2009,180 @@ class Block:
         if(len(info.strip()) == 0):
             exit(log.error("Empty ports list for entity "+entity+"!"))
         return info
+
+    @DeprecationWarning
+    def create2(self, fresh=True, git_exists=False, remote=None, fork=False, inc_template=True):
+        '''
+        Create a new block using the template and attempt to set up a remote.
+
+        Parameters:
+            fresh (bool): if creating a block from scratch (no existing files)
+            git_exists (bool): if the current folder already has a git repository
+            remote (str): the url to the remote repository (None if DNE)
+            fork (bool): if wanting to not attach the remote that was used to initialize
+            inc_template (bool): determine if to copy the template files
+        Returns:
+            None
+        '''
+        log.info('Initializing new block...')
+        #copy template folder to new location if its a fresh project
+        if(fresh):
+            if(os.path.isdir(apt.TEMPLATE)):
+                if(inc_template):
+                    log.info("Copying template...")
+                    #copy all files from template project
+                    shutil.copytree(apt.TEMPLATE, self.getPath())
+                    #delete any previous git repository that was attached to template
+                    if(os.path.isdir(self.getPath()+"/.git/")):
+                        shutil.rmtree(self.getPath()+"/.git/", onerror=apt.rmReadOnly)
+                    #delete all folders that start with '.'
+                    dirs = os.listdir(self.getPath())
+                    for d in dirs:
+                        if(os.path.isdir(self.getPath()+'/'+d) and d[0] == '.'):
+                            shutil.rmtree(self.getPath()+'/'+d, onerror=apt.rmReadOnly)
+                else:
+                    log.info("Skipping template...")
+            else:
+                os.makedirs(self.getPath(), exist_ok=True)
+
+        #clone from existing remote repo
+        if(not fresh and self.grabGitRemote() != None and ((self._repo != None and not apt.isRemoteBare(self.grabGitRemote()))  or self._repo == None)):
+            log.info("Cloning project from remote url...")
+            self.downloadFromURL(self.grabGitRemote(), in_place=True)
+        #make a new repo
+        elif(not git_exists):
+            self._repo = git.Repo.init(self.getPath())
+        #there is already a repo here
+        elif(fresh):
+            self._repo = git.Repo(self.getPath())
+            #does a remote exist?
+            if(self.grabGitRemote(override=True) != None):
+                #ensure we have the latest version before creating marker file
+                self._repo.git.pull()
+
+        #create the marker file
+        with open(self.getPath()+apt.MARKER, 'w') as f:
+            cfg.save(self.LAYOUT, f, ignore_depth=True, space_headers=True)
+
+        #search through all templated files and fill in placeholders
+        if(fresh):
+            #replace all file names that contain the word 'template'
+            replacements = glob.glob(self.getPath()+"/**/*template*", recursive=True)
+            for f in replacements:
+                if(os.path.isfile(f)):
+                    os.rename(f, f.replace('template', self.getName(low=False)))
+            #determine the author
+            author = apt.SETTINGS['general']["author"]
+            if(author == None):
+                author = ''
+            #determie the date
+            today = date.today().strftime("%B %d, %Y")
+
+            #go through all files and update with special placeholders
+            allFiles = glob.glob(self.getPath()+"/**/*", recursive=True)
+            for f in allFiles:
+                file_data = []
+                #store and transform lines into file dictionary
+                if(os.path.isfile(f) == False):
+                    continue
+                with open(f, 'r') as read_file:
+                    for line in read_file.readlines():
+                        line = line.replace("template", self.getName(low=False))
+                        line = line.replace("%DATE%", today)
+                        line = line.replace("%AUTHOR%", author)
+                        line = line.replace("%BLOCK%", self.getTitle_old(low=False))
+                        file_data.append(line)
+                    read_file.close()
+                #write new lines
+                with open(f, 'w') as write_file:
+                    for line in file_data:
+                        write_file.write(line)
+                    write_file.close()
+                pass
+            pass
+
+        #generate fresh metadata fields
+        self.loadMeta() 
+        self.setMeta('name', self.getName(low=False))
+        self.setMeta('library', self.getLib(low=False))
+        self.setMeta('version', '0.0.0')
+        #log.info("Remote status: "+self.getMeta("remote"))
+        self.identifyTop()
+        log.debug(self.getName())
+        #set the remote if not None
+        if(remote != None):
+            self.setRemote(remote, push=False)
+        #save current progress into cfg
+        self.save() 
+        #add and commit to new git repository
+        self._repo.git.add('.') #self._repo.index.add(self._repo.untracked_files)
+        try:
+            self._repo.git.commit('-m','Initializes block')
+        except git.exc.GitCommandError:
+            log.warning("Nothing new to commit.")
+
+        #set it up to track origin
+        if(self.grabGitRemote() != None):
+            #sync with remote repository if not forking
+            if(fork == False):
+                log.info('Pushing to remote repository...')
+                try:
+                    self._repo.git.push("-u","origin",str(self._repo.head.reference))
+                except git.exc.GitCommandError:
+                    log.warning("Cannot configure remote origin because it is not empty!")
+                    #remove remote url from existing areas
+                    self._repo.delete_remote('origin')
+                    self.setRemote(None, push=False)
+                    self.save()
+            else:
+                log.info("Detaching remote from block...")
+                self._repo.delete_remote('origin')
+                self.setRemote(None, push=False)
+                self.save()
+        else:
+            log.info('No remote code base attached to local repository')
+        pass
+
+
+    @DeprecationWarning
+    def init_old(self, title=None, path=None, remote=None, excludeGit=False, market=None):
+        self.__metadata = {'block' : {}}
+        #split title into library and block name
+        _,self.__lib,self.__name,_ = Block.snapTitle(title, lower=False)
+        if(remote != None):
+            self._remote = remote
+        self.__market = market
+
+        self._path = apt.fs(path)
+        if(path != None):
+            if(self.isValid()):
+                if(not excludeGit):
+                    try:
+                        self._repo = git.Repo(self.getPath())
+                    #make git repository if DNE
+                    except git.exc.InvalidGitRepositoryError:
+                        self._repo = git.Repo.init(self.getPath())
+                self.loadMeta()
+                return
+        elif(path == None):
+            self._path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
+
+        #try to see if this directory is indeed a git repo
+        self._repo = None
+        try:
+            self._repo = git.Repo(self.getPath())
+        except:
+            pass
+
+        if(remote != None):
+            self.grabGitRemote(remote)
+
+        #is this block already existing?
+        if(self.isValid()):
+            #load in metadata from cfg
+            self.loadMeta()
+        pass
+
 
     pass
 
