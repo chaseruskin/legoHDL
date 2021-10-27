@@ -311,6 +311,115 @@ class Workspace:
         pass
 
 
+    def shortcut(self, title, req_entity=False):
+        '''
+        Returns the Block from a shortened title. If title is empty, then
+        it refers to the current block.
+
+        Sometimes an entity is required for certain commands; so it can be
+        assumed entity (instead of block name) if only thing given.
+
+        Parameters:
+            title (str): partial or full M.L.N with optional E attached
+            req_entity (bool): determine if only thing given then it is an entity
+        Returns:
+            (Block): the identified block from the shortened title
+        '''
+        #split into pieces
+        pieces = title.split('.')
+        sects = ['']*3
+        diff = 3 - len(pieces)
+        for i in range(len(pieces)-1, -1, -1):
+            sects[diff+i] = pieces[i]
+        #check final piece if it has an entity attached
+        entity = ''
+        if(sects[2].count(apt.ENTITY_DELIM)):
+            i = sects[2].find(apt.ENTITY_DELIM)
+            entity = sects[2][i+1:]
+            sects[2] = sects[2][:i]
+        #assume only name given is actually the entity
+        elif(req_entity):
+            entity = sects[2]
+            sects[2] = ''
+
+        # [!] load all necessary blocks before searching
+        l_blocks = self.loadLocalBlocks()
+        
+        #track list of possible blocks as moving up the chain
+        possible_blocks = []
+
+        #search for an entity
+        if(len(entity)):
+            #collect list of all entities
+            reg = Map()
+            reg[entity] = []
+            for bk in l_blocks:
+                es = bk.loadHDL(returnnames=True)
+                print(es)
+                for e in es:
+                    if(e.lower() not in reg.keys()):
+                        reg[e] = []
+                    reg[e] += [bk]
+                
+            num_blocks = len(reg[entity])
+            if(num_blocks == 1):
+                return reg[entity][0]
+            elif(num_blocks > 1):
+                possible_blocks = reg[entity]
+                if(len(sects[2]) == 0):
+                    log.info("Ambigious title; conflicts with")
+                    for bk in reg[entity]:
+                        print('\t'+bk.getFull()+":"+entity)
+                    exit(print())
+            pass
+        #search through all block names
+        for start in range(len(sects)-1, -1, -1):
+            term = sects[start]
+            #exit loop if next term is empty
+            if(len(term) == 0):
+                break
+            reg = Map()
+            reg[term] = []
+            for bk in l_blocks:
+                t = bk.getTitle(index=start, dist=0)[0]
+                if(t.lower() not in reg.keys()):
+                    reg[t] = []
+                reg[t] += [bk]
+            if(start == 1): print(reg['demo'])
+            #count how many blocks occupy this same name
+            num_blocks = len(reg[term])
+            if(num_blocks == 1):
+                print("FOUND:",reg[term][0].getTitle(index=2, dist=2))
+                return reg[term][0]
+            elif(num_blocks > 1):
+                #compare with blocks for a match and dwindle down choices
+                next_blocks = []
+                for bk in reg[term]:
+                    if(bk in possible_blocks or (start == len(sects)-1 and entity == '')):
+                        next_blocks += [bk]
+                #dwindled down to a single block
+                if(len(next_blocks) == 1):
+                    print("FOUND:",next_blocks[0].getTitle(index=2, dist=2))
+                    return next_blocks[0]
+                #carry on to using next title section
+                if(len(sects[start-1])):
+                    #continue to using next term
+                    possible_blocks = next_blocks
+                    continue
+                else:
+                    #ran out of guesses...report the conflicting titles
+                    log.info("Ambigious title; conflicts with")
+                    for bk in reg[term]:
+                        print('\t\t'+bk.getFull())
+                    exit(print())
+            pass
+        #using the current block if title is empty string
+        if(title == '' or title == None):
+            return Block.getCurrent()
+        #return None if all attempts have failed and not returned anything yet
+        return None
+
+
     def listBlocks(self, M, L, N, alpha=False, instl=False, dnld=False):
         '''
         Print a formatted table of the available blocks.

@@ -19,6 +19,7 @@ from .graph import Graph
 from .unit import Unit
 from .language import Language
 from .git import Git
+from .map import Map
 
 
 #a Block is a package/module that is signified by having the marker file
@@ -194,8 +195,23 @@ class Block:
 
         return success
 
+    
+    def getTitle(self, index, dist=0):
+        '''
+        Returns partial or full block title M.L.N. index 2 corresponds to the
+        the N, 1 corresponds to L, and 0 corresponds to M.
 
-    def getTitle(self, low=True, mrkt=False):
+        Parameters:
+            index (int): 0-2 to indicate what section to start at
+            dist (int): 0-2 indicates how many additional sections to include
+        Returns:
+            ((str)): tuple of requested title sections where 0 = M, 1 = L, 2 = N
+        '''
+        sects = (self.M(), self.L(), self.N())
+        return sects[index-dist:index+1]
+
+
+    def getTitle_old(self, low=True, mrkt=False):
         '''
         Returns the full block title combined.
         
@@ -520,7 +536,7 @@ class Block:
 
     def bindMarket(self, mkt):
         if(mkt != None):
-            log.info("Tying "+mkt+" as the market for "+self.getTitle(low=False))
+            log.info("Tying "+mkt+" as the market for "+self.getTitle_old(low=False))
         self.setMeta('market', mkt)
         self.save()
         pass
@@ -594,7 +610,7 @@ class Block:
             if(self.getMeta('market') != ''):
                 m = self.getMeta('market')
                 if(m.lower() not in self._ws_markets):
-                    log.warning("Market "+m+" is removed from "+self.getTitle()+" because the market is not available in this workspace.")
+                    log.warning("Market "+m+" is removed from "+self.getTitle_old()+" because the market is not available in this workspace.")
                     self.setMeta('market', '')
                 pass
 
@@ -895,7 +911,7 @@ class Block:
                         line = line.replace("template", self.getName(low=False))
                         line = line.replace("%DATE%", today)
                         line = line.replace("%AUTHOR%", author)
-                        line = line.replace("%BLOCK%", self.getTitle(low=False))
+                        line = line.replace("%BLOCK%", self.getTitle_old(low=False))
                         file_data.append(line)
                     read_file.close()
                 #write new lines
@@ -1003,10 +1019,10 @@ class Block:
     #push to remote repository if exists
     def pull(self):
         if(self.grabGitRemote() != None):
-            log.info(self.getTitle()+" already exists in local path; pulling from remote...")
+            log.info(self.getTitle_old()+" already exists in local path; pulling from remote...")
             self._repo.remotes.origin.pull()
         else:
-            log.info(self.getTitle()+" already exists in local path")
+            log.info(self.getTitle_old()+" already exists in local path")
 
     #has ability to return as lower case for comparison within legoHDL
     def getName(self, low=True):
@@ -1113,7 +1129,7 @@ class Block:
                 print()
             else:
 
-                exit(log.error("No CHANGELOG.md file exists for "+self.getTitle()+". Add one in the next release."))
+                exit(log.error("No CHANGELOG.md file exists for "+self.getTitle_old()+". Add one in the next release."))
             return
         #grab all installed versions in the cache
         if(os.path.isdir(cache_path)):
@@ -1171,7 +1187,7 @@ class Block:
 
     def load(self):
         '''Opens this block with the configured text-editor.'''
-        log.info("Opening "+self.getTitle()+" at... "+self.getPath())
+        log.info("Opening "+self.getTitle_old()+" at... "+self.getPath())
         apt.execute(apt.getEditor(), self.getPath())
         pass
     
@@ -1342,7 +1358,7 @@ class Block:
             (log.error("Version "+ver+" is not available to install."))
             return
 
-        log.info("Installing block "+self.getTitle(low=False)+" version "+ver+"...")
+        log.info("Installing block "+self.getTitle_old(low=False)+" version "+ver+"...")
         # 1. first download from remote if the base installation DNE or tag DNE
         if(not base_installed):
             #print("cache dir",cache_dir)
@@ -1401,7 +1417,7 @@ class Block:
                 maj_path = cache_dir+maj+"/"
                 #make new path if does not exist
                 if(os.path.isdir(maj_path) == False):
-                    log.info("Installing block "+self.getTitle(low=False)+" version "+maj+"...")
+                    log.info("Installing block "+self.getTitle_old(low=False)+" version "+maj+"...")
                     self.copyVersionCache(ver=ver, folder=maj)
                 #check the version that is living in this folder
                 else:
@@ -1410,7 +1426,7 @@ class Block:
                         f.close()
                         pass
                     if(self.biggerVer(maj_meta['block']['version'], meta['block']['version']) == meta['block']['version']):
-                        log.info("Updating block "+self.getTitle(low=False)+" version "+maj+"...")
+                        log.info("Updating block "+self.getTitle_old(low=False)+" version "+maj+"...")
                         #remove old king
                         shutil.rmtree(maj_path, onerror=apt.rmReadOnly)
                         #replace with new king for this major version
@@ -1434,8 +1450,8 @@ class Block:
         #print("Derives:",block_list)
         update = False
         #remove itself from the block list dependencies
-        if(self.getTitle(mrkt=True) in block_list):
-            block_list.remove(self.getTitle(mrkt=True))
+        if(self.getTitle_old(mrkt=True) in block_list):
+            block_list.remove(self.getTitle_old(mrkt=True))
         if(len(self.getMeta('derives')) != len(block_list)):
             update = True
         for b in block_list:
@@ -1469,19 +1485,21 @@ class Block:
 
 
     @classmethod
-    def snapTitle(cls, title, lower=True):
+    def snapTitle(cls, title, lower=True, inc_ent=False):
         '''
         Break a title into its 4 components, if possible. Returns M,L,N,V as
         strings.
 
         Parameters:
             title (str): the string to be parsed into title components
-            lower (bool):return components as all lower-case (true) or normal (false)
+            lower (bool): return components as all lower-case (true) or normal (false)
+            inc_ent (bool): also return the entity name if found
         Returns:
             M (str): block market
             L (str): block library
             N (str): block name
-            V (str): bloc version
+            V (str): block version
+            E (str): entity in the title if inc_ent is True
         '''
         delimiter = '.'
         def parseDelimiter(t):
@@ -1500,28 +1518,37 @@ class Block:
                 return t,''
 
         if(title == None):
-            return '','','',''
+            if(inc_ent):
+                return '','','','','' #return 5 blanks
+            return '','','','' #return 4 blanks
         V = ''
+        #:todo: will not work if (v1.0.0):adder (version and entity together)
         #find version label if possible
         v_index = title.find('(v')
         if(v_index > -1):
             V = cls.stdVer(title[v_index+1:-1])
             title = title[:v_index]
-        #cut off if found entity delimter (used to identify entity/module name)
-        e_index = title.rfind(apt.ENTITY_DELIM)
-        if(e_index > -1):
-            title = title[:e_index]
 
-        #trim title and assign components from right to left
-        N, title = parseDelimiter(title)
-        L, title = parseDelimiter(title)
-        M, title = parseDelimiter(title)
-        #libraries and names cannot contain hyphens
-        N = N.replace("-", "_")
-        L = L.replace("-", "_")
-        if(lower):
-            return M.lower(),L.lower(),N.lower(),V.lower()
-        return M,L,N,V
+        #split into pieces
+        pieces = title.split('.')
+        sects = ['']*3
+        diff = 3 - len(pieces)
+        for i in range(len(pieces)-1, -1, -1):
+            sects[diff+i] = pieces[i]
+        #check final piece if it has an entity attached
+        entity = ''
+        if(sects[2].count(apt.ENTITY_DELIM)):
+            i = sects[2].find(apt.ENTITY_DELIM)
+            entity = sects[2][i+1:]
+            sects[2] = sects[2][:i]
+        #assume only name given is actually the entity
+        elif(inc_ent):
+            entity = sects[2]
+            sects[2] = ''
+        if(inc_ent):
+            return sects[0],sects[1],sects[2],V,entity
+
+        return sects[0],sects[1],sects[2],V
 
 
     def identifyTop(self):
@@ -1728,18 +1755,22 @@ class Block:
         return self._V
 
 
-    def loadHDL(self):
+    def loadHDL(self, returnnames=False):
         '''
         Identify all HDL files within the block and all designs in each file.
 
         Only loads from HDL once and then will dynamically return its attr _units.
         
         Parameters:
-            None
+            returnnames (bool): determine if to return list of names
         Returns:
             self._units (Map): the Unit Map object down to M/L/N level
+            or
+            ([str]): list of unit names if returnnames is True
         '''
         if(hasattr(self, "_units")):
+            if(returnnames):
+                return list(self._units.keys())
             return self._units
         #open each found source file and identify their units
         #load all VHDL files
@@ -1751,7 +1782,13 @@ class Block:
         for v in verilog_files:
             Verilog(v, M=self.M(), L=self.L(), N=self.N())
 
-        self._units = Unit.Jar[self.M()][self.L()][self.N()]
+        #check if the level exists in the Jar
+        if(Unit.jar_exists(self.M(), self.L(), self.N())):
+            self._units = Unit.Jar[self.M()][self.L()][self.N()]
+        else:
+            self._units = Map()
+        if(returnnames):
+            return list(self._units.keys())
         return self._units
 
     
@@ -2043,7 +2080,7 @@ class Block:
             else:
                 info = Unit.Bottle[self.L()][entity].readAbout()      
         else:
-            exit(log.error("Cannot locate entity "+entity+" in block "+self.getTitle(low=False)))
+            exit(log.error("Cannot locate entity "+entity+" in block "+self.getTitle_old(low=False)))
         
         if(len(info.strip()) == 0):
             exit(log.error("Empty ports list for entity "+entity+"!"))

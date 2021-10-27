@@ -444,13 +444,16 @@ class Vhdl(Language):
 
         #trim off surrounding '(' ')'
         words = words[1:len(words)-1]
+        #print(words)
         while (words.count(':') > 0):
             sep = words.index(':')
             #store the generic's name
             gen_name = words[sep-1]
             #extract the generic's type
             stop_bit = len(words)
-            next_sep = words[sep+1:].index('=') - 1
+            next_sep = 1
+            if(words[sep+1:].count('=')):
+                next_sep = words[sep+1:].index('=') - 1
             stop_bit = sep+1 + next_sep
 
             #store the generic's type

@@ -219,6 +219,14 @@ class Unit:
 
 
     @classmethod
+    def jar_exists(cls, M, L, N):
+        if(M in cls.Jar.keys()):
+            if(L in cls.Jar[M].keys()):
+                return (N in cls.Jar[M][L].keys())
+        return False
+
+
+    @classmethod
     def allL(cls):
         'Returns a list of all library level map keys.'
         all_libs = []

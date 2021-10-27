@@ -1423,7 +1423,12 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         #make sure an entity is being requested
         if(self.getItem() == None):
             exit(log.error("Pass an entity name to get."))
-        Block.getCurrent().get(self.getItem(), self.hasFlag('about'), self.hasFlag('arch'))
+        block = self.WS().shortcut(self.getItem(), req_entity=True)
+        #:todo: make better
+        _,_,_,_,ent = Block.snapTitle(self.getItem(), inc_ent=True)
+        if(block == None):
+            exit(log.error("Could not identify a block with "+self.getItem()))
+        block.get(ent, self.hasFlag('about'), self.hasFlag('arch'))
         pass
 
 
@@ -1724,11 +1729,15 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 log.error("Profile "+self._item+" does not exist.")
             pass
         #open block
-        elif(self.db.blockExists(self._item, "local")): # :todo:
-            self.blockPKG.load()
-        else:
-            exit(log.error("No block "+self._item+" exists in your workspace."))
+        else: # :todo:
+            block = self.WS().shortcut(self.getItem())
+            if(block != None):
+                block.load()
+            else:
+                exit(log.error("No block "+self._item+" exists in your workspace."))
+            pass
         pass
+            
 
 
     # [!] HELP COMMAND
