@@ -1471,10 +1471,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
     def _init(self):
         '''Run the 'init' command.'''
         
-        #create a new file
-        if(self.hasFlag('file')):
-            Block(os.getcwd(), ws_path=self.WS().getPath(), ws_markets=self.WS().getMarkets(returnnames=True))
-            Block.getCurrent().newFile(self.getItem(raw=True), self.getVar("file"), self.hasFlag('force'))
+        pass
 
 
     def _config(self):
@@ -1607,6 +1604,13 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
     # [!] NEW COMMAND
     def _new(self):
         '''Run 'new' command.'''
+
+        #create a new file
+        if(self.hasFlag('file')):
+            Block(os.getcwd(), ws_path=self.WS().getPath(), ws_markets=self.WS().getMarkets(returnnames=True))
+            Block.getCurrent().newFile(self.getItem(raw=True), self.getVar("file"), self.hasFlag('force'))
+            return
+        
         title = self.getItem()
         M,L,N,V = Block.snapTitle(title)
 

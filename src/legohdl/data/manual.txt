@@ -25,6 +25,7 @@ NAME:
 
 SYNOPSIS:
         legohdl new <block> [-open] [-remote=<url>] [-no-template]
+        legohdl new <file> -file[=<template-file>] [-force]
 
 DESCRIPTION:
         Create a new HDL project recognized by legoHDL as a "block". The block
@@ -37,6 +38,10 @@ DESCRIPTION:
         When copying in the template, files hidden within a hidden directory will
         not be copied. The files a designer would place inside a hidden directory 
         may be extra files that could be initialized later on a per-block basis.
+        
+        If trying to create a new file and that path already exists, the
+        existing file will not be overwritten unless -force is used.
+        :todo:
 
 OPTIONS:
         <block>
@@ -54,15 +59,25 @@ OPTIONS:
             Do not copy in the configured template folder. The created block
             folder will only contain the necessary Block.cfg file.
 
+        <file>
+                The filepath to intialize a new file.
+
+        -file[=<template-file>]
+                Initialize a new file within the current block. Specifying <template-file>
+                will copy the template file to the desired directory with placeholders
+                correctly replaced. Omitting <template-file> will create a blank file.
+
+        -force
+                Overwrite the filepath even if it already exists when initializing a file.
+
 
 * init
 NAME:
-        init - Initialize a legoHDL block (project) from existing code, block metadata, 
-            or new files from the template
+        init - Initialize a legoHDL block (project) from existing code and block metadata.
 
 SYNOPSIS:
         legohdl init <block> [-remote=<url>] [-market=<mkrt>] [-summary=<summary>]
-        legohdl init <file> -file[=<template-file>] [-force]
+
 
 DESCRIPTION:
         When the current directory or provided remote repository already is a valid legoHDL block,
@@ -72,10 +87,6 @@ DESCRIPTION:
         the root directory contains a Block.cfg file), the <block> will be ignored 
         and the actual title will be used. This becomes an equivalent to using the 
         'download' command.
-
-        If trying to initialize a new file and that path already exists, the
-        existing file will not be overwritten unless -force is used.
-        :todo:
 
 OPTIONS:
         <block>
@@ -91,17 +102,6 @@ OPTIONS:
         -summary=<summary>
                 Fill in the summary for the block's metadata. <summary> is a string
                 that describes the current block.
-
-        <file>
-                The filepath to intialize a new file.
-
-        -file[=<template-file>]
-                Initialize a new file within the current block. Specifying <template-file>
-                will copy the template file to the desired directory with placeholders
-                correctly replaced. Omitting <template-file> will create a blank file.
-
-        -force
-                Overwrite the filepath even if it already exists when initializing a file.
 
 
 * open
