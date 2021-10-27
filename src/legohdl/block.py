@@ -41,7 +41,7 @@ class Block:
     _Current = None
 
 
-    def __init__(self, path, ws_path, ws_markets=[], title=''):
+    def __init__(self, path, ws, title=''):
         '''
         Create a legohdl Block object. 
         
@@ -50,14 +50,13 @@ class Block:
 
         Parameters:
             path (str): the filepath to the Block's root directory
-            ws_path (str): the workspace's local path
-            ws_markets ([str]): list of workspace's available markets
+            ws (Workspace): the workspace this block belongs to
             title (str): M.L.N.V format
         '''
         #store the block's workspace path
-        self._ws_path = ws_path
+        self._ws_path = ws.getPath()
         #store the block's available markets from its workspace
-        self._ws_markets = ws_markets
+        self._ws_markets = ws.getMarkets(returnnames=True)
         
         self._path = apt.fs(path)
         #is this a valid Block marker?
@@ -370,14 +369,21 @@ class Block:
     def getTaggedVersions(self):
         '''
         Returns a list of all version #'s that had a valid TAG_ID appended from
-        the git repository tags.
+        the git repository tags. Dynamically creates attr _tags to be used again.
+
+        Parameters:
+            None
+        Returns:
+            _tags ([str]): list of version values like 'v0.0.0'
         '''
+        if(hasattr(self, '_tags')):
+            return self._tags
+
         all_tags,_ = self._repo.git('tag','-l')
         #print(all_tags)
         #split into list
         all_tags = all_tags.split("\n")
-        tags = []
-        
+        self._tags = []
         #only add any tags identified by legohdl
         for t in all_tags:
             if(t.endswith(apt.TAG_ID)):
@@ -385,10 +391,10 @@ class Block:
                 t = t[:t.find(apt.TAG_ID)]
                 #ensure it is valid version format
                 if(self.validVer(t)):
-                    tags.append(t)
+                    self._tags.append(t)
         #print(tags)
         #return all tags
-        return tags
+        return self._tags
 
 
     @classmethod
@@ -503,6 +509,7 @@ class Block:
         self.save()
         pass
 
+
     def setRemote(self, rem, push=True):
         if(rem != None):
             self.grabGitRemote(rem)
@@ -531,10 +538,18 @@ class Block:
         '''
         if(hasattr(self, "_is_secure")):
             return
+
+        #ensure all pieces are there
+        for key in self.LAYOUT['block'].keys():
+            if(key not in self.getMeta().keys()):
+                #will force to save the changed file
+                self._meta_backup = self.getMeta().copy()
+                self.setMeta(key, '')
+
         #remember what the metadata looked like initially to compare for determining
         #  if needing to write file for saving
-        if(self._initial_metadata == None):
-            self._initial_metadata = self.getMeta().copy()
+        if(hasattr(self, "_meta_backup") == False):
+            self._meta_backup = self.getMeta().copy()
 
         #ensure derives is a proper list format
         if(self.getMeta('derives') == cfg.NULL):
@@ -565,9 +580,9 @@ class Block:
 
     def loadMeta(self):
         '''
-        Load the metadata from the Block.cfg file into the __metadata dictionary.
+        Load the metadata from the Block.cfg file into the _meta dictionary.
 
-        Also creates backup data _initial_metadata for later comparison to determine
+        Also creates backup data _meta_backup for later comparison to determine
         if to save (write to file). Only performs safety checks (like reading a remote
         url) if the block loaded is the current working directory block
 
@@ -577,19 +592,8 @@ class Block:
             None
         '''
         with open(self.getMetaFile(), "r") as file:
-            self.__metadata = cfg.load(file, ignore_depth=True)
-            #print(self.__metadata)
+            self._meta = cfg.load(file, ignore_depth=True)
             file.close()
-
-        #this variable is only evaluated in the save() method
-        self._initial_metadata = None
-
-        #ensure all pieces are there
-        for key in self.LAYOUT['block'].keys():
-            if(key not in self.getMeta().keys()):
-                #will force to save the changed file
-                self._initial_metadata = self.getMeta().copy()
-                self.setMeta(key, '')
                 
         #performs safety checks only on the block that is current directory
         if(self == self.getCurrent(bypass=True)):
@@ -742,7 +746,7 @@ class Block:
         return True
 
 
-    def initialize(self, title, remote=None, fork=False):
+    def initialize(self, title, remote=None, fork=False, summary=None):
         '''
         Initializes an existing remote repository or current working directory
         into a legohdl block.
@@ -753,8 +757,27 @@ class Block:
         Returns:
             success (bool): determine if initialization was successful
         '''
+        #make sure the current path is within the workspace path
+        if(apt.isSubPath(self._ws_path, self.getPath()) == False):
+            log.error("Cannot initialize a block outside of the workspace path.")
+            return False
 
+        #make sure Block.cfg files do not exist beyond the current directory
+        md_files = glob.glob(self.getPath()+"**/"+apt.MARKER, recursive=True)
+        if(len(md_files) > 1):
+            log.error("Cannot initialize a block when sub-directories are blocks.")
+            return False
 
+        if(self.isValid()):
+            print('this block is already initialized.')
+
+        if(remote != None):
+            print('setting up remote')
+
+        if(summary != None):
+            self.setMeta("summary", summary)
+
+        self.save()
         #operation was successful
         return True
 
@@ -911,13 +934,13 @@ class Block:
         '''
         #return everything, even things outside the block: scope
         if(every):
-            return self.__metadata
+            return self._meta
 
         if(key == None):
-            return self.__metadata[sect]
+            return self._meta[sect]
         #check if the key is valid
-        elif(sect in self.__metadata.keys() and key in self.__metadata[sect].keys()):
-            return self.__metadata[sect][key]
+        elif(sect in self._meta.keys() and key in self._meta[sect].keys()):
+            return self._meta[sect][key]
         else:
             return None
 
@@ -933,7 +956,7 @@ class Block:
         Returns:
             None
         '''
-        self.__metadata[sect][key] = value
+        self._meta[sect][key] = value
         pass
 
 
@@ -1033,7 +1056,7 @@ class Block:
                     print()
     
 
-    def load(self):
+    def openInEditor(self):
         '''Opens this block with the configured text-editor.'''
         log.info("Opening "+self.getTitle_old()+" at... "+self.getPath())
         apt.execute(apt.getEditor(), self.getPath())
@@ -1044,18 +1067,28 @@ class Block:
         '''
         Write the metadata back to the marker file only if the data has changed
         since initializing this block as an object in python.
+
+        Parameters:
+            meta (dict): :todo:
+        Returns:
+            success (bool): returns True if the file was written and saved.
         '''
         #do no rewrite meta data if nothing has changed
-        if(hasattr(self, "_initial_metadata")):
-            if(self._initial_metadata == self.getMeta() and meta == None):
-                return
+        if(meta == None):
+            if(hasattr(self, "_meta_backup")):
+                #do not save if backup metadata is the same at the current metadata
+                if(self._meta_backup == self.getMeta()):
+                    return False
+            #do not save if no backup metadata was created (save not necessary)
+            else:
+                return False
 
         #default is to load the block's metadata
         if(meta == None):
             meta = self.getMeta(every=True)
 
-        if(hasattr(self, "_initial_metadata")):
-            if(self._initial_metadata != self.getMeta()):
+        if(hasattr(self, "_meta_backup")):
+            if(self._meta_backup != self.getMeta()):
                 #print("its different!")
                 #print(self._initial_metadata)
                 #print(self.getMeta())
@@ -1065,12 +1098,12 @@ class Block:
         with open(self.getMetaFile(), 'w') as file:
             cfg.save(meta, file, ignore_depth=True, space_headers=True)
             file.close()
-        pass
+        return True
 
 
     def isLinked(self):
         '''Returns true if a remote repository is linked/attached to this block.'''
-        return self.grabGitRemote() != None
+        return self._repo.remoteExists()
 
 
     def copyVersionCache(self, ver, folder):
@@ -2146,7 +2179,7 @@ class Block:
 
     @DeprecationWarning
     def init_old(self, title=None, path=None, remote=None, excludeGit=False, market=None):
-        self.__metadata = {'block' : {}}
+        self._meta = {'block' : {}}
         #split title into library and block name
         _,self.__lib,self.__name,_ = Block.snapTitle(title, lower=False)
         if(remote != None):
@@ -2164,8 +2197,8 @@ class Block:
                         self._repo = git.Repo.init(self.getPath())
                 self.loadMeta()
                 return
-        elif(path == None):
-            self._path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
+        #elif(path == None):
+            #self._path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
 
         #try to see if this directory is indeed a git repo
         self._repo = None

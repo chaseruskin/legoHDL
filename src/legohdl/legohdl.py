@@ -5,7 +5,7 @@
 #   This script is the entry-point to the legohdl program. It parses the
 #   command-line arguments and contains a method for each valid command.
 
-import os, sys, shutil
+import os, sys, shutil, glob
 import git
 import logging as log
 from .__version__ import __version__
@@ -910,7 +910,7 @@ scripts)?", warning=False)
         block.create(fresh=False, git_exists=git_exists, fork=fork)
 
         if(startup):
-            block.load()
+            block.openInEditor()
         pass
 
     def identifyMarket(self, m):
@@ -1470,12 +1470,19 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
     
     def _init(self):
         '''Run the 'init' command.'''
+        cur_path = apt.fs(os.getcwd())
         
+        block = Block(cur_path, self.WS())
+        block.initialize(self.getItem(), self.getVar('remote'), self.hasFlag('fork'), self.getVar('summary'))
         pass
 
     
     def _info(self):
         '''Run the 'info' command.'''
+        #make sure the user passed in a value for the item
+        if(self.getItem() == None):
+            exit(log.error("Include a block's title to get its information."))
+
         block = self.WS().shortcut(self.getItem())
         if(block != None):
             print(block.readInfo(self.hasFlag('all'), self.hasFlag('stats'), self.hasFlag('versions'))) 
@@ -1615,7 +1622,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
         #create a new file
         if(self.hasFlag('file')):
-            Block(os.getcwd(), ws_path=self.WS().getPath(), ws_markets=self.WS().getMarkets(returnnames=True))
+            Block(os.getcwd(), self.WS())
             Block.getCurrent().newFile(self.getItem(raw=True), self.getVar("file"), self.hasFlag('force'))
             return
         
@@ -1630,7 +1637,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         #default path to make a new block :todo: allow user's to edit a setting to specify default download path
         block_path = self.WS().getPath()+L+"/"+N+"/"
         #create block object
-        b = Block(block_path, ws_path=self.WS().getPath(), ws_markets=self.WS().getMarkets(returnnames=True))
+        b = Block(block_path, self.WS())
         #create the new block
         b.create(title, cp_template=(self.hasFlag('no-template') == 0), remote=self.getVar('remote'))
         #load the block
@@ -1747,7 +1754,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         else: # :todo:
             block = self.WS().shortcut(self.getItem())
             if(block != None):
-                block.load()
+                block.openInEditor()
             else:
                 exit(log.error("No block "+self._item+" exists in your workspace."))
             pass

@@ -262,7 +262,7 @@ class Workspace:
         #print(marker_files)
         for mf in marker_files:
             pass
-            b = Block(mf, ws_path=self.getPath(), ws_markets=self.getMarkets(returnnames=True))
+            b = Block(mf, self)
             self._local_blocks += [b]
 
         #print(self._local_blocks)
