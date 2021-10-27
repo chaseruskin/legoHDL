@@ -1452,7 +1452,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
     def splitVar(self, val, delim=':'):
         '''
         Splits the value of the variable into two parts based
-        on the delimiter.
+        on the delimiter. Returns '' for second component if delim DNE.
 
         Parameters:
             val (str): the variable value
@@ -1619,12 +1619,15 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         if(N == ''):
             exit(log.error("New block must have a name."))
 
-        #default path to make a new block
+        #default path to make a new block :todo: allow user's to edit a setting to specify default download path
         block_path = self.WS().getPath()+L+"/"+N+"/"
         #create block object
         b = Block(block_path, ws_path=self.WS().getPath(), ws_markets=self.WS().getMarkets(returnnames=True))
         #create the new block
         b.create(title, cp_template=(self.hasFlag('no-template') == 0), remote=self.getVar('remote'))
+        #load the block
+        if(self.hasFlag('open')):
+            b.load()
     pass
 
 
