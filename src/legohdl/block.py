@@ -117,7 +117,6 @@ class Block:
             #are the two paths equal to each other? then this is the current block
             if(apt.isEqualPath(self.getPath(), os.getcwd())):
                 self.setCurrent(self)
-
             #load from metadata
             self.loadMeta()
             pass
@@ -390,7 +389,6 @@ class Block:
             return unsorted_vers
 
 
-
     def getTaggedVersions(self):
         '''
         Returns a list of all version #'s that had a valid TAG_ID appended from
@@ -443,6 +441,14 @@ class Block:
         elif(l1 == r1 and l2 == r2 and l3 <= r3):
             return rver
         return lver
+
+
+    def __str__(self):
+        return f'''
+        id: {hex(id(self))}
+        block: {self.M()+'.'+self.L()+'.'+self.N()+'('+self.V()+')'}
+        path: {self.getPath()}
+        '''
 
 
     @classmethod
@@ -529,6 +535,7 @@ class Block:
         self.genRemote(push)
         self.save()
         pass
+
 
     def getAvailableVers(self):
         return ['v'+self.getHighestTaggedVersion()]
@@ -1532,11 +1539,11 @@ class Block:
         
         self._top = None
         #first fill out all data on each unit
-        self.grabUnits()
+        #self.grabUnits()
         #constrain to only using the current block's design units
-        units = self.grabCurrentDesigns()
+        units = self.getUnits()
         #only grab from project-level design units
-        top_contenders = list(self.grabCurrentDesigns().keys())
+        top_contenders = list(units.keys())
 
         for name,unit in units.items():
             #if the entity is value under this key, it is lower-level
@@ -1595,8 +1602,8 @@ class Block:
 
         self._bench = None 
         #load all units
-        self.grabUnits()
-        units = self.grabCurrentDesigns()
+        #self.grabUnits()
+        units = self.getUnits()
         benches = []
         for unit in units.values():
             for dep in unit.getRequirements():
@@ -1622,7 +1629,7 @@ class Block:
                 except KeyboardInterrupt:
                     exit("\nExited prompt.")
             #assign the testbench entered by the user
-            self._bench = units[self.getLib()][validTop]
+            self._bench = self.getUnits()[validTop]
         #print what the detected testbench is
         if(self._bench != None):
             log.info("DETECTED TOP-LEVEL BENCH: "+self._bench.E())
@@ -1650,13 +1657,13 @@ class Block:
             if(top != None):
                 top = top.E()
         
-        if(top == None or top.lower() not in self.grabCurrentDesigns().keys()):
+        if(top == None or top.lower() not in self.getUnits().keys()):
             exit(log.error("Entity "+top+" not found in current block."))
         
         #get the unit from the currently available project-level blocks
-        top_entity = self.grabCurrentDesigns()[top]
+        top_entity = self.getUnits()[top]
         #fill in all unit data
-        self.grabUnits()
+        self.getUnits()
 
         tb = top = None
         top_dog = top_entity
@@ -1676,10 +1683,16 @@ class Block:
 
 
     def getFull(self, inc_ver=False):
-        if(inc_ver == False):
-            return self.M()+'.'+self.L()+'.'+self.N()
-        else:
-             return self.M()+'.'+self.L()+'.'+self.N()+"("+self.V()+")"
+        title = ''
+        #prepend market if not blank
+        if(self.M() != ''):
+            title = self.M()+'.'
+        #join together library and name
+        title = title+self.L()+'.'+self.N()
+        #append version if requested
+        if(inc_ver):
+            title = title+"("+self.V()+")"
+        return title
 
 
     def M(self):
@@ -1716,13 +1729,17 @@ class Block:
 
     def loadHDL(self):
         '''
-        Identify all HDL files within the current block and all designs within each file.
+        Identify all HDL files within the block and all designs in each file.
+
+        Only loads from HDL once and then will dynamically return its attr _units.
         
         Parameters:
             None
         Returns:
-            None
+            self._units (Map): the Unit Map object down to M/L/N level
         '''
+        if(hasattr(self, "_units")):
+            return self._units
         #open each found source file and identify their units
         #load all VHDL files
         vhd_files = self.gatherSources(apt.VHDL_CODE, path=self.getPath())
@@ -1734,7 +1751,7 @@ class Block:
             Verilog(v, M=self.M(), L=self.L(), N=self.N())
 
         self._units = Unit.Jar[self.M()][self.L()][self.N()]
-        pass
+        return self._units
 
     
     def getUnits(self, top=None):
@@ -1747,16 +1764,19 @@ class Block:
         Parameters:
             top (str): unit name to start with
         Returns:
-            None
+            units (Map): the Unit Map object down to M/L/N level
         '''
-        print(self._units)
-        
-        for u in self._units.values():
-            if(u.isChecked() == False):
-                Language.ProcessedFiles[u.getFile()].decipher()
+        units = self.loadHDL()
 
-        self.printUnits()
-        pass
+        if(top != None and top.lower() in units.keys()):
+            if(units[top].isChecked() == False):
+                Language.ProcessedFiles[units[top].getFile()].decipher()
+        else:
+            for u in units.values():
+                if(u.isChecked() == False):
+                    Language.ProcessedFiles[u.getFile()].decipher()
+        #self.printUnits()
+        return units
 
 
     def printUnits(self):
@@ -1764,6 +1784,7 @@ class Block:
             print(u)
 
 
+    @DeprecationWarning
     def grabUnits(self, toplevel=None, override=False):
         '''
         Color in (fill/complete) all units found in the design book.
@@ -1775,10 +1796,10 @@ class Block:
             Unit.Hierarchy = Graph()
         
         #get all possible units (units are incomplete (this is intended))
-        self.grabDesigns(override, "cache", "current")
+        #self.grabDesigns(override, "current")
         #self.printUnits()
         #gather all project-level units
-        project_level_units = self.grabCurrentDesigns()
+        #project_level_units = self.grabCurrentDesigns()
         
         for name,unit in project_level_units.items():
             #start with top-level unit and complete all required units in unit bank
@@ -1789,7 +1810,7 @@ class Block:
         print(Unit.printList())
         pass
 
-
+    @DeprecationWarning
     def grabDesigns(self, override, *args):
         '''
         Return incomplete (blank) unit objects from current project or cache
@@ -1803,6 +1824,7 @@ class Block:
             self.grabCacheDesigns(override)
             pass
         pass
+
 
     #return dictionary of entities with their respective files as values
     #all possible entities or packages to be used in current project
@@ -1875,6 +1897,7 @@ class Block:
         return self._cache_designs
 
 
+    @DeprecationWarning
     def grabCurrentDesigns(self, override=False):
         '''
         Gathers all VHDL and verilog source files found at current
@@ -1960,12 +1983,45 @@ class Block:
  
         return M,L,N
 
-        
+
+    def get(self, entity, about, listArch):
+        '''
+        Get various pieces of information about a given entity as well as any
+        compatible code for instantiations.
+
+        Parameters:
+            entity (str): name of entity to be fetched
+            about (bool): determine if to print the comment header
+            listArch (bool): determine if to list the architectures
+        Returns:
+            success (bool): determine if operation was successful
+        '''
+        #get quick idea of what units exist for this block
+        units = self.loadHDL()
+        if(entity.lower() not in units.keys()):
+            log.error("Entity "+entity+" not found in this block!")
+            return False
+        #collect data about requested entity
+        self.getUnits(top=entity)
+        #grab the desired entity from the Map
+        ent = units[entity]
+
+        #print comment header (about)
+        print(ent.readAbout())
+        #print list of architectures
+        if(listArch):
+            print(ent.readArchitectures())
+
+        return True
+
+
+    @DeprecationWarning
     def ports(self, mapp, lib, pure_entity, entity=None, ver=None, showArc=False):
         '''
         Print helpful port mappings/declarations of a desired entity.
         '''
-        self.grabUnits()
+        #self.grabUnits()
+        self.getUnits(top=entity)
         info = ''
         if(entity == None):
             entity = self.getMeta("toplevel")

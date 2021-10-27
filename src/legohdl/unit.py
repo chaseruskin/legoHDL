@@ -164,14 +164,22 @@ class Unit:
         return report
 
 
-    def writeArchitectures(self):
+    def readArchitectures(self):
+        '''
+        Formats the architectures into a string to be printed.
+
+        Parameters:
+            None
+        Returns:
+            (str): architecture text to print to console
+        '''
         if(len(self.getArchitectures())):
             txt = "Defined architectures for "+self.getFull()+":\n"
             for arc in self.getArchitectures():
                 txt = txt+'\t'+arc+'\n'
         else:
             txt = "No architectures are defined for "+self.getFull()+"!\n"
-        return txt+'\n'
+        return txt
 
 
     def readAbout(self):

@@ -39,9 +39,10 @@ class Language(ABC):
         #format the file path
         self._file_path = apt.fs(fpath)
 
-        if(self.getPath().lower() in self.ProcessedFiles.keys()):
-            log.info("Already processed: "+self.getPath())
-            return
+        for pf in self.ProcessedFiles.keys():
+            if(apt.isEqualPath(self.getPath(), pf)):
+                log.info("Already processed: "+self.getPath())
+                return
         
         #create a group of standard delimiters
         self._std_delimiters = "(",")",":",";",",","="

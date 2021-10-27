@@ -253,19 +253,20 @@ class Workspace:
         if(hasattr(self, "_local_blocks")):
             return self._local_blocks
 
-        self._local_blocks = dict()
+        # :todo: all local blocks only need to be loaded if multi-develop is ON
+
+        self._local_blocks = []
         #glob on the local workspace path
         print("Local Blocks on:",self.getPath())
         marker_files = glob.glob(self.getPath()+"**/*/"+apt.MARKER, recursive=True)
-        print(marker_files)
+        #print(marker_files)
         for mf in marker_files:
             pass
             b = Block(mf, ws_path=self.getPath(), ws_markets=self.getMarkets(returnnames=True))
-            #self._local_blocks[mf] = mf
-        #print(self._local_blocks)
-        
-        pass
+            self._local_blocks += [b]
 
+        #print(self._local_blocks)
+        return self._local_blocks
 
 
     def loadCacheBlocks(self):

@@ -614,15 +614,17 @@ scripts)?", warning=False)
 
     def _graph(self):
         '''Run the 'graph' command.'''
+        self.WS().loadLocalBlocks()
+
+        block = Block.getCurrent()
 
         top = self._item if(self._item != '') else None
-        block = self.blockCWD
 
-        top_dog,_,_ = self.blockCWD.identifyTopDog(top, inc_sim=True)
+        top_dog,_,_ = block.identifyTopDog(top, inc_sim=True)
         
         log.info("Generating dependency tree...")
         #start with top unit (returns all units if no top unit is found (packages case))
-        block.grabUnits(top_dog, override=False)
+        block.getUnits(top_dog)
         hierarchy = Unit.Hierarchy
 
         #print the dependency tree
@@ -641,8 +643,8 @@ scripts)?", warning=False)
 
         print('---BLOCK ORDER---')
         #ensure the current block is the last one on order
-        block_order.remove(block.getTitle(mrkt=True))
-        block_order.append(block.getTitle(mrkt=True))
+        block_order.remove(block.getFull())
+        block_order.append(block.getFull())
         for i in range(0, len(block_order)):
             b = block_order[i]
             print(b,end='')
@@ -1399,6 +1401,16 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
     pass
 
 
+    def _get(self):
+        '''Run the 'get' command.'''
+        self.WS().loadLocalBlocks()
+        #make sure an entity is being requested
+        if(self.itemEmpty()):
+            exit(log.error("Pass an entity name to get."))
+        Block.getCurrent().get(self._item, self.hasFlag('about'), self.hasFlag('arch'))
+        pass
+
+
     def checkVar(self, key, val):
         '''
         Checks if val equals the value stored behind the key in the
@@ -1823,7 +1835,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
 
         elif('get' == cmd):
-
+            self._get()
             pass
 
         elif('graph' == cmd):
