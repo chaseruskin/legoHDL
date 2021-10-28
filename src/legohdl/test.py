@@ -211,7 +211,18 @@ def main():
         Market.tidy()
 
         #shutil.rmtree(Market.Jar['soc-blocks'].getMarketDir(), onerror=apt.rmReadOnly)
-    
+    if(True):
+        print('\n---LANGUAGE CLASSES---')
+
+        src = ['']*4
+        src[0] = '/Users/chase/develop/eel4712c/lab1/src/fa.vhd'
+        src[1] = '/Users/chase/develop/eel4712c/lab2/src/alu_ns.vhd'
+        src[2] = '/Users/chase/develop/eel4712c/DungeonRun/main_module.vhd'
+        src[3] = '/Users/chase/develop/eel4712c/DungeonRun/elapsed_time.vhd'
+
+        for s in src[:4]:
+            Vhdl(s, M='', L='B-Library', N='B-Name')
+        pass
     if(False):
         print('\n---ENTITY CLASS---')
         fp1 = '/Users/chase/Develop/eel4712c/lab1/src/fa.vhd'
@@ -262,7 +273,7 @@ def main():
         #print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeInstance(form=Unit.Language.VHDL))
         #print(Unit.Jar['']['sample']['test']['andEX'].getInterface().writeInstance(form=Unit.Language.VERILOG))
     
-    if(True):
+    if(False):
         print('\n---BLOCK CLASS---')
         b1 = Block(path='/Users/chase/Develop/eel4712c/lab1/')
         print(b1.init2('/Users/chase/Develop/eel4712c/lab1/'))
@@ -271,9 +282,8 @@ def main():
         b1.getUnits()
 
         test_path = '/Users/chase/Develop/eel4712c/library1/labX/'
-        b2 = Block()
-        b2.init2(test_path)
-        success = b2.create2("open-ip2.sample.myblock", remote='https://gitlab.com/chase800/block.git')
+        b2 = Block(test_path)
+        success = b2.create("open-ip2.sample.myblock", remote='https://gitlab.com/chase800/block.git')
 
         #clean up test block
         if(success):

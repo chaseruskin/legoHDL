@@ -57,6 +57,8 @@ class Language(ABC):
 
         #add to processed list
         self.ProcessedFiles[self.getPath()] = self
+
+        self.produceCode()
         pass
     
     
@@ -85,6 +87,11 @@ class Language(ABC):
     #write out the entity but as a component
     @abstractmethod
     def writeComponentDeclaration(self):
+        pass
+
+
+    #:todo: replace decode
+    def decrypt(self):
         pass
 
 
@@ -159,6 +166,77 @@ class Language(ABC):
         with open(self._file_path, 'w') as f:
             for line in content:
                 f.write(line)
+        pass
+
+
+    def produceCode(self):
+        '''
+        Turn an HDL file into a list of its statements. 
+        
+        Omits comments and preserves case sensitivity. Makes sure that certain
+        keywords are an individual component within the list.
+        
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        code_stream = []
+        #certain characters that must be separated into own items in the statement list
+        seps = [':', '=', '(', ')', '>', '<']
+        dual_chars = [':=', '<=', '=>']
+        #current statement
+        statement = []
+        comment = '--'
+        #read the HDL file to break into words
+        with open(self.getPath(), 'r') as file:
+            #transform lines into statements
+            for line in file.readlines():
+                #strip off an excessive whitespace
+                line = line.strip()
+                #reduce down to valid code (non-comments)
+                c_index = line.find(comment)
+                if(c_index > -1):
+                    line = line[:c_index]
+                #skip if line is blank
+                if(len(line) == 0):
+                    continue
+                
+                #make sure certain characters will be their own items in the statement
+                for sep in seps:
+                    line = line.replace(sep, ' '+sep+' ')
+
+                #find the ';' and create new statements if found
+                sc_index = -1
+                while line.count(';'):
+                    sc_index = line.find(';')
+                    statement += line[:sc_index].split()
+
+                    #combine dual characters together
+                    statement_final = []
+                    for i in range(len(statement)-1):
+                        for dc in dual_chars:
+                            if(statement[i] == dc[0] and statement[i+1] == dc[1]):
+                                statement_final.append(dc)
+                                statement[i] = ''
+                                statement[i+1] = '' #make empty
+                                continue
+                        if(statement[i] != ''):
+                            statement_final.append(statement[i])
+                    #make sure to add last item
+                    if(statement[-1] != ''):
+                            statement_final.append(statement[-1])
+
+                    code_stream += [statement_final]
+                    statement = []
+                    line = line[sc_index+1:]
+
+                #add any code after ';'
+                statement += line[sc_index+1:].split()
+            pass
+
+        for cs in code_stream:
+            print(cs)
         pass
 
     
