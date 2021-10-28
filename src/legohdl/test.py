@@ -220,7 +220,7 @@ def main():
         src[2] = '/Users/chase/develop/eel4712c/DungeonRun/main_module.vhd'
         src[3] = '/Users/chase/develop/eel4712c/DungeonRun/elapsed_time.vhd'
 
-        for s in src[:4]:
+        for s in src[:1]:
             Vhdl(s, M='', L='B-Library', N='B-Name')
         pass
     if(False):

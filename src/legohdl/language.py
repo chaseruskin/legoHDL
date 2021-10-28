@@ -183,24 +183,50 @@ class Language(ABC):
         '''
         code_stream = []
         #certain characters that must be separated into own items in the statement list
-        seps = [':', '=', '(', ')', '>', '<']
+        seps = [':', '=', '(', ')', '>', '<', ',']
         dual_chars = [':=', '<=', '=>']
         #current statement
         statement = []
         comment = '--'
+        multi = ('/*', '*/')
+        in_multi = False
         #read the HDL file to break into words
         with open(self.getPath(), 'r') as file:
             #transform lines into statements
             for line in file.readlines():
                 #strip off an excessive whitespace
                 line = line.strip()
+
                 #reduce down to valid code (non-comments)
                 c_index = line.find(comment)
                 if(c_index > -1):
                     line = line[:c_index]
-                #skip if line is blank
-                if(len(line) == 0):
+                #find a beginning to a multi-line comment section
+                m0_index = line.find(multi[0])
+                if(m0_index > -1):
+                    line_l = line[:m0_index]
+                #find an end to a multi-line comment section
+                m1_index = line.find(multi[1])
+                if(m1_index > -1):
+                    in_multi = False
+                    #trim everything within the comment section
+                    line_r = line[m1_index+1+len(multi[1]):]
+                #reset line if a multi-line comment was detected
+                if(m0_index > -1 or m1_index > -1):
+                    line = ''
+                #add lhs of multi-line comment
+                if(m0_index > -1):
+                    line = line_l
+                #add rhs of multi-line comment
+                if(m1_index > -1):
+                    line = line + line_r
+
+                #skip if line is blank or within a multi-line comment section
+                if((len(line) == 0 and m0_index <= -1) or in_multi):
                     continue
+                #enter the mult-line comment section for next line
+                if(m0_index > -1 and m1_index <= -1):
+                    in_multi = True
                 
                 #make sure certain characters will be their own items in the statement
                 for sep in seps:
@@ -229,6 +255,7 @@ class Language(ABC):
 
                     code_stream += [statement_final]
                     statement = []
+                    #update remaining line string
                     line = line[sc_index+1:]
 
                 #add any code after ';'
