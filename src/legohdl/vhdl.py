@@ -79,6 +79,7 @@ class Vhdl(Language):
                     in_scope = False
                 if(cs[i+1].lower() == arch_name.lower() or cs[i+1] == 'architecture'):
                     arch_name = ''
+                    in_scope = False
             #skip while inside an architecture
             elif(arch_name != ''):
                 continue
@@ -148,7 +149,7 @@ class Vhdl(Language):
             return uses
         
 
-        if(verbose):
+        if(verbose or True):
             log.info("Deciphering VHDL file... "+self.getPath())
 
         #parse into words
@@ -166,7 +167,7 @@ class Vhdl(Language):
 
         in_pkg = in_body = in_true_body = False
         in_entity = in_arch = in_true_arch = in_config = False
-        unit_name = arch_name = body_name = config_name =  None
+        unit_name = arch_name = body_name = config_name =  ''
         isEnding = False
 
         #print("###")
@@ -195,14 +196,18 @@ class Vhdl(Language):
                 # this is ending a entity declaration
                 if(isEnding):
                     in_entity = isEnding = False
+                #elif(i > 0 and cs[i-1] == 'use')
                 # this is the entity declaration
                 elif(not in_arch):
+                    print('here2')
                     in_entity = True
                     unit_name = cs[i+1]
+                    #print("ENTITY:",unit_name)
                 # this is a component instantiation
                 elif(in_arch and in_true_arch):
                     L,U,_ = splitBlock(cs[i+1])
                     #print(L,U)
+                    print('or')
                     if(L in Unit.allL()):
                         #print(Unit.Bottle[L][U])
                         if(U in Unit.Bottle[L].keys()): #:todo:
@@ -237,7 +242,7 @@ class Vhdl(Language):
                         end_i = cs[i:].index('end')
                     if('generic' in cs[i:] and cs[i:].index('generic') < end_i):
                         end_i = cs[i:].index('generic')
-                    #update uint's interface
+                    #update unit's interface
                     self.collectPorts(current_map[unit_name], cs[i+1:i+end_i])
             elif(code_word == ":"):
                 # :todo: entity instantiations from within deep architecture using full title (library.pkg.entity)
@@ -270,6 +275,7 @@ class Vhdl(Language):
             elif(code_word == 'architecture'):
                 # this is ending an architecture section
                 if(isEnding):
+                    print('ending',arch_name)
                     using_units = resetNamespace(using_units)
                     in_arch = in_true_arch = isEnding = False
                 # this is the architecture naming
@@ -280,6 +286,9 @@ class Vhdl(Language):
                     #ex: architecture rtl of entity1
                     #skip 'of' keyword and identify entity name
                     whos_arch = cs[i+3]
+                    #uncomment if running into problems with multiple entities/archs in one file
+                    #unit_name = whos_arch 
+                    print("beginning",arch_name)
                     current_map[whos_arch].addArchitecture(arch_name)
                 pass
             elif(code_word == "component"):
@@ -312,7 +321,7 @@ class Vhdl(Language):
             elif(code_word == 'end'):
                 isEnding = True
                 pass
-            elif(code_word == unit_name):
+            elif(code_word == unit_name.lower()):
                 # this is ending the unit declaration
                 if(isEnding):
                     if(in_true_body):
@@ -320,36 +329,48 @@ class Vhdl(Language):
                     in_entity = in_pkg = in_body = in_true_body = isEnding = False
                 else:
                     pass
-            elif(code_word == arch_name):
+            elif(code_word == arch_name.lower()):
                 # this is ending the architecture section
                 if(isEnding):
+                    print('ending',arch_name)
                     using_units = resetNamespace(using_units)
                     in_arch = in_true_arch = isEnding = False
                 else:
                     pass
-            elif(code_word == body_name):
+            elif(code_word == body_name.lower()):
                 # this is ending the package body section
                 if(isEnding):
                     using_units = resetNamespace(using_units)
                     in_body = in_true_body = isEnding = False
                 else:
                     pass
-            elif(code_word == config_name):
+            elif(code_word == config_name.lower()):
                 # this is ending the configuration section
                 if(isEnding):
                     in_config = isEnding = False
                 else:
                     pass
+            # :todo: needs better parsing
+            elif(i > 0 and cs[i-1].lower() == 'end'):
+                if(isEnding):
+                    print('here',in_entity,unit_name)
+                    if(in_true_body == True or in_true_arch == True):
+                        using_units = resetNamespace(using_units)
+                    in_entity = False if(in_entity) else in_entity
+                    in_arch = False if(in_arch and in_true_arch) else in_arch
+                    in_true_arch = False if(in_arch and in_true_arch) else in_true_arch
+                    in_pkg = False if(in_pkg) else in_pkg
+                    isEnding = False
             else:
                 #look for a full package call
                 if(in_entity or in_arch or in_pkg or in_body):
                     L,U,E = splitBlock(code_word)
                     #append if the package exists
-                    if(L in Unit.Bottle.keys() and U != unit_name):
+                    if(L in Unit.Bottle.keys() and U != unit_name.lower()):
                         if(U in Unit.Bottle[L].keys()):
                             using_units.append(Unit.loc(u=U, l=L))
                     #append if the entity exists (three-part unit name (library.package.entity))
-                    if(L in Unit.Bottle.keys() and E != unit_name):
+                    if(L in Unit.Bottle.keys() and E != unit_name.lower()):
                         if(E in Unit.Bottle[L].keys()):
                             using_units.append(Unit.loc(u=E, l=L))
             pass

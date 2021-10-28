@@ -52,6 +52,8 @@ class Git:
                     log.error("Cannot clone to an already initialized git repository.")
             #verify its a valid local repository and clone from local repository
             elif(self.isValidRepo(clone, remote=False) == True and self.isBlankRepo(clone) == False):
+                if(len(os.listdir(self.getPath()))):
+                    exit(log.error("Cannot clone to a non-empty directory."))
                 apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
                 pass
         #check if git exists here for local repository
@@ -155,7 +157,7 @@ class Git:
             url (str): the git remote repository to connect to
             force (bool): overwrite remote url (remove it) even if its invalid
         Returns:
-            None
+            (bool): determine if the operation was successful
         '''
         r = self.getRemoteName()
         #force will be used if wanting to force override even if invalid url
@@ -168,17 +170,22 @@ class Git:
             #update remote's name because it is being added
             self._remote_name = r
             self._remote_url = url
+            return True
         #remove remote connection
         elif(r != '' and (not valid_url and force)):
             self.git('remote', 'remove', r)
             #update remote's name to reflect nothing because its being deleted
             self._remote_name = ''
             self._remote_url = ''
+            return True
         #modify existing remote connection
         elif(r != '' and valid_url):
             self.git('remote', 'set-url', r, url)
             self._remote_url = url
-        pass
+            return True
+
+        #none of the paths were chosen
+        return False
 
 
     def isLatest(self):

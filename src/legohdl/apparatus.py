@@ -289,6 +289,31 @@ scripts)?", warning=False)
         return cls.fs(path1) == cls.fs(path2)
 
 
+    @classmethod
+    def makeTmpDir(cls):
+        '''
+        Create a hidden temporary directory within legoHDL.
+
+        Parameters:
+            None
+        Returns:
+            (str): the path to the temporary directory
+        '''
+        tmp_path = cls.fs(cls.HIDDEN+"tmp/")
+        #check if temporary directory already exists
+        cls.cleanTmpDir()
+        #create temporary directory
+        os.makedirs(tmp_path)
+        return tmp_path
+
+    @classmethod
+    def cleanTmpDir(cls):
+        tmp_path = cls.fs(cls.HIDDEN+"tmp/")
+        #check if temporary directory already exists
+        if(os.path.exists(tmp_path)):
+            shutil.rmtree(tmp_path, onerror=cls.rmReadOnly)
+        
+
     #[!] PREPARING FOR REMOVAL $
     @classmethod
     def getWorkspaceNames(cls):

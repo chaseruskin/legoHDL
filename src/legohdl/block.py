@@ -764,20 +764,104 @@ class Block:
 
         #make sure Block.cfg files do not exist beyond the current directory
         md_files = glob.glob(self.getPath()+"**/"+apt.MARKER, recursive=True)
-        if(len(md_files) > 1):
+        if(len(md_files) > 0):
             log.error("Cannot initialize a block when sub-directories are blocks.")
             return False
 
-        if(self.isValid()):
-            print('this block is already initialized.')
+        #two scenarios: block exists already or block does not exist
+        already_valid = self.isValid()
+        #block currently exists at this folder
+        if(already_valid):
+            #check if trying to configure remote (must be empty)
+            if(remote != None and Git.isBlankRepo(remote)):
+                success = self._repo.setRemoteURL(remote)
+                #update metadata if successfully set the url
+                if(success):
+                    self.setMeta("remote",remote)
+        #block does not currently exist at this folder
+        else:
+            exists = False
+            #check if trying to use code from a remote repository
+            if(remote != None):
+                if(Git.isValidRepo(remote, remote=True)):
+                    #make sure repository is not empty
+                    if(Git.isBlankRepo(remote) == True):
+                        log.error("Cannot initialize from an empty remote. See the 'new' command.")
+                        return False
+                    #create and clone to temporary spot
+                    tmp = apt.makeTmpDir()
+                    Git(tmp, clone=remote)
 
-        if(remote != None):
-            print('setting up remote')
+                    #check if there is a block.cfg file here
+                    for f in os.listdir(tmp):
+                        if(f == apt.MARKER):
+                            print('a block file exists!')
+                            exists = True
+                            break
 
+                    #check to make sure a valid title was given (repo coverage)
+                    if(exists == False and self.validTitle(title) == False):
+                            return False
+
+                    #move folder contents to metadata
+                    self._repo = Git(self.getPath(), clone=tmp)
+                    #clean up temporary spot
+                    apt.cleanTmpDir()
+                    pass
+
+            #check to make sure a valid title was given (non-remote coverage)
+            if(exists == False and self.validTitle(title) == False):
+                return False
+
+            #create a Block.cfg file
+            if(exists == False):
+                with open(self.getPath()+apt.MARKER, 'w') as mdf:
+                    cfg.save(self.LAYOUT, mdf, ignore_depth=True, space_headers=True)
+
+            #load the new metadata
+            self.loadMeta()
+
+            #input all title components into metadata
+            if(exists == False):
+                M,L,N,_ = Block.snapTitle(title)
+                self.setMeta('market', M)
+                self.setMeta('library', L)
+                self.setMeta('name', N)
+            pass
+
+        #create a git repository if DNE
+        if(Git.isValidRepo(self.getPath()) == False):
+            self._repo = Git(self.getPath())
+
+        #perform safety measurements
+        self.secureMeta()
+
+        #check if trying to configure the remote for not already initialized block
+        if(remote != None and already_valid == False):
+            #set the remote URL
+            if(fork == False):
+                self._repo.setRemoteURL(remote)
+                #update metadata if successfully set the url
+                self.setMeta("remote", self._repo.getRemoteURL())
+            #clear the remote url from this repository
+            else:
+                self._repo.setRemoteURL('', force=True)
+                #update metadata if successfully cleared the url
+                self.setMeta("remote", self._repo.getRemoteURL())
+                pass
+
+        #check if trying to configure the summary
         if(summary != None):
             self.setMeta("summary", summary)
+        
+        self.save(force=True)
 
-        self.save()
+        #if not previously already valid, add and commit all changes
+        if(already_valid == False):
+            self._repo.add('.')
+            self._repo.commit('Initializes legohdl block')
+            self._repo.push()
+
         #operation was successful
         return True
 
@@ -834,6 +918,30 @@ class Block:
 
         #operation was successful
         return True
+
+
+    def validTitle(self, title):
+        '''
+        Checks if the given title is valid; i.e. it has a least a library and
+        name, and it is not already taken.
+
+        Parameters:
+            title (str): M.L.N.V format
+        Returns:
+            valid (bool): determine if the title can be used
+        '''
+        valid = True
+
+        M,L,N,V = Block.snapTitle(title)
+
+        if(valid and N == ''):
+            log.erro("Block must have a name component.")
+            valid = False
+        if(valid and L == ''):
+            log.error("Block must have a library component.")
+            valid = False
+
+        return valid
 
 
     #dynamically grab the origin url if it has been changed/added by user using git
@@ -1063,18 +1171,19 @@ class Block:
         pass
     
 
-    def save(self, meta=None):
+    def save(self, meta=None, force=False):
         '''
         Write the metadata back to the marker file only if the data has changed
         since initializing this block as an object in python.
 
         Parameters:
             meta (dict): :todo:
+            force (bool): determine if to save no matter _meta_backup status
         Returns:
             success (bool): returns True if the file was written and saved.
         '''
         #do no rewrite meta data if nothing has changed
-        if(meta == None):
+        if(meta == None and force == False):
             if(hasattr(self, "_meta_backup")):
                 #do not save if backup metadata is the same at the current metadata
                 if(self._meta_backup == self.getMeta()):

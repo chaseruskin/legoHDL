@@ -1616,6 +1616,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 apt.save()
         pass
 
+
     # [!] NEW COMMAND
     def _new(self):
         '''Run 'new' command.'''
@@ -1627,12 +1628,10 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             return
         
         title = self.getItem()
-        M,L,N,V = Block.snapTitle(title)
-
-        if(L == ''):
-            exit(log.error("New block must have a library."))
-        if(N == ''):
-            exit(log.error("New block must have a name."))
+        #make sure a valid title is captured
+        if(Block.validTitle(title) == False):
+            return
+        M,L,N,_ = Block.snapTitle(title)
 
         #default path to make a new block :todo: allow user's to edit a setting to specify default download path
         block_path = self.WS().getPath()+L+"/"+N+"/"
