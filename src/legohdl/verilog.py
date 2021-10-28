@@ -44,11 +44,10 @@ class Verilog(Language):
         self.spinCode()
         ###
 
-        self._about_txt = self.getCommentBlock()
-
         #run with VERILOG decoder
         self.identifyDesigns()
         pass
+
 
     def identifyDesigns(self):
         '''
@@ -74,7 +73,7 @@ class Verilog(Language):
         for code_seg in c_statements:
             if(code_seg[0] == 'module'):
                 print(code_seg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self._about_txt)]
+                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self.getAbout())]
         return self._designs
 
 

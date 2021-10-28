@@ -43,8 +43,6 @@ class Vhdl(Language):
         self.spinCode()
         ###
 
-        self._about_txt = self.getCommentBlock()
-
         #run with VHDL decoder
         self.identifyDesigns()
         pass
@@ -84,13 +82,13 @@ class Vhdl(Language):
         for code_seg in c_statements:
             if(code_seg[0].lower() == 'entity'):
                 print(code_seg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self._about_txt)]
+                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self.getAbout())]
             elif(code_seg[0].lower() == 'package' and code_seg[1].lower() != 'body'):
                 print(code_seg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self._about_txt)]
+                self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self.getAbout())]
             elif(code_seg[0].lower() == 'configuration'):
                 print(code_seg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.CONFIGURATION, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self._about_txt)]
+                self._designs += [Unit(self.getPath(), Unit.Design.CONFIGURATION, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self.getAbout())]
 
         return self._designs
 

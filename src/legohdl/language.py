@@ -10,7 +10,7 @@
 #   entities/design units from its code, depending on if its 1 of the 2 
 #   supported languages: VHDL or verilog.
 
-import sys,os
+import sys
 from abc import ABC, abstractmethod
 from .apparatus import Apparatus as apt
 import logging as log
@@ -44,18 +44,19 @@ class Language(ABC):
                 log.info("Already processed: "+self.getPath())
                 return
         
-        #create a group of standard delimiters
+        #create a group of standard delimiters :remove:
         self._std_delimiters = "(",")",":",";",",","="
 
-        #remember what block owns this file
+        #remember what block owns this file :todo: make neater (pass a tuple)
         self._M = M if(M != None) else ''
         self._L = L if(L != None) else ''
         self._N = N if(N != None) else ''
         self._V = V if(V != None) else ''
 
-        #self.KEYWORDS = []
+        self._multi = ('/*', '*/')
 
-        #add to processed list
+        #add to processed list :todo: use indices in a table instead? Then
+        #give this index to the unit that is owned by this file
         self.ProcessedFiles[self.getPath()] = self
         pass
     
@@ -71,18 +72,21 @@ class Language(ABC):
 
 
     #generate string of component's signal declarations to be interfaced with the port
+    #:refactor/remove:
     @abstractmethod
     def writeComponentSignals(self):
         pass
 
 
     #write out the mapping instance of an entity (can be pure instance using 'entity' keyword also)
+    #:refactor/remove:
     @abstractmethod
     def writeComponentMapping(self, pureEntity=False, lib=''):
         pass
 
 
-    #write out the entity but as a component
+    #write out the entity but as a component 
+    #:refactor/remove:
     @abstractmethod
     def writeComponentDeclaration(self):
         pass
@@ -91,6 +95,208 @@ class Language(ABC):
     #:todo: replace decode
     def decrypt(self):
         pass
+
+
+    def spinCode(self):
+        '''
+        Turn an HDL file into a list of its statements. 
+        
+        Omits comments and preserves case sensitivity. Makes sure that certain
+        tokens are an individual component within the list. 
+        
+        Uses _comment (str) to specify the single-line comment token. 
+        Uses _seps ([str]) to determine what characters deserve their own index. 
+        Uses _dual_chars ([str]) to combine any two-character tokens to be a single index.
+        Uses _multi ((str, str)) to identify multi-line comment sections.
+        
+        Dynamically creates attr _code_stream so the operation can be reused.
+
+        Parameters:
+            None
+        Returns:
+            _code_stream ([[str]]): a list of statements that are word-separated
+        '''
+        #dynamic return once operation has been performed
+        if(hasattr(self, "_code_stream")):
+            return self._code_stream
+
+        self._code_stream = []
+
+        #current statement
+        statement = []
+        in_multi = False
+
+        #read the HDL file to break into words
+        with open(self.getPath(), 'r') as file:
+            #transform lines into statements
+            for line in file.readlines():
+                #strip off an excessive whitespace
+                line = line.strip()
+
+                #reduce down to valid code (non-comments)
+                c_index = line.find(self._comment)
+                if(c_index > -1):
+                    line = line[:c_index]
+                #find a beginning to a multi-line comment section
+                m0_index = line.find(self._multi[0])
+                if(m0_index > -1):
+                    line_l = line[:m0_index]
+                #find an end to a multi-line comment section
+                m1_index = line.find(self._multi[1])
+                if(m1_index > -1):
+                    in_multi = False
+                    #trim everything within the comment section
+                    line_r = line[m1_index+len(self._multi[1]):]
+                #reset line if a multi-line comment was detected
+                if(m0_index > -1 or m1_index > -1):
+                    line = ''
+                #add lhs of multi-line comment
+                if(m0_index > -1):
+                    line = line_l
+                #add rhs of multi-line comment
+                if(m1_index > -1):
+                    line = line + line_r
+
+                #skip if line is blank or within a multi-line comment section
+                if((len(line) == 0 and m0_index <= -1) or in_multi):
+                    continue
+                #enter the mult-line comment section for next line
+                if(m0_index > -1 and m1_index <= -1):
+                    in_multi = True
+                
+                #make sure certain characters will be their own items in the statement
+                for sep in self._seps:
+                    line = line.replace(sep, ' '+sep+' ')
+
+                #find the ';' and create new statements if found
+                sc_index = -1
+                while line.count(';'):
+                    sc_index = line.find(';')
+                    statement += line[:sc_index].split()
+
+                    #combine dual characters together
+                    statement_final = []
+                    for i in range(len(statement)-1):
+                        for dc in self._dual_chars:
+                            if(statement[i] == dc[0] and statement[i+1] == dc[1]):
+                                statement_final.append(dc)
+                                #make empty so these indices don't get added
+                                statement[i] = ''
+                                statement[i+1] = '' 
+                                continue
+                        if(statement[i] != ''):
+                            statement_final.append(statement[i])
+                    #make sure to add last item
+                    if(statement[-1] != ''):
+                            statement_final.append(statement[-1])
+
+                    self._code_stream += [statement_final]
+                    statement = []
+                    #update remaining line string
+                    line = line[sc_index+1:]
+
+                #add any code after ';'
+                statement += line[sc_index+1:].split()
+            pass
+
+        for cs in self._code_stream:
+           print(cs)
+           pass
+        return self._code_stream
+
+
+    def getAbout(self):
+        '''
+        Read the beginning of the file and return all the text hidden in comments,
+        as-is. Reads up until a non-comment line (line can be empty).
+
+        Dynamically creates attr _about (str) to be reused.
+
+        Parameters:
+            None
+        Returns:
+            _about (str): the text behind the first continuous block of comments
+        '''
+        #return text if already computed
+        if(hasattr(self, "_about")):
+            return self._about
+
+        self._about = ''
+        in_multi = False
+        in_single = False
+
+        #open the HDL file
+        with open(self.getPath(), 'r') as file:
+            #read every line
+            for line in file.readlines():
+                #every newline starts off as not a comment
+                in_single = False
+
+                #strip off an excessive whitespace
+                if(in_multi):
+                    line = line.replace('\n','')
+                else:
+                    line = line.strip()
+
+                #find a beginning to a multi-line comment section
+                m0_index = line.find(self._multi[0])
+                if(m0_index > -1):
+                    line = line[m0_index+len(self._multi[0]):]
+                    in_multi = True
+
+                #grab only single-line comment if not in multi-line section
+                c_index = line.find(self._comment)
+                if(c_index > -1 and not in_multi):
+                    line = line[c_index+len(self._comment):]
+                    in_single = True
+
+                #find an end to a multi-line comment section
+                m1_index = line.find(self._multi[1])
+                if(m1_index > -1 and in_multi):
+                    #keep everything within the comment section
+                    line = line[:m1_index]
+
+                #skip if line is blank or within a multi-line comment section
+                if(in_multi or in_single):
+                    self._about = self._about + line + '\n'
+                #exit when not in comments anymore
+                else:
+                    break
+
+                #exit the mult-line comment section for next line
+                if(m1_index > -1 and in_multi):
+                    in_multi = False
+                pass
+            pass
+
+        return self._about
+
+
+    def getPath(self):
+        return self._file_path
+
+
+    def M(self):
+        return self._M
+
+
+    def L(self):
+        return self._L
+
+
+    def N(self):
+        return self._N
+
+
+    def V(self):
+        return self._V
+
+
+    def __str__(self):
+        return f'''
+        file: {self.getPath()}
+        owner: {self.M()+'.'+self.L()+'.'+self.N()+'('+self.V()+')'}
+        '''
 
 
     # :todo: rename and polish
@@ -167,115 +373,21 @@ class Language(ABC):
         pass
 
 
-    def spinCode(self):
-        '''
-        Turn an HDL file into a list of its statements. 
-        
-        Omits comments and preserves case sensitivity. Makes sure that certain
-        tokens are an individual component within the list. 
-        
-        Uses _comment (str) to specify the single-line comment token. 
-        Uses _seps ([str]) to determine what characters deserve their own index. 
-        Uses _dual_chars ([str]) to combine any two-character tokens to be a single index.
-        
-        Dynamically creates attr _code_stream so the operation can be reused.
 
-        Parameters:
-            None
-        Returns:
-            _code_stream ([[str]]): a list of statements that are word-separated
-        '''
-        #dynamic return once operation has been performed
-        if(hasattr(self, "_code_stream")):
-            return self._code_stream
 
-        self._code_stream = []
 
-        #current statement
-        statement = []
-        multi = ('/*', '*/')
-        in_multi = False
 
-        #read the HDL file to break into words
-        with open(self.getPath(), 'r') as file:
-            #transform lines into statements
-            for line in file.readlines():
-                #strip off an excessive whitespace
-                line = line.strip()
-
-                #reduce down to valid code (non-comments)
-                c_index = line.find(self._comment)
-                if(c_index > -1):
-                    line = line[:c_index]
-                #find a beginning to a multi-line comment section
-                m0_index = line.find(multi[0])
-                if(m0_index > -1):
-                    line_l = line[:m0_index]
-                #find an end to a multi-line comment section
-                m1_index = line.find(multi[1])
-                if(m1_index > -1):
-                    in_multi = False
-                    #trim everything within the comment section
-                    line_r = line[m1_index+1+len(multi[1]):]
-                #reset line if a multi-line comment was detected
-                if(m0_index > -1 or m1_index > -1):
-                    line = ''
-                #add lhs of multi-line comment
-                if(m0_index > -1):
-                    line = line_l
-                #add rhs of multi-line comment
-                if(m1_index > -1):
-                    line = line + line_r
-
-                #skip if line is blank or within a multi-line comment section
-                if((len(line) == 0 and m0_index <= -1) or in_multi):
-                    continue
-                #enter the mult-line comment section for next line
-                if(m0_index > -1 and m1_index <= -1):
-                    in_multi = True
-                
-                #make sure certain characters will be their own items in the statement
-                for sep in self._seps:
-                    line = line.replace(sep, ' '+sep+' ')
-
-                #find the ';' and create new statements if found
-                sc_index = -1
-                while line.count(';'):
-                    sc_index = line.find(';')
-                    statement += line[:sc_index].split()
-
-                    #combine dual characters together
-                    statement_final = []
-                    for i in range(len(statement)-1):
-                        for dc in self._dual_chars:
-                            if(statement[i] == dc[0] and statement[i+1] == dc[1]):
-                                statement_final.append(dc)
-                                #make empty so these indices don't get added
-                                statement[i] = ''
-                                statement[i+1] = '' 
-                                continue
-                        if(statement[i] != ''):
-                            statement_final.append(statement[i])
-                    #make sure to add last item
-                    if(statement[-1] != ''):
-                            statement_final.append(statement[-1])
-
-                    self._code_stream += [statement_final]
-                    statement = []
-                    #update remaining line string
-                    line = line[sc_index+1:]
-
-                #add any code after ';'
-                statement += line[sc_index+1:].split()
-            pass
-
-        for cs in self._code_stream:
-           print(cs)
-           pass
-        return self._code_stream
 
     
-    # :todo: refactor and polish
+
+
+# ==============================================================================
+# ==============================================================================
+# === ARCHIVED CODE... TO DELETE ===============================================
+# ==============================================================================
+# ==============================================================================
+# :todo: refactor and polish
+    #@DeprecationWarning
     def generateCodeStream(self, keep_case, keep_term, *extra_parsers, keep_parenth=True):
         '''
         Turn an HDL file into a list of its words.
@@ -341,7 +453,6 @@ class Language(ABC):
 
             return chopped
 
-
         code_stream = []
         in_comments = False
         #read the HDL file to break into words
@@ -403,6 +514,7 @@ class Language(ABC):
         return code_stream
 
 
+    @DeprecationWarning
     def getCommentBlock(self):
         '''
         Read the beginning of the file and return all the text hidden in comments,
@@ -415,6 +527,7 @@ class Language(ABC):
         '''
         a_txt = ''
         in_cmts = False
+
         with open(self.getPath(), 'r') as file:
             for line in file.readlines():
                 line = line.strip()
@@ -425,12 +538,11 @@ class Language(ABC):
                 #is this line a comment line?
                 c_start = line.find(self._comment)
                 #is this line a multi-line comment?
-                if(self._multi_comment != None):
-                    mc_start = line.find(self._multi_comment[0])
-                    if(mc_start > -1):
-                        if(mc_start < c_start or c_start <= -1):
-                            c_start = mc_start
-                            in_cmts = True
+                mc_start = line.find(self._multi[0])
+                if(mc_start > -1):
+                    if(mc_start < c_start or c_start <= -1):
+                        c_start = mc_start
+                        in_cmts = True
                 
                 #stop collecting text if outside of comments
                 if(c_start <= -1 and in_cmts == False):
@@ -439,8 +551,8 @@ class Language(ABC):
                 #by default capture the rest of the line as text
                 c_end = len(line)
                 #handle leaving multi-line comment sections
-                if(self._multi_comment != None):
-                    mc_end = line.find(self._multi_comment[1])
+                if(self._multi != None):
+                    mc_end = line.find(self._multi[1])
                     if(mc_end > -1):
                         in_cmts = False
                         c_end = mc_end
@@ -453,29 +565,4 @@ class Language(ABC):
         return a_txt
 
 
-    def getPath(self):
-        return self._file_path
-
-
-    def M(self):
-        return self._M
-
-
-    def L(self):
-        return self._L
-
-
-    def N(self):
-        return self._N
-
-
-    def V(self):
-        return self._V
-
-
-    def __str__(self):
-        return f'''
-        file: {self.getPath()}
-        owner: {self.M()+'.'+self.L()+'.'+self.N()+'('+self.V()+')'}
-        '''
     pass
