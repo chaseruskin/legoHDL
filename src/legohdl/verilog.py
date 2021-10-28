@@ -36,39 +36,45 @@ class Verilog(Language):
         self._port_begin = -1
         self._port_end = -1
 
+        ### new important stuff
+        self._seps = [':', '=', '(', ')', '#', ',', '.', '[', ']']
+        self._dual_chars = ['<=']
+        self._comment = '//'
+
+        self.spinCode()
+        ###
+
         self._about_txt = self.getCommentBlock()
 
         #run with VERILOG decoder
         self.identifyDesigns()
         pass
 
-
     def identifyDesigns(self):
         '''
-        Analyzes the current VERILOG file to only identify design units and not
-        complete their data. Dynamically creates self._designs attribute.
+        Analyzes the current VERILOG file to only identify design units. Does not
+        complete their data. 
+        
+        Dynamically creates attr _designs.
 
         Parameters:
             None
         Returns:
-            self._designs ([Unit]): list of units found in this file
+            _designs ([Unit]): list of units found in this file
         '''
         if(hasattr(self, "_designs")):
             return self._designs
 
-        cs = self.generateCodeStream(True, False, *self._std_delimiters)
+        #get the list of statements
+        c_statements = self.spinCode()
+
         self._designs = []
 
-        #looking for design units
-        for i in range(len(cs)-1):
-            token = cs[i]
-            #search for entities
-            if(token == 'module'):
-                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cs[i+1], about_txt=self._about_txt)]
-            #search for packages
-            elif(token == 'package'):
-                self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cs[i+1], about_txt=self._about_txt)]
-
+        #looking for design units in each statement
+        for code_seg in c_statements:
+            if(code_seg[0] == 'module'):
+                print(code_seg[1])
+                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self._about_txt)]
         return self._designs
 
 

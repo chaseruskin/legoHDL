@@ -57,8 +57,6 @@ class Language(ABC):
 
         #add to processed list
         self.ProcessedFiles[self.getPath()] = self
-
-        self.produceCode()
         pass
     
     
@@ -169,27 +167,35 @@ class Language(ABC):
         pass
 
 
-    def produceCode(self):
+    def spinCode(self):
         '''
         Turn an HDL file into a list of its statements. 
         
         Omits comments and preserves case sensitivity. Makes sure that certain
-        keywords are an individual component within the list.
+        tokens are an individual component within the list. 
         
+        Uses _comment (str) to specify the single-line comment token. 
+        Uses _seps ([str]) to determine what characters deserve their own index. 
+        Uses _dual_chars ([str]) to combine any two-character tokens to be a single index.
+        
+        Dynamically creates attr _code_stream so the operation can be reused.
+
         Parameters:
             None
         Returns:
-            None
+            _code_stream ([[str]]): a list of statements that are word-separated
         '''
-        code_stream = []
-        #certain characters that must be separated into own items in the statement list
-        seps = [':', '=', '(', ')', '>', '<', ',']
-        dual_chars = [':=', '<=', '=>']
+        #dynamic return once operation has been performed
+        if(hasattr(self, "_code_stream")):
+            return self._code_stream
+
+        self._code_stream = []
+
         #current statement
         statement = []
-        comment = '--'
         multi = ('/*', '*/')
         in_multi = False
+
         #read the HDL file to break into words
         with open(self.getPath(), 'r') as file:
             #transform lines into statements
@@ -198,7 +204,7 @@ class Language(ABC):
                 line = line.strip()
 
                 #reduce down to valid code (non-comments)
-                c_index = line.find(comment)
+                c_index = line.find(self._comment)
                 if(c_index > -1):
                     line = line[:c_index]
                 #find a beginning to a multi-line comment section
@@ -229,7 +235,7 @@ class Language(ABC):
                     in_multi = True
                 
                 #make sure certain characters will be their own items in the statement
-                for sep in seps:
+                for sep in self._seps:
                     line = line.replace(sep, ' '+sep+' ')
 
                 #find the ';' and create new statements if found
@@ -241,11 +247,12 @@ class Language(ABC):
                     #combine dual characters together
                     statement_final = []
                     for i in range(len(statement)-1):
-                        for dc in dual_chars:
+                        for dc in self._dual_chars:
                             if(statement[i] == dc[0] and statement[i+1] == dc[1]):
                                 statement_final.append(dc)
+                                #make empty so these indices don't get added
                                 statement[i] = ''
-                                statement[i+1] = '' #make empty
+                                statement[i+1] = '' 
                                 continue
                         if(statement[i] != ''):
                             statement_final.append(statement[i])
@@ -253,7 +260,7 @@ class Language(ABC):
                     if(statement[-1] != ''):
                             statement_final.append(statement[-1])
 
-                    code_stream += [statement_final]
+                    self._code_stream += [statement_final]
                     statement = []
                     #update remaining line string
                     line = line[sc_index+1:]
@@ -262,9 +269,10 @@ class Language(ABC):
                 statement += line[sc_index+1:].split()
             pass
 
-        for cs in code_stream:
-            print(cs)
-        pass
+        for cs in self._code_stream:
+           print(cs)
+           pass
+        return self._code_stream
 
     
     # :todo: refactor and polish

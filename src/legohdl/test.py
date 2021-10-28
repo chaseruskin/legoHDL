@@ -214,14 +214,18 @@ def main():
     if(True):
         print('\n---LANGUAGE CLASSES---')
 
-        src = ['']*4
+        src = ['']*5
         src[0] = '/Users/chase/develop/eel4712c/lab1/src/fa.vhd'
-        src[1] = '/Users/chase/develop/eel4712c/lab2/src/alu_ns.vhd'
-        src[2] = '/Users/chase/develop/eel4712c/DungeonRun/main_module.vhd'
-        src[3] = '/Users/chase/develop/eel4712c/DungeonRun/elapsed_time.vhd'
+        src[1] = '/Users/chase/desktop/testcode/counter.v'
+        src[2] = '/Users/chase/develop/eel4712c/lab2/src/alu_ns.vhd'
+        src[3] = '/Users/chase/develop/eel4712c/DungeonRun/main_module.vhd'
+        src[4] = '/Users/chase/develop/eel4712c/DungeonRun/elapsed_time.vhd'
 
-        for s in src[:1]:
-            Vhdl(s, M='', L='B-Library', N='B-Name')
+        for s in src[3:4]:
+            if(s.endswith('.vhd')):
+                Vhdl(s, M='', L='B-Library', N='B-Name')
+            else:
+                Verilog(s, M='', L='B-Library', N='B-Name')
         pass
     if(False):
         print('\n---ENTITY CLASS---')

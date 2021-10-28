@@ -35,6 +35,14 @@ class Vhdl(Language):
         self._multi_comment = None
         self._std_delimiters = "(",")",":",";",","
 
+        ### new important stuff
+        self._seps = [':', '=', '(', ')', '>', '<', ',']
+        self._dual_chars = [':=', '<=', '=>']
+        self._comment = '--'
+
+        self.spinCode()
+        ###
+
         self._about_txt = self.getCommentBlock()
 
         #run with VHDL decoder
@@ -54,49 +62,35 @@ class Vhdl(Language):
 
     def identifyDesigns(self):
         '''
-        Analyzes the current VHDL file to only identify design units and not
-        complete their data. Dynamically creates self._designs attribute.
+        Analyzes the current VHDL file to only identify design units. Does not
+        complete their data. 
+        
+        Dynamically creates attr _designs.
 
         Parameters:
             None
         Returns:
-            self._designs ([Unit]): list of units found in this file
+            _designs ([Unit]): list of units found in this file
         '''
         if(hasattr(self, "_designs")):
             return self._designs
 
-        cs = self.generateCodeStream(True, False, *self._std_delimiters)
+        #get the list of statements
+        c_statements = self.spinCode()
+
         self._designs = []
 
-        #looking for design units
-        in_scope = False
-        arch_name = ''
-        for i in range(len(cs)-1):
-            token = cs[i].lower()
-            #search for entities           
-            if(token == 'end'):
-                if(in_scope and cs[i+1].lower() == name.lower()):
-                    in_scope = False
-                if(cs[i+1].lower() == arch_name.lower() or cs[i+1] == 'architecture'):
-                    arch_name = ''
-                    in_scope = False
-            #skip while inside an architecture
-            elif(arch_name != ''):
-                continue
-            elif(token == 'entity' and cs[i+1] != ':'): #ensure its not a entity instaniation
-                if(not in_scope): 
-                    name = cs[i+1]
-                    self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cs[i+1], about_txt=self._about_txt)]
-                in_scope = not in_scope
-            elif(token == 'architecture'):
-                arch_name = cs[i+1]
-                in_scope = True
-            #search for packages
-            elif(token == 'package' and cs[i+1].lower() != 'body'): #ensure its not a package body
-                if(not in_scope):
-                    name = cs[i+1]
-                    self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cs[i+1], about_txt=self._about_txt)]
-                in_scope = not in_scope
+        #looking for design units in each statement
+        for code_seg in c_statements:
+            if(code_seg[0].lower() == 'entity'):
+                print(code_seg[1])
+                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self._about_txt)]
+            elif(code_seg[0].lower() == 'package' and code_seg[1].lower() != 'body'):
+                print(code_seg[1])
+                self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self._about_txt)]
+            elif(code_seg[0].lower() == 'configuration'):
+                print(code_seg[1])
+                self._designs += [Unit(self.getPath(), Unit.Design.CONFIGURATION, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self._about_txt)]
 
         return self._designs
 

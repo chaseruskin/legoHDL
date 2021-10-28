@@ -29,13 +29,15 @@ class Unit:
 
     class Design(Enum):
         ENTITY = 1,
-        PACKAGE = 2
+        PACKAGE = 2,
+        CONFIGURATION = 3,
         pass
 
 
     class Language(Enum):
         VHDL = 1,
         VERILOG = 2
+        pass
 
 
     def __init__(self, filepath, dsgn, M, L, N, V, E, about_txt=''):
