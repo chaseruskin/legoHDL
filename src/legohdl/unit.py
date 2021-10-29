@@ -363,9 +363,9 @@ class Unit:
 class Generic:
 
 
-    def __init__(self, name, flavor, value):
+    def __init__(self, name, dtype, value):
         self._name = name
-        self._flavor = flavor
+        self._dtype = dtype
         self._value = value
         pass
 
@@ -404,7 +404,7 @@ class Generic:
         if(form == Unit.Language.VHDL):
             #write beginning of constant declaration
             c_txt = 'constant '+self._name+(spaces*' ')+': '
-            remaining = apt.listToStr(self._flavor)
+            remaining = apt.listToStr(self._dtype)
             #properly format the remaining of the constant
             fc = remaining.find(',(')
             if(fc > -1):
@@ -437,10 +437,42 @@ class Generic:
 class Port:
 
 
-    def __init__(self, name, way, flavor, value=None):
+    class Route(Enum):
+        IN = 1,
+        OUT = 2,
+        INOUT = 3
+        pass
+
+
+    def __init__(self, name, way, dtype, value='', bus_width=('','')):
+        '''
+        Construct a port object.
+
+        Parameters:
+            name (str): port identifier
+            way (str): direction
+            dtype (str): datatype
+            value (str): initial value
+            bus_width ((str, str)): the lower and upper (exclusive) ends of a bus
+        Returns:
+            None
+        '''
+        #store the port's name
         self._name = name
-        self._way = way
-        self._flavor = flavor
+
+        #store the port's direction data
+        way = way.lower()
+        if(way == 'inout'):
+            self._route = self.Route.INOUT
+        elif(way.startswith('in')):
+            self._route = self.Route.IN
+        elif(way.startswith('out')):
+            self._route = self.Route.OUT
+
+        #store the datatype
+        self._dtype = dtype
+
+        #store an initial value (optional)
         self._value = value
         pass
 
@@ -479,7 +511,7 @@ class Port:
         if(form == Unit.Language.VHDL):
             #write beginning of signal declaration
             s_txt = 'signal '+self._name+(spaces*' ')+': '
-            remaining = apt.listToStr(self._flavor)
+            remaining = apt.listToStr(self._dtype)
             #properly format the remaining of the signal
             fc = remaining.find(',')
             if(fc > -1):
@@ -492,9 +524,9 @@ class Port:
         #write VERILOG-style code
         elif(form == Unit.Language.VERILOG):
             #skip over type declaration
-            flav = self._flavor
-            if('reg' in self._flavor or 'wire' in self._flavor):
-                flav = self._flavor[1:]
+            flav = self._dtype
+            if('reg' in self._dtype or 'wire' in self._dtype):
+                flav = self._dtype[1:]
             if(len(flav)):
                 s_txt = apt.listToStr(flav)
                 s_txt = s_txt.replace(',[', ' [')
@@ -525,15 +557,15 @@ class Interface:
         pass
 
 
-    def addPort(self, name, way, flavor):
-        #print("Port:",name,"going",way,"of type",flavor)
-        self._ports[name] = Port(name, way, flavor)
+    def addPort(self, name, way, dtype):
+        #print("Port:",name,"going",way,"of type",dtype)
+        self._ports[name] = Port(name, way, dtype)
         pass
 
 
-    def addGeneric(self, name, flavor, value):
-        #print("Generic:",name,"of type",flavor,"has value",value)
-        self._generics[name] = Generic(name, flavor, value)
+    def addGeneric(self, name, dtype, value):
+        #print("Generic:",name,"of type",dtype,"has value",value)
+        self._generics[name] = Generic(name, dtype, value)
         pass
 
 
