@@ -5,13 +5,15 @@
 #   This script is the entry-point to the legohdl program. It parses the
 #   command-line arguments and contains a method for each valid command.
 
-import os, sys, shutil, glob
-import git
+import os, sys, shutil
 import logging as log
+
 from .__version__ import __version__
-from .block import Block
+
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
+
+from .block import Block
 from .map import Map
 from .unit import Unit
 from .gui import GUI
@@ -661,7 +663,7 @@ scripts)?", warning=False)
         print()
 
         return unit_order,list(block_order)
-        
+
 
     #given a dependency graph, write out the actual list of files needed
     def compileList(self, block, unit_order):
@@ -861,7 +863,7 @@ scripts)?", warning=False)
         #is this remote bare? If not, clone from it
         if(git_url != None and apt.isRemoteBare(git_url) == False):
             #clone the repository if it is not bare, then add metadata
-            git.Git(cwd).clone(git_url)
+            #git.Git(cwd).clone(git_url)
             #replace url_name with given name
             url_name = git_url[git_url.rfind('/')+1:git_url.rfind('.git')]
             cwd = apt.fs(cwd + '/' + url_name)
@@ -889,7 +891,7 @@ scripts)?", warning=False)
             pass
         else:
             log.info("Initializing git repository...")
-            git.Repo.init(cwdb1)                
+            #git.Repo.init(cwdb1)                
             git_exists = True
             pass
 

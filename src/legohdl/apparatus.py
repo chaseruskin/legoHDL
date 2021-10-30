@@ -354,6 +354,7 @@ scripts)?", warning=False)
 
     #[!] TO MOVE TO MARKET CLASS
     @classmethod
+    @DeprecationWarning
     def loadMarket(cls, value):
         '''
         This method determines if the value is a valid remote url wired to a
@@ -368,7 +369,7 @@ scripts)?", warning=False)
             #clone the repository and see if it is a valid profile
             log.info("Grabbing market from... "+value)
             os.makedirs(tmp_dir)
-            git.Git(tmp_dir).clone(value)
+            #git.Git(tmp_dir).clone(value)
             url_name = value[value.rfind('/')+1:value.rfind('.git')]
             path_to_check = cls.fs(tmp_dir+url_name)
         else:
@@ -411,6 +412,7 @@ scripts)?", warning=False)
 
     #[!] TO MOVE TO PROFILE CLASS
     @classmethod
+    @DeprecationWarning
     def loadProfile(cls, value, explicit=False, append=False):
         '''
         This method determines if the value is an existing profile name or a git
@@ -432,7 +434,7 @@ scripts)?", warning=False)
                 #clone the repository and see if it is a valid profile
                 log.info("Grabbing profile from... "+value)
                 os.makedirs(tmp_dir)
-                git.Git(tmp_dir).clone(value)
+                #git.Git(tmp_dir).clone(value)
                 url_name = value[value.rfind('/')+1:value.rfind('.git')]
                 path_to_check = cls.fs(tmp_dir+url_name)
             #check if the path is a local directory
@@ -651,9 +653,10 @@ scripts)?", warning=False)
     #return the block file metadata from a specific version tag already includes 'v'
     #if returned none then it is an invalid legohdl release point
     @classmethod
+    #:todo: clean up and refactor...move elsewhere?
     def getBlockFile(cls, repo, tag, path="./", in_branch=True):
         #checkout repo to the version tag and dump cfg file
-        repo.git.checkout(tag+cls.TAG_ID)
+        repo.git('checkout',tag+cls.TAG_ID)
         #find Block.cfg
         if(os.path.isfile(path+cls.MARKER) == False):
             #return None if Block.cfg DNE at this tag
@@ -671,10 +674,10 @@ scripts)?", warning=False)
         #revert back to latest release
         if(in_branch == True):
             #in a branch so switch back
-            repo.git.switch('-')
+            repo.git('switch','-')
         #in a single branch (cache) so checkout back
         else:
-            repo.git.checkout('-')
+            repo.git('checkout','-')
         #perform additional safety measure that this tag matches the 'version' found in meta
         if(meta['block']['version'] != tag[1:]):
             log.error("Block.cfg file version does not match for: "+tag+". Invalid version.")
@@ -986,16 +989,17 @@ scripts)?", warning=False)
 
     #[!] PREPARED FOR REMOVAL $
     @classmethod
+    @DeprecationWarning
     def isRemoteBare(cls, git_url):
         tmp_dir = cls.HIDDEN+"tmp/"
         #print(repo.git.rev_parse('--is-bare-repository '))
         os.makedirs(tmp_dir, exist_ok=True)
-        repo = git.Git(tmp_dir).clone(git_url)
+        #repo = git.Git(tmp_dir).clone(git_url)
         name = os.listdir(tmp_dir)[0]
-        repo = git.Repo(tmp_dir+name)
-        isBare = repo.git.status('-uno').count('No commits yet\n') > 0
+        #repo = git.Repo(tmp_dir+name)
+        #isBare = repo.git.status('-uno').count('No commits yet\n') > 0
         shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
-        return isBare
+        return None
 
     
     @classmethod
