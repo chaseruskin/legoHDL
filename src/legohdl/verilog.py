@@ -41,7 +41,7 @@ class Verilog(Language):
         self._dual_chars = ['<=']
         self._comment = '//'
         self._atomics = ['end', 'endmodule', 'endtask', 'endcase', \
-            'endfunction', 'endprimitive', 'endspecify', 'endtable']
+            'endfunction', 'endprimitive', 'endspecify', 'endtable', 'begin']
 
         self.spinCode()
         ###
