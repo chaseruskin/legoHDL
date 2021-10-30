@@ -87,6 +87,7 @@ class Vhdl(Language):
             elif(code_seg[0].lower() == 'package' and code_seg[1].lower() != 'body'):
                 print(code_seg[1])
                 self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self.getAbout())]
+            # :todo: configurations are linked to an entity...therefore they do not get their own unit type (they are 'like' architectures)
             elif(code_seg[0].lower() == 'configuration'):
                 print(code_seg[1])
                 self._designs += [Unit(self.getPath(), Unit.Design.CONFIGURATION, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self.getAbout())]
