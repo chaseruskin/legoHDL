@@ -706,10 +706,12 @@ class Block:
                 self.setMeta("market", M)
             else:
                 log.warning("Skipping invalid market name "+M+"...")
+
         self.setMeta('library', L)
         self.setMeta('name', N)
         self.setMeta('version', '0.0.0')
         #determine top-level and bench designs
+        # :todo:
 
         #fill in placeholders
         if(cp_template):
@@ -726,7 +728,7 @@ class Block:
 
         print(self.getMeta(every=True))
         #save all changes to meta
-        self.save()
+        self.save(force=True)
 
         #commit all file changes
         self._repo.add('.')
@@ -910,6 +912,7 @@ class Block:
 
         #operation was successful
         return True
+
 
     @classmethod
     def validTitle(cls, title):
