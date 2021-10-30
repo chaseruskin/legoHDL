@@ -636,39 +636,32 @@ scripts)?", warning=False)
         block = Block.getCurrent()
 
         top = self.getItem()
-        top_dog,_,_ = block.identifyTopDog(top, inc_sim=True)
+        top_dog,_,_ = block.identifyTopDog(top, inc_tb=True)
         
         log.info("Generating dependency tree...")
         #start with top unit (returns all units if no top unit is found (packages case))
-        block.getUnits(top_dog)
+        block.getUnits(top_dog.E())
         hierarchy = Unit.Hierarchy
 
         #print the dependency tree
-        hierarchy.output(block.getLib(low=True)+'.'+top_dog)
+        hierarchy.output(top_dog)
+        print()
         
         unit_order,block_order = hierarchy.topologicalSort()
 
-        # print('---ENTITY ORDER---')
-        # for i in range(0, len(unit_order)):
-            # u = unit_order[i]
-            # if(not u.isPKG()):
-                # print(u.getFull(),end='')
-                # if(i < len(unit_order)-1):
-                    # print(' -> ',end='')
-        # print()
-
-        print('---BLOCK ORDER---')
+        print('---  BLOCK ORDER   ---')
         #ensure the current block is the last one on order
         block_order.remove(block.getFull())
         block_order.append(block.getFull())
         for i in range(0, len(block_order)):
             b = block_order[i]
-            print(b,end='')
+            print(str(i+1)+' >\t'+b,end='\n')
             if(i < len(block_order)-1):
-                print(' -> ',end='')
+                print(' ',end='')
         print()
 
         return unit_order,list(block_order)
+        
 
     #given a dependency graph, write out the actual list of files needed
     def compileList(self, block, unit_order):

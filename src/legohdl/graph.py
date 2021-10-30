@@ -10,38 +10,95 @@ from .map import Map
 
 
 class Graph:
+
+
     def __init__(self):
-        #store with adj list (list of vertices)
-        self.__adj_list = Map()
-        self._unit_bank = Map()
+        '''
+        Create a Graph instance. Uses adjacency lists for sparse graph
+        representation.
+        '''
+        #store with adjacency list (list of vertices...sparse graph)
+        self._adj_list = Map()
         pass
     
-    #takes in two entities and connects them [entity, dep-name]
-    def addEdge(self, to, fromm): #to->upper-level module... from->lower-level module
-        #add to list if vertex does not exist
-        if(to not in self.__adj_list.keys()):
-            self.__adj_list[to] = list()
-        if(fromm not in self.__adj_list.keys()):
-            self.__adj_list[fromm] = list()
-        
-        if(fromm not in self.__adj_list[to]):
-            self.__adj_list[to].append(fromm)
-            pass
+
+    def addEdge(self, integral, derivative):
+        '''
+        Creates a relationship between two units.
+
+        Parameters:
+            integral (Unit): upper-level unit
+            derivative (Unit): lower-level unit (dependency)
+        Returns:
+            None
+        '''
+        #make sure vertices exist in the graph
+        self.addVertex(integral)
+        self.addVertex(derivative)
+        #add dependency relation between derivative and integral
+        if(derivative not in self._adj_list[integral]):
+            self._adj_list[integral].append(derivative)
         pass
 
-    def addLeaf(self, to):
-        self._unit_bank[to.getFull()] = to
 
-    def removeEdge(self, to, fromm):
-        if(fromm in self.__adj_list[to]):
-            self.__adj_list[to].remove(fromm)
+    def addVertex(self, u):
+        '''
+        Adds the unit to the graph's adjacency list if DNE.
+
+        Parameters:
+            u (Unit): unit object to add to adjacency list structure
+        Returns:
+            None
+        '''
+        if(u not in self._adj_list.keys()):
+            self._adj_list[u] = []
         pass
+
+
+    def removeVertex(self, u):
+        '''
+        Removes the unit from the graph's adjacency list if exists.
+
+        Parameters:
+            u (Unit): unit object to remove from adjacency list structure
+        Returns:
+            None
+        '''
+        if(u in self._adj_list.keys()):
+            self._adj_list.remove(u)
+        pass
+
+
+    def removeEdge(self, integral, derivative):
+        '''
+        Removes a relationship between two units.
+
+        Parameters:
+            integral (Unit): upper-level unit
+            derivative (Unit): lower-level unit (dependency)
+        Returns:
+            None
+        '''
+        if(derivative in self._adj_list[integral]):
+            self._adj_list[integral].remove(derivative)
+        pass
+
 
     def topologicalSort(self):
+        '''
+        Topologically sort the graph to compute a hierarchical build order.
+
+        Parameters:
+            None
+        Returns:
+            order ([Unit]): sorted build order of Unit entity-type objects
+            block_order ([str]): sorted order of block title's required for build
+        '''
         order = [] # return list of design entities in their correct order
 
         block_order = [] # return list of blocks in their correct order
         block_tracker = [] # used for case-insensitive comparison
+
 
         def addBlock(m, l, n):
             nonlocal block_order, block_tracker
@@ -56,46 +113,51 @@ class Graph:
             block_tracker.append(title.lower())
             block_order.append(title)
 
-        nghbr_count = dict()
-        #print(len(self.__adj_list))
+
+        nghbr_cnt = Map()
         #determine number of dependencies a vertex has
-        for v in self.__adj_list.keys():
-            nghbr_count[v] = len(self.__adj_list[v])
-        #no connections were made, just add all units found
-        if(len(self.__adj_list) == 0):
-            log.warning("No edges found.")
-            for u in self._unit_bank.values():
-                order.append(u)
-                addBlock(u.M(), u.L(), u.N())
+        for v in self._adj_list.keys():
+            nghbr_cnt[v] = len(self._adj_list[v])
   
         #continue until all are transferred
-        while len(order) < len(self.__adj_list):
+        while len(order) < len(self._adj_list):
             #if a vertex has zero dependencies, add it to the list
-            for v in nghbr_count.keys():
-                if nghbr_count[v] == 0:
-                    unit = self._unit_bank[v]
-                    if(not unit.isPKG() or True):
-                        #print(unit)
-                        #add actual unit object to list
-                        order.append(unit) 
+            for unit in nghbr_cnt.keys():
+                if nghbr_cnt[unit] == 0:
+                    #add unit object to list
+                    order.append(unit)
                     #add block name to list
                     addBlock(unit.M(), unit.L(), unit.N())
                     #will not be recounted
-                    nghbr_count[v] = -1 
+                    nghbr_cnt[unit] = -1 
                     #who all depends on this module?
-                    for k in self.__adj_list.keys():
-                        if(v in self.__adj_list[k]):
+                    for k in self._adj_list.keys():
+                        if(unit in self._adj_list[k]):
                             #decrement every vertex dep count that depended on recently added vertex
-                            nghbr_count[k] = nghbr_count[k] - 1
+                            nghbr_cnt[k] = nghbr_cnt[k] - 1
                     continue
+                pass
 
         if(len(block_order) == 0):
             exit(log.error("Invalid current block, try adding a VHDL file"))
+
         return order,block_order
 
 
     #only display entities in the tree (no package units)
-    def output(self, top, leaf='+-'):
+    def output(self, top, leaf='+-', disp_full=False):
+        '''
+        Formats and prints the current entity's dependency graph.
+
+        Recursive method.
+
+        Parameters:
+            top (Unit): top-level unit to start graph from
+            leaf (str): inner-recursive parameter to see what parent leaf was
+            disp_full (bool): determine how to display entity (with full block title?)
+        Returns:    
+            None
+        '''
         edge_branch = '\-'
         reg_branch = '+-'
         twig = '|'
@@ -104,11 +166,11 @@ class Graph:
 
         #print title if method is on top-level entity
         if(first):
-            print('---DEPENDENCY TREE---')
+            print('--- DEPENDENCY TREE ---')
         #start with top level
-        if(top.lower() not in self._unit_bank.keys()):
-            exit(log.error('Entity '+top+' may be missing an architecture.'))
-        if(not self._unit_bank[top].isPKG()):
+        if(top not in self._adj_list.keys()):
+            exit(log.error('Entity '+top.E()+' may be missing an architecture.'))
+        if(not top.isPKG()):
             #uncomment this next line to print market along with entity
             #print(leaf,self._unit_bank[top].getMarket()+'.'+top)
             temp_leaf = leaf
@@ -118,14 +180,14 @@ class Graph:
             else:
                 temp_leaf = temp_leaf.replace(reg_branch, edge_branch)
             #print to console
-            print(temp_leaf,top)
+            print(temp_leaf,top.getFull())
 
         #return if no children exist
-        if(len(self.__adj_list) == 0):
+        if(len(self._adj_list) == 0):
             return
 
         #go through all entity's children
-        for sub_entity in self.__adj_list[top]:
+        for sub_entity in self._adj_list[top]:
             #add twig if the parent was not an edge branch
             if(leaf.count(reg_branch)):
                 next_leaf = leaf[0:len(leaf)-2] + twig
@@ -136,7 +198,7 @@ class Graph:
             next_leaf = next_leaf + ' '*spaces
                 
             #add \ if its an edge branch
-            if(sub_entity == self.__adj_list[top][-1]): 
+            if(sub_entity == self._adj_list[top][-1]): 
                 next_leaf = next_leaf + edge_branch
             #use + if a regular branch
             else:
@@ -147,6 +209,6 @@ class Graph:
 
 
     def getVertices(self):
-        return len(self.__adj_list)
+        return len(self._adj_list)
 
     pass

@@ -1565,7 +1565,7 @@ class Block:
 
         for name,unit in units.items():
             #if the entity is value under this key, it is lower-level
-            if(unit.isTB() or unit.isPKG()):
+            if(unit.isTb() or unit.isPKG()):
                 if(name in top_contenders):
                     top_contenders.remove(name)
                 continue
@@ -1625,7 +1625,7 @@ class Block:
         benches = []
         for unit in units.values():
             for dep in unit.getRequirements():
-                if(dep.L().lower() == self.getLib().lower() and dep.E().lower() == entity_name and unit.isTB()):
+                if(dep.L().lower() == self.getLib().lower() and dep.E().lower() == entity_name and unit.isTb()):
                     benches.append(unit)
         #perfect; only 1 was found  
         if(len(benches) == 1):
@@ -1664,40 +1664,57 @@ class Block:
         return self._bench
 
 
-    def identifyTopDog(self, top, inc_sim=True):
+    def identifyTopDog(self, top=None, inc_tb=True):
         '''
         Determine what unit is utmost highest, whether it be a testbench
         (if applicable) or entity.
+
+        Parameters:
+            top (str): a unit identifier
+            inc_tb (bool): determine if to include testbench files
+        Returns:
+            top_dog (Unit): top-level everything
+            top_dsgn (Unit): top-level design unit
+            top_tb (Unit): top-level testbench for top unit
         '''
+        #make sure entities exist to search for
+        if((top == None or top == '') and len(self.getUnits()) == 0):
+            exit(log.error("There are no available units in this block."))
 
-        if(top == None):
-            top = self.identifyTop()
-            if(top != None):
-                top = top.E()
-        
-        if(top == None or top.lower() not in self.getUnits().keys()):
-            exit(log.error("Entity "+top+" not found in current block."))
-        
-        #get the unit from the currently available project-level blocks
-        top_entity = self.getUnits()[top]
-        #fill in all unit data
-        self.getUnits()
 
-        tb = top = None
-        top_dog = top_entity
-        if(top_entity.isTB()):
-            tb = top_dog
+        top_dog = top_dsgn = top_tb = None
+        #find top if given
+        if(top != None and top != '' and top.lower() in self.getUnits().keys()):
+            top_dog = self.getUnits()[top]
+            #assign as testbench if it is one
+            if(top_dog.isTb()):
+                top_tb = top_dog
+            #assign as design otherwise
+            else:
+                top_dsgn = top_dog
+                #auto-detect the testbench
+                top_tb = self.identifyBench(top_dsgn.E())
+                #set top_dog as the testbench if found one and allowed to be included
+                if(top_tb != None and inc_tb):
+                    top_dog = top_tb
+
+            return top_dog,top_dsgn,top_tb
+        elif(top != None and top != ''):
+            exit(log.error("Entity "+top+" does not exist within this block."))
+
+        #auto-detect the top level design
+        top_dsgn = self.identifyTop()
+        #auto-detect the top level's testbench
+        top_tb = self.identifyBench(top_dsgn.E())
+
+        #set top_dog as the testbench if found one and allowed to be included
+        if(top_tb != None and inc_tb):
+            top_dog = top_tb
         else:
-            top = top_dog
-            if(inc_sim):
-                tb = self.identifyBench(top.E())
-                if(tb != None):
-                    top_dog = tb
-        #return the name of the top entity
-        if(isinstance(top_dog, Unit)):
-            top_dog = top_dog.E()
+            top_dog = top_dsgn
+
         # :todo: save appropiate changes to Block.cfg file?
-        return top_dog,top,tb
+        return top_dog,top_dsgn,top_tb
 
 
     # :todo: store MLNV as tuple and use single function for full-access

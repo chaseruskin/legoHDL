@@ -123,7 +123,7 @@ class Unit:
     def setChecked(self, c):
         #add to hierarchy if complete
         if(c == True and not self.isChecked()):
-            self.Hierarchy.addLeaf(self)
+            self.Hierarchy.addVertex(self)
         self._checked = c
         pass
 
@@ -266,7 +266,7 @@ class Unit:
         return self._interface
 
 
-    def isTB(self):
+    def isTb(self):
         '''Returns true if the design is an entity and has zero ports.'''
         #testbench must have zero ports as an entity unit
         return (self._dsgn == self.Design.ENTITY and \
@@ -297,7 +297,7 @@ class Unit:
             None
         '''
         #add new edge
-        self.Hierarchy.addEdge(self.getFull(), u.getFull())
+        self.Hierarchy.addEdge(self, u)
         self._requirements = self.getRequirements() + [u]
         pass
     
@@ -353,7 +353,7 @@ class Unit:
         dsgn: {self._dsgn}
         lang: {self.getLang()}
         arch: {self._arcs}
-        tb?   {self.isTB()}
+        tb?   {self.isTb()}
         conf? {self.getConfig()}
         reqs: {reqs}
         '''
