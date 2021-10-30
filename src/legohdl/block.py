@@ -6,16 +6,14 @@
 #   the legohdl framework. A block is a HDL project with a marker file at the 
 #   root folder.
 
-import os, shutil, stat
+import os, shutil, stat, glob
 from datetime import date
-import glob, git
 from .vhdl import Vhdl
 from .verilog import Verilog
 import logging as log
 from .market import Market
 from .cfgfile import CfgFile as cfg
 from .apparatus import Apparatus as apt
-from .graph import Graph 
 from .unit import Unit
 from .language import Language
 from .git import Git
@@ -109,8 +107,9 @@ class Block:
     def downloadFromURL(self, rem, in_place=False):
         tmp_dir = apt.HIDDEN+"tmp/"
         if(in_place):
-            self._repo = git.Repo(self.getPath())
-            self.pull()
+            #self._repo = git.Repo(self.getPath())
+            #self.pull()
+            exit(print("TODO"))
             return True
 
         success = True
@@ -122,8 +121,9 @@ class Block:
         #create temp directory to clone project into
         os.makedirs(tmp_dir, exist_ok=True)
         #clone project
-        git.Git(tmp_dir).clone(rem)
+        #git.Git(tmp_dir).clone(rem)
 
+        exit(print("TODO"))
         self._path = new_path+self.getName(low=False)
 
         #this is a remote url, so when it clones we must make sure to rename the base folder
@@ -146,13 +146,14 @@ class Block:
                 success = False
 
         #assign the repo of the newly downloaded block
-        self._repo = git.Repo(self.getPath())
+        #self._repo = git.Repo(self.getPath())
         #remove temp directory
         shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
         
         #if downloaded from cache, make a master branch if no remote  
         if(len(self._repo.heads) == 0):
-            self._repo.git.checkout("-b","master")
+            #self._repo.git.checkout("-b","master")
+            pass
 
         return success
 
@@ -232,18 +233,10 @@ class Block:
         '''
         Release the block as a new version.
         '''
-        #dynamically link on release
-        if(self.grabGitRemote() != None and hasattr(self,"_repo")):
-            if(apt.isValidURL(self.grabGitRemote())):
-                self.setRemote(self.grabGitRemote(), push=False)
-            else:
-                log.warning("Invalid remote "+self.grabGitRemote()+" will be removed from Block.cfg")
-                self.setMeta('remote', None)
-                self._remote = None
-        if(self._remote != None):
+        if(self._repo.getRemoteURL() != ''):
             log.info("Verifying remote origin is up to date...")
-            self._repo.git.remote('update')
-            resp = self._repo.git.status('-uno')
+            self._repo.git('remote','update')
+            resp,_ = self._repo.git('status','-uno')
             if(resp.count('Your branch is up to date with') == 0 and resp.count('Your branch is ahead of') == 0):
                 exit(log.error("Your branch conflicts with the remote; release failed."))
 
@@ -282,9 +275,9 @@ class Block:
         if(ver == '' or ver[0] != 'v'):
             return
         #in order to release to market, we must have a valid git remote url
-        url = self.grabGitRemote()
-        if(url == None):
-            if(self.__market != None):
+        url = self.getMeta('remote')
+        if(url == ''):
+            if(True): #:todo:
                 cont = apt.confirmation("legohdl will not release to market "+self.__market.getName()+" because this block is not tied to a remote. Proceed anyway?")
                 #user decided that is not OKAY, exiting release
                 if(cont == False):
@@ -300,35 +293,32 @@ class Block:
         log.info("Saving...")
         #add only changes made to Block.cfg file
         if(options.count('strict')):
-            self._repo.index.add(apt.MARKER)
+            self._repo.add(apt.MARKER)
             if(os.path.exists(self.getPath()+apt.CHANGELOG)):
-                self._repo.index.add(apt.CHANGELOG)
+                self._repo.add(apt.CHANGELOG)
         #add all untracked changes to be included in the release commit
         else:   
-            self._repo.git.add(update=True)
-            self._repo.index.add(self._repo.untracked_files)
+            self._repo.add('.')
         #default message
         if(msg == None):
             msg = "Releases version "+self.getVersion()
         #commit new changes with message
-        self._repo.git.commit('-m',msg)
+        self._repo.commit(msg)
         #create a tag with this version
-        self._repo.create_tag(ver+apt.TAG_ID)
+        self._repo.git('tag',ver+apt.TAG_ID)
 
         sorted_versions = self.sortVersions(self.getTaggedVersions())
+        
+        #push to remote codebase
+        self._repo.push()
 
-        #push to remote codebase!! (we have a valid remote url to use)
-        if(url != None):
-            self.pushRemote()
-        #no other actions should happen when no url is exists
-        else:
-            return
         #publish on market/bazaar! (also publish all versions not found)
-        if(self.__market != None):
-            changelog_txt = self.getChangeLog(self.getPath())
-            self.__market.publish(self.getMeta(every=True), options, sorted_versions, changelog_txt)
-        elif(self.getMeta("market") != None):
-            log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
+        # :todo:
+        # if(self.__market != None):
+        #     changelog_txt = self.getChangeLog(self.getPath())
+        #     self.__market.publish(self.getMeta(every=True), options, sorted_versions, changelog_txt)
+        # elif(self.getMeta("market") != None):
+        #     log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
         pass
     
 
@@ -510,11 +500,13 @@ class Block:
         pass
 
 
+    @DeprecationWarning
     def setRemote(self, rem, push=True):
         if(rem != None):
             self.grabGitRemote(rem)
         elif(len(self._repo.remotes)):
-            self._repo.git.remote("remove","origin")
+            #self._repo.git.remote("remove","origin")
+            pass
         self.setMeta('remote', rem)
         self._remote = rem
         self.genRemote(push)
@@ -972,6 +964,7 @@ class Block:
         return self._remote
 
     #generate new link to remote if previously unestablished (only for creation)
+    @DeprecationWarning
     def genRemote(self, push):
         if(self.isLinked()):
             remote_url = self.getMeta("remote")
@@ -987,7 +980,8 @@ class Block:
             with self._repo.remotes.origin.config_writer as cw:
                 cw.set("url", remote_url)
             if(push):
-                self._repo.git.push("-u","origin",str(self._repo.head.reference))
+                pass
+                #self._repo.git.push("-u","origin",str(self._repo.head.reference))
         pass
 
     #push to remote repository
@@ -1222,7 +1216,7 @@ class Block:
         to be a valid release point before entering this method.
         '''
         #checkout version
-        self._repo.git.checkout(ver+apt.TAG_ID)  
+        self._repo.git('checkout',ver+apt.TAG_ID)  
         #copy files
         version_path = self.getPath()+"../"+folder+"/"
         base_path = self.getPath()
@@ -1286,7 +1280,7 @@ class Block:
 
         #switch back to latest version in cache
         if(ver[1:] != self.getMeta("version")):
-            self._repo.git.checkout('-')
+            self._repo.git('checkout','-')
         pass
 
 
@@ -1358,7 +1352,8 @@ class Block:
             if(os.path.exists(specific_cache_dir)):
                 shutil.rmtree(specific_cache_dir, onerror=apt.rmReadOnly)
             #clone and checkout specific version tag
-            git.Git(cache_dir).clone(src,"--branch",ver+apt.TAG_ID,"--single-branch")
+            Git.git('-C',cache_dir,'clone',src,'--branch',ver+apt.TAG_ID,'--single-branch')
+            #git.Git(cache_dir).clone(src,"--branch",ver+apt.TAG_ID,"--single-branch")
             #url name is the only folder here that's not a valid version
             src = src.lower().replace(".git","")
             for folder in os.listdir(cache_dir):
@@ -1376,7 +1371,7 @@ class Block:
             # :todo: 1a. modify all project files to become read-only
             self.modWritePermissions(enable=False)
  
-        self._repo = git.Repo(self.getPath())
+        self._repo = Git(self.getPath())
         self.loadMeta()
 
         #2. now perform install from cache
@@ -1384,7 +1379,7 @@ class Block:
         if(self.validVer(ver)):
             #ensure this version is actually tagged
             if(ver in self.getTaggedVersions()):
-                self._repo.git.checkout(ver+apt.TAG_ID)
+                self._repo.git('checkout',ver+apt.TAG_ID)
                 #copy files and move them to correct spot
                 if(ver[1:] == self.getMeta("version")):
                     meta = self.getMeta(every=True)
@@ -1946,8 +1941,9 @@ class Block:
         if(hasattr(self, "_unit_bank") and not override):
             return self._unit_bank
         elif(override):
+            pass
             #reset graph
-            Unit.Hierarchy = Graph()
+           # Unit.Hierarchy = Graph()
         
         #get all possible units (units are incomplete (this is intended))
         #self.grabDesigns(override, "current")
@@ -2169,6 +2165,7 @@ class Block:
             exit(log.error("Empty ports list for entity "+entity+"!"))
         return info
 
+
     @DeprecationWarning
     def create2(self, fresh=True, git_exists=False, remote=None, fork=False, inc_template=True):
         '''
@@ -2210,14 +2207,17 @@ class Block:
             self.downloadFromURL(self.grabGitRemote(), in_place=True)
         #make a new repo
         elif(not git_exists):
-            self._repo = git.Repo.init(self.getPath())
+            #self._repo = git.Repo.init(self.getPath())
+            pass
         #there is already a repo here
         elif(fresh):
-            self._repo = git.Repo(self.getPath())
+            #self._repo = git.Repo(self.getPath())
+            pass
             #does a remote exist?
             if(self.grabGitRemote(override=True) != None):
                 #ensure we have the latest version before creating marker file
-                self._repo.git.pull()
+                #self._repo.git.pull()
+                pass
 
         #create the marker file
         with open(self.getPath()+apt.MARKER, 'w') as f:
@@ -2274,30 +2274,30 @@ class Block:
         #save current progress into cfg
         self.save() 
         #add and commit to new git repository
-        self._repo.git.add('.') #self._repo.index.add(self._repo.untracked_files)
-        try:
-            self._repo.git.commit('-m','Initializes block')
-        except git.exc.GitCommandError:
-            log.warning("Nothing new to commit.")
+        #self._repo.git.add('.') #self._repo.index.add(self._repo.untracked_files)
+        #try:
+            #self._repo.git.commit('-m','Initializes block')
+        #except git.exc.GitCommandError:
+            #log.warning("Nothing new to commit.")
 
         #set it up to track origin
         if(self.grabGitRemote() != None):
             #sync with remote repository if not forking
             if(fork == False):
                 log.info('Pushing to remote repository...')
-                try:
-                    self._repo.git.push("-u","origin",str(self._repo.head.reference))
-                except git.exc.GitCommandError:
-                    log.warning("Cannot configure remote origin because it is not empty!")
+                #try:
+                    #self._repo.git.push("-u","origin",str(self._repo.head.reference))
+                #except git.exc.GitCommandError:
+                    #log.warning("Cannot configure remote origin because it is not empty!")
                     #remove remote url from existing areas
-                    self._repo.delete_remote('origin')
-                    self.setRemote(None, push=False)
-                    self.save()
+                    #self._repo.delete_remote('origin')
+                    #self.setRemote(None, push=False)
+                    #self.save()
             else:
                 log.info("Detaching remote from block...")
-                self._repo.delete_remote('origin')
-                self.setRemote(None, push=False)
-                self.save()
+                #self._repo.delete_remote('origin')
+                #self.setRemote(None, push=False)
+                #self.save()
         else:
             log.info('No remote code base attached to local repository')
         pass
@@ -2315,31 +2315,31 @@ class Block:
         self._path = apt.fs(path)
         if(path != None):
             if(self.isValid()):
-                if(not excludeGit):
-                    try:
-                        self._repo = git.Repo(self.getPath())
+                #if(not excludeGit):
+                    #try:
+                        #self._repo = git.Repo(self.getPath())
                     #make git repository if DNE
-                    except git.exc.InvalidGitRepositoryError:
-                        self._repo = git.Repo.init(self.getPath())
+                    #except git.exc.InvalidGitRepositoryError:
+                        #self._repo = git.Repo.init(self.getPath())
                 self.loadMeta()
                 return
         #elif(path == None):
             #self._path = apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/"+self.getName(low=False)+'/')
 
         #try to see if this directory is indeed a git repo
-        self._repo = None
-        try:
-            self._repo = git.Repo(self.getPath())
-        except:
-            pass
+        #self._repo = None
+        #try:
+            #self._repo = git.Repo(self.getPath())
+        #except:
+            #pass
 
-        if(remote != None):
-            self.grabGitRemote(remote)
+        #if(remote != None):
+            #self.grabGitRemote(remote)
 
         #is this block already existing?
-        if(self.isValid()):
+        #if(self.isValid()):
             #load in metadata from cfg
-            self.loadMeta()
+            #self.loadMeta()
         pass
 
 

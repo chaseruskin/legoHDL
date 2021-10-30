@@ -18,9 +18,7 @@ setuptools.setup(
     classifiers=[
         "",
     ],
-    install_requires=[
-        "git-Python",
-    ],
+    install_requires=[],
     entry_points='''
             [console_scripts]
             legohdl=legohdl.legohdl:main

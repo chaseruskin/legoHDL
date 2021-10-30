@@ -1,20 +1,15 @@
-################################################################################
-#   Project: legohdl
-#   Script: apparatus.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script is used to hold the legohdl settings. It includes code for 
+# Project: legohdl
+# Script: apparatus.py
+# Author: Chase Ruskin
+# Description:
+#   This script is used to hold the legohdl settings. It includes code for 
 #   safety measures to ensure the proper settings exits, as well as helper
 #   functions that are used throughout other scripts.
-################################################################################
 
-import stat,glob,git
-from datetime import datetime
+import os,shutil,stat,glob,subprocess
+import copy,platform
 import logging as log
-from subprocess import check_output
-import subprocess
 from .cfgfile import CfgFile as cfg
-import os,shutil,copy,platform
 
 
 class Apparatus:
@@ -876,6 +871,7 @@ scripts)?", warning=False)
 
     #[!] PREPARING FOR REMOVAL $
     @classmethod
+    @DeprecationWarning
     def isValidURL(cls, url):
         '''
         This method takes a URL and tests it to see if it is a valid remote git
@@ -886,7 +882,8 @@ scripts)?", warning=False)
         if(url == None or url.count(".git") == 0):
             return False
         try:
-            check_output(["git","ls-remote",url])
+            pass
+            #check_output(["git","ls-remote",url])
         except:
             return False
         return True

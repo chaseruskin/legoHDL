@@ -15,6 +15,7 @@ from .map import Map
 from .git import Git
 from .block import Block
 
+
 class Workspace:
 
     #store all workspaces in dictionary

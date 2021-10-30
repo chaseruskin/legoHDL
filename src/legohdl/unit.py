@@ -8,9 +8,9 @@
 #   VHDL and verilog. Units are used to help gather data on the type of HDL
 #   dependency tree that will be generated for the current design.
 
-from enum import Enum
 import os
 import logging as log
+from enum import Enum
 from .graph import Graph
 from .apparatus import Apparatus as apt
 from .map import Map

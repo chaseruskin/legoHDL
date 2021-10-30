@@ -1,23 +1,22 @@
-################################################################################
-#   Project: legohdl
-#   Script: registry.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script is in charge of seeing what blocks are available in the
+# Project: legohdl
+# Script: registry.py
+# Author: Chase Ruskin
+# Description:
+#   This script is in charge of seeing what blocks are available in the
 #   the current workspace and syncing blocks between user-end and market-end.
-################################################################################
+# Todo: 
+#   To delete and integrate into workspace.py
 
-from enum import Enum
-import git
-import logging as log
-import shutil
 import os,glob
+import logging as log
+from enum import Enum
+
 from collections import OrderedDict
 from .block import Block
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
-from .market import Market
 from .workspace import Workspace
+
 
 class Registry:
     class Mode(Enum):

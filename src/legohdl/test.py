@@ -4,14 +4,14 @@
 # Description:
 #   Runs unit-tests by enabling its block of code.
 
+import shutil,os
+
 from .script import Script
 from .map import Map
 from .git import Git
 from .profile import Profile
-import shutil
 from .market import Market
 from .apparatus import Apparatus as apt
-import os
 from .workspace import Workspace
 from .label import Label
 from .vhdl import Vhdl

@@ -10,9 +10,9 @@
 from legohdl.language import Language
 import logging as log
 from .language import Language
-from .apparatus import Apparatus as apt
 from .unit import Unit
 from .map import Map
+
 
 class Vhdl(Language):
 
