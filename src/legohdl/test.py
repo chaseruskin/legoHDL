@@ -221,7 +221,7 @@ def main():
         src[3] = '/Users/chase/develop/eel4712c/DungeonRun/main_module.vhd'
         src[4] = '/Users/chase/develop/eel4712c/DungeonRun/elapsed_time.vhd'
 
-        for s in src[3:4]:
+        for s in src[0:5]:
             if(s.endswith('.vhd')):
                 Vhdl(s, M='', L='B-Library', N='B-Name')
             else:

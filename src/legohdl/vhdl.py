@@ -39,6 +39,7 @@ class Vhdl(Language):
         self._seps = [':', '=', '(', ')', '>', '<', ',']
         self._dual_chars = [':=', '<=', '=>']
         self._comment = '--'
+        self._atomics = ['begin']
 
         self.spinCode()
         ###

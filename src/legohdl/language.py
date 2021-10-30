@@ -10,6 +10,7 @@
 #   entities/design units from its code, depending on if its 1 of the 2 
 #   supported languages: VHDL or verilog.
 
+from os import stat
 import sys
 from abc import ABC, abstractmethod
 from .apparatus import Apparatus as apt
@@ -108,6 +109,7 @@ class Language(ABC):
         Uses _seps ([str]) to determine what characters deserve their own index. 
         Uses _dual_chars ([str]) to combine any two-character tokens to be a single index.
         Uses _multi ((str, str)) to identify multi-line comment sections.
+        Uses _atomics ([str]) to separate special keywords into their own statements.
         
         Dynamically creates attr _code_stream so the operation can be reused.
 
@@ -129,7 +131,8 @@ class Language(ABC):
         #read the HDL file to break into words
         with open(self.getPath(), 'r') as file:
             #transform lines into statements
-            for line in file.readlines():
+            code = file.readlines()
+            for line in code:
                 #strip off an excessive whitespace
                 line = line.strip()
 
@@ -189,14 +192,28 @@ class Language(ABC):
                     #make sure to add last item
                     if(statement[-1] != ''):
                             statement_final.append(statement[-1])
-
-                    self._code_stream += [statement_final]
+                    #separate special keywords into their own statement lists
+                    for word in statement_final:
+                        if(word.lower() in self._atomics):
+                            #find index where the atomic word is in the statement
+                            a_i = statement_final.index(word)
+                            #split the statement
+                            if(len(statement_final[:a_i])):
+                                self._code_stream += [statement_final[:a_i]]
+                            self._code_stream += [[word]]
+                            #update remaining pieces of the statement
+                            statement_final = statement_final[a_i+1:]
+                        pass
+                    #only add non empty statement lists
+                    if(len(statement_final) > 0):
+                        self._code_stream += [statement_final]
                     statement = []
                     #update remaining line string
                     line = line[sc_index+1:]
 
                 #add any code after ';'
                 statement += line[sc_index+1:].split()
+                pass
             pass
 
         for cs in self._code_stream:
