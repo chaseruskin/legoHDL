@@ -132,7 +132,9 @@ class Language(ABC):
         with open(self.getPath(), 'r') as file:
             #transform lines into statements
             code = file.readlines()
+            line_cnt = 0
             for line in code:
+                line_cnt += 1
                 #strip off an excessive whitespace
                 line = line.strip()
 
@@ -161,7 +163,7 @@ class Language(ABC):
                     line = line + line_r
 
                 #skip if line is blank or within a multi-line comment section
-                if((len(line) == 0 and m0_index <= -1) or in_multi):
+                if(((len(line) == 0 and m0_index <= -1) or in_multi) and line_cnt < len(code)):
                     continue
                 #enter the mult-line comment section for next line
                 if(m0_index > -1 and m1_index <= -1):
@@ -173,10 +175,20 @@ class Language(ABC):
 
                 #find the ';' and create new statements if found
                 sc_index = -1
-                while line.count(';'):
+                while line.count(';') or line_cnt == len(code):
                     sc_index = line.find(';')
+                    #no ';' was found but the rest of the code must be collected
+                    if(sc_index == -1 and len(code) == line_cnt):
+                        sc_index = len(line)
+                        line_cnt += 1
+
+                    #split the statement into a list of its words
                     statement += line[:sc_index].split()
 
+                    #skip any empty statements
+                    if(len(statement) == 0):
+                        continue
+                        
                     #combine dual characters together
                     statement_final = []
                     for i in range(len(statement)-1):
