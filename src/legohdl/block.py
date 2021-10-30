@@ -911,8 +911,8 @@ class Block:
         #operation was successful
         return True
 
-
-    def validTitle(self, title):
+    @classmethod
+    def validTitle(cls, title):
         '''
         Checks if the given title is valid; i.e. it has a least a library and
         name, and it is not already taken.
