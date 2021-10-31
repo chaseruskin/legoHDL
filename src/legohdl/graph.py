@@ -84,6 +84,21 @@ class Graph:
         pass
 
 
+    def getNeighbors(self, vertex):
+        '''
+        Returns the list of vertices connected to the `vertex` Unit object.
+
+        Parameters:
+            vertex (Unit): a vertex within the graph
+        Returns:
+            _adj_list[vertex] ([Unit]): list of vertices connected to `vertex`
+        '''
+        if(vertex in self._adj_list.keys()):
+            return list(self._adj_list[vertex])
+        else:
+            return []
+
+
     def topologicalSort(self):
         '''
         Topologically sort the graph to compute a hierarchical build order.

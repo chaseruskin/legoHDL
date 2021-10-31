@@ -159,7 +159,7 @@ class Unit:
     def isChecked(self):
         return self._checked
 
-
+    @DeprecationWarning
     def writePortMap(self, mapping, lib, pureEntity):
         report = '\n'
         if(self.isPKG()):
@@ -247,16 +247,6 @@ class Unit:
 
 
     @classmethod
-    def allL(cls):
-        'Returns a list of all library level map keys.'
-        all_libs = []
-        for m in cls.Jar.keys():
-            all_libs += list(cls.Jar[m].keys())
-
-        return all_libs
-
-
-    @classmethod
     def loc(cls, dsgn_name, lib=None, ports=[], gens=[]):
         '''
         Locate the entity given the library and unit name. 
@@ -288,7 +278,7 @@ class Unit:
         dsgn_unit = None
         #the choice is clear; only one option available to be this design unit
         if(len(potentials) == 1):
-            print("Instantiating",potentials[0])
+            log.info("Instantiating "+potentials[0].getTitle())
             dsgn_unit = potentials[0]
             pass
         #perform intelligent component recognition by comparing ports and generics
@@ -296,6 +286,7 @@ class Unit:
             log.info("Performing Intelligent Component Recognition for "+dsgn_name+"...")
             #initialize scores for each potential component
             scores = [0]*len(potentials)
+
             #iterate through every potential component
             for i in range(len(potentials)):
                 #get the real ports for this component
@@ -366,49 +357,32 @@ class Unit:
             len(self.getInterface().getPorts()) == 0)
 
 
-    def addArchitecture(self, arch):
-        '''
-        Adds an architecture name to the unit's architectures.
-        
-        Parameters:
-            arch (str): architecture name
-        Returns:
-            None
-        '''
-        return
-        if(arch not in self.getArchitectures()):
-            self._archs.append(arch)
-        pass
-
-
-    def addRequirement(self, u):
+    def addReq(self, req):
         '''
         Add a unit as a requirement for this object.
 
         Parameters:
-            u (Unit): unit object that is used by unit calling the method
+            req (Unit): unit object that is used by unit calling the method
         Returns:
             None
         '''
+        if(req == None):
+            return
         #add new edge
-        self.Hierarchy.addEdge(self, u)
-        self._requirements = self.getRequirements() + [u]
+        self.Hierarchy.addEdge(self, req)
         pass
     
 
-    def getRequirements(self):
+    def getReqs(self):
         '''
         Returns a list of Unit objects directly required for this unit.
 
         Parameters:
             None
         Returns:
-            _reqs ([Unit]): list of required Units
+            ([Unit]): list of required Units
         '''
-        if(hasattr(self, "_requirements")):
-            return self._requirements
-        else:
-            return []
+        return self.Hierarchy.getNeighbors(self)
 
 
     @classmethod
@@ -434,9 +408,13 @@ class Unit:
         pass
 
 
+    def __repr__(self):
+        return f'''{self.getTitle()}, '''
+
+
     def __str__(self):
         reqs = '\n'
-        for dep in self.getRequirements():
+        for dep in self.getReqs():
             reqs = reqs + '-'+dep.M()+'.'+dep.L()+'.'+dep.N()+':'+dep.E()+" "
             reqs = reqs + hex(id(dep)) + "\n"
         return f'''
@@ -658,8 +636,8 @@ class Interface:
     def __init__(self, name, library, default_form):
         self._name = name
         self._library = library
-        self._ports = {}
-        self._generics = {}
+        self._ports = Map()
+        self._generics = Map()
         self._default_form = default_form
         pass
 
@@ -695,11 +673,11 @@ class Interface:
     def getMappingNames(self, mapping, lower_case=False):
         'Return a list of the collected dictionary keys for the mapping parameter.'
 
-        g_list = list(mapping.keys())
+        m_list = list(mapping.keys())
         if(lower_case):
-            for i in range(len(g_list)):
-                g_list[i] = g_list[i].lower()
-        return g_list
+            for i in range(len(m_list)):
+                m_list[i] = m_list[i].lower()
+        return m_list
 
 
     def computeLongestWord(self, words):

@@ -6,6 +6,8 @@
 
 import shutil,os
 
+from legohdl.language import Language
+
 from .script import Script
 from .map import Map
 from .git import Git
@@ -223,7 +225,7 @@ def main():
             '/Users/chase/develop/eel4712c/DungeonRun/main_module.vhd',
             '/Users/chase/develop/eel4712c/DungeonRun/elapsed_time.vhd']
 
-        names = [['', 'LIB1', 'BLK1'], ['', 'LIB2', 'BLK1'], ['', 'LIB1', 'BLK1']]
+        names = [['', 'LIB1', 'BLK1'], ['', 'LIB1', 'BLK2'], ['', 'LIB1', 'BLK1']]
 
         vs = Map()
         for i in range(0, 3):
@@ -234,9 +236,12 @@ def main():
                 v = Verilog(src[i], M=names[i][0], L=names[i][1], N=names[i][2])
                 vs[v] = v.identifyDesigns()
 
-        for v,ul in vs.items():
+        for ul in vs.values():
             for u in ul:
-                v.getRequirements(u)
+                if(u.E() == 'adder'):
+                    Language.ProcessedFiles[u.getFile()].decode(u)
+                    print(u.getReqs())
+                    Unit.Hierarchy.output(u)
 
         pass
     if(False):

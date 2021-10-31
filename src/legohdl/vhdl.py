@@ -7,7 +7,6 @@
 #
 #   A VHDL file has entities.
 
-from types import CellType
 from legohdl.language import Language
 import logging as log
 from .language import Language
@@ -32,9 +31,6 @@ class Vhdl(Language):
             None
         '''
         super().__init__(fpath, M, L, N, V)
-        self._comment = "--"
-        self._multi_comment = None
-        self._std_delimiters = "(",")",":",";",","
 
         ### new important stuff
         self._seps = [':', '=', '(', ')', '>', '<', ',']
@@ -129,9 +125,9 @@ class Vhdl(Language):
         return self._designs
 
 
-    def getRequirements(self, u):
+    def decode(self, u):
         '''
-        Decipher and collect data on a unit's lower-level entities.
+        Decipher and collect data on a unit's instantiated lower-level entities.
 
         Parameters:
             u (Unit): the unit file who's interface to update
@@ -140,6 +136,7 @@ class Vhdl(Language):
         '''
         #get all available units availalble as components
         comps = []
+        skips = ['for', 'begin', 'process']
         in_arch = False
         in_begin = 0
         #get all code statements
@@ -151,6 +148,7 @@ class Vhdl(Language):
                 in_arch = True
             elif(in_arch == False):
                 continue
+            #track scope stack to determine when maybe within the architecture implementation
             if(cseg[0].lower() == 'begin'):
                 in_begin += 1
             if(cseg[0].lower() == 'end'):
@@ -161,10 +159,12 @@ class Vhdl(Language):
             #exit case - finding 'end' with architecture or its name
             if(in_begin and len(cseg) > 1 and cseg[0].lower() == 'end'):
                 if(cseg[1].lower() == 'architecture'):
+                    u.setChecked(True)
                     return
                 else:
                     for arch in u.getArchitectures():
                         if(arch.lower() == cseg[1].lower()):
+                            u.setChecked(True)
                             return
 
             #find component declarations
@@ -176,19 +176,25 @@ class Vhdl(Language):
             if(in_begin):
                 while cseg.count(':'):
                     sp_i = cseg.index(':')
-                    comp_unit = cseg[sp_i+1]
+                    comp_name = cseg[sp_i+1]
                     #is it an entity style?
-                    if(comp_unit.lower() == 'entity'):
-                        comp_unit = cseg[sp_i+2]
+                    if(comp_name.lower() == 'entity'):
+                        comp_name = cseg[sp_i+2]
                     #move through the code segment
                     cseg = cseg[sp_i+1:]
                     #skip keyword misleaders
-                    if(comp_unit.lower() == 'for' or comp_unit.lower() == 'begin'):
+                    if(comp_name.lower() in skips):
                         continue
-
+                    #gather instantiated ports and generics
                     p_list, g_list = self.collectInstanceMaps(cseg)
-                    Unit.loc(comp_unit, ports=p_list, gens=g_list)
-                    exit()  #exit for debugging 
+                    #try to locate the unit with the given information
+                    comp_unit = Unit.loc(comp_name, lib=None, ports=p_list, gens=g_list)
+                    #add the unit as a requirement and decode it if exists
+                    if(comp_unit != None):
+                        u.addReq(comp_unit)
+                        if(comp_unit.isChecked() == False):
+                            Language.ProcessedFiles[comp_unit.getFile()].decode(comp_unit)
+                    #exit()  #exit for debugging 
                 pass
         pass
 
@@ -271,20 +277,124 @@ class Vhdl(Language):
             pass
         print(u.getInterface())
         pass
+
+
+    def getComponents(self, pkg_str):
+        '''
+        Return a list of component names that are available in this package.
+
+        Parameters:
+            pkg_str (str): the string following a vhdl 'use' keyword.
+        Returns:
+            comps ([str]): entity names found as component declarations in package
+        '''
+        print(pkg_str)
+
+        return []
+
+        #get the vhdl file object that uses this file
+        vhd = self.ProcessedFiles[filepath]
+        #generate the code stream
+        cs = vhd.generateCodeStream(False, False, *self._std_delimiters)
+
+        in_pkg = False
+        entity_name = pkg_name = None
+        #iterate through the code stream, identifying keywords as they come
+        comps = []
+        for i in range(0,len(cs)):
+            code_word = cs[i]
+            if(code_word == 'package'):
+                in_pkg = (cs[i+1] != 'body')
+                if(in_pkg):
+                    pkg_name = cs[i+1]
+            elif(code_word == 'component'):
+                if(in_pkg and cs[i-1] != 'end'):
+                    #snag to entity name
+                    entity_name = cs[i+1]
+                    comps.append(entity_name)
+            elif(code_word == 'end'):
+                if(cs[i+1] == 'package' or cs[i+1] == pkg_name):
+                    break
+            pass
+        #print("Components from this package:",comps)
+        #restore file path back to its original assignment
+        return comps
+
     
+    def collectInstanceMaps(self, cseg):
+        '''
+        Parse entity instantiation mappings to form a generics list and ports list from 
+        an instantiation code statement.
 
-    def getInstances(self):
-        pass
+        If a component was instantiated by position, '?' will appear in the list to get
+        an appropriate length of number of ports mapped.
 
+        Parameters:
+            cseg ([str]): a vhdl code statement
+        Returns:
+            p_list ([str]): list of ports identified (all lower-case)
+            g_list ([str]): list of generics identified (all lower-case)
+        '''
+        p_list = []
+        g_list = []
+        in_ports = False
+        in_gens = False
+        stack = 0 #stack of parentheses
+        inst_by_name = (cseg.count('=>') > 0)
+        #print(cseg)
+
+        for i in range(1, len(cseg)-1):
+            token = cseg[i].lower()
+            if(token.lower() == 'port'):
+                in_ports = True
+                in_gens = False
+            elif(token.lower() == 'generic'):
+                in_gens = True
+                in_ports = False
+            elif(token == '=>'):
+                if(in_gens):
+                    g_list += [cseg[i-1].lower()]
+                elif(in_ports):
+                    p_list += [cseg[i-1].lower()]
+            elif(token == '('):
+                stack += 1
+            elif(token == ')'):
+                stack -= 1
+            #add to respective lists
+            if(inst_by_name == False):
+                if((token == '(' and stack == 1) or token == ','):
+                    if(in_gens):
+                        g_list += ['?']
+                    elif(in_ports):
+                        p_list += ['?']
+            pass
+        #print(p_list, g_list)        
+        return p_list, g_list
+
+
+
+
+
+
+
+
+
+
+
+
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
 
     #function to determine required modules for self units
+    @DeprecationWarning
     def decipher(self, verbose=False):
         '''
         Analyzes the current VHDL file to collect data for all identified design 
         units.
         '''
         current_map = Unit.Jar[self.M()][self.L()][self.N()]
-
+        return
         for u in self.identifyDesigns():
             self.getRequirements(u)
         return
@@ -559,45 +669,7 @@ class Vhdl(Language):
         #print("===LIBS====",library_declarations)
         pass
 
-
-    def grabComponents(self, filepath):
-        '''
-        Return a list of components (entity names) that are available in this package.
-
-        Parameters:
-            filepath (str): path to VHDL package unit (assumed to already have apt.fs() applied)
-        Returns:
-            comps ([str]): entity names found as component declarations in package
-        '''
-        #get the vhdl file object that uses this file
-        vhd = self.ProcessedFiles[filepath]
-        #generate the code stream
-        cs = vhd.generateCodeStream(False, False, *self._std_delimiters)
-
-        in_pkg = False
-        entity_name = pkg_name = None
-        #iterate through the code stream, identifying keywords as they come
-        comps = []
-        for i in range(0,len(cs)):
-            code_word = cs[i]
-            if(code_word == 'package'):
-                in_pkg = (cs[i+1] != 'body')
-                if(in_pkg):
-                    pkg_name = cs[i+1]
-            elif(code_word == 'component'):
-                if(in_pkg and cs[i-1] != 'end'):
-                    #snag to entity name
-                    entity_name = cs[i+1]
-                    comps.append(entity_name)
-            elif(code_word == 'end'):
-                if(cs[i+1] == 'package' or cs[i+1] == pkg_name):
-                    break
-            pass
-        #print("Components from this package:",comps)
-        #restore file path back to its original assignment
-        return comps
-
-
+    @DeprecationWarning
     def collectPorts(self, unit, words):
         '''
         From a subset of the code stream, parse through and create HDL Port
@@ -630,7 +702,7 @@ class Vhdl(Language):
             words = words[sep+1:]
         pass
 
-
+    @DeprecationWarning
     def collectGenerics(self, unit, words):
         '''
         From a subset of the code stream, parse through and create HDL Generic
@@ -671,73 +743,6 @@ class Vhdl(Language):
             unit.getInterface().addGeneric(gen_name, gen_type, gen_value)
             pass
         pass
-
-
-    def collectInstanceMaps(self, cseg):
-        '''
-        Parse entity instantiation mappings to form a generics list and ports list from 
-        an instantiation code statement.
-
-        If a component was instantiated by position, '?' will appear in the list to get
-        an appropriate length of number of ports mapped.
-
-        Parameters:
-            cseg ([str]): a vhdl code statement
-        Returns:
-            p_list ([str]): list of ports identified (all lower-case)
-            g_list ([str]): list of generics identified (all lower-case)
-        '''
-        p_list = []
-        g_list = []
-        in_ports = False
-        in_gens = False
-        stack = 0 #stack of parentheses
-        inst_by_name = (cseg.count('=>') > 0)
-        #print(cseg)
-
-        for i in range(1, len(cseg)-1):
-            token = cseg[i].lower()
-            if(token.lower() == 'port'):
-                in_ports = True
-                in_gens = False
-            elif(token.lower() == 'generic'):
-                in_gens = True
-                in_ports = False
-            elif(token == '=>'):
-                if(in_gens):
-                    g_list += [cseg[i-1].lower()]
-                elif(in_ports):
-                    p_list += [cseg[i-1].lower()]
-            elif(token == '('):
-                stack += 1
-            elif(token == ')'):
-                stack -= 1
-            #add to respective lists
-            if(inst_by_name == False):
-                if((token == '(' and stack == 1) or token == ','):
-                    if(in_gens):
-                        g_list += ['?']
-                    elif(in_ports):
-                        p_list += ['?']
-            pass
-        #print(p_list, g_list)        
-        return p_list, g_list
-
-
-
-
-
-
-
-
-
-
-
-
-# ==============================================================================
-# ==============================================================================
-# ==============================================================================
-
     #append a signal/generic string to a list of its respective type
     @DeprecationWarning
     def addSignal(self, stash, c, stream, true_stream, declare=False, isSig=False):

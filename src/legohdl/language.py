@@ -11,6 +11,7 @@
 #   supported languages: VHDL or verilog.
 
 from os import stat
+from posixpath import basename
 import sys
 from abc import ABC, abstractmethod
 from .apparatus import Apparatus as apt
@@ -44,9 +45,6 @@ class Language(ABC):
             if(apt.isEqualPath(self.getPath(), pf)):
                 log.info("Already processed: "+self.getPath())
                 return
-        
-        #create a group of standard delimiters :remove:
-        self._std_delimiters = "(",")",":",";",",","="
 
         #remember what block owns this file :todo: make neater (pass a tuple)
         self._M = M if(M != None) else ''
@@ -64,39 +62,80 @@ class Language(ABC):
     
     @abstractmethod
     def identifyDesigns(self):
+        '''
+        Analyzes the current VHDL file to only identify design units. Does not
+        complete their data. 
+        
+        Dynamically creates attr _designs.
+
+        Parameters:
+            None
+        Returns:
+            _designs ([Unit]): list of units found in this file
+        '''
+        pass
+    
+
+    @abstractmethod
+    def decode(self, u):
+        '''
+        Decipher and collect data on a unit's instantiated lower-level entities.
+
+        Parameters:
+            u (Unit): the unit file who's interface to update
+        Returns:
+            None
+        '''
         pass
 
 
     @abstractmethod
-    def decipher(self, design_book, cur_lib, verbose):
+    def getInterface(self, u, csegs):
+        '''
+        Decipher and collect data on a unit's interface (entity code).
+
+        Assumes `csegs` begins at the first statement that declares the entity.
+        Exits on the first statement beginning with "end".
+
+        Parameters:
+            u (Unit): the unit file who's interface to update
+            csegs ([[str]]): list of code statements (which are also lists)
+        Returns:
+            None
+        '''
         pass
 
 
-    #generate string of component's signal declarations to be interfaced with the port
-    #:refactor/remove:
     @abstractmethod
-    def writeComponentSignals(self):
+    def getComponents(self, pkg_str):
+        '''
+        Return a list of component names that are available in this package.
+
+        Parameters:
+            pkg_str (str): the string following a vhdl 'use' keyword.
+        Returns:
+            comps ([str]): entity names found as component declarations in package
+        '''
         pass
 
 
-    #write out the mapping instance of an entity (can be pure instance using 'entity' keyword also)
-    #:refactor/remove:
     @abstractmethod
-    def writeComponentMapping(self, pureEntity=False, lib=''):
+    def collectInstanceMaps(self, cseg):
+        '''
+        Parse entity instantiation mappings to form a generics list and ports list from 
+        an instantiation code statement.
+
+        If a component was instantiated by position, '?' will appear in the list to get
+        an appropriate length of number of ports mapped.
+
+        Parameters:
+            cseg ([str]): a vhdl code statement
+        Returns:
+            p_list ([str]): list of ports identified (all lower-case)
+            g_list ([str]): list of generics identified (all lower-case)
+        '''
         pass
-
-
-    #write out the entity but as a component 
-    #:refactor/remove:
-    @abstractmethod
-    def writeComponentDeclaration(self):
-        pass
-
-
-    #:todo: replace decode
-    def decrypt(self):
-        pass
-
+    
 
     def spinCode(self):
         '''

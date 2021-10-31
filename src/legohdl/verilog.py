@@ -27,14 +27,6 @@ class Verilog(Language):
             None
         '''
         super().__init__(fpath, M, L, N, V)
-        self._comment = "//"
-        self._multi_comment = ("/*","*/")
-        self._std_delimiters = *self._std_delimiters,'#','[',']','='
-        
-        self._param_begin = -1
-        self._param_end = -1
-        self._port_begin = -1
-        self._port_end = -1
 
         ### new important stuff
         self._seps = [':', '=', '(', ')', '#', ',', '.', '[', ']']
@@ -72,19 +64,122 @@ class Verilog(Language):
         self._designs = []
 
         #looking for design units in each statement
-        for code_seg in c_statements:
-            if(code_seg[0] == 'module'):
-                print(code_seg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self.getAbout())]
+        for cseg in c_statements:
+            if(cseg[0] == 'module'):
+                print(cseg[1])
+                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
         return self._designs
 
 
+    def decode(self, u):
+        '''
+        Decipher and collect data on a unit's lower-level entities.
+
+        Parameters:
+            u (Unit): the unit file who's interface to update
+        Returns:
+            None
+        '''
+        #get the code statements
+        csegs = self.spinCode()
+        skips = ['reg', 'wire', 'module', 'always', 'case', 'while', 'repeat']
+
+        in_module = False
+
+        for cseg in csegs:
+            #determine when entering module
+            if(cseg[0] == 'module' and cseg[1] == u.E()):
+                in_module = True
+            elif(in_module == False):
+                continue
+
+            #check for exit case - finding 'endmodule'
+            if(cseg[0] == 'endmodule'):
+                u.setChecked(True)
+                return
+
+            #look for equal amount of brackets
+            if(cseg.count('(') > 1 and (cseg.count('(') - cseg.count(')') == 0)):
+                #now check for entity name
+                comp_name = cseg[0]
+                #skip keyword misleaders
+                if(comp_name in skips):
+                    continue
+                #gather instantiated ports and generics
+                p_list, g_list = []
+                #try to locate the unit with the given information
+                comp_unit = Unit.loc(comp_name, lib=None, ports=p_list, gens=g_list)
+                if(comp_unit != None):
+                    #add as a requirement
+                    u.addReq(comp_unit)
+                    #enter decoding for the lower-level unit
+                    if(comp_unit.isChecked() == False):
+                        Language.ProcessedFiles[comp_unit.getFile()].decode(comp_unit)
+                pass
+
+        pass
+
+
+    def getInterface(self, u, csegs):
+        '''
+        Decipher and collect data on a unit's interface (entity code).
+
+        Assumes `csegs` begins at the first statement that declares the entity.
+        Exits on the first statement beginning with "end".
+
+        Parameters:
+            u (Unit): the unit file who's interface to update
+            csegs ([[str]]): list of code statements (which are also lists)
+        Returns:
+            None
+        '''
+        pass
+
+
+    def getComponents(self, pkg_str):
+        '''
+        Return a list of component names that are available in this package.
+
+        Parameters:
+            pkg_str (str): the string following a vhdl 'use' keyword.
+        Returns:
+            comps ([str]): entity names found as component declarations in package
+        '''
+        pass
+
+
+    def collectInstanceMaps(self, cseg):
+        '''
+        Parse entity instantiation mappings to form a generics list and ports list from 
+        an instantiation code statement.
+
+        If a component was instantiated by position, '?' will appear in the list to get
+        an appropriate length of number of ports mapped.
+
+        Parameters:
+            cseg ([str]): a vhdl code statement
+        Returns:
+            p_list ([str]): list of ports identified (all lower-case)
+            g_list ([str]): list of generics identified (all lower-case)
+        '''
+        pass
+
+
+
+# ==============================================================================
+# === ARCHIVED CODE... TO DELETE ===============================================
+# ==============================================================================
+# ==============================================================================
+
+    @DeprecationWarning
     def decipher(self, design_book=dict(), cur_lib='', verbose=False):
         '''
         Analyzes the current VERILOG file to collect data for all identified design 
         units.
         '''
         current_map = Unit.Jar[self.M()][self.L()][self.N()]
+        print("UNDER REMOVAL...")
+        return
 
         if(verbose):
             log.info("Deciphering VERILOG file..."+self.getPath())
@@ -252,6 +347,7 @@ class Verilog(Language):
 
 
     #generate string of component's signal declarations to be interfaced with the port
+    @DeprecationWarning
     def writeComponentSignals(self, return_names=False):
         #print("writing signals")
         #keep cases and keep terminators
@@ -294,6 +390,7 @@ class Verilog(Language):
 
 
     #append a signal/generic string to a list of its respective type
+    @DeprecationWarning
     def addSignal(self, stash, c, true_stream, declare=False):
         names = []
         supported_signals = ['wire', 'reg', 'logic']
@@ -368,6 +465,7 @@ class Verilog(Language):
 
 
     #write out the mapping instance of an entity (can be pure instance using 'entity' keyword also)
+    @DeprecationWarning
     def writeComponentMapping(self, pureEntity=True, lib=''):
         #get parsed case-sensitive code stream with terminators
         c_stream = self.generateCodeStream(True,True,*self._std_delimiters)

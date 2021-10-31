@@ -1568,7 +1568,7 @@ class Block:
                     top_contenders.remove(name)
                 continue
                 
-            for dep in unit.getRequirements():
+            for dep in unit.getReqs():
                 if(dep.E().lower() in top_contenders):
                     top_contenders.remove(dep.E().lower())
 
@@ -1622,7 +1622,7 @@ class Block:
         units = self.getUnits()
         benches = []
         for unit in units.values():
-            for dep in unit.getRequirements():
+            for dep in unit.getReqs():
                 if(dep.L().lower() == self.getLib().lower() and dep.E().lower() == entity_name and unit.isTb()):
                     benches.append(unit)
         #perfect; only 1 was found  
@@ -1815,11 +1815,11 @@ class Block:
 
         if(top != None and top.lower() in units.keys()):
             if(units[top].isChecked() == False):
-                Language.ProcessedFiles[units[top].getFile()].decipher()
+                Language.ProcessedFiles[units[top].getFile()].decode(units[top])
         else:
             for u in units.values():
                 if(u.isChecked() == False):
-                    Language.ProcessedFiles[u.getFile()].decipher()
+                    Language.ProcessedFiles[u.getFile()].decode(u)
         #self.printUnits()
         return units
 
