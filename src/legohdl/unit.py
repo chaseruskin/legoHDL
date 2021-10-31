@@ -272,23 +272,26 @@ class Unit:
         Returns:
             (Unit): unit object from the Jar
         '''
-        #if no library, get list of all units
+        #create a list of all potential design units
         potentials = []
+        #if no library, get list of all units
         if(lib == '' or lib == None):
             for ul in list(cls.Bottle.values()):
-                #print(dsgn_name)
-                #print(ul.keys())
-                if(dsgn_name.lower() in ul.keys()):
+                #print("searching for:",dsgn_name,"/ units:",list(ul.keys()))
+                #could be any design that falls under this unit name
+                if(dsgn_name.lower() in list(ul.keys())):
                     potentials += ul[dsgn_name]
+        #a library was given, only pull list from that specific library.unit slot
         elif(dsgn_name.lower() in cls.Bottle[lib].keys()):
             potentials = cls.Bottle[lib][dsgn_name]
 
         dsgn_unit = None
-        
+        #the choice is clear; only one option available to be this design unit
         if(len(potentials) == 1):
             print("Instantiating",potentials[0])
             dsgn_unit = potentials[0]
             pass
+        #perform intelligent component recognition by comparing ports and generics
         elif(len(potentials) > 1):
             log.info("Performing Intelligent Component Recognition for "+dsgn_name+"...")
             #initialize scores for each potential component
@@ -312,6 +315,9 @@ class Unit:
                         #automatically set score to 0
                         scores[i] = 0
                         break
+
+            # :todo: rule out a unit if a gen is instantiated that's not in its true_gens
+
             #pick the highest score
             i = 0
             print('--- ICR SCORE REPORT ---')
