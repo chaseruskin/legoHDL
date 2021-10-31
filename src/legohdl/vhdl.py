@@ -33,7 +33,7 @@ class Vhdl(Language):
         super().__init__(fpath, M, L, N, V)
 
         ### new important stuff
-        self._seps = [':', '=', '(', ')', '>', '<', ',']
+        self._seps = [':', '=', '(', ')', '>', '<', ',', '"']
         self._dual_chars = [':=', '<=', '=>']
         self._comment = '--'
         self._atomics = ['begin', 'is']

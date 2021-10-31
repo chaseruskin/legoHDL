@@ -135,7 +135,7 @@ class Language(ABC):
             g_list ([str]): list of generics identified (all lower-case)
         '''
         pass
-    
+
 
     def spinCode(self):
         '''
@@ -176,6 +176,8 @@ class Language(ABC):
                 line_cnt += 1
                 #strip off an excessive whitespace
                 line = line.strip()
+
+                # :todo: determine if inside a string
 
                 #reduce down to valid code (non-comments)
                 c_index = line.find(self._comment)
