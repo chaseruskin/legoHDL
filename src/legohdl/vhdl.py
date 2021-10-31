@@ -7,6 +7,7 @@
 #
 #   A VHDL file has entities.
 
+from types import CellType
 from legohdl.language import Language
 import logging as log
 from .language import Language
@@ -39,7 +40,7 @@ class Vhdl(Language):
         self._seps = [':', '=', '(', ')', '>', '<', ',']
         self._dual_chars = [':=', '<=', '=>']
         self._comment = '--'
-        self._atomics = ['begin']
+        self._atomics = ['begin', 'is']
 
         self.spinCode()
         ###
@@ -79,111 +80,200 @@ class Vhdl(Language):
 
         self._designs = []
 
+        libs = []
+        pkgs = []
+
         #looking for design units in each statement
         for cseg in c_statements:
+            #collect library calls as going forward
+            if(cseg[0].lower() == 'library'):
+                #print(cseg[1])
+                libs += [cseg[1]]
+            #link relevant packages (resets with every entity)
+            if(cseg[0].lower() == 'use'): 
+                #print(cseg[1])
+                #split by '.'
+                pkgs += [cseg[1]]
+                pass
+            #declare an entity
             if(cseg[0].lower() == 'entity'):
-                print(cseg[1])
+                log.info("Identified entity: "+cseg[1])
                 self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
-                self.getInterface(self._designs[-1])
+                dsgn_unit = self._designs[-1]
+                self.getInterface(dsgn_unit, c_statements[c_statements.index(cseg):])
+                #link visible libraries and packages
+                dsgn_unit.linkLibs(libs, pkgs)
+                #reset package spaces
+                pkgs = []
+                pass
+            #declare a package unit
             elif(cseg[0].lower() == 'package' and cseg[1].lower() != 'body'):
                 print(cseg[1])
                 self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
-            # :todo: configurations are linked to an entity...therefore they do not get their own unit type (they are 'like' architectures)
+                pass
+            #link a configuration
             elif(cseg[0].lower() == 'configuration'):
-                print(cseg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.CONFIGURATION, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
+                log.info("Identified configuration "+cseg[1]+" for entity: "+cseg[3])
+                #get who owns this configuration
+                dsgn_entity = cseg[3]
+                Unit.Jar[self.M()][self.L()][self.N()][dsgn_entity].linkConfig(cseg[1])
+                pass
+            #link an architecture
+            elif(cseg[0].lower() == 'architecture'):
+                log.info("Identified architecture "+cseg[1]+" for entity: "+cseg[3])
+                #get who owns this architecture
+                dsgn_entity = cseg[3]
+                Unit.Jar[self.M()][self.L()][self.N()][dsgn_entity].linkArch(cseg[1])
+                pass
 
         return self._designs
 
 
-    def getInterface(self, u):
+    def getRequirements(self, u):
         '''
-        Decipher and collect data on a unit's interface (entity code).
+        Decipher and collect data on a unit's lower-level entities.
 
         Parameters:
             u (Unit): the unit file who's interface to update
         Returns:
             None
         '''
-        #get the list of statements
-        c_statements = self.spinCode()
+        #get all available units availalble as components
+        comps = []
+        in_arch = False
+        in_begin = 0
+        #get all code statements
+        csegs = self.spinCode()
 
-        in_entity = False
+        for cseg in csegs:
+            #determine when to enter the architecture
+            if(cseg[0].lower() == 'architecture' and cseg[3].lower() == u.E().lower()):
+                in_arch = True
+            elif(in_arch == False):
+                continue
+            if(cseg[0].lower() == 'begin'):
+                in_begin += 1
+            if(cseg[0].lower() == 'end'):
+                in_begin -= 1
+                if(in_begin < 0):
+                    in_begin = 0
+
+            #exit case - finding 'end' with architecture or its name
+            if(in_begin and len(cseg) > 1 and cseg[0].lower() == 'end'):
+                if(cseg[1].lower() == 'architecture'):
+                    return
+                else:
+                    for arch in u.getArchitectures():
+                        if(arch.lower() == cseg[1].lower()):
+                            return
+
+            #find component declarations
+            if(cseg[0].lower() == 'component'):
+                log.info("Declared component: "+cseg[1])
+                comps += [cseg[1]]
+
+            #find instantiations    
+            if(in_begin):
+                while cseg.count(':'):
+                    sp_i = cseg.index(':')
+                    comp_unit = cseg[sp_i+1]
+                    #is it an entity style?
+                    if(comp_unit.lower() == 'entity'):
+                        comp_unit = cseg[sp_i+2]
+                    #move through the code segment
+                    cseg = cseg[sp_i+1:]
+                    #skip keyword misleaders
+                    if(comp_unit.lower() == 'for' or comp_unit.lower() == 'begin'):
+                        continue
+
+                    p_list, g_list = self.collectInstanceMaps(cseg)
+                    Unit.loc(comp_unit, ports=p_list, gens=g_list)
+                    exit()  #exit for debugging 
+                pass
+        pass
+
+
+    def getInterface(self, u, csegs):
+        '''
+        Decipher and collect data on a unit's interface (entity code).
+
+        Assumes `csegs` begins at the first statement that declares the entity.
+        Exits on the first statement beginning with "end".
+
+        Parameters:
+            u (Unit): the unit file who's interface to update
+            csegs ([[str]]): list of code statements (which are also lists)
+        Returns:
+            None
+        '''
         in_generics = False
         in_ports = False
         identifiers = []
 
-        for cseg in c_statements:
-            if(cseg[0].lower() == 'entity' and cseg[1] == u.E()):
-                in_entity = True
-                print("ENTERING...")
-                if(cseg.count('end')):
-                    print("this entity has no interface!")
-                    break
+        for cseg in csegs:
+            entry = False
+            #exit upon finding 'end'
             if(cseg[0].lower() == 'end'):
-                print('EXITING...')
-                break
-            if(in_entity):
-                entry = False
-                #find out if entering generic or port listings
-                for word in cseg:
-                    #enter generics or ports
-                    if(word.lower() == 'generic' or word.lower() == 'port'):
-                        in_generics = (word.lower() == 'generic')
-                        in_ports = (word.lower() == 'port')
-                        entry = True
-                        break
-                    pass
+                return
 
-                #count up number of ( and ) tokens
-                pb_cnt = cseg.count('(') - cseg.count(')')
-                p_i = -1
-                #skip initial opening parenthesis bracket
-                if(entry):
-                    p_i = cseg.index('(')
-                print(cseg)
-                #make sure an idenifier is in this statement
-                if(cseg.count(':') == 0):
-                    continue
-                c_i = cseg.index(':')
+            #enter generics or ports
+            if(cseg[0].lower() == 'generic' or cseg[0].lower() == 'port'):
+                in_generics = (cseg[0].lower() == 'generic')
+                in_ports = (cseg[0].lower() == 'port')
+                entry = True
 
-                #get the port names
-                identifiers = cseg[p_i+1:c_i]
-                #print("IDS:",identifiers)
-                #adjust pb_cnt if generics/ports are on one statement
-                if(entry and pb_cnt == 0):
-                    pb_cnt = -1
-                end = len(cseg)+pb_cnt
- 
-                if(in_ports):
-                    #get the port direction
-                    route = cseg[c_i+1]
-                    #print("ROUTE:",route)
-                    #get the port data type
-                    dtype = cseg[c_i+2:end]
-                    #print("DATA TYPE:",dtype)
-                    for port in identifiers:
-                        if(port != ','):
-                            u.getInterface().addPort(port, route, dtype)
-                    pass
-                elif(in_generics):
-                    #find if an initial value is being set
-                    val = None
-                    v_i = end
-                    if(cseg.count(':=')):
-                        v_i = cseg.index(':=')
-                        #get the generic value
-                        val = cseg[v_i+1:end]
-                        #print("VALUE:",val)
-                    #get the generic data type
-                    dtype = cseg[c_i+1:v_i]
-                    for gen in identifiers:
-                        if(gen != ','):
-                            u.getInterface().addGeneric(gen, dtype, val)
-                print(cseg)
+            #count up number of ( and ) tokens
+            pb_cnt = cseg.count('(') - cseg.count(')')
+            p_i = -1
+            #skip initial opening parenthesis bracket
+            if(entry):
+                p_i = cseg.index('(')
+            #print(cseg)
+            #make sure an idenifier is in this statement
+            if(cseg.count(':') == 0):
+                continue
+            c_i = cseg.index(':')
 
+            #get the port names
+            identifiers = cseg[p_i+1:c_i]
+            #print("IDS:",identifiers)
+            #adjust pb_cnt if generics/ports are on one statement
+            if(entry and pb_cnt == 0):
+                pb_cnt = -1
+            end = len(cseg)+pb_cnt
+
+            if(in_ports):
+                #get the port direction
+                route = cseg[c_i+1]
+                #print("ROUTE:",route)
+                #get the port data type
+                dtype = cseg[c_i+2:end]
+                #print("DATA TYPE:",dtype)
+                for port in identifiers:
+                    if(port != ','):
+                        u.getInterface().addPort(port, route, dtype)
+                pass
+            elif(in_generics):
+                #find if an initial value is being set
+                val = None
+                v_i = end
+                if(cseg.count(':=')):
+                    v_i = cseg.index(':=')
+                    #get the generic value
+                    val = cseg[v_i+1:end]
+                    #print("VALUE:",val)
+                #get the generic data type
+                dtype = cseg[c_i+1:v_i]
+                for gen in identifiers:
+                    if(gen != ','):
+                        u.getInterface().addGeneric(gen, dtype, val)
+            #print(cseg)
             pass
         print(u.getInterface())
+        pass
+    
+
+    def getInstances(self):
         pass
 
 
@@ -194,6 +284,10 @@ class Vhdl(Language):
         units.
         '''
         current_map = Unit.Jar[self.M()][self.L()][self.N()]
+
+        for u in self.identifyDesigns():
+            self.getRequirements(u)
+        return
 
 
         def splitBlock(name):
@@ -274,10 +368,10 @@ class Vhdl(Language):
                     #add this package as a key/value pair with its components if it has the ".all"
                     if(cs[i+1].endswith(".all")):
                         # [!] :todo: use a "locate" method using shortcutting and prompting user if multiple components are in question
-                        components_on_standby[L+'.'+U] = self.grabComponents(Unit.loc(u=U, l=L).getFile())
+                        components_on_standby[L+'.'+U] = self.grabComponents(Unit.loc(dsgn_name=U, l=L).getFile())
                     #add the package unit itself
                     # [!] :todo: use a "locate" method using shortcutting and prompting user if multiple components are in question
-                    using_units.append(Unit.loc(u=U, l=L))
+                    using_units.append(Unit.loc(dsgn_name=U, lib=L))
             elif(code_word == 'entity'):
                 # this is ending a entity declaration
                 if(isEnding):
@@ -356,7 +450,7 @@ class Vhdl(Language):
                     for L in Unit.allL():
                         if(entity_name in Unit.Bottle[L].keys()):
                             pl, gl = self.collectInstanceMaps(cs[i:])
-                            using_units.append(Unit.loc(u=entity_name, l=L, ports=pl, gens=gl))
+                            using_units.append(Unit.loc(dsgn_name=entity_name, lib=L, ports=pl, gens=gl))
                 pass
             elif(code_word == 'architecture'):
                 # this is ending an architecture section
@@ -375,7 +469,7 @@ class Vhdl(Language):
                     #uncomment if running into problems with multiple entities/archs in one file
                     #unit_name = whos_arch 
                     print("beginning",arch_name)
-                    current_map[whos_arch].addArchitecture(arch_name)
+                    #current_map[whos_arch].addArchitecture(arch_name)
                 pass
             elif(code_word == "component"):
                 # :todo: - component declarations from within shallow architecture
@@ -579,44 +673,54 @@ class Vhdl(Language):
         pass
 
 
-    def collectInstanceMaps(self, words):
+    def collectInstanceMaps(self, cseg):
         '''
-        Parse entity instantiation mappings to form a generics list and ports list.
+        Parse entity instantiation mappings to form a generics list and ports list from 
+        an instantiation code statement.
+
+        If a component was instantiated by position, '?' will appear in the list to get
+        an appropriate length of number of ports mapped.
 
         Parameters:
-            words ([str]): list of vhdl words to parse
+            cseg ([str]): a vhdl code statement
         Returns:
-            p_list ([str]): list of ports identified
-            g_list ([str]): list of generics identified
+            p_list ([str]): list of ports identified (all lower-case)
+            g_list ([str]): list of generics identified (all lower-case)
         '''
         p_list = []
         g_list = []
         in_ports = False
         in_gens = False
         stack = 0 #stack of parentheses
-        for i in range(len(words)):
-            token = words[i].lower()
-            if(token == 'map'):
-                if(words[i-1].lower() == 'port'):
-                    in_ports = True
-                elif(words[i-1].lower() == 'generic'):
-                    in_gens = True
-                continue
+        inst_by_name = (cseg.count('=>') > 0)
+        #print(cseg)
+
+        for i in range(1, len(cseg)-1):
+            token = cseg[i].lower()
+            if(token.lower() == 'port'):
+                in_ports = True
+                in_gens = False
+            elif(token.lower() == 'generic'):
+                in_gens = True
+                in_ports = False
             elif(token == '=>'):
                 if(in_gens):
-                    g_list += [words[i-1]]
+                    g_list += [cseg[i-1].lower()]
                 elif(in_ports):
-                    p_list += [words[i-1]]
+                    p_list += [cseg[i-1].lower()]
             elif(token == '('):
                 stack += 1
             elif(token == ')'):
                 stack -= 1
-            #exit if stack is all popped
-            if(stack == 0):
-                in_gens = False
-                if(in_ports):
-                    break
-                
+            #add to respective lists
+            if(inst_by_name == False):
+                if((token == '(' and stack == 1) or token == ','):
+                    if(in_gens):
+                        g_list += ['?']
+                    elif(in_ports):
+                        p_list += ['?']
+            pass
+        #print(p_list, g_list)        
         return p_list, g_list
 
 

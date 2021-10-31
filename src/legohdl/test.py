@@ -214,18 +214,30 @@ def main():
     if(True):
         print('\n---LANGUAGE CLASSES---')
 
-        src = ['']*5
-        src[0] = '/Users/chase/develop/eel4712c/lab1/src/fa.vhd'
-        src[1] = '/Users/chase/desktop/testcode/counter.v'
-        src[2] = '/Users/chase/develop/eel4712c/lab2/src/alu_ns.vhd'
-        src[3] = '/Users/chase/develop/eel4712c/DungeonRun/main_module.vhd'
-        src[4] = '/Users/chase/develop/eel4712c/DungeonRun/elapsed_time.vhd'
+        src = ['']*6
+        src = ['/Users/chase/develop/eel4712c/lab1/src/fa.vhd',
+            '/Users/chase/desktop/testcode/fa.vhd',
+            '/Users/chase/develop/eel4712c/lab1/src/adder.vhd',
+            '/Users/chase/desktop/testcode/counter.v',
+            '/Users/chase/develop/eel4712c/lab2/src/alu_ns.vhd',
+            '/Users/chase/develop/eel4712c/DungeonRun/main_module.vhd',
+            '/Users/chase/develop/eel4712c/DungeonRun/elapsed_time.vhd']
 
-        for s in src[2:3]:
-            if(s.endswith('.vhd')):
-                Vhdl(s, M='', L='B-Library', N='B-Name')
+        names = [['', 'LIB1', 'BLK1'], ['', 'LIB2', 'BLK1'], ['', 'LIB1', 'BLK1']]
+
+        vs = Map()
+        for i in range(0, 3):
+            if(src[i].endswith('.vhd')):
+                v = Vhdl(src[i], M=names[i][0], L=names[i][1], N=names[i][2])
+                vs[v] = v.identifyDesigns()
             else:
-                Verilog(s, M='', L='B-Library', N='B-Name')
+                v = Verilog(src[i], M=names[i][0], L=names[i][1], N=names[i][2])
+                vs[v] = v.identifyDesigns()
+
+        for v,ul in vs.items():
+            for u in ul:
+                v.getRequirements(u)
+
         pass
     if(False):
         print('\n---ENTITY CLASS---')

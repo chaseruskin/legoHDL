@@ -30,7 +30,6 @@ class Unit:
     class Design(Enum):
         ENTITY = 1,
         PACKAGE = 2,
-        CONFIGURATION = 3,
         pass
 
 
@@ -62,10 +61,8 @@ class Unit:
 
         if(ext in apt.VHDL_CODE):
             self._language = self.Language.VHDL
-            self._arcs = []
         elif(ext in apt.VERILOG_CODE):
             self._language = self.Language.VERILOG
-            self._arcs = ['rtl'] #default to just rtl architecture
 
         self._dsgn = dsgn
         
@@ -117,6 +114,33 @@ class Unit:
         #add entity to a list
         self.Bottle[self.L()][self.E()] += [self]
 
+        pass
+
+
+    def linkLibs(self, libs, pkgs):
+        '''
+        Link relevant library and package files (mainly for VHDL entities).
+
+        Parameters:
+            libs ([str]): library names
+            pkgs ([str]): package names with respective '.' characters
+        Returns:
+            None
+        '''
+        self._libs = libs
+        self._pkgs = pkgs
+        pass
+
+
+    def linkArch(self, arch):
+        if(hasattr(self, '_archs') == False):
+            self._archs = []
+        self._archs += [arch]
+        pass
+
+
+    def linkConfig(self, config):
+        self._config = config
         pass
 
 
@@ -184,7 +208,10 @@ class Unit:
 
 
     def getArchitectures(self):
-        return self._arcs
+        if(hasattr(self, "_archs")):
+            return self._archs
+        else:
+            return ['rtl']
 
 
     def isPKG(self):
@@ -230,7 +257,7 @@ class Unit:
 
 
     @classmethod
-    def loc(cls, u, l=None, ports=[], gens=[]):
+    def loc(cls, dsgn_name, lib=None, ports=[], gens=[]):
         '''
         Locate the entity given the library and unit name. 
         
@@ -245,13 +272,73 @@ class Unit:
         Returns:
             (Unit): unit object from the Jar
         '''
-        # :todo: implement
+        #if no library, get list of all units
+        potentials = []
+        if(lib == '' or lib == None):
+            for ul in list(cls.Bottle.values()):
+                #print(dsgn_name)
+                #print(ul.keys())
+                if(dsgn_name.lower() in ul.keys()):
+                    potentials += ul[dsgn_name]
+        elif(dsgn_name.lower() in cls.Bottle[lib].keys()):
+            potentials = cls.Bottle[lib][dsgn_name]
 
-        return cls.Bottle[l][u][0]
+        dsgn_unit = None
+        
+        if(len(potentials) == 1):
+            print("Instantiating",potentials[0])
+            dsgn_unit = potentials[0]
+            pass
+        elif(len(potentials) > 1):
+            log.info("Performing Intelligent Component Recognition for "+dsgn_name+"...")
+            #initialize scores for each potential component
+            scores = [0]*len(potentials)
+            #iterate through every potential component
+            for i in range(len(potentials)):
+                #get the real ports for this component
+                interf = potentials[i].getInterface()
+                true_ports = interf.getMappingNames(interf.getPorts(), lower_case=True)
+                #compare the instance ports with the real ports
+                for sig in true_ports:
+                    #check if the true port is instantiated
+                    if(sig in ports):
+                        scores[i] += 1
+                    #can only compare lengths
+                    elif(len(ports) and ports[0] == '?'):
+                        scores[i] = -abs(len(true_ports) - len(ports))
+                        break
+                    #this port was not instantiated, yet it MUST since its an input
+                    elif(interf.getPorts()[sig].getRoute() == Port.Route.IN):
+                        #automatically set score to 0
+                        scores[i] = 0
+                        break
+            #pick the highest score
+            i = 0
+            print('--- ICR SCORE REPORT ---')
+            for j in range(len(scores)):
+                print(' ',potentials[j].getTitle(),'=',scores[j])
+                if(scores[j] > scores[i]):
+                    i = j
+            dsgn_unit = potentials[i]
+            log.info("Intelligently selected "+dsgn_unit.getTitle())
+        else:
+            log.error("Not a valid instance found within the bottle "+lib+" "+dsgn_name)
+            pass
+
+        # :todo: update requirements for unit? also... remember design for next encounter?
+
+        return dsgn_unit
 
 
     def getFull(self):
         return self.L().lower()+"."+self.E().lower()
+
+
+    def getTitle(self):
+        m = ''
+        if(self.M() != ''):
+            m = self.M()+'.'
+        return m+self.L()+'.'+self.N()+apt.ENTITY_DELIM+self.E()
 
 
     def setConfig(self, config_name):
@@ -282,8 +369,9 @@ class Unit:
         Returns:
             None
         '''
+        return
         if(arch not in self.getArchitectures()):
-            self._arcs.append(arch)
+            self._archs.append(arch)
         pass
 
 
@@ -352,7 +440,7 @@ class Unit:
         file: {self._filepath}
         dsgn: {self._dsgn}
         lang: {self.getLang()}
-        arch: {self._arcs}
+        arch: {self.getArchitectures()}
         tb?   {self.isTb()}
         conf? {self.getConfig()}
         reqs: {reqs}
@@ -547,9 +635,13 @@ class Port:
     def getName(self):
         return self._name
 
+
+    def getRoute(self):
+        return self._route
+
     
     def __repr__(self):
-        return f'''\n{self.getName()} - {self._route} * {self._dtype}'''
+        return f'''\n{self.getName()} - {self.getRoute()} * {self._dtype}'''
 
     pass
 

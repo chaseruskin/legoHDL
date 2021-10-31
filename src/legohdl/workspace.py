@@ -262,11 +262,9 @@ class Workspace:
         marker_files = glob.glob(self.getPath()+"**/*/"+apt.MARKER, recursive=True)
         #print(marker_files)
         for mf in marker_files:
-            pass
             b = Block(mf, self)
             self._local_blocks += [b]
-
-        #print(self._local_blocks)
+            
         return self._local_blocks
 
 
