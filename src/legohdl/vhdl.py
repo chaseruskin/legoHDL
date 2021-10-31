@@ -80,19 +80,111 @@ class Vhdl(Language):
         self._designs = []
 
         #looking for design units in each statement
-        for code_seg in c_statements:
-            if(code_seg[0].lower() == 'entity'):
-                print(code_seg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self.getAbout())]
-            elif(code_seg[0].lower() == 'package' and code_seg[1].lower() != 'body'):
-                print(code_seg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self.getAbout())]
+        for cseg in c_statements:
+            if(cseg[0].lower() == 'entity'):
+                print(cseg[1])
+                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
+                self.getInterface(self._designs[-1])
+            elif(cseg[0].lower() == 'package' and cseg[1].lower() != 'body'):
+                print(cseg[1])
+                self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
             # :todo: configurations are linked to an entity...therefore they do not get their own unit type (they are 'like' architectures)
-            elif(code_seg[0].lower() == 'configuration'):
-                print(code_seg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.CONFIGURATION, self.M(), self.L(), self.N(), self.V(), code_seg[1], about_txt=self.getAbout())]
+            elif(cseg[0].lower() == 'configuration'):
+                print(cseg[1])
+                self._designs += [Unit(self.getPath(), Unit.Design.CONFIGURATION, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
 
         return self._designs
+
+
+    def getInterface(self, u):
+        '''
+        Decipher and collect data on a unit's interface (entity code).
+
+        Parameters:
+            u (Unit): the unit file who's interface to update
+        Returns:
+            None
+        '''
+        #get the list of statements
+        c_statements = self.spinCode()
+
+        in_entity = False
+        in_generics = False
+        in_ports = False
+        identifiers = []
+
+        for cseg in c_statements:
+            if(cseg[0].lower() == 'entity' and cseg[1] == u.E()):
+                in_entity = True
+                print("ENTERING...")
+                if(cseg.count('end')):
+                    print("this entity has no interface!")
+                    break
+            if(cseg[0].lower() == 'end'):
+                print('EXITING...')
+                break
+            if(in_entity):
+                entry = False
+                #find out if entering generic or port listings
+                for word in cseg:
+                    #enter generics or ports
+                    if(word.lower() == 'generic' or word.lower() == 'port'):
+                        in_generics = (word.lower() == 'generic')
+                        in_ports = (word.lower() == 'port')
+                        entry = True
+                        break
+                    pass
+
+                #count up number of ( and ) tokens
+                pb_cnt = cseg.count('(') - cseg.count(')')
+                p_i = -1
+                #skip initial opening parenthesis bracket
+                if(entry):
+                    p_i = cseg.index('(')
+                print(cseg)
+                #make sure an idenifier is in this statement
+                if(cseg.count(':') == 0):
+                    continue
+                c_i = cseg.index(':')
+
+                #get the port names
+                identifiers = cseg[p_i+1:c_i]
+                #print("IDS:",identifiers)
+                #adjust pb_cnt if generics/ports are on one statement
+                if(entry and pb_cnt == 0):
+                    pb_cnt = -1
+                end = len(cseg)+pb_cnt
+ 
+                if(in_ports):
+                    #get the port direction
+                    route = cseg[c_i+1]
+                    #print("ROUTE:",route)
+                    #get the port data type
+                    dtype = cseg[c_i+2:end]
+                    #print("DATA TYPE:",dtype)
+                    for port in identifiers:
+                        if(port != ','):
+                            u.getInterface().addPort(port, route, dtype)
+                    pass
+                elif(in_generics):
+                    #find if an initial value is being set
+                    val = None
+                    v_i = end
+                    if(cseg.count(':=')):
+                        v_i = cseg.index(':=')
+                        #get the generic value
+                        val = cseg[v_i+1:end]
+                        #print("VALUE:",val)
+                    #get the generic data type
+                    dtype = cseg[c_i+1:v_i]
+                    for gen in identifiers:
+                        if(gen != ','):
+                            u.getInterface().addGeneric(gen, dtype, val)
+                print(cseg)
+
+            pass
+        print(u.getInterface())
+        pass
 
 
     #function to determine required modules for self units
@@ -227,7 +319,7 @@ class Vhdl(Language):
                     if('port' in cs[i:] and cs[i:].index('port') < end_i):
                         end_i = cs[i:].index('port')
                     #update unit's interface
-                    self.collectGenerics(current_map[unit_name], cs[i+1:i+end_i])  
+                    #self.collectGenerics(current_map[unit_name], cs[i+1:i+end_i])  
             elif(code_word == 'port'):
                 #this entity has a ports list and therefore is not a testbench
                 if(in_entity):
@@ -237,7 +329,7 @@ class Vhdl(Language):
                     if('generic' in cs[i:] and cs[i:].index('generic') < end_i):
                         end_i = cs[i:].index('generic')
                     #update unit's interface
-                    self.collectPorts(current_map[unit_name], cs[i+1:i+end_i])
+                    #self.collectPorts(current_map[unit_name], cs[i+1:i+end_i])
             elif(code_word == ":"):
                 # :todo: entity instantiations from within deep architecture using full title (library.pkg.entity)
                 if(in_true_arch):

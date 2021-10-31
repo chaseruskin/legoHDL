@@ -431,6 +431,10 @@ class Generic:
     def getName(self):
         return self._name
 
+
+    def __repr__(self):
+        return f'''\n{self.getName()} * {self._dtype} = {self._value}'''
+
     pass
 
 
@@ -542,6 +546,11 @@ class Port:
 
     def getName(self):
         return self._name
+
+    
+    def __repr__(self):
+        return f'''\n{self.getName()} - {self._route} * {self._dtype}'''
+
     pass
 
 
@@ -773,4 +782,12 @@ class Interface:
             pass
         #print(mapping_txt)
         return mapping_txt
+
+
+    def __str__(self):
+        return f'''
+        ports: {list(self.getPorts().values())}
+        generics: {list(self.getGenerics().values())}
+        '''
+
     pass
