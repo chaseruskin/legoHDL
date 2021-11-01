@@ -104,7 +104,7 @@ class Vhdl(Language):
                 pass
             #declare a package unit
             elif(cseg[0].lower() == 'package' and cseg[1].lower() != 'body'):
-                print(cseg[1])
+                log.info("Identified package "+cseg[1])
                 self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
                 pass
             #link a configuration

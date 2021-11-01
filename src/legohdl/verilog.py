@@ -66,8 +66,11 @@ class Verilog(Language):
         #looking for design units in each statement
         for cseg in c_statements:
             if(cseg[0] == 'module'):
-                print(cseg[1])
+                log.info("Identified module "+cseg[1])
                 self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
+                dsgn_unit = self._designs[-1]
+                self.getInterface(dsgn_unit, c_statements[c_statements.index(cseg):])
+                pass
         return self._designs
 
 
@@ -133,6 +136,70 @@ class Verilog(Language):
         Returns:
             None
         '''
+        #initially entering module code
+        in_module = True
+        #store generic identifiers
+        g_ids = []
+        #store port identifiers
+        p_ids = []
+        #track amount of '(' and ')'
+        pb_cnt = 0
+
+        for cseg in csegs:
+            print(cseg)
+            #check for exit case - finding 'endmodule'
+            if(cseg[0] == 'endmodule'):
+                exit()
+                return
+            #check if inside the module declaration code statement
+            if(cseg[0] == 'module'):
+                #handle generics
+                g_end = 0
+                g_index = 2
+                if(cseg.count('#')):
+                    g_index = g_index+cseg.index('#')
+                    gseg = cseg[g_index:] #skip '#' and first '('
+                    #find when pb_cnt is zero
+                    pb_cnt = 1
+                    g_end = 0
+                    while pb_cnt > 0 and g_end <= len(gseg):
+                        #count pb's
+                        if (gseg[g_end] == '('):
+                            pb_cnt += 1
+                        elif(gseg[g_end] == ')'):
+                            pb_cnt -= 1
+                        #update to next index
+                        g_end += 1
+                    gseg = gseg[:g_end-1]
+                    print("GENERICS:",gseg)
+                    #append a ',' to end for algorithm
+                    gseg = gseg + [',']
+                    while gseg.count(',') and len(gseg) > 1:
+                        print(gseg)
+                        i = 0
+                        #get name right before assignment
+                        if(gseg[1] == '='):
+                            g_ids += [gseg[0]]
+                            #jump to next comma
+                            i = gseg.index(',')
+                        #get identifier right before comma
+                        elif(gseg[1] == ','):
+                            g_ids += [gseg[0]]
+                            #jump to next comma
+                            i = gseg.index(',')
+                        i = i+1
+                        gseg = gseg[i:]
+
+                    print("IDS:",g_ids)
+                    exit()   
+
+                    pass
+
+                #grab remaining items as the ports list
+                pseg = cseg[g_index+g_end+1:len(cseg)-1]
+                print("PORTS:",pseg)
+                pass
+                
         pass
 
 
