@@ -270,7 +270,7 @@ class Language(ABC):
             pass
 
         for cs in self._code_stream:
-           print(cs)
+           #print(cs)
            pass
         return self._code_stream
 

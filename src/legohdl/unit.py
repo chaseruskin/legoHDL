@@ -271,7 +271,7 @@ class Unit:
 
 
     @classmethod
-    def loc(cls, dsgn_name, lib=None, ports=[], gens=[]):
+    def ICR(cls, dsgn_name, lib=None, ports=[], gens=[]):
         '''
         Locate the entity given the library and unit name. 
         

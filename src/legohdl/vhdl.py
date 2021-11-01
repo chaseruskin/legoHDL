@@ -136,7 +136,7 @@ class Vhdl(Language):
         '''
         #get all available units availalble as components
         comps = []
-        skips = ['for', 'begin', 'process']
+        skips = ['for', 'begin', 'process', 'variable']
         in_arch = False
         in_begin = 0
         #get all code statements
@@ -181,6 +181,7 @@ class Vhdl(Language):
                     if(comp_name.lower() == 'entity'):
                         comp_name = cseg[sp_i+2]
                     #move through the code segment
+                    old_cseg = cseg
                     cseg = cseg[sp_i+1:]
                     #skip keyword misleaders
                     if(comp_name.lower() in skips):
@@ -188,12 +189,15 @@ class Vhdl(Language):
                     #gather instantiated ports and generics
                     p_list, g_list = self.collectInstanceMaps(cseg)
                     #try to locate the unit with the given information
-                    comp_unit = Unit.loc(comp_name, lib=None, ports=p_list, gens=g_list)
+                    comp_unit = Unit.ICR(comp_name, lib=None, ports=p_list, gens=g_list)
                     #add the unit as a requirement and decode it if exists
                     if(comp_unit != None):
                         u.addReq(comp_unit)
                         if(comp_unit.isChecked() == False):
                             Language.ProcessedFiles[comp_unit.getFile()].decode(comp_unit)
+                    else:
+                        print(old_cseg)
+                        print(cseg)
                     #exit()  #exit for debugging 
                 pass
         pass
