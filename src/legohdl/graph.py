@@ -204,7 +204,7 @@ class Graph:
         #start with top level
         if(top not in self._adj_list.keys()):
             exit(log.error('Entity '+top.E()+' may be missing an architecture.'))
-        if(not top.isPKG()):
+        if(not top.isPkg()):
             #uncomment this next line to print market along with entity
             #print(leaf,self._unit_bank[top].getMarket()+'.'+top)
             temp_leaf = leaf
@@ -214,7 +214,10 @@ class Graph:
             else:
                 temp_leaf = temp_leaf.replace(reg_branch, edge_branch)
             #print to console
-            print(temp_leaf,top.getFull())
+            node = top.getFull()
+            if(disp_full):
+                node = top.getTitle()
+            print(temp_leaf,node)
 
         #return if no children exist
         if(len(self._adj_list) == 0):

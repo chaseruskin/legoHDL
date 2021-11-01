@@ -187,7 +187,7 @@ class Block:
         if(mrkt and self.getMeta('market') != None):
             m = self.getMeta('market')+'.'
             
-        return m+self.getLib(low=low)+'.'+self.getName(low=low)
+        return m+self.L()+'.'+self.N()
 
 
     #return the version as only digit string, ex: 1.2.3
@@ -496,20 +496,6 @@ class Block:
         if(mkt != None):
             log.info("Tying "+mkt+" as the market for "+self.getTitle_old(low=False))
         self.setMeta('market', mkt)
-        self.save()
-        pass
-
-
-    @DeprecationWarning
-    def setRemote(self, rem, push=True):
-        if(rem != None):
-            self.grabGitRemote(rem)
-        elif(len(self._repo.remotes)):
-            #self._repo.git.remote("remove","origin")
-            pass
-        self.setMeta('remote', rem)
-        self._remote = rem
-        self.genRemote(push)
         self.save()
         pass
 
@@ -940,6 +926,7 @@ class Block:
 
 
     #dynamically grab the origin url if it has been changed/added by user using git
+    @DeprecationWarning
     def grabGitRemote(self, newValue=None, override=False):
         if(hasattr(self, "_remote") and not override):
             return self._remote
@@ -988,11 +975,13 @@ class Block:
         pass
 
     #push to remote repository
+    @DeprecationWarning
     def pushRemote(self):
         self._repo.remotes.origin.push(refspec='{}:{}'.format(self._repo.head.reference, self._repo.head.reference))
         self._repo.remotes.origin.push("--tags")
 
     #push to remote repository if exists
+    @DeprecationWarning
     def pull(self):
         if(self.grabGitRemote() != None):
             log.info(self.getTitle_old()+" already exists in local path; pulling from remote...")
@@ -1001,6 +990,7 @@ class Block:
             log.info(self.getTitle_old()+" already exists in local path")
 
     #has ability to return as lower case for comparison within legoHDL
+    @DeprecationWarning
     def getName(self, low=True):
         if(self.getMeta("name") != None):
             if(low):
@@ -1013,6 +1003,7 @@ class Block:
             return self.__name
 
     #has ability to return as lower case for comparison within legoHDL
+    @DeprecationWarning
     def getLib(self, low=True):
         if(self.getMeta("library") != None):
             if(low):
@@ -1093,6 +1084,7 @@ class Block:
 
 
     #print out the metadata for this block
+    @DeprecationWarning
     def show(self, listVers=False, ver=None, dispChange=False):
         cache_path = apt.HIDDEN+"workspaces/"+apt.SETTINGS['general']['active-workspace']+"/cache/"+self.getLib()+"/"+self.getName()+"/"
         install_vers = []
@@ -1195,9 +1187,7 @@ class Block:
 
         if(hasattr(self, "_meta_backup")):
             if(self._meta_backup != self.getMeta()):
-                #print("its different!")
-                #print(self._initial_metadata)
-                #print(self.getMeta())
+                #print("its different!") #use for debugging
                 pass
 
         #write back cfg values with respect to order
@@ -1552,18 +1542,16 @@ class Block:
         #return if already identified
         if(hasattr(self, "_top")):
             return self._top
-        
+    
         self._top = None
-        #first fill out all data on each unit
-        #self.grabUnits()
-        #constrain to only using the current block's design units
+        #constrain to only current block's units and fill out data on each unit
         units = self.getUnits()
-        #only grab from project-level design units
+        #get the names of each unit available
         top_contenders = list(units.keys())
-
+        #iterate through each unit and eliminate unlikely top-levels
         for name,unit in units.items():
             #if the entity is value under this key, it is lower-level
-            if(unit.isTb() or unit.isPKG()):
+            if(unit.isTb() or unit.isPkg()):
                 if(name in top_contenders):
                     top_contenders.remove(name)
                 continue
@@ -1587,13 +1575,14 @@ class Block:
                     exit("\nExited prompt.")
             
             top_contenders = [validTop]
+        #detected a single top-level design unit
         if(len(top_contenders) == 1):
             self._top = units[top_contenders[0]]
 
             log.info("DETECTED TOP-LEVEL ENTITY: "+self._top.E())
             self.identifyBench(self._top.E(), save=True)
-            #break up into src_dir and file name
-            #add to metadata, ensure to push meta data if results differ from previously loaded
+
+            #update metadata and will save if different
             if(self._top.E() != self.getMeta("toplevel")):
                 self.setMeta('toplevel', self._top.E())
                 self.save()
@@ -1617,13 +1606,13 @@ class Block:
             return self._bench
 
         self._bench = None 
-        #load all units
-        #self.grabUnits()
+        #load all project-level units
         units = self.getUnits()
         benches = []
+        #iterate through each available unit and eliminate it
         for unit in units.values():
             for dep in unit.getReqs():
-                if(dep.L().lower() == self.getLib().lower() and dep.E().lower() == entity_name and unit.isTb()):
+                if(dep.E().lower() == entity_name and unit.isTb()):
                     benches.append(unit)
         #perfect; only 1 was found  
         if(len(benches) == 1):
@@ -1727,6 +1716,9 @@ class Block:
         if(inc_ver):
             title = title+"("+self.V()+")"
         return title
+
+
+    
 
 
     def M(self):

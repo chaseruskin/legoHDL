@@ -136,11 +136,16 @@ class Vhdl(Language):
         '''
         #get all available units availalble as components
         comps = []
-        skips = ['for', 'begin', 'process', 'variable']
         in_arch = False
         in_begin = 0
         #get all code statements
         csegs = self.spinCode()
+
+        #collect all visible component declarations
+        for pkg in u.getPkgs():
+            print("Importing "+pkg.getTitle())
+            comps += Language.ProcessedFiles[pkg.getFile()].getComponents(pkg)
+            pass
 
         for cseg in csegs:
             #determine when to enter the architecture
@@ -170,7 +175,7 @@ class Vhdl(Language):
             #find component declarations
             if(cseg[0].lower() == 'component'):
                 log.info("Declared component: "+cseg[1])
-                comps += [cseg[1]]
+                comps += [cseg[1].lower()]
 
             #find instantiations    
             if(in_begin):
@@ -178,18 +183,39 @@ class Vhdl(Language):
                     sp_i = cseg.index(':')
                     comp_name = cseg[sp_i+1]
                     #is it an entity style?
-                    if(comp_name.lower() == 'entity'):
+                    entity_style = (comp_name.lower() == 'entity')
+                    if(entity_style):
                         comp_name = cseg[sp_i+2]
                     #move through the code segment
                     old_cseg = cseg
                     cseg = cseg[sp_i+1:]
-                    #skip keyword misleaders
-                    if(comp_name.lower() in skips):
-                        continue
+
+                    #default not reference a library
+                    lib = None
+                    #determine if a library is attached to this entity name
+                    comp_parts = comp_name.split('.')
+                    
+                    print(comp_parts)
+                    if(len(comp_parts) == 2):
+                        #must have first piece be a library name
+                        if(entity_style):
+                            if(comp_parts[0].lower() in u.getLibs(lower_case=True)):
+                                lib = comp_parts[0]
+                            #reference self library if it's 'work'
+                            elif(comp_parts[0].lower() == 'work'):
+                                lib = self.L()
+                    #the last piece is the entity name
+                    comp_name = comp_parts[-1]
+                    #ensure the component name has its component declaration visible
+                    if(entity_style == False):
+                        if(comp_name.lower() not in comps):
+                            log.error("COMPONENT DECLARATION NOT FOUND: "+comp_name)
+                            continue
+
                     #gather instantiated ports and generics
                     p_list, g_list = self.collectInstanceMaps(cseg)
                     #try to locate the unit with the given information
-                    comp_unit = Unit.ICR(comp_name, lib=None, ports=p_list, gens=g_list)
+                    comp_unit = Unit.ICR(comp_name, lib=lib, ports=p_list, gens=g_list)
                     #add the unit as a requirement and decode it if exists
                     if(comp_unit != None):
                         u.addReq(comp_unit)
@@ -283,45 +309,36 @@ class Vhdl(Language):
         pass
 
 
-    def getComponents(self, pkg_str):
+    def getComponents(self, pkg):
         '''
         Return a list of component names that are available in this package.
 
         Parameters:
-            pkg_str (str): the string following a vhdl 'use' keyword.
+            pkg (Unit): the Unit package object
         Returns:
-            comps ([str]): entity names found as component declarations in package
+            comps ([str]): lower-case entities found as component declarations in package
         '''
-        print(pkg_str)
-
-        return []
-
-        #get the vhdl file object that uses this file
-        vhd = self.ProcessedFiles[filepath]
-        #generate the code stream
-        cs = vhd.generateCodeStream(False, False, *self._std_delimiters)
+        #get the code statements
+        csegs = self.spinCode()
 
         in_pkg = False
-        entity_name = pkg_name = None
         #iterate through the code stream, identifying keywords as they come
         comps = []
-        for i in range(0,len(cs)):
-            code_word = cs[i]
-            if(code_word == 'package'):
-                in_pkg = (cs[i+1] != 'body')
-                if(in_pkg):
-                    pkg_name = cs[i+1]
-            elif(code_word == 'component'):
-                if(in_pkg and cs[i-1] != 'end'):
-                    #snag to entity name
-                    entity_name = cs[i+1]
-                    comps.append(entity_name)
-            elif(code_word == 'end'):
-                if(cs[i+1] == 'package' or cs[i+1] == pkg_name):
-                    break
+        for cseg in csegs:
+            #determine when entering package declaration
+            if(cseg[0].lower() == 'package' and cseg[1] == pkg.E()):
+                in_pkg = True
+            elif(in_pkg == False):
+                continue
+            #exit status - finding 'end' with 'package' or package's identifier
+            if(cseg[0].lower() == 'end'):
+                if(cseg[1].lower() == pkg.E().lower() or cseg[1].lower() == 'package'):
+                    in_pkg = False
+            #add all component names as lower case for evaluation purposes
+            if(cseg[0].lower() == 'component'):
+                comps += [cseg[1].lower()]
             pass
-        #print("Components from this package:",comps)
-        #restore file path back to its original assignment
+        print("Components from this package:",comps)
         return comps
 
     

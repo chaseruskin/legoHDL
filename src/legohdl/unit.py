@@ -50,9 +50,9 @@ class Unit:
             L (str): the block library this unit belongs to
             N (str): the block name this unit belongs to
             E (str): the unit's name
-        
+        Returns:
+            None   
         '''
-
         self._filepath = apt.fs(filepath)
         self.setAbout(about_txt)
 
@@ -71,6 +71,9 @@ class Unit:
         self._N = N
         self._V = V
         self._E = E
+
+        self._libs = []
+        self._pkgs = []
 
         self._checked = False
         self._config = None
@@ -127,9 +130,65 @@ class Unit:
         Returns:
             None
         '''
-        self._libs = libs
-        self._pkgs = pkgs
+        self._libs += libs
+        self._pkgs += pkgs
         pass
+
+
+    def getLibs(self, lower_case=False):
+        '''
+        Returns the list of linked libraries to this entity.
+
+        Parameters:
+            lower_case (bool): determine if to convert all libraries to lower case
+        Returns:
+            _libs ([str]): list of linked libraries
+        '''
+        if(lower_case == True):
+            tmp = []
+            #cast to all lower-case for evaluation purposes within VHDL
+            for l in self._libs:
+                tmp += [l.lower()]
+            return tmp
+        #return case-sensitive library names
+        return self._libs
+
+
+    def getPkgs(self):
+        '''
+        Returns the list of Unit objects that are design package types linked to this entity.
+
+        Adds connections to all found package objects in the hierarchy graph. Dynamically
+        creates _dsgn_pkgs attr to avoid doubling connections.
+
+        Parameters:
+            None
+        Returns:
+            _dsgn_pkgs ([Unit]): list of referenced Unit package objects
+        '''
+        if(hasattr(self, "_dsgn_pkgs")):
+            return self._dsgn_pkgs
+
+        dsgn_pkgs = []
+        #iterate through each package string and try to find its object.
+        for pkg in self._pkgs:
+            print(pkg)
+            pkg_parts = pkg.split('.')
+            lib_name = pkg_parts[0]
+            #convert library name to current if work is being used
+            if(lib_name.lower() == 'work'):
+                lib_name = self.L()
+            pkg_name = pkg_parts[1]
+            
+            dsgn_pkg = Unit.ICR(pkg_name, lib=lib_name)
+            #add the package object if its been found
+            if(dsgn_pkg != None):
+                dsgn_pkgs += [dsgn_pkg] 
+                #add connection in the graph
+                self.addReq(dsgn_pkg)
+                pass
+        print(dsgn_pkgs)
+        return dsgn_pkgs
 
 
     def linkArch(self, arch):
@@ -163,7 +222,7 @@ class Unit:
     @DeprecationWarning
     def writePortMap(self, mapping, lib, pureEntity):
         report = '\n'
-        if(self.isPKG()):
+        if(self.isPkg()):
             return ''
         else:
             if(not pureEntity or mapping):
@@ -238,7 +297,7 @@ class Unit:
             return ['rtl']
 
 
-    def isPKG(self):
+    def isPkg(self):
         return (self._dsgn == self.Design.PACKAGE)
 
 
@@ -296,7 +355,7 @@ class Unit:
                 if(dsgn_name.lower() in list(ul.keys())):
                     potentials += ul[dsgn_name]
         #a library was given, only pull list from that specific library.unit slot
-        elif(dsgn_name.lower() in cls.Bottle[lib].keys()):
+        elif(lib.lower() in cls.Bottle.keys() and dsgn_name.lower() in cls.Bottle[lib].keys()):
             potentials = cls.Bottle[lib][dsgn_name]
 
         dsgn_unit = None
