@@ -635,7 +635,7 @@ scripts)?", warning=False)
     def _graph(self):
         '''Run the 'graph' command.'''
 
-        self.WS().loadLocalBlocks()
+        self.WS().loadLocalBlocks(id_dsgns=True)
         block = Block.getCurrent()
 
         top = self.getItem()
@@ -669,7 +669,7 @@ scripts)?", warning=False)
     def _export(self):
         '''Run the 'graph' command.'''
 
-        self.WS().loadLocalBlocks()
+        self.WS().loadLocalBlocks(id_dsgns=True)
         block = Block.getCurrent()
 
         #trying to export a package file?

@@ -243,13 +243,13 @@ class Workspace:
         pass
 
     
-    def loadLocalBlocks(self):
+    def loadLocalBlocks(self, id_dsgns=False):
         '''
         Find all valid blocks within the local workspace path. Updates the 
         _local_blocks Map.
 
         Parameters:
-            None
+            id_dsgns (bool): load all local design units
         Returns:
             None
         '''
@@ -266,6 +266,8 @@ class Workspace:
         for mf in marker_files:
             b = Block(mf, self)
             self._local_blocks += [b]
+            if(id_dsgns):
+                b.loadHDL()
             
         return self._local_blocks
 
