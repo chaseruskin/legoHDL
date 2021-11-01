@@ -141,8 +141,10 @@ class Vhdl(Language):
         #get all code statements
         csegs = self.spinCode()
 
+        # :todo: get configurations support (similiar to find/replace)
+
         #collect all visible component declarations
-        for pkg in u.getPkgs():
+        for pkg in u.decodePkgs():
             print("Importing "+pkg.getTitle())
             comps += Language.ProcessedFiles[pkg.getFile()].getComponents(pkg)
             pass
@@ -222,7 +224,7 @@ class Vhdl(Language):
                         if(comp_unit.isChecked() == False):
                             Language.ProcessedFiles[comp_unit.getFile()].decode(comp_unit)
                     else:
-                        print(old_cseg)
+                        #print(old_cseg)
                         print(cseg)
                     #exit()  #exit for debugging 
                 pass

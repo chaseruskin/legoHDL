@@ -1654,7 +1654,7 @@ class Block:
     def identifyTopDog(self, top=None, inc_tb=True):
         '''
         Determine what unit is utmost highest, whether it be a testbench
-        (if applicable) or entity.
+        (if applicable) or entity. Returns None if DNE.
 
         Parameters:
             top (str): a unit identifier

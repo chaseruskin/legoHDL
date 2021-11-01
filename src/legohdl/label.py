@@ -132,6 +132,8 @@ class Label:
         Returns:
             (bool): true if extensions were modified
         '''
+        if(isinstance(exts, list) == False):
+            raise TypeError("Must be a list of extensions!")
         if(len(exts) == 0):
             log.error("Label "+self.getName()+" cannot have zero extensions.")
             return False

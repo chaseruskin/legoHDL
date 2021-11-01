@@ -155,6 +155,11 @@ class Unit:
 
 
     def getPkgs(self):
+        '''Returns list of packages as strings.'''
+        return self._pkgs
+
+
+    def decodePkgs(self):
         '''
         Returns the list of Unit objects that are design package types linked to this entity.
 
