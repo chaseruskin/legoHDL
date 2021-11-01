@@ -159,6 +159,7 @@ class Unit:
     def isChecked(self):
         return self._checked
 
+
     @DeprecationWarning
     def writePortMap(self, mapping, lib, pureEntity):
         report = '\n'
@@ -196,6 +197,29 @@ class Unit:
                 txt = txt+'\t'+arc+'\n'
         else:
             txt = "No architectures are defined for "+self.getFull()+"!\n"
+        return txt
+
+    
+    def readReqs(self, upstream=False):
+        '''
+        Formats the required units into a string to be printed.
+        
+        Parameters:
+            upstream (bool): determine if to show connections below or above unit
+        Returns:
+            (str): dependency text to print to console
+        '''
+        term = 'Dependencies'
+        if(upstream == True):
+            term = 'Integrations'
+        if(len(self.getReqs(upstream))):
+            txt = term+' for '+self.getTitle()+":"+'\n'
+            for req in self.getReqs(upstream):
+                txt = txt+'\t'+req.getTitle()+'\n'
+        elif(upstream == False):
+            txt = "No dependencies are instantiated within "+self.getTitle()+"!"+'\n'
+        elif(upstream == True):
+            txt = "No integrations found for "+self.getTitle()+"!"+'\n'
         return txt
 
 
@@ -291,15 +315,15 @@ class Unit:
             for i in range(len(potentials)):
                 #get the real ports for this component
                 interf = potentials[i].getInterface()
-                true_ports = interf.getMappingNames(interf.getPorts(), lower_case=True)
+                challenged_ports = interf.getMappingNames(interf.getPorts(), lower_case=True)
                 #compare the instance ports with the real ports
-                for sig in true_ports:
+                for sig in challenged_ports:
                     #check if the true port is instantiated
                     if(sig in ports):
                         scores[i] += 1
                     #can only compare lengths
                     elif(len(ports) and ports[0] == '?'):
-                        scores[i] = -abs(len(true_ports) - len(ports))
+                        scores[i] = -abs(len(challenged_ports) - len(ports))
                         break
                     #this port was not instantiated, yet it MUST since its an input
                     elif(interf.getPorts()[sig].getRoute() == Port.Route.IN):
@@ -313,13 +337,13 @@ class Unit:
             i = 0
             print('--- ICR SCORE REPORT ---')
             for j in range(len(scores)):
-                print(' ',potentials[j].getTitle(),'=',scores[j])
+                print('{:<1}'.format(' '),'{:<40}'.format(potentials[j].getTitle()),'{:<4}'.format('='),'{:<5}'.format(round(scores[j]/len(ports)*100,2)),"%")
                 if(scores[j] > scores[i]):
                     i = j
             dsgn_unit = potentials[i]
             log.info("Intelligently selected "+dsgn_unit.getTitle())
         else:
-            log.error("Not a valid instance found within the bottle "+lib+" "+dsgn_name)
+            log.error("Not a valid instance found within the bottle "+str(lib)+" "+dsgn_name)
             pass
 
         # :todo: update requirements for unit? also... remember design for next encounter?
@@ -328,7 +352,7 @@ class Unit:
 
 
     def getFull(self):
-        return self.L().lower()+"."+self.E().lower()
+        return self.L()+"."+self.E()
 
 
     def getTitle(self):
@@ -373,16 +397,16 @@ class Unit:
         pass
     
 
-    def getReqs(self):
+    def getReqs(self, upstream=False):
         '''
         Returns a list of Unit objects directly required for this unit.
 
         Parameters:
-            None
+            upstream (bool): determine if to return units that use this design
         Returns:
             ([Unit]): list of required Units
         '''
-        return self.Hierarchy.getNeighbors(self)
+        return self.Hierarchy.getNeighbors(self, upstream)
 
 
     @classmethod

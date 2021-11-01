@@ -1414,7 +1414,10 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
     def _get(self):
         '''Run the 'get' command.'''
+
         self.WS().loadLocalBlocks()
+        if(self.hasFlag('about')):
+            self.WS().decodeUnits()
         #make sure an entity is being requested
         if(self.getItem() == None):
             exit(log.error("Pass an entity name to get."))

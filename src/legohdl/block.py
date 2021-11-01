@@ -1760,6 +1760,30 @@ class Block:
         self._V = 'v'+self.getMeta('version')
         return self._V
 
+    
+    def getLangUnitCount(self):
+        '''
+        Returns the amount of units coded in either VHDL or VERILOG.
+        
+        Parameters:
+            None
+        Returns:
+            vhdl_cnt (int): number of vhdl units
+            vlog_cnt (int): number of vlog units
+        '''
+        dsgns = self.loadHDL().values()
+
+        vhdl_cnt = 0
+        vlog_cnt = 0
+        #iterate through each design and tally if the unit is VHDL
+        for dsgn in dsgns:
+            if(dsgn.getLang() == Unit.Language.VHDL):
+                vhdl_cnt += 1
+            elif(dsgn.getLang() == Unit.Language.VERILOG):
+                vlog_cnt += 1
+
+        return vhdl_cnt, vlog_cnt
+
 
     def loadHDL(self, returnnames=False):
         '''
@@ -1855,6 +1879,10 @@ class Block:
 
         #print comment header (about)
         print(ent.readAbout())
+        #print dependencies
+        if(about):
+            print(ent.readReqs())
+            print(ent.readReqs(upstream=True))
         #print list of architectures
         if(listArch):
             print(ent.readArchitectures())
@@ -1885,7 +1913,7 @@ class Block:
         #make sure the metadata is properly formatted
         self.secureMeta()
         #get the metadata
-        info_txt = ''
+        info_txt = '--- METADATA ---\n'
         with open(self.getMetaFile(), 'r') as file:
             for line in file:
                 info_txt = info_txt + line
@@ -1894,9 +1922,14 @@ class Block:
                     break
         
         if(stats):
-            txt = '\n'
-            txt = txt + 'Number of Units: '+str(len(self.loadHDL()))
-            info_txt = info_txt + txt
+            info_txt =  info_txt + '\n--- STATS ---'
+            vhdl_cnt, vlog_cnt = self.getLangUnitCount()
+            if(vhdl_cnt > 0):
+                txt = '\nVHDL units: '+str(vhdl_cnt)
+                info_txt = info_txt + txt
+            if(vlog_cnt > 0):
+                txt = '\nVERILOG units: '+str(vlog_cnt)
+                info_txt = info_txt + txt
 
         if(versions):
             #get installation versions

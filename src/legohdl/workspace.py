@@ -9,6 +9,8 @@
 import os, shutil, glob
 import logging as log
 from datetime import datetime
+
+from legohdl.language import Language
 from .market import Market
 from .apparatus import Apparatus as apt
 from .map import Map
@@ -418,6 +420,23 @@ class Workspace:
         #return None if all attempts have failed and not returned anything yet
         return None
 
+    
+    def decodeUnits(self):
+        '''
+        Decodes every available unit to get the complete graphing data structure.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        blocks = self.loadLocalBlocks()
+        for b in blocks:
+            us = b.loadHDL()
+            for u in us.values():
+                Language.ProcessedFiles[u.getFile()].decode(u)
+        pass
+
 
     def listBlocks(self, M, L, N, alpha=False, instl=False, dnld=False):
         '''
@@ -455,11 +474,12 @@ class Workspace:
         units = []
         for bk in blocks:
             units += bk.loadHDL(returnnames=False).values()
-        print(units)
+        #print(units)
         print('{:<14}'.format("Library"),'{:<14}'.format("Unit"),'{:<8}'.format("Type"),'{:<14}'.format("Block"),'{:<10}'.format("Language"))
         print("-"*14+" "+"-"*14+" "+"-"*8+" "+"-"*14+" "+"-"*10+" ")
         for u in units:
             print('{:<14}'.format(u.L()),'{:<14}'.format(u.E()),'{:<8}'.format(u._dsgn.name),'{:<14}'.format(u.N()),'{:<10}'.format(u.getLang().name))
+
 
     @classmethod
     def tidy(cls):

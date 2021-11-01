@@ -19,6 +19,8 @@ class Graph:
         '''
         #store with adjacency list (list of vertices...sparse graph)
         self._adj_list = Map()
+        #store the reverse connections in an adjacency list
+        self._rev_adj_list = Map()
         pass
     
 
@@ -38,6 +40,9 @@ class Graph:
         #add dependency relation between derivative and integral
         if(derivative not in self._adj_list[integral]):
             self._adj_list[integral].append(derivative)
+        #store up-stream variation
+        if(integral not in self._rev_adj_list[derivative]):
+            self._rev_adj_list[derivative].append(integral)
         pass
 
 
@@ -52,6 +57,9 @@ class Graph:
         '''
         if(u not in self._adj_list.keys()):
             self._adj_list[u] = []
+        #store up-stream variation
+        if(u not in self._rev_adj_list.keys()):
+            self._rev_adj_list[u] = []
         pass
 
 
@@ -66,6 +74,9 @@ class Graph:
         '''
         if(u in self._adj_list.keys()):
             self._adj_list.remove(u)
+        #store up-stream variation
+        if(u in self._rev_adj_list.keys()):
+            self._rev_adj_list.remove(u)
         pass
 
 
@@ -81,10 +92,13 @@ class Graph:
         '''
         if(derivative in self._adj_list[integral]):
             self._adj_list[integral].remove(derivative)
+        #remove from upstream variation
+        if(integral in self._adj_list[derivative]):
+            self._adj_list[derivative].remove(integral)
         pass
 
 
-    def getNeighbors(self, vertex):
+    def getNeighbors(self, vertex, upstream=False):
         '''
         Returns the list of vertices connected to the `vertex` Unit object.
 
@@ -93,8 +107,13 @@ class Graph:
         Returns:
             _adj_list[vertex] ([Unit]): list of vertices connected to `vertex`
         '''
-        if(vertex in self._adj_list.keys()):
-            return list(self._adj_list[vertex])
+        adj = self._adj_list
+        #print upstream variation
+        if(upstream == True):
+            adj = self._rev_adj_list
+
+        if(vertex in adj.keys()):
+            return list(adj[vertex])
         else:
             return []
 

@@ -177,7 +177,7 @@ class Language(ABC):
                 #strip off an excessive whitespace
                 line = line.strip()
 
-                # :todo: determine if inside a string
+                # :todo: determine if inside a string to use '--' inside a string
 
                 #reduce down to valid code (non-comments)
                 c_index = line.find(self._comment)
