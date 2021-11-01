@@ -128,12 +128,16 @@ class Vhdl(Language):
     def decode(self, u):
         '''
         Decipher and collect data on a unit's instantiated lower-level entities.
+        Does not decode package designs.
 
         Parameters:
             u (Unit): the unit file who's interface to update
         Returns:
             None
         '''
+        #make sure the design unit is an entity
+        if(u.getDesign() != Unit.Design.ENTITY):
+            return
         #get all available units availalble as components
         comps = []
         in_arch = False

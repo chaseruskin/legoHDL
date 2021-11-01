@@ -305,6 +305,10 @@ class Unit:
     def isPkg(self):
         return (self._dsgn == self.Design.PACKAGE)
 
+    
+    def getDesign(self):
+        return self._dsgn
+
 
     def getFile(self):
         return self._filepath
