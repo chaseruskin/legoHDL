@@ -1805,7 +1805,7 @@ class Block:
             Verilog(v, M=self.M(), L=self.L(), N=self.N())
 
         #check if the level exists in the Jar
-        if(Unit.jar_exists(self.M(), self.L(), self.N())):
+        if(Unit.jarExists(self.M(), self.L(), self.N())):
             self._units = Unit.Jar[self.M()][self.L()][self.N()]
         else:
             self._units = Map()

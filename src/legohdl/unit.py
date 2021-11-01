@@ -18,6 +18,19 @@ from .map import Map
 
 class Unit:
 
+
+    class Design(Enum):
+        ENTITY = 1,
+        PACKAGE = 2
+        pass
+
+
+    class Language(Enum):
+        VHDL = 1,
+        VERILOG = 2
+        pass
+
+
     #class variable storing the dependency tree
     Hierarchy = Graph()
 
@@ -26,17 +39,6 @@ class Unit:
 
     #2-level class container
     Bottle = Map()
-
-    class Design(Enum):
-        ENTITY = 1,
-        PACKAGE = 2,
-        pass
-
-
-    class Language(Enum):
-        VHDL = 1,
-        VERILOG = 2
-        pass
 
 
     def __init__(self, filepath, dsgn, M, L, N, V, E, about_txt=''):
@@ -50,6 +52,7 @@ class Unit:
             L (str): the block library this unit belongs to
             N (str): the block name this unit belongs to
             E (str): the unit's name
+            about_txt (str): the comment header block found at the top of its file
         Returns:
             None   
         '''
@@ -81,15 +84,13 @@ class Unit:
         #create an empty interface
         self._interface = Interface(name=self.E(), library=self.L(), default_form=self.getLang())
 
-        # add to Jar! :todo: clean up (I think only a 2-level Map with values as lists will suffice)
-        # effectively binning units together
-
         # :note: printing component declarations needs to be done, as well as allowing package's to 
         # print their information like a component can
 
         # by default, look at the entities available in download section? or look at entities
         # in installation section.
 
+        # add to Jar
         #create new market level if market DNE
         if(self.M().lower() not in self.Jar.keys()):
             self.Jar[self.M()] = Map()
@@ -107,7 +108,7 @@ class Unit:
             log.error("An entity at this level already exists as: "+self.E()+"!")
             return
 
-
+        # add to Bottle - a 2-level Map with values as lists effectively binning units together
         #create new library level if libray DNE
         if(self.L().lower() not in self.Bottle.keys()):
              self.Bottle[self.L()] = Map()
@@ -197,6 +198,7 @@ class Unit:
 
 
     def linkArch(self, arch):
+        '''adds arch (str) to list of _archs ([str]) attr.'''
         if(hasattr(self, '_archs') == False):
             self._archs = []
         self._archs += [arch]
@@ -204,11 +206,21 @@ class Unit:
 
 
     def linkConfig(self, config):
+        '''Sets _config (str) attr.'''
         self._config = config
         pass
 
 
     def setChecked(self, c):
+        '''
+        Sets _checked attr to `c`. If True, then the unit object self will be
+        added to the graph as a vertex.
+
+        Parameters:
+            c (bool): determine if unit has been checked (data completed/decoded)
+        Returns:
+            None
+        '''
         #add to hierarchy if complete
         if(c == True and not self.isChecked()):
             self.Hierarchy.addVertex(self)
@@ -217,33 +229,13 @@ class Unit:
 
     
     def setAbout(self, a_txt):
+        '''Sets the _about_txt (str) attr.'''
         self._about_txt = a_txt
     
 
     def isChecked(self):
+        '''Returns _checked (bool).'''
         return self._checked
-
-
-    @DeprecationWarning
-    def writePortMap(self, mapping, lib, pureEntity):
-        report = '\n'
-        if(self.isPkg()):
-            return ''
-        else:
-            if(not pureEntity or mapping):
-                report =  report + self.getLang().writeComponentDeclaration() + "\n"
-            if(mapping or pureEntity):
-                if(len(report) > 1):
-                    report = report + "\n"
-                report = report + self.getLang().writeComponentSignals() + "\n"
-                if(mapping):
-                    report = report + self.getLang().writeComponentMapping(False, lib) + "\n"
-                if(pureEntity):
-                    report = report + self.getLang().writeComponentMapping(pureEntity, lib) + "\n"
-                pass
-            if(not mapping and not pureEntity):
-                report = report + "\n"
-        return report
 
 
     def readArchitectures(self):
@@ -288,14 +280,17 @@ class Unit:
 
 
     def readAbout(self):
+        '''Returns the already formatted _about_txt (str) attr to be printed.'''
         return self._about_txt
 
 
     def getLang(self):
+        '''Returns what coding language the unit is in (Unit.Language).'''
         return self._language
 
 
     def getArchitectures(self):
+        '''Returns list of identified architectures. If empty, returns ['rtl'].'''
         if(hasattr(self, "_archs")):
             return self._archs
         else:
@@ -303,14 +298,17 @@ class Unit:
 
 
     def isPkg(self):
+        '''Returns if the unit is PACKAGE design type.'''
         return (self._dsgn == self.Design.PACKAGE)
 
     
     def getDesign(self):
+        '''Returns the unit's design type (Unit.Design).'''
         return self._dsgn
 
 
     def getFile(self):
+        '''Return's the filepath where this unit was identified.'''
         return self._filepath
     
 
@@ -331,7 +329,8 @@ class Unit:
 
 
     @classmethod
-    def jar_exists(cls, M, L, N):
+    def jarExists(cls, M, L, N):
+        '''Returns True if the Jar has M/L/N key levels.'''
         if(M in cls.Jar.keys()):
             if(L in cls.Jar[M].keys()):
                 return (N in cls.Jar[M][L].keys())
@@ -341,10 +340,13 @@ class Unit:
     @classmethod
     def ICR(cls, dsgn_name, lib=None, ports=[], gens=[]):
         '''
-        Locate the entity given the library and unit name. 
+        Intelligently select the entity given the unit name and library (if exists). 
         
         Also uses intelligent component recognition to try and decide between 
-        what entity is trying to be used.
+        what entity is trying to be used. Updating the _reqs for a unit must be
+        done outside the scope of this method.
+
+        Returns None if the unit is not able to be identified.
 
         Parameters:
             u (str): entity name
@@ -414,8 +416,7 @@ class Unit:
             log.error("Not a valid instance found within the bottle "+str(lib)+" "+dsgn_name)
             pass
 
-        # :todo: update requirements for unit? also... remember design for next encounter?
-
+        # :todo: remember design for next encounter?
         return dsgn_unit
 
 
@@ -501,7 +502,7 @@ class Unit:
 
 
     def __repr__(self):
-        return f'''{self.getTitle()}, '''
+        return f'''{self.getTitle()}'''
 
 
     def __str__(self):
@@ -511,10 +512,10 @@ class Unit:
             reqs = reqs + hex(id(dep)) + "\n"
         return f'''
         ID: {hex(id(self))}
-        Completed? {self._checked}
-        full name: {self.M()}.{self.L()}.{self.N()}:{self.E()}
-        file: {self._filepath}
-        dsgn: {self._dsgn}
+        Completed? {self.isChecked()}
+        full name: {self.getTitle()}
+        file: {self.getFile()}
+        dsgn: {self.getDesign()}
         lang: {self.getLang()}
         arch: {self.getArchitectures()}
         tb?   {self.isTb()}
@@ -728,6 +729,7 @@ class Interface:
     def __init__(self, name, library, default_form):
         self._name = name
         self._library = library
+        # :todo: use map or dictionary? map will make ports of same name incompatible using verilog
         self._ports = Map()
         self._generics = Map()
         self._default_form = default_form
@@ -747,18 +749,22 @@ class Interface:
 
 
     def getPorts(self):
+        '''Returns _ports (Map).'''
         return self._ports
 
 
     def getGenerics(self):
+        '''Returns _generics (Map).'''
         return self._generics
 
 
     def getName(self):
+        '''Returns _name (str).'''
         return self._name
 
 
     def getLibrary(self):
+        '''Returns _library (str).'''
         return self._library
 
 
@@ -800,10 +806,13 @@ class Interface:
         Returns:
             connect_txt (str): compatible code to be printed
         '''
+        #default selection is to write in original coding language
         if(form == None):
             form = self._default_form
+
         connect_txt = ''
-        spaces = 1 #default number of spaces when not aligning
+        #default number of spaces when not aligning
+        spaces = 1 
         #do not write anything if no interface!
         if(len(self.getGenerics()) == 0 and len(self.getPorts()) == 0):
                 return connect_txt
@@ -817,7 +826,7 @@ class Interface:
                 spaces = farthest - len(g.getName()) + 1
             connect_txt = connect_txt + g.writeConstant(form, spaces) +'\n'
         
-        #add spacer between generics and signals
+        #add new-line between generics and signals
         if(len(self.getGenerics())):
             connect_txt = connect_txt + '\n'
 
@@ -847,18 +856,22 @@ class Interface:
         Returns:
             mapping_txt (str): the compatible code to be printed
         '''
+        #default selection is to write in original coding language
         if(form == None):
             form = self._default_form
+
         mapping_txt = ''
-        spaces = 0 #default number of spaces when not aligning
+        #default number of spaces when not aligning
+        spaces = 0 
         #do not write anything if no interface!
         if(len(self.getGenerics()) == 0 and len(self.getPorts()) == 0):
                 return mapping_txt
         
         #write VHDL-style code
         if(form == Unit.Language.VHDL):
+            #write the instance name and entity name
             mapping_txt = inst_name + " : "+self.getName()+"\n"
-            #reassign beginning of mapping to be a pure entity instance
+            #re-assign beginning of mapping to be a pure entity instance
             if(entity_inst):
                 mapping_txt = inst_name+" : entity "+self.getLibrary()+"."+self.getName()+"\n"
 
@@ -868,7 +881,7 @@ class Interface:
 
                 gens = self.getMappingNames(self.getGenerics())
                 farthest = self.computeLongestWord(self.getMappingNames(self.getGenerics()))
-
+                #iterate through every generic
                 for i in range(len(gens)):
                     if(align):
                         spaces = farthest - len(gens[i]) + 1
@@ -880,39 +893,48 @@ class Interface:
                     elif(hang_end == False):
                         mapping_txt = mapping_txt + line
                         continue
+                    #append to entire text
                     mapping_txt = mapping_txt + line+"\n"
+                    pass
                 #add necessary closing
                 mapping_txt = mapping_txt + ")"
+                pass
 
             #ports to map
             if(len(self.getPorts())):
                 #add new line if generics were written
                 if(len(self.getGenerics())):
                     mapping_txt = mapping_txt + "\n"
+
                 mapping_txt = mapping_txt + "port map(\n"
 
                 ports = self.getMappingNames(self.getPorts())
                 farthest = self.computeLongestWord(self.getMappingNames(self.getPorts()))
-                
+                #iterate through every port
                 for i in range(len(ports)):
                     if(align):
                         spaces = farthest - len(ports[i]) + 1
                     line = self._ports[ports[i]].writeMapping(form, spaces)
-                    #add a comma if not on the last signal
+                    #add a comma if not on the last port
                     if(i != len(ports)-1):
                         line = line + ","
                     #don't add \n to last map if hang_end
                     elif(hang_end == False):
                         mapping_txt = mapping_txt + line
                         continue
+                    #append to the entire text
                     mapping_txt = mapping_txt + line+"\n"
+                    pass
                 #add necessary closing
                 mapping_txt = mapping_txt + ")"
+                pass
 
+            #add final ';'
             mapping_txt = mapping_txt + ";\n"
             pass
         #write VERILOG-style code
         elif(form == Unit.Language.VERILOG):
+            #start with entity's identifier
             mapping_txt = self.getName()
             #write out parameter section
             params = self.getMappingNames(self.getGenerics())
@@ -922,30 +944,41 @@ class Interface:
                 for p in params:
                     if(align):
                         spaces = farthest - len(p) + 1
-                    if(p == params[-1]):
-                        mapping_txt = mapping_txt + self.getGenerics()[p].writeMapping(form, spaces)
+                    mapping_txt = mapping_txt + self.getGenerics()[p].writeMapping(form, spaces)
+                    #don't add ',\n' if on last generic
+                    if(p == params[-1]): 
                         if(hang_end == True):
                             mapping_txt = mapping_txt + "\n"
                         mapping_txt = mapping_txt + ")\n" + inst_name
                     else:
-                        mapping_txt = mapping_txt + self.getGenerics()[p].writeMapping(form, spaces)+",\n"
+                        mapping_txt = mapping_txt + ",\n"
+            #no generics...so begin with instance name
             else:
                 mapping_txt = mapping_txt + " " + inst_name
+
             #write out port section
             ports = self.getMappingNames(self.getPorts())
             if(len(ports)):
                 mapping_txt = mapping_txt + ' (\n'
                 farthest = self.computeLongestWord(ports)
+                #iterate through every port
                 for p in ports:
                     if(align):
                         spaces = farthest - len(p) + 1
+                    mapping_txt = mapping_txt + self.getPorts()[p].writeMapping(form, spaces)
+
+                    #don't add ,\n if on last port
                     if(p == ports[-1]):
-                        mapping_txt = mapping_txt + self.getPorts()[p].writeMapping(form, spaces)
+                        #add newline if hanging end
                         if(hang_end == True):
                             mapping_txt = mapping_txt + "\n"
                         mapping_txt = mapping_txt + ")"
                     else:
-                        mapping_txt = mapping_txt + self.getPorts()[p].writeMapping(form, spaces)+",\n"
+                        mapping_txt = mapping_txt +",\n"
+                    pass
+                pass
+
+            #add final ';'
             mapping_txt = mapping_txt + ';'
             pass
         #print(mapping_txt)
