@@ -191,6 +191,42 @@ class legoHDL:
         return (self._flags.count(flag) > 0)
 
 
+    def checkVar(self, key, val):
+        '''
+        Checks if val equals the value stored behind the key in the
+        _vars map. Returns false if key DNE.
+        
+        Parameters:
+            key (str): key to check value behind in _vars
+            val (str): value to compare with
+        Returns:
+            (bool): if val was equal to key's value in _vars
+        '''
+        if(key not in self._vars.keys()):
+            return False
+        else:
+            return val == self._vars[key]
+
+    
+    def splitVar(self, val, delim=':'):
+        '''
+        Splits the value of the variable into two parts based
+        on the delimiter. Returns '' for second component if delim DNE.
+
+        Parameters:
+            val (str): the variable value
+            delim (str): the substring to find in val
+        Returns:
+            key (str): first component of val
+            val (str): second component of val
+        '''
+        d_i = val.find(delim)
+        if(d_i > -1):
+            return val[0:d_i], val[d_i+1:]
+        else:
+            return val, ''
+
+
     def __str__(self):
         return f'''
         command: {self._command}
@@ -238,378 +274,6 @@ scripts)?", warning=False)
         #ask for test-editor to store in settings
         feedback = input("Enter your text-editor: ")
         apt.SETTINGS['general']['editor'] = apt.SETTINGS['general']['editor'] if(feedback.strip() == cfg.NULL) else feedback.strip()
-        pass
-
-    #! === INSTALL COMMAND ===
-
-    #install block to cache, and recursively install dependencies
-    def install(self, title, ver=None, required_by=[]):
-        '''
-        This method performs the install command. It will recursively install
-        any dependencies and ensure no duplicate installation attempts through the
-        'required_by' argument. If ver=None, it will install the latest version.
-        Title consists of a block's L and N.
-        '''
-        _,l,n,_ = Block.snapTitle(title)
-        block = None
-        cache_path = apt.WORKSPACE+"cache/"
-        verify_url = False
-        already_installed = False
-        #does the package already exist in the cache directory?
-        if(self.db.blockExists(title, "cache", updt=True)):
-            block = self.db.getBlocks("cache")[l][n]
-            #list all versions available in cache
-            vers_instl = os.listdir(cache_path+l+"/"+n+"/")
-            #its already installed if its in cache with no specific version or the version folder exists
-            if(ver == None):
-                log.info(title+" is already installed.")
-                already_installed = True
-            elif(ver in vers_instl):
-                log.info(title+"("+ver+") is already installed.")
-                already_installed = True
-        elif(self.db.blockExists(title, "local", updt=True)):
-            block = self.db.getBlocks("local")[l][n]
-            verify_url = True
-        elif(self.db.blockExists(title, "market")):
-            block = self.db.getBlocks("market")[l][n]
-        else:
-            exit(log.error(title+" cannot be found anywhere."))
-        #append to required_by list used to prevent cyclic recursive nature
-        required_by.append(block.getTitle()+'('+block.getVersion()+')')
-        #see if all cache blocks are available by looking at block's derives list
-        for prereq in block.getMeta("derives"):
-            if(prereq == block.getTitle() or prereq in required_by):
-                continue
-            #split prereq into library, name, and version
-            M,L,N,verreq = block.snapTitle(prereq)
-
-            needs_instl = False
-            if(self.db.blockExists(prereq, "cache", updt=True) == False):
-                #needs to install
-                log.info("Requires "+prereq)
-                #auto install dependency to cache if not found in cache
-                needs_instl = True
-            else:
-                cache_blk = self.db.getBlocks("cache")[L][N]
-                #auto install dependency to cache if version is not found in cache
-                vers = os.listdir(cache_blk.getPath()+"../")
-                if verreq not in vers:
-                    needs_instl = True
-            if(needs_instl):
-                self.install(L+'.'+N, ver=verreq, required_by=required_by)
-              
-        #no work needed to be done on this block if already installed (version found in cache)
-        if(already_installed):
-            return
-        #see what the latest version available is and clone from that version unless specified
-        isInstalled = self.db.blockExists(title, "cache")
-        #now check if block needs to be installed from market
-        if(not isInstalled):
-            if(verify_url):
-                if(apt.isValidURL(block.getMeta("remote")) == False):
-                    log.warning("No remote to install from.")
-
-            clone_path = block.getMeta("remote")
-            #must use the local path of the local block if no remote
-            if(clone_path == None):
-                clone_path = block.getPath()
-
-            block.install(cache_path, block.getVersion(), clone_path)
-            #now update to true because it was just cloned from remote
-            isInstalled = True
-        elif(self.db.blockExists(title, "market") == False and self.db.blockExists(title, "cache") == False):
-            log.warning(title+" does not exist for this workspace or its markets.")
-
-        #now try to install specific version if requested now that the whole branch was cloned from remote
-        if(ver != None and isInstalled):
-            block.install(cache_path, ver)
-
-        pass
-
-    #! === UNINSTALL COMMAND ===
-
-    def uninstall(self, blk, ver):
-        '''
-        This method performs the uninstall command. A warning with a preview of
-        the directories/versions that will be deleted are issued to the user
-        before proceeding to delete the installations. If deleting a version
-        that is also the major version, it will attempt to find a new 
-        replacement for being the highest major version.
-        '''
-        #remove from cache
-        _,l,n,_ = Block.snapTitle(blk)
-        base_cache_dir = apt.WORKSPACE+"cache/"+l+"/"+n+"/"
-        if(self.db.blockExists(blk, "cache")):
-            vers_instl = os.listdir(base_cache_dir)
-            
-            #delete all its block stuff in cache
-            if(ver == None):
-                prmpt = 'Are you sure you want to uninstall the following?\n'
-                #print all folders that will be deleted
-                for v in vers_instl:
-                    if(Block.validVer(v) or Block.validVer(v, maj_place=True) or v.lower() == n):
-                        prmpt = prmpt + base_cache_dir+v+"/\n"
-                #ask for confirmation to delete installations
-                confirm = apt.confirmation(prmpt)
-                if(confirm):
-                    shutil.rmtree(base_cache_dir, onerror=apt.rmReadOnly)
-                else:
-                    exit(log.info("Did not uninstall block "+blk+"."))
-            #only delete the specified version
-            elif(os.path.isdir(base_cache_dir+ver+"/")):
-                #track what versions will no longer be available
-                rm_vers = []
-                tmp_blk = self.db.getBlocks("cache")[l][n]
-                remaining_vers = tmp_blk.sortVersions(tmp_blk.getTaggedVersions())
-                prmpt = 'Are you sure you want to uninstall the following?\n'
-                prmpt = prmpt + base_cache_dir+ver+"/\n"
-                
-                #determine this version's parent
-                parent_ver = ver[:ver.find('.')]
-                #removing an entire parent version space
-                if(ver.find('.') == -1):
-                    parent_ver = ver
-                    for v in vers_instl:
-                        if(v[:v.find('.')] == parent_ver):
-                            rm_vers.append(v)
-                            prmpt = prmpt + base_cache_dir+v+"\n"
-                
-                rm_vers.append(ver)
-
-                next_best_ver = None
-                #open the project and see what version is being used
-                if(os.path.isdir(base_cache_dir+parent_ver+"/")):
-                    parent_meta = dict()
-                    with open(base_cache_dir+parent_ver+"/"+apt.MARKER, 'r') as tmp_f:
-                        parent_meta = cfg.load(tmp_f, ignore_depth=True)
-                        tmp_f.close()
-                    #will have to try to revert down a version if its being used in parent version
-                    rm_parent = (parent_meta['version'] == ver[1:])
-
-                    if(rm_parent and parent_ver != ver):
-                        prmpt = prmpt + base_cache_dir+parent_ver+"\n"
-    
-                        #grab the highest version found that left from installed
-                        remaining_vers.remove(ver)
-                        
-                        for v in remaining_vers:
-                            if(v[:v.find('.')] == parent_ver and v in vers_instl and v not in rm_vers):
-                                next_best_ver = v
-                        print(remaining_vers)
-                        print(next_best_ver)
-
-                confirm = apt.confirmation(prmpt)
-                
-                if(confirm):
-                    for v in rm_vers:
-                        shutil.rmtree(base_cache_dir+v+"/", onerror=apt.rmReadOnly)
-                    #delete parent if specified
-                    if(rm_parent):
-                        shutil.rmtree(base_cache_dir+parent_ver+"/", onerror=apt.rmReadOnly)
-                    #if found, update parent version to next best available level
-                    if(next_best_ver != None):
-                        tmp_blk.install(apt.WORKSPACE+"cache/", next_best_ver)
-                else:
-                    exit(log.info("Did not uninstall block "+blk+"."))
-            else:
-                exit(log.error("Block "+blk+" version "+ver+" is not installed to the workspace's cache."))
-            #if empty dir then do some cleaning
-            clean = True
-            for d in os.listdir(apt.WORKSPACE+"cache/"+l):
-                if(d.startswith('.') == False):
-                    clean = False
-            if(clean):
-                shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/", onerror=apt.rmReadOnly)
-        else:
-            exit(log.error("Block "+blk+" is not installed to the workspace's cache."))
-
-        log.info("Successfully uninstalled block "+blk+".")
-
-        pass
-
-    #! === BUILD COMMAND ===
-    
-    def build(self, script):
-        '''
-        This method performs the build command. It will search the available
-        scripts in the settings and call it accordingly. Arguments found after
-        the script name on the command line are passed to the build script.
-        '''
-        script_identifier = "+"
-        arg_start = 3
-        
-        if(not isinstance(apt.SETTINGS['script'],dict)): #no scripts exist
-            exit(log.error("No scripts are configured!"))
-        elif(len(script) and script.startswith(script_identifier)):
-            stripped_name = script[len(script_identifier):]
-            if(stripped_name in apt.SETTINGS['script'].keys()): #is it a name?
-                cmd = apt.SETTINGS['script'][stripped_name]
-            else:
-                exit(log.error("Build script "+stripped_name+" not found!"))
-        elif("master" in apt.SETTINGS['script'].keys()): #try to resort to default
-            cmd = apt.SETTINGS['script']['master']
-            arg_start = 2
-        elif(len(apt.SETTINGS['script'].keys()) == 1): #if only 1 then try to run the one
-            cmd = apt.SETTINGS['script'][list(apt.SETTINGS['script'].keys())[0]]
-            arg_start = 2
-        else:
-            exit(log.error("No master script is configured!"))
-
-        #remove quotes from command
-        cmd = cmd.replace("\'","")
-        cmd = cmd.replace("\"","")
-
-        for i,arg in enumerate(sys.argv):
-            if(i < arg_start):
-                continue
-            else:
-                cmd = cmd + " " + arg
-        
-        apt.execute(cmd, quiet=False)
-
-    #! === EXPORT/GRAPH COMMAND ===
-    @DeprecationWarning
-    def export(self, block, top=None, options=[]):
-        '''
-        This method performs the export command. The requirements are organized 
-        into a topologically sorted graph and written to the blueprint file. It
-        also searches for recursive/shallow custom labels within the required
-        blocks.
-        '''
-        log.info("Exporting...")
-        log.info("Block's path: "+block.getPath())
-        build_dir = block.getPath()+"build/"
-        #create a clean build folder
-        log.info("Cleaning build folder...")
-        if(os.path.isdir(build_dir)):
-            shutil.rmtree(build_dir, onerror=apt.rmReadOnly)
-        os.mkdir(build_dir)
-
-        inc_sim = (options.count('ignore-tb') == 0)
-
-        blueprint_filepath = build_dir+"blueprint"
-
-        log.info("Finding toplevel design...")
-
-        #get the Unit objects for the top_dog, top design, and top testbench
-        top_dog,top,tb = block.identifyTopDog(top, inc_sim=inc_sim)
-        #print(top_dog,top,tb)
-        
-        output = open(blueprint_filepath, 'w')   
-
-        #mission: recursively search through every src VHD file for what else needs to be included
-        unit_order,block_order = self._graph(block, top_dog)
-        file_order = self.compileList(block, unit_order)  
-
-        #add labels in order from lowest-projects to top-level project
-        labels = []
-        #track what labels have already been defined by the same block
-        latest_defined = dict()
-        for blk in block_order:
-            spec_path = None
-            #break into market, library, name, version
-            M,L,N,V = Block.snapTitle(blk)
-            #reassemble block title
-            blk = L+'.'+N
-            #assign tmp block to the current block
-            if(block.getTitle() == blk):
-                tmp = block
-            #assign tmp block to block in downloads if multi-develop enabled and version is none
-            elif(V == None and self.db.blockExists(blk, "local") and apt.SETTINGS['general']['multi-develop']):
-                tmp = self.db.getBlocks("local")[L][N]
-            #assign tmp block to the cache block
-            elif(self.db.blockExists(blk, "cache")):
-                tmp = self.db.getBlocks("cache")[L][N]
-            else:
-                log.warning("Cannot locate block "+blk+" for label searching")
-                continue
-
-            spec_path = tmp.getPath()
-
-            #using the version that was latched onto the name, alter cache path setting?
-            if(V != None):
-                #print(tmp.getPath())
-                base_cache_path = os.path.dirname(tmp.getPath()[:len(tmp.getPath())-1])
-                spec_path = base_cache_path+"/"+V+"/"
-                pass
-            #create new element if DNE
-            if(blk not in latest_defined.keys()):
-                latest_defined[blk] = ['0.0.0', dict()]
-            #update latest defined if a bigger version has appeared
-            overwrite = False
-            #determine the current version being processed
-            if(V == None):
-                V = tmp.getVersion()
-            #will overwrite the label values for this block if its a higher version
-            if(Block.biggerVer(latest_defined[blk][0], V) == V):
-                overwrite = True
-                latest_defined[blk][0] = V
-
-            #add any recursive labels
-            for label,ext in apt.SETTINGS['label']['recursive'].items():
-                files = tmp.gatherSources(ext=[ext], path=spec_path)
-                for f in files:
-                    lbl = "@"+label+" "+apt.fs(f)
-                    #is used when duplicate-recursive-labels is enabled
-                    labels.append(lbl)
-                    #is used when duplicate-recursive-labels is disabled
-                    if(overwrite):
-                        basename = os.path.basename(f).lower()
-                        latest_defined[blk][1][basename] = lbl
-                    pass
-            #add any project-level labels
-            if(block.getTitle() == blk):
-                for label,ext in apt.SETTINGS['label']['shallow'].items():
-                    files = block.gatherSources(ext=[ext])
-                    for f in files:
-                        lbl = "@"+label+" "+apt.fs(f)
-                        #is used when duplicate-recursive-labels is enabled
-                        labels.append(lbl)
-                        #is used when duplicate-recursive-labels is disabled
-                        basename = os.path.basename(f).lower()
-                        latest_defined[blk][1][basename] = lbl
-                        pass
-        #determine if to write all recursive labels or not
-        if(not apt.SETTINGS['general']['overlap-recursive']):
-            labels = []
-            for blk in latest_defined.keys():
-                for lbl in latest_defined[blk][1].values():
-                    labels.append(lbl)
-
-        for l in labels:
-            output.write(l+"\n")
-        for f in file_order:
-            output.write(f+"\n")
-
-        #write top-level testbench entity label
-        if(tb != None):
-            line = '@'
-            if(tb.getLanguageType() == Unit.Language.VHDL):
-                line = line+"VHDL"
-            elif(tb.getLanguageType() == Unit.Language.VERILOG):
-                line = line+"VLOG"
-            #set simulation design unit by its entity name by default
-            tb_name = tb.getName(low=False)
-            #set top bench design unit name by its configuration if exists
-            if(tb.getConfig() != None):
-                tb_name = tb.getConfig()
-            output.write(line+"-SIM-TOP "+tb_name+" "+tb.getFile()+"\n")
-
-        #write top-level design entity label
-        if(top != None):
-            line = '@'
-            if(top.getLanguageType() == Unit.Language.VHDL):
-                line = line+"VHDL"
-            elif(top.getLanguageType() == Unit.Language.VERILOG):
-                line = line+"VLOG"
-            output.write(line+"-SRC-TOP "+top.getName(low=False)+" "+top.getFile()+"\n")
-            
-        output.close()
-        #update the derives section to give details into what blocks are required for this one
-        block.updateDerivatives(block_order)
-
-        log.info("Blueprint located at: "+blueprint_filepath)
-        log.info("success")
         pass
 
 
@@ -908,356 +572,6 @@ scripts)?", warning=False)
 
         return data
 
-
-    #! === DOWNLOAD COMMAND ===
-    #will also install project into cache and have respective pkg in lib
-    def download(self, title, reinstall=True):
-        '''
-        This method performs the download command. It will force a reinstallation
-        when 'reinstall' is True. A title is a block's L and N. It will try to
-        clone from a git repository if available, else it will clone from the
-        cache.
-        '''
-        _,l,n,_ = Block.snapTitle(title)
-        success = True
-        #1. download
-        #update local block if it has a remote
-        if(self.db.blockExists(title, "local")):
-            blk = self.db.getBlocks("local")[l][n]
-            #pull from remote url
-            blk.pull()
-        #download from market
-        elif(self.db.blockExists(title, "market")):
-            blk = self.db.getBlocks("market")[l][n]
-            log.info("Downloading "+blk.getTitle()+" from "+str(blk.getMeta('market'))+' with '+blk.getMeta('remote')+"...")
-            #use the remote git url to download/clone the block
-            success = blk.downloadFromURL(blk.getMeta("remote"))
-        #download from the cache
-        elif(self.db.blockExists(title, "cache")):
-            blk = self.db.getBlocks("cache")[l][n]
-            dwnld_path = blk.getPath()
-            if(blk.grabGitRemote() != None):
-                dwnld_path = blk.grabGitRemote()
-            log.info("Downloading "+blk.getTitle()+" from cache with "+dwnld_path+"...")
-            #use the cache directory to download/clone the block
-            success = blk.downloadFromURL(dwnld_path)
-            #now return the block if wanting to open it with -o option
-            return success
-        else:
-            exit(log.error('Block \''+title+'\' does not exist in any linked market for this workspace'))
-        
-        if(not reinstall):
-            return success
-        #2. perform re-install
-        cache_block = None
-        in_cache = self.db.blockExists(blk.getTitle(), "cache")
-        if(in_cache):
-            cache_block = self.db.getBlocks(blk.getTitle(), "cache")[l][n]
-        if(not in_cache or Block.biggerVer(blk.getVersion(), cache_block.getVersion()) == blk.getVersion() and blk.getVersion() != cache_block.getVersion()):
-            try: #remove cached project already there
-                shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/"+n+"/", onerror=apt.rmReadOnly)
-            except:
-                pass
-            #update cache installation if a new version is available
-            self.install(title, None)
-        
-        return success
-
-
-    #! === RELEASE COMMAND ===
-    def upload(self, block, msg=None, options=None):
-        '''
-        This method performs the release command. A block becomes released and
-        gains a release point with a special git tag. Users can optionally pass
-        a 'msg' for the git commit.
-        '''
-        err_msg = "Flag the next version for release with one of the following args:\n"\
-                    "\t[-v0.0.0 | -maj | -min | -fix]"
-        if(len(options) == 0):
-                exit(log.error(err_msg))
-            
-        ver = None
-        #find the manually entered version number
-        for opt in options:
-            if(Block.validVer(opt)):
-                ver = Block.stdVer(opt)
-                break
-        
-        if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == None):
-            exit(log.error(err_msg))
-        #ensure top has been identified for release
-        # :todo: allow user to specify what is top level explictly?
-        top_dog,_,_ = block.identifyTopDog(None)
-        #update block requirements
-        _,block_order = self._graph(block, top_dog)
-        block.updateDerivatives(block_order)
-        block.release(msg, ver, options)
-        #don't look to market when updating if the block does not link to market anymore
-        bypassMrkt = (block.getMeta('market') not in apt.getMarkets())
-        self.update(block.getTitle(low=False), block.getVersion(), bypassMrkt=bypassMrkt)
-
-        log.info(block.getLib()+"."+block.getName()+" is now available as version "+block.getVersion()+".")
-        pass
-
-
-    #! === INIT COMMAND ===
-    def convert(self, value, options=[]):
-        '''
-        This method performs the init command. It takes an existing project
-        and tries to convert it into a valid block by creating a Block.cfg 
-        file, and a git repository if needed.
-        '''
-        #must look through tags of already established repo
-        m,l,n,_ = Block.snapTitle(value, lower=False)
-        if((l == '' or n == '') and len(options) == 0):
-            exit(log.error("Must provide a block title <library>.<block-name>"))
-        #get the current directory where its specified to initialize
-        cwd = apt.fs(os.getcwd())
-        #make sure this path is witin our workspace's path before making it a block
-        if(apt.isSubPath(apt.getLocal(), cwd) == False):
-            exit(log.error("Cannot initialize outside or at root of workspace path "+apt.getLocal()))
-
-        block = None
-        #check if we are trying to init something other than an actual project to block
-        if(self.blockCWD.isValid()):
-            #alter market name
-            if(options.count("market")):
-                #try to validate market
-                mkt_obj = self.identifyMarket(value)
-                if(mkt_obj == None):
-                    exit(log.error("No market is recognized under "+value))
-                #pass the market name to set in metadata
-                self.blockCWD.bindMarket(mkt_obj.getName(low=False))
-            #alter remote repository link
-            elif(options.count("remote")):
-                #link to this remote if its valid
-                if(apt.isValidURL(value)):
-                    self.blockCWD.setRemote(value)
-                #remove a remote if value is blank
-                elif(value == ''):
-                    log.info("Removing any possible linkage to a remote...")
-                    self.blockCWD.setRemote(None)
-                #else display error
-                else:
-                    exit(log.error("Invalid git url."))
-            #alter summary description
-            elif(options.count("summary")):
-                self.blockCWD.setMeta('summary', value)
-                self.blockCWD.save()
-            #no other flags are currently supported
-            elif(len(options)):
-                    exit(log.error("Could not fulfill init option flag '"+options[0]+"'"))
-            #done initializing this already existing block
-            return
-
-        #proceed with initializing current files/folder into a block format
-
-        #check if a block already exists at this folder
-        files = os.listdir(cwd)
-        if apt.MARKER in files:
-            exit(log.info("This folder already has a Block.cfg file."))
-        else:
-            log.info("Transforming project into block...")
-       
-        #determine if the project should be opened after creation
-        startup = options.count("open")
-        #determine if the repository used to initialize should be kept or removed
-        fork = options.count("fork")
-
-        #try to find a valid git url
-        git_url = None
-        for opt in options:
-            if(apt.isValidURL(opt)):
-                git_url = opt
-                break
-
-        #check if wanting to initialize from a git url
-        #is this remote bare? If not, clone from it
-        if(git_url != None and apt.isRemoteBare(git_url) == False):
-            #clone the repository if it is not bare, then add metadata
-            #git.Git(cwd).clone(git_url)
-            #replace url_name with given name
-            url_name = git_url[git_url.rfind('/')+1:git_url.rfind('.git')]
-            cwd = apt.fs(cwd + '/' + url_name)
-            files = os.listdir(cwd)
-            #print(cwd)
-
-        #rename current folder to the name of library.project
-        last_slash = cwd.rfind('/')
-        #maybe go one additional slash back to get past name
-        if(last_slash == len(cwd)-1):
-            last_slash = cwd[:cwd.rfind('/')].rfind('/')
-
-        cwdb1 = cwd[:last_slash]+"/"+n+"/"
-        #print(cwdb1)
-        try:
-            os.rename(cwd, cwdb1)
-        except PermissionError:
-            log.warning("Could not rename project folder to "+cwdb1+".")
-            pass
-
-        git_exists = False
-        #see if there is a .git folder
-        if(".git" in files):
-            git_exists = True
-            pass
-        else:
-            log.info("Initializing git repository...")
-            #git.Repo.init(cwdb1)                
-            git_exists = True
-            pass
-
-        #try to validate market
-        mkt_obj = self.identifyMarket(m)
-
-        #create marker file
-        block = Block(title=l+'.'+n, path=cwdb1, remote=git_url, market=mkt_obj)
-        block.genRemote(push=False)
-        log.info("Creating "+apt.MARKER+" file...")
-        block.create(fresh=False, git_exists=git_exists, fork=fork)
-
-        if(startup):
-            block.openInEditor()
-        pass
-
-    def identifyMarket(self, m):
-        '''
-        Return a market object if the market name is found within the workspace.
-
-        Parameters
-        ---
-        m : market name
-        '''
-        #try to attach a market
-        for mkt in self.db.getMarkets():
-            if(m.lower() == mkt.getName()):
-                log.info("Identified "+mkt.getName()+" as block's market.")
-                return mkt
-        if(len(m)):
-            log.warning("No market "+m+" can be configured for this block.")
-        return None
-
-    #! === DEL COMMAND ===
-
-    def cleanup(self, block, force=False):
-        '''
-        This method performs the del command. The force parameter will also
-        remove all installations from the cache. If this is all that is left of
-        a block, a warning will be issued to the user before deletion.
-        '''
-        if(not block.isValid()):
-            log.info('Block '+block.getName()+' does not exist locally.')
-            return
-        #ask to confirm if it has no releases OR its not linked and we are forcing it to be uninstalled too
-        if(block.getVersion() == '0.0.0' or (not block.isLinked() and force)):
-            confirmed = apt.confirmation('No market is configured or any released versions for '+block.getTitle()+'. \
-If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
-        
-            if(not confirmed):
-                exit(log.info("Did not remove nor uninstall "+block.getTitle()+'.'))
-
-        #if there is a remote then the project still lives on, can be "redownloaded"
-        log.info("Deleting "+block.getTitle()+" block found here: "+block.getPath())
-        try:
-            shutil.rmtree(block.getPath(), onerror=apt.rmReadOnly)
-        except PermissionError:
-            log.warning("Could not delete block's root folder from local workspace because it is open in another process.")
-
-        #if empty dir then do some cleaning
-        slash = block.getPath()[:len(block.getPath())-2].rfind('/')
-        root = block.getPath()[:slash+1]
-        clean = True
-        for d in os.listdir(root):
-            if(d.startswith('.') == False):
-                clean = False
-        if(clean):
-            shutil.rmtree(root, onerror=apt.rmReadOnly)
-        log.info('Deleted '+block.getTitle()+' from local workspace.')
-        
-        if(force):
-            self.uninstall(block.getTitle(), None)
-        #delete the module remotely?
-        pass
-
-
-    #! === UPDATE COMMAND ===
-    def update(self, title, ver=None, bypassMrkt=False):
-        '''
-        This method perfoms the update command for blocks and/or profiles. The
-        bypassMrkt parameter is set True when a block is being newly released,
-        it won't look to market when updating if the block does not link to 
-        market anymore to perform re-installation. Update will perform git pull
-        on the cache and update the cache's main/master git commit line.
-        '''
-        _,l,n,_ = Block.snapTitle(title)
-        #check if market version is bigger than the installed version
-        c_ver = '0.0.0'
-        if(self.db.blockExists(title, "cache")):
-            cache_block = self.db.getBlocks("cache", updt=True)[l][n]
-            c_ver = cache_block.getVersion()
-
-        m_ver = ver
-        if(not bypassMrkt and self.db.blockExists(title, "market")):
-            mrkt_block = self.db.getBlocks("market", updt=True)[l][n]
-            m_ver = mrkt_block.getVersion()
-        elif(ver == None):
-            exit(log.error(title+" cannot be updated from any of the workspace's markets."))
-        
-        if((Block.biggerVer(m_ver,c_ver) == m_ver and m_ver != c_ver)):
-            log.info("Updating "+title+" installation to v"+m_ver)
-            #remove from cache's master branch to be reinstalled
-            base_installation = apt.WORKSPACE+"cache/"+l+"/"+n+"/"+n+"/"
-            
-            if(os.path.isdir(base_installation)):
-                shutil.rmtree(base_installation, onerror=apt.rmReadOnly)
-            
-            #clone new project's progress into cache
-            self.install(title, None)
-
-            #also update locally if exists
-            if(self.db.blockExists(title,"local")):
-                self.download(title, reinstall=False)
-            
-        else:
-            log.info(title+" already up-to-date. (v"+c_ver+")")
-        pass
-
-
-    def checkVar(self, key, val):
-        '''
-        Checks if val equals the value stored behind the key in the
-        _vars map. Returns false if key DNE.
-        
-        Parameters:
-            key (str): key to check value behind in _vars
-            val (str): value to compare with
-        Returns:
-            (bool): if val was equal to key's value in _vars
-        '''
-        if(key not in self._vars.keys()):
-            return False
-        else:
-            return val == self._vars[key]
-
-    
-    def splitVar(self, val, delim=':'):
-        '''
-        Splits the value of the variable into two parts based
-        on the delimiter. Returns '' for second component if delim DNE.
-
-        Parameters:
-            val (str): the variable value
-            delim (str): the substring to find in val
-        Returns:
-            key (str): first component of val
-            val (str): second component of val
-        '''
-        d_i = val.find(delim)
-        if(d_i > -1):
-            return val[0:d_i], val[d_i+1:]
-        else:
-            return val, ''
-
     
     def _get(self):
         '''Run the 'get' command.'''
@@ -1279,6 +593,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
 
     def _init(self):
         '''Run the 'init' command.'''
+
         cur_path = apt.fs(os.getcwd())
         
         block = Block(cur_path, self.WS())
@@ -1288,6 +603,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
     
     def _info(self):
         '''Run the 'info' command.'''
+
         #make sure the user passed in a value for the item
         if(self.getItem() == None):
             exit(log.error("Include a block's title to get its information."))
@@ -1768,6 +1084,656 @@ if __name__ == "__main__":
 # ==============================================================================
 # ==============================================================================
 # ==============================================================================
+
+    #! === DOWNLOAD COMMAND ===
+    #will also install project into cache and have respective pkg in lib
+    @DeprecationWarning
+    def download(self, title, reinstall=True):
+        '''
+        This method performs the download command. It will force a reinstallation
+        when 'reinstall' is True. A title is a block's L and N. It will try to
+        clone from a git repository if available, else it will clone from the
+        cache.
+        '''
+        _,l,n,_ = Block.snapTitle(title)
+        success = True
+        #1. download
+        #update local block if it has a remote
+        if(self.db.blockExists(title, "local")):
+            blk = self.db.getBlocks("local")[l][n]
+            #pull from remote url
+            blk.pull()
+        #download from market
+        elif(self.db.blockExists(title, "market")):
+            blk = self.db.getBlocks("market")[l][n]
+            log.info("Downloading "+blk.getTitle()+" from "+str(blk.getMeta('market'))+' with '+blk.getMeta('remote')+"...")
+            #use the remote git url to download/clone the block
+            success = blk.downloadFromURL(blk.getMeta("remote"))
+        #download from the cache
+        elif(self.db.blockExists(title, "cache")):
+            blk = self.db.getBlocks("cache")[l][n]
+            dwnld_path = blk.getPath()
+            if(blk.grabGitRemote() != None):
+                dwnld_path = blk.grabGitRemote()
+            log.info("Downloading "+blk.getTitle()+" from cache with "+dwnld_path+"...")
+            #use the cache directory to download/clone the block
+            success = blk.downloadFromURL(dwnld_path)
+            #now return the block if wanting to open it with -o option
+            return success
+        else:
+            exit(log.error('Block \''+title+'\' does not exist in any linked market for this workspace'))
+        
+        if(not reinstall):
+            return success
+        #2. perform re-install
+        cache_block = None
+        in_cache = self.db.blockExists(blk.getTitle(), "cache")
+        if(in_cache):
+            cache_block = self.db.getBlocks(blk.getTitle(), "cache")[l][n]
+        if(not in_cache or Block.biggerVer(blk.getVersion(), cache_block.getVersion()) == blk.getVersion() and blk.getVersion() != cache_block.getVersion()):
+            try: #remove cached project already there
+                shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/"+n+"/"+n+"/", onerror=apt.rmReadOnly)
+            except:
+                pass
+            #update cache installation if a new version is available
+            self.install(title, None)
+        
+        return success
+
+
+    #! === RELEASE COMMAND ===
+    @DeprecationWarning
+    def upload(self, block, msg=None, options=None):
+        '''
+        This method performs the release command. A block becomes released and
+        gains a release point with a special git tag. Users can optionally pass
+        a 'msg' for the git commit.
+        '''
+        err_msg = "Flag the next version for release with one of the following args:\n"\
+                    "\t[-v0.0.0 | -maj | -min | -fix]"
+        if(len(options) == 0):
+                exit(log.error(err_msg))
+            
+        ver = None
+        #find the manually entered version number
+        for opt in options:
+            if(Block.validVer(opt)):
+                ver = Block.stdVer(opt)
+                break
+        
+        if(options[0] != 'maj' and options[0] != 'min' and options[0] != 'fix' and ver == None):
+            exit(log.error(err_msg))
+        #ensure top has been identified for release
+        # :todo: allow user to specify what is top level explictly?
+        top_dog,_,_ = block.identifyTopDog(None)
+        #update block requirements
+        _,block_order = self._graph(block, top_dog)
+        block.updateDerivatives(block_order)
+        block.release(msg, ver, options)
+        #don't look to market when updating if the block does not link to market anymore
+        bypassMrkt = (block.getMeta('market') not in apt.getMarkets())
+        self.update(block.getTitle(low=False), block.getVersion(), bypassMrkt=bypassMrkt)
+
+        log.info(block.getLib()+"."+block.getName()+" is now available as version "+block.getVersion()+".")
+        pass
+
+
+    #! === INIT COMMAND ===
+    @DeprecationWarning
+    def convert(self, value, options=[]):
+        '''
+        This method performs the init command. It takes an existing project
+        and tries to convert it into a valid block by creating a Block.cfg 
+        file, and a git repository if needed.
+        '''
+        #must look through tags of already established repo
+        m,l,n,_ = Block.snapTitle(value, lower=False)
+        if((l == '' or n == '') and len(options) == 0):
+            exit(log.error("Must provide a block title <library>.<block-name>"))
+        #get the current directory where its specified to initialize
+        cwd = apt.fs(os.getcwd())
+        #make sure this path is witin our workspace's path before making it a block
+        if(apt.isSubPath(apt.getLocal(), cwd) == False):
+            exit(log.error("Cannot initialize outside or at root of workspace path "+apt.getLocal()))
+
+        block = None
+        #check if we are trying to init something other than an actual project to block
+        if(self.blockCWD.isValid()):
+            #alter market name
+            if(options.count("market")):
+                #try to validate market
+                mkt_obj = self.identifyMarket(value)
+                if(mkt_obj == None):
+                    exit(log.error("No market is recognized under "+value))
+                #pass the market name to set in metadata
+                self.blockCWD.bindMarket(mkt_obj.getName(low=False))
+            #alter remote repository link
+            elif(options.count("remote")):
+                #link to this remote if its valid
+                if(apt.isValidURL(value)):
+                    self.blockCWD.setRemote(value)
+                #remove a remote if value is blank
+                elif(value == ''):
+                    log.info("Removing any possible linkage to a remote...")
+                    self.blockCWD.setRemote(None)
+                #else display error
+                else:
+                    exit(log.error("Invalid git url."))
+            #alter summary description
+            elif(options.count("summary")):
+                self.blockCWD.setMeta('summary', value)
+                self.blockCWD.save()
+            #no other flags are currently supported
+            elif(len(options)):
+                    exit(log.error("Could not fulfill init option flag '"+options[0]+"'"))
+            #done initializing this already existing block
+            return
+
+        #proceed with initializing current files/folder into a block format
+
+        #check if a block already exists at this folder
+        files = os.listdir(cwd)
+        if apt.MARKER in files:
+            exit(log.info("This folder already has a Block.cfg file."))
+        else:
+            log.info("Transforming project into block...")
+       
+        #determine if the project should be opened after creation
+        startup = options.count("open")
+        #determine if the repository used to initialize should be kept or removed
+        fork = options.count("fork")
+
+        #try to find a valid git url
+        git_url = None
+        for opt in options:
+            if(apt.isValidURL(opt)):
+                git_url = opt
+                break
+
+        #check if wanting to initialize from a git url
+        #is this remote bare? If not, clone from it
+        if(git_url != None and apt.isRemoteBare(git_url) == False):
+            #clone the repository if it is not bare, then add metadata
+            #git.Git(cwd).clone(git_url)
+            #replace url_name with given name
+            url_name = git_url[git_url.rfind('/')+1:git_url.rfind('.git')]
+            cwd = apt.fs(cwd + '/' + url_name)
+            files = os.listdir(cwd)
+            #print(cwd)
+
+        #rename current folder to the name of library.project
+        last_slash = cwd.rfind('/')
+        #maybe go one additional slash back to get past name
+        if(last_slash == len(cwd)-1):
+            last_slash = cwd[:cwd.rfind('/')].rfind('/')
+
+        cwdb1 = cwd[:last_slash]+"/"+n+"/"
+        #print(cwdb1)
+        try:
+            os.rename(cwd, cwdb1)
+        except PermissionError:
+            log.warning("Could not rename project folder to "+cwdb1+".")
+            pass
+
+        git_exists = False
+        #see if there is a .git folder
+        if(".git" in files):
+            git_exists = True
+            pass
+        else:
+            log.info("Initializing git repository...")
+            #git.Repo.init(cwdb1)                
+            git_exists = True
+            pass
+
+        #try to validate market
+        mkt_obj = self.identifyMarket(m)
+
+        #create marker file
+        block = Block(title=l+'.'+n, path=cwdb1, remote=git_url, market=mkt_obj)
+        block.genRemote(push=False)
+        log.info("Creating "+apt.MARKER+" file...")
+        block.create(fresh=False, git_exists=git_exists, fork=fork)
+
+        if(startup):
+            block.openInEditor()
+        pass
+
+    @DeprecationWarning
+    def identifyMarket(self, m):
+        '''
+        Return a market object if the market name is found within the workspace.
+
+        Parameters
+        ---
+        m : market name
+        '''
+        #try to attach a market
+        for mkt in self.db.getMarkets():
+            if(m.lower() == mkt.getName()):
+                log.info("Identified "+mkt.getName()+" as block's market.")
+                return mkt
+        if(len(m)):
+            log.warning("No market "+m+" can be configured for this block.")
+        return None
+
+    #! === DEL COMMAND ===
+    @DeprecationWarning
+    def cleanup(self, block, force=False):
+        '''
+        This method performs the del command. The force parameter will also
+        remove all installations from the cache. If this is all that is left of
+        a block, a warning will be issued to the user before deletion.
+        '''
+        if(not block.isValid()):
+            log.info('Block '+block.getName()+' does not exist locally.')
+            return
+        #ask to confirm if it has no releases OR its not linked and we are forcing it to be uninstalled too
+        if(block.getVersion() == '0.0.0' or (not block.isLinked() and force)):
+            confirmed = apt.confirmation('No market is configured or any released versions for '+block.getTitle()+'. \
+If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+block.getTitle()+'?')
+        
+            if(not confirmed):
+                exit(log.info("Did not remove nor uninstall "+block.getTitle()+'.'))
+
+        #if there is a remote then the project still lives on, can be "redownloaded"
+        log.info("Deleting "+block.getTitle()+" block found here: "+block.getPath())
+        try:
+            shutil.rmtree(block.getPath(), onerror=apt.rmReadOnly)
+        except PermissionError:
+            log.warning("Could not delete block's root folder from local workspace because it is open in another process.")
+
+        #if empty dir then do some cleaning
+        slash = block.getPath()[:len(block.getPath())-2].rfind('/')
+        root = block.getPath()[:slash+1]
+        clean = True
+        for d in os.listdir(root):
+            if(d.startswith('.') == False):
+                clean = False
+        if(clean):
+            shutil.rmtree(root, onerror=apt.rmReadOnly)
+        log.info('Deleted '+block.getTitle()+' from local workspace.')
+        
+        if(force):
+            self.uninstall(block.getTitle(), None)
+        #delete the module remotely?
+        pass
+
+
+    #! === UPDATE COMMAND ===
+    @DeprecationWarning
+    def update(self, title, ver=None, bypassMrkt=False):
+        '''
+        This method perfoms the update command for blocks and/or profiles. The
+        bypassMrkt parameter is set True when a block is being newly released,
+        it won't look to market when updating if the block does not link to 
+        market anymore to perform re-installation. Update will perform git pull
+        on the cache and update the cache's main/master git commit line.
+        '''
+        _,l,n,_ = Block.snapTitle(title)
+        #check if market version is bigger than the installed version
+        c_ver = '0.0.0'
+        if(self.db.blockExists(title, "cache")):
+            cache_block = self.db.getBlocks("cache", updt=True)[l][n]
+            c_ver = cache_block.getVersion()
+
+        m_ver = ver
+        if(not bypassMrkt and self.db.blockExists(title, "market")):
+            mrkt_block = self.db.getBlocks("market", updt=True)[l][n]
+            m_ver = mrkt_block.getVersion()
+        elif(ver == None):
+            exit(log.error(title+" cannot be updated from any of the workspace's markets."))
+        
+        if((Block.biggerVer(m_ver,c_ver) == m_ver and m_ver != c_ver)):
+            log.info("Updating "+title+" installation to v"+m_ver)
+            #remove from cache's master branch to be reinstalled
+            base_installation = apt.WORKSPACE+"cache/"+l+"/"+n+"/"+n+"/"
+            
+            if(os.path.isdir(base_installation)):
+                shutil.rmtree(base_installation, onerror=apt.rmReadOnly)
+            
+            #clone new project's progress into cache
+            self.install(title, None)
+
+            #also update locally if exists
+            if(self.db.blockExists(title,"local")):
+                self.download(title, reinstall=False)
+            
+        else:
+            log.info(title+" already up-to-date. (v"+c_ver+")")
+        pass
+    #! === INSTALL COMMAND ===
+    @DeprecationWarning
+    #install block to cache, and recursively install dependencies
+    def install(self, title, ver=None, required_by=[]):
+        '''
+        This method performs the install command. It will recursively install
+        any dependencies and ensure no duplicate installation attempts through the
+        'required_by' argument. If ver=None, it will install the latest version.
+        Title consists of a block's L and N.
+        '''
+        _,l,n,_ = Block.snapTitle(title)
+        block = None
+        cache_path = apt.WORKSPACE+"cache/"
+        verify_url = False
+        already_installed = False
+        #does the package already exist in the cache directory?
+        if(self.db.blockExists(title, "cache", updt=True)):
+            block = self.db.getBlocks("cache")[l][n]
+            #list all versions available in cache
+            vers_instl = os.listdir(cache_path+l+"/"+n+"/")
+            #its already installed if its in cache with no specific version or the version folder exists
+            if(ver == None):
+                log.info(title+" is already installed.")
+                already_installed = True
+            elif(ver in vers_instl):
+                log.info(title+"("+ver+") is already installed.")
+                already_installed = True
+        elif(self.db.blockExists(title, "local", updt=True)):
+            block = self.db.getBlocks("local")[l][n]
+            verify_url = True
+        elif(self.db.blockExists(title, "market")):
+            block = self.db.getBlocks("market")[l][n]
+        else:
+            exit(log.error(title+" cannot be found anywhere."))
+        #append to required_by list used to prevent cyclic recursive nature
+        required_by.append(block.getTitle()+'('+block.getVersion()+')')
+        #see if all cache blocks are available by looking at block's derives list
+        for prereq in block.getMeta("derives"):
+            if(prereq == block.getTitle() or prereq in required_by):
+                continue
+            #split prereq into library, name, and version
+            M,L,N,verreq = block.snapTitle(prereq)
+
+            needs_instl = False
+            if(self.db.blockExists(prereq, "cache", updt=True) == False):
+                #needs to install
+                log.info("Requires "+prereq)
+                #auto install dependency to cache if not found in cache
+                needs_instl = True
+            else:
+                cache_blk = self.db.getBlocks("cache")[L][N]
+                #auto install dependency to cache if version is not found in cache
+                vers = os.listdir(cache_blk.getPath()+"../")
+                if verreq not in vers:
+                    needs_instl = True
+            if(needs_instl):
+                self.install(L+'.'+N, ver=verreq, required_by=required_by)
+              
+        #no work needed to be done on this block if already installed (version found in cache)
+        if(already_installed):
+            return
+        #see what the latest version available is and clone from that version unless specified
+        isInstalled = self.db.blockExists(title, "cache")
+        #now check if block needs to be installed from market
+        if(not isInstalled):
+            if(verify_url):
+                if(apt.isValidURL(block.getMeta("remote")) == False):
+                    log.warning("No remote to install from.")
+
+            clone_path = block.getMeta("remote")
+            #must use the local path of the local block if no remote
+            if(clone_path == None):
+                clone_path = block.getPath()
+
+            block.install(cache_path, block.getVersion(), clone_path)
+            #now update to true because it was just cloned from remote
+            isInstalled = True
+        elif(self.db.blockExists(title, "market") == False and self.db.blockExists(title, "cache") == False):
+            log.warning(title+" does not exist for this workspace or its markets.")
+
+        #now try to install specific version if requested now that the whole branch was cloned from remote
+        if(ver != None and isInstalled):
+            block.install(cache_path, ver)
+
+        pass
+
+    #! === UNINSTALL COMMAND ===
+    @DeprecationWarning
+    def uninstall(self, blk, ver):
+        '''
+        This method performs the uninstall command. A warning with a preview of
+        the directories/versions that will be deleted are issued to the user
+        before proceeding to delete the installations. If deleting a version
+        that is also the major version, it will attempt to find a new 
+        replacement for being the highest major version.
+        '''
+        #remove from cache
+        _,l,n,_ = Block.snapTitle(blk)
+        base_cache_dir = apt.WORKSPACE+"cache/"+l+"/"+n+"/"
+        if(self.db.blockExists(blk, "cache")):
+            vers_instl = os.listdir(base_cache_dir)
+            
+            #delete all its block stuff in cache
+            if(ver == None):
+                prmpt = 'Are you sure you want to uninstall the following?\n'
+                #print all folders that will be deleted
+                for v in vers_instl:
+                    if(Block.validVer(v) or Block.validVer(v, maj_place=True) or v.lower() == n):
+                        prmpt = prmpt + base_cache_dir+v+"/\n"
+                #ask for confirmation to delete installations
+                confirm = apt.confirmation(prmpt)
+                if(confirm):
+                    shutil.rmtree(base_cache_dir, onerror=apt.rmReadOnly)
+                else:
+                    exit(log.info("Did not uninstall block "+blk+"."))
+            #only delete the specified version
+            elif(os.path.isdir(base_cache_dir+ver+"/")):
+                #track what versions will no longer be available
+                rm_vers = []
+                tmp_blk = self.db.getBlocks("cache")[l][n]
+                remaining_vers = tmp_blk.sortVersions(tmp_blk.getTaggedVersions())
+                prmpt = 'Are you sure you want to uninstall the following?\n'
+                prmpt = prmpt + base_cache_dir+ver+"/\n"
+                
+                #determine this version's parent
+                parent_ver = ver[:ver.find('.')]
+                #removing an entire parent version space
+                if(ver.find('.') == -1):
+                    parent_ver = ver
+                    for v in vers_instl:
+                        if(v[:v.find('.')] == parent_ver):
+                            rm_vers.append(v)
+                            prmpt = prmpt + base_cache_dir+v+"\n"
+                
+                rm_vers.append(ver)
+
+                next_best_ver = None
+                #open the project and see what version is being used
+                if(os.path.isdir(base_cache_dir+parent_ver+"/")):
+                    parent_meta = dict()
+                    with open(base_cache_dir+parent_ver+"/"+apt.MARKER, 'r') as tmp_f:
+                        parent_meta = cfg.load(tmp_f, ignore_depth=True)
+                        tmp_f.close()
+                    #will have to try to revert down a version if its being used in parent version
+                    rm_parent = (parent_meta['version'] == ver[1:])
+
+                    if(rm_parent and parent_ver != ver):
+                        prmpt = prmpt + base_cache_dir+parent_ver+"\n"
+    
+                        #grab the highest version found that left from installed
+                        remaining_vers.remove(ver)
+                        
+                        for v in remaining_vers:
+                            if(v[:v.find('.')] == parent_ver and v in vers_instl and v not in rm_vers):
+                                next_best_ver = v
+                        print(remaining_vers)
+                        print(next_best_ver)
+
+                confirm = apt.confirmation(prmpt)
+                
+                if(confirm):
+                    for v in rm_vers:
+                        shutil.rmtree(base_cache_dir+v+"/", onerror=apt.rmReadOnly)
+                    #delete parent if specified
+                    if(rm_parent):
+                        shutil.rmtree(base_cache_dir+parent_ver+"/", onerror=apt.rmReadOnly)
+                    #if found, update parent version to next best available level
+                    if(next_best_ver != None):
+                        tmp_blk.install(apt.WORKSPACE+"cache/", next_best_ver)
+                else:
+                    exit(log.info("Did not uninstall block "+blk+"."))
+            else:
+                exit(log.error("Block "+blk+" version "+ver+" is not installed to the workspace's cache."))
+            #if empty dir then do some cleaning
+            clean = True
+            for d in os.listdir(apt.WORKSPACE+"cache/"+l):
+                if(d.startswith('.') == False):
+                    clean = False
+            if(clean):
+                shutil.rmtree(apt.WORKSPACE+"cache/"+l+"/", onerror=apt.rmReadOnly)
+        else:
+            exit(log.error("Block "+blk+" is not installed to the workspace's cache."))
+
+        log.info("Successfully uninstalled block "+blk+".")
+
+        pass
+
+
+    #! === EXPORT/GRAPH COMMAND ===
+    @DeprecationWarning
+    def export(self, block, top=None, options=[]):
+        '''
+        This method performs the export command. The requirements are organized 
+        into a topologically sorted graph and written to the blueprint file. It
+        also searches for recursive/shallow custom labels within the required
+        blocks.
+        '''
+        log.info("Exporting...")
+        log.info("Block's path: "+block.getPath())
+        build_dir = block.getPath()+"build/"
+        #create a clean build folder
+        log.info("Cleaning build folder...")
+        if(os.path.isdir(build_dir)):
+            shutil.rmtree(build_dir, onerror=apt.rmReadOnly)
+        os.mkdir(build_dir)
+
+        inc_sim = (options.count('ignore-tb') == 0)
+
+        blueprint_filepath = build_dir+"blueprint"
+
+        log.info("Finding toplevel design...")
+
+        #get the Unit objects for the top_dog, top design, and top testbench
+        top_dog,top,tb = block.identifyTopDog(top, inc_sim=inc_sim)
+        #print(top_dog,top,tb)
+        
+        output = open(blueprint_filepath, 'w')   
+
+        #mission: recursively search through every src VHD file for what else needs to be included
+        unit_order,block_order = self._graph(block, top_dog)
+        file_order = self.compileList(block, unit_order)  
+
+        #add labels in order from lowest-projects to top-level project
+        labels = []
+        #track what labels have already been defined by the same block
+        latest_defined = dict()
+        for blk in block_order:
+            spec_path = None
+            #break into market, library, name, version
+            M,L,N,V = Block.snapTitle(blk)
+            #reassemble block title
+            blk = L+'.'+N
+            #assign tmp block to the current block
+            if(block.getTitle() == blk):
+                tmp = block
+            #assign tmp block to block in downloads if multi-develop enabled and version is none
+            elif(V == None and self.db.blockExists(blk, "local") and apt.SETTINGS['general']['multi-develop']):
+                tmp = self.db.getBlocks("local")[L][N]
+            #assign tmp block to the cache block
+            elif(self.db.blockExists(blk, "cache")):
+                tmp = self.db.getBlocks("cache")[L][N]
+            else:
+                log.warning("Cannot locate block "+blk+" for label searching")
+                continue
+
+            spec_path = tmp.getPath()
+
+            #using the version that was latched onto the name, alter cache path setting?
+            if(V != None):
+                #print(tmp.getPath())
+                base_cache_path = os.path.dirname(tmp.getPath()[:len(tmp.getPath())-1])
+                spec_path = base_cache_path+"/"+V+"/"
+                pass
+            #create new element if DNE
+            if(blk not in latest_defined.keys()):
+                latest_defined[blk] = ['0.0.0', dict()]
+            #update latest defined if a bigger version has appeared
+            overwrite = False
+            #determine the current version being processed
+            if(V == None):
+                V = tmp.getVersion()
+            #will overwrite the label values for this block if its a higher version
+            if(Block.biggerVer(latest_defined[blk][0], V) == V):
+                overwrite = True
+                latest_defined[blk][0] = V
+
+            #add any recursive labels
+            for label,ext in apt.SETTINGS['label']['recursive'].items():
+                files = tmp.gatherSources(ext=[ext], path=spec_path)
+                for f in files:
+                    lbl = "@"+label+" "+apt.fs(f)
+                    #is used when duplicate-recursive-labels is enabled
+                    labels.append(lbl)
+                    #is used when duplicate-recursive-labels is disabled
+                    if(overwrite):
+                        basename = os.path.basename(f).lower()
+                        latest_defined[blk][1][basename] = lbl
+                    pass
+            #add any project-level labels
+            if(block.getTitle() == blk):
+                for label,ext in apt.SETTINGS['label']['shallow'].items():
+                    files = block.gatherSources(ext=[ext])
+                    for f in files:
+                        lbl = "@"+label+" "+apt.fs(f)
+                        #is used when duplicate-recursive-labels is enabled
+                        labels.append(lbl)
+                        #is used when duplicate-recursive-labels is disabled
+                        basename = os.path.basename(f).lower()
+                        latest_defined[blk][1][basename] = lbl
+                        pass
+        #determine if to write all recursive labels or not
+        if(not apt.SETTINGS['general']['overlap-recursive']):
+            labels = []
+            for blk in latest_defined.keys():
+                for lbl in latest_defined[blk][1].values():
+                    labels.append(lbl)
+
+        for l in labels:
+            output.write(l+"\n")
+        for f in file_order:
+            output.write(f+"\n")
+
+        #write top-level testbench entity label
+        if(tb != None):
+            line = '@'
+            if(tb.getLanguageType() == Unit.Language.VHDL):
+                line = line+"VHDL"
+            elif(tb.getLanguageType() == Unit.Language.VERILOG):
+                line = line+"VLOG"
+            #set simulation design unit by its entity name by default
+            tb_name = tb.getName(low=False)
+            #set top bench design unit name by its configuration if exists
+            if(tb.getConfig() != None):
+                tb_name = tb.getConfig()
+            output.write(line+"-SIM-TOP "+tb_name+" "+tb.getFile()+"\n")
+
+        #write top-level design entity label
+        if(top != None):
+            line = '@'
+            if(top.getLanguageType() == Unit.Language.VHDL):
+                line = line+"VHDL"
+            elif(top.getLanguageType() == Unit.Language.VERILOG):
+                line = line+"VLOG"
+            output.write(line+"-SRC-TOP "+top.getName(low=False)+" "+top.getFile()+"\n")
+            
+        output.close()
+        #update the derives section to give details into what blocks are required for this one
+        block.updateDerivatives(block_order)
+
+        log.info("Blueprint located at: "+blueprint_filepath)
+        log.info("success")
+        pass
 #! === PARSING ===
     @DeprecationWarning
     def parse(self, cmd, pkg, opt):
