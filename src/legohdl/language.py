@@ -384,10 +384,12 @@ class Language(ABC):
             r_bound += [cseg[i]]
         #reverse lhs because algorithm read R -> L
         l_bound.reverse()
+        #condense to single str
         l_bound = apt.listToStr(l_bound, delim='')
-        print("LHS:",l_bound)
+        #print("LHS:",l_bound)
+        #condenset to single str
         r_bound = apt.listToStr(r_bound, delim='')
-        print("RHS:",r_bound)
+        #print("RHS:",r_bound)
         return l_bound,r_bound
 
 

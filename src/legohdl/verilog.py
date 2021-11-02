@@ -180,7 +180,7 @@ class Verilog(Language):
                     if(c in route_keywords):
                         route = c
                         entry_route = True
-                        print("ROUTE",route)
+                        #print("ROUTE",route)
                         dtype = []
                         l = ''
                         r = ''
@@ -191,7 +191,7 @@ class Verilog(Language):
                             l,r = self.getBounds(cseg, seg_i, ('[',']'))
                     elif(route != None and c in p_ids):
                         entry_route = False
-                        print('HERE')
+                        #print('HERE')
                         u.getInterface().addPort(c, route, dtype, (l,r))
                     pass
                     seg_i += 1
