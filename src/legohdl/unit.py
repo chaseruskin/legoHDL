@@ -602,7 +602,7 @@ class Generic:
             c_txt = c_txt + remaining
             #give default value
             if(self._value != None and len(self._value)):
-                c_txt = c_txt + ' := ' + apt.listToStr(self._value)
+                c_txt = c_txt + ' := ' + apt.listToStr(self._value,'')
             #add final ';'
             c_txt = c_txt + ';'
             pass
