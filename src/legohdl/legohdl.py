@@ -672,7 +672,8 @@ scripts)?", warning=False)
 
         #trying to export a package file?
         if(self.hasFlag('pack')):
-            self.autoPackage()
+            # :todo: implement 'omit' and 'inc' from command-line
+            self.autoPackage(omit=[], inc=[])
             return
 
         top = self.getItem()
@@ -738,24 +739,46 @@ scripts)?", warning=False)
         pass
 
 
-    def autoPackage(self):
+    def autoPackage(self, omit=[], inc=[]):
         '''
         Auto-generate a VHDL package file for design units within the current block.
+
+        By default, all available entities within the project are to be written
+        as components in the VHDL package.
         
         Parameters:
-            None
+            omit ([str]): list of entity names to not include in package file
+            inc ([str]): list of entity names to explicitly include in package file.
         Returns:
             None
         '''
+        #get the current working block
         block = Block.getCurrent()
 
         pkg_name = block.N()+"_pkg"
 
-        unit_names = block.loadHDL().values()
+        #list of units to wrap in package file
         comp_names = []
+
+        #get all unit objects
+        unit_names = block.loadHDL().values()
+        #iterate through project-level units
         for u in unit_names:
-            if(u.isTb() == False and u.isPkg() == False):
-                comp_names += [u.E()]
+            #only add design units (entities)... skip others
+            if(u.isTb() == True or u.isPkg() == True):
+                continue
+            #abide by the explicit include list (overrides exclude list)
+            if(len(inc)):
+                if(u.E().lower() in inc):
+                    comp_names += [u.E()]
+                continue
+            #skip any explicitly excluded design units
+            elif(u.E().lower() in omit):
+                continue
+            #add component name to the list to be implemented
+            comp_names += [u.E()]
+            pass
+        #print(comp_names)
 
         #initially fill with comment header section
         pkg_data = ['-'*80] + \
@@ -784,6 +807,9 @@ scripts)?", warning=False)
             #only add design units (entities)
             if(dsgn.isTb() or dsgn.isPkg()):
                 continue
+            #only add designs that are in 'comp_names' list
+            if(dsgn.E() not in comp_names):
+                continue
             #copy any of their library declarations
             for lib in dsgn.getLibs():
                 if(lib.lower() not in libs):
@@ -801,8 +827,11 @@ scripts)?", warning=False)
                     pkg_data.insert(comment_len+len(libs), 'use '+pkg+';')
                     pkgs += [pkg.lower()]
 
+            #add component declaration
             pkg_data += [dsgn.getInterface().writeDeclaration(form=Unit.Language.VHDL, tabs=1)]
+            #add newline
             pkg_data += [' ']
+            pass
             
         pkg_data += ['end package;']
 

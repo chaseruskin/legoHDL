@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 10/19/2021
+; Modified: 11/01/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -238,10 +238,11 @@ OPTIONS:
 ;                               fetch,
 * export
 NAME:
-        export - Generate a blueprint file
+        export - Generate a blueprint file or VHDL package file
 
 SYNOPSIS:
         legohdl export [<entity>] [-tb=<tb>] [-ignore-tb] [-quiet] [-no-clean]
+        legohdl export -pack [-omit=<entities>] [-inc=<entities>]
 
 DESCRIPTION:
         :todo:
