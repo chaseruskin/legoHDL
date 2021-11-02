@@ -28,8 +28,7 @@ from .git import Git
 
 class legoHDL:
 
-    #! === INITIALIZE ===
-
+    
     def __init__(self):
         '''
         Initialize the legoHDL tool. 
@@ -225,15 +224,6 @@ class legoHDL:
             return val[0:d_i], val[d_i+1:]
         else:
             return val, ''
-
-
-    def __str__(self):
-        return f'''
-        command: {self._command}
-        item: {self.getItem()}
-        flags: {self._flags}
-        vars: {self._vars}
-        '''
 
 
     def runSetup(self):
@@ -1064,8 +1054,19 @@ scripts)?", warning=False)
         else: 
             log.error("Unknown command - "+cmd+".")
             pass
-
         pass
+
+
+    def __str__(self):
+        return f'''
+        command: {self._command}
+        item: {self.getItem()}
+        flags: {self._flags}
+        vars: {self._vars}
+        '''
+
+
+    pass
 
 
 def main():
