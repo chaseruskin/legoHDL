@@ -201,7 +201,7 @@ class Git:
         if(self.remoteExists()):
             self.git('remote','update')
             st,_ = self.git('status')
-            return (st.count('Your branch is up to date with') or st.count('Your branch is ahead of'))
+            return (bool)(st.count('Your branch is up to date with') or st.count('Your branch is ahead of'))
         #always is latest if no remote to sync with
         else:
             return True

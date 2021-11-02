@@ -427,12 +427,12 @@ class Profile:
 
 
     @classmethod
-    def printList(cls):
+    def printList(cls, check_updates=False):
         '''
         Prints formatted list for profiles and indicates what is available in each one.
 
         Parameters:
-            None
+            check_updates (bool): determine if to check with remotes if latest commits
         Returns:
             None
         '''
@@ -441,10 +441,16 @@ class Profile:
         print('{:<16}'.format("Profile"),'{:<12}'.format("Last Import"),'{:<16}'.format(apt.SETTINGS_FILE),'{:<12}'.format("template/"),'{:<12}'.format("scripts/"))
         print("-"*16+" "+"-"*12+" "+"-"*16+" "+"-"*12+" "+"-"*12)
         for prfl in cls.Jar.values():
+            #check remote repository if it is the latest commits locally
+            if(check_updates):
+                print(prfl.getName()+" has update? ",end='')
+                print(str(not prfl._repo.isLatest()))
+            #collect information about each profile
             last_import = 'yes' if(last_prfl == prfl) else '-'
             has_template = 'yes' if(prfl.hasTemplate()) else '-'
             has_scripts = 'yes' if(prfl.hasScripts()) else '-'
-            has_settings = 'yes' if(prfl.hasSettings()) else '-'               
+            has_settings = 'yes' if(prfl.hasSettings()) else '-'   
+            #print the information in a nice format to the console            
             print('{:<16}'.format(prfl.getName()),'{:<12}'.format(last_import),'{:<16}'.format(has_settings),'{:<12}'.format(has_template),'{:<12}'.format(has_scripts))
             pass
 
