@@ -1853,7 +1853,7 @@ class Block:
             print(u)
 
 
-    def get(self, entity, about, listArch, inst, comp, lang=None):
+    def get(self, entity, about, list_arch, inst, comp, lang, edges):
         '''
         Get various pieces of information about a given entity as well as any
         compatible code for instantiations.
@@ -1861,10 +1861,11 @@ class Block:
         Parameters:
             entity (str): name of entity to be fetched
             about (bool): determine if to print the comment header
-            listArch (bool): determine if to list the architectures
+            list_arch (bool): determine if to list the architectures
             inst (bool): determine if to print instantiation
             comp (bool): determine if to print component declaration
             lang (str): VHDL or VLOG style language
+            edges (bool): determine if to print graph information
         Returns:
             success (bool): determine if operation was successful
         '''
@@ -1881,11 +1882,11 @@ class Block:
         #print comment header (about)
         print(ent.readAbout())
         #print dependencies
-        if(about):
+        if(edges):
             print(ent.readReqs())
             print(ent.readReqs(upstream=True))
         #print list of architectures
-        if(listArch):
+        if(list_arch):
             print(ent.readArchitectures())
         if(comp):
             #:todo: write component declaration code for verilog modules

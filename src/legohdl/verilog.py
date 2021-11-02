@@ -112,7 +112,8 @@ class Verilog(Language):
                 if(comp_name in skips):
                     continue
                 #gather instantiated ports and generics
-                p_list, g_list = []
+                p_list = []
+                g_list = []
                 #try to locate the unit with the given information
                 comp_unit = Unit.ICR(comp_name, lib=None, ports=p_list, gens=g_list)
                 if(comp_unit != None):

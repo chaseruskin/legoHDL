@@ -604,7 +604,14 @@ scripts)?", warning=False)
         _,_,_,_,ent = Block.snapTitle(self.getItem(), inc_ent=True)
         if(block == None):
             exit(log.error("Could not identify a block with "+self.getItem()))
-        block.get(ent, self.hasFlag('about'), self.hasFlag('arch'), self.hasFlag('inst'), self.hasFlag('comp'), lang=(self.getVar('inst')))
+        #print the relevant information for the requested unit
+        block.get(entity=ent, about=self.hasFlag('about'), \
+                        list_arch=self.hasFlag('arch'), \
+                        inst=self.hasFlag('inst'), \
+                        comp=self.hasFlag('comp'), \
+                        lang=self.getVar('inst'), \
+                        edges=self.hasFlag('edges')
+                    )
         pass
 
 
@@ -787,7 +794,7 @@ scripts)?", warning=False)
         b.create(title, cp_template=(self.hasFlag('no-template') == 0), remote=self.getVar('remote'))
         #load the block
         if(self.hasFlag('open')):
-            b.load()
+            b.openInEditor()
         pass
 
 

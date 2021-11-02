@@ -157,14 +157,15 @@ NAME:
         get - Print the compatible code for the ports list of a specified entity
 
 SYNOPSIS:
-        legohdl get [<block>:]<entity> [-comp[=<lang>] | -inst[=<lang>]] [-arch] [-about]
+        legohdl get [<block>:]<entity> [-comp[=<lang>] | -inst[=<lang>]] [-arch] 
+                [-about] [-edges]
 
 DESCRIPTION:
         When trying to access current block-level entities, the <block>
         can be omitted (a form of shortcutting). To reference a entity,
         <market>.<library>.<name>(<version>):<entity>.
 
-        By default, it will print the about section and the component declaration for
+        By default, it will print the 'about' section and the component declaration for
         VHDL entities or the module interface for Verilog modules.
 
         If -comp is present when -inst is also present and the language outputted is
@@ -206,6 +207,11 @@ OPTIONS:
                 entity's file (if exists). Helpful to read more information
                 about an entity and how it behaves. Also prints various statistics
                 regarding the entity.
+        
+        -edges
+                Print the units are required by this unit and print the units 
+                that integrate this unit into their design. Gets the edges from
+                the hierarchical graph.
 
 
 * graph
