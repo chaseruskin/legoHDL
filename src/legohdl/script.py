@@ -141,6 +141,11 @@ class Script:
     def execute(self, args=[]):
         '''
         Execute the script's command.
+
+        Parameters:
+            args ([str]): list of additional arguments to go along with the command
+        Returns:
+            None
         '''
         cmd = [self.getCommand()] + args
         apt.execute(*cmd,quiet=False)
@@ -148,10 +153,12 @@ class Script:
 
 
     def getExe(self):
+        '''Returns the _prog (str) that is used to run the command.'''
         return self._prog
 
 
     def getPath(self):
+        '''Returns the _path (str) that is in the command, or None if DNE.'''
         if(self.hasPath()):
             return self._path
         else:
@@ -172,10 +179,8 @@ class Script:
 
     @classmethod
     def load(cls):
-        '''
-        Load scripts from settings.
-
-        '''
+        '''Load scripts from settings.'''
+        
         scpts = apt.SETTINGS['script']
         for alias,cmd in scpts.items():
             Script(alias, cmd)

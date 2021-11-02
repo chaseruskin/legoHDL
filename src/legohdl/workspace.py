@@ -537,6 +537,7 @@ class Workspace:
             time_fmt = (float(hrs)+(float(float(time_sects[1])/60)))
             return time_fmt
 
+
         refresh = False
         last_punch = None
         stage = 1
@@ -612,12 +613,9 @@ class Workspace:
 
     @classmethod
     def load(cls):
-        '''
-        Load all workspaces from settings.
+        '''Load all workspaces from settings.'''
 
-        '''
         wspcs = apt.SETTINGS['workspace']
-
         for ws in wspcs.keys():
             Workspace(ws, wspcs[ws]['path'], wspcs[ws]['market'])
         pass

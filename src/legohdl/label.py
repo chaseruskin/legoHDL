@@ -67,10 +67,8 @@ class Label:
     
     @classmethod
     def load(cls):
-        '''
-        Load all labels from settings.
+        '''Load local and global labels from settings.'''
 
-        '''
         #load local labels
         local_lbls = apt.SETTINGS['label']['local']
         for lbl,exts in local_lbls.items():

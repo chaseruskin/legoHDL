@@ -278,16 +278,9 @@ class Market:
 
     @classmethod
     def load(cls):
-        '''
-        Load all markets from settings.
+        '''Load all markets from settings.'''
 
-        Parameters:
-            None
-        Returns:
-            None
-        '''
         mrkts = apt.SETTINGS['market']
-
         for name,url in mrkts.items():
             url = None if(url == cfg.NULL) else url
             Market(name, url=url)
@@ -296,9 +289,8 @@ class Market:
 
     @classmethod
     def save(cls):
-        '''
-        Save markets to settings.
-        '''
+        '''Save markets to settings.'''
+
         serialize = {}
         for mrkt in cls.Jar.values():
             serialize[mrkt.getName()] = mrkt._repo.getRemoteURL()
@@ -356,6 +348,17 @@ class Market:
 
 
     def getBlockCount(self):
+        '''
+        Returns the amount of block marker files found within the market's
+        directory.
+
+        Dynamically creates _block_count attr for faster future reference.
+
+        Parameters:
+            None
+        Returns:
+            _block_count (int): number of blocks hosted in the market
+        '''
         if(hasattr(self, "_block_count")):
             return self._block_count
         #compute the block count by finding how many cfg block files are in market
@@ -364,14 +367,17 @@ class Market:
 
 
     def isRemote(self):
+        '''Determine if the market has an existing remote connection (bool).'''
         return self._repo.remoteExists()
         
 
     def getMarketDir(self):
+        '''Returns the market directory (str).'''
         return apt.fs(self.DIR+self.getName())
 
 
     def getName(self):
+        '''Returns _name (str).'''
         return self._name
 
 
@@ -383,6 +389,7 @@ class Market:
     
     
     def __str__(self):
+        '''Returns string object translation.'''
         return f'''
         ID: {hex(id(self))}
         name: {self.getName()}
