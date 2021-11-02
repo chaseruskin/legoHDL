@@ -142,7 +142,8 @@ class Vhdl(Language):
         #get all available units availalble as components
         comps = []
         in_arch = False
-        in_begin = 0
+        in_begin = False
+        arch_name = ''
         #get all code statements
         csegs = self.spinCode()
 
@@ -158,26 +159,21 @@ class Vhdl(Language):
             #determine when to enter the architecture
             if(cseg[0].lower() == 'architecture' and cseg[3].lower() == u.E().lower()):
                 in_arch = True
+                arch_name = cseg[1].lower() #store arch_name for exit case later
             elif(in_arch == False):
                 continue
             #track scope stack to determine when maybe within the architecture implementation
             if(cseg[0].lower() == 'begin'):
-                in_begin += 1
-            if(cseg[0].lower() == 'end'):
-                in_begin -= 1
-                if(in_begin < 0):
-                    in_begin = 0
+                in_begin = True
 
             #exit case - finding 'end' with architecture or its name
             if(in_begin and len(cseg) > 1 and cseg[0].lower() == 'end'):
-                if(cseg[1].lower() == 'architecture'):
+                if(cseg[1].lower() == 'architecture' or cseg[1].lower() == arch_name):
                     u.setChecked(True)
-                    return
-                else:
-                    for arch in u.getArchitectures():
-                        if(arch.lower() == cseg[1].lower()):
-                            u.setChecked(True)
-                            return
+                    in_arch = False
+                    in_begin = False
+                    #use continue to go through all architectures
+                    continue
 
             #find component declarations
             if(cseg[0].lower() == 'component'):

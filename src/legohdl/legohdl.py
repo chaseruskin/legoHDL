@@ -307,7 +307,9 @@ scripts)?", warning=False)
         
         log.info("Generating dependency tree...")
         #start with top unit (returns all units if no top unit is found (packages case))
-        block.getUnits(top_dog.E())
+        us = block.getUnits(top_dog.E())
+        print(us['sevensegment'])
+        print(Unit.Hierarchy._adj_list)
         hierarchy = Unit.Hierarchy
 
         #print the dependency tree
