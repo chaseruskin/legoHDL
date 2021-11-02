@@ -293,9 +293,13 @@ class Vhdl(Language):
                 #print("DATA TYPE:",dtype)
                 l = ''
                 r = ''
+                tokens = ('(',')')
                 for i in range(len(dtype)):
+                    #switch tokens if specifying 'range'
+                    if(dtype[i].lower() == 'range'):
+                        tokens = (dtype[i], ':=')
                     if(dtype[i].lower() == 'to' or dtype[i].lower() == 'downto'):
-                        l,r = self.getBounds(dtype, i, tokens=('(',')'))
+                        l,r = self.getBounds(dtype, i, tokens=tokens)
 
                 for port in identifiers:
                     if(port != ','):
@@ -312,6 +316,9 @@ class Vhdl(Language):
                     #print("VALUE:",val)
                 #get the generic data type
                 dtype = cseg[c_i+1:v_i]
+
+                # :todo: get width/range of generic (similiar to that of port)
+                
                 for gen in identifiers:
                     if(gen != ','):
                         u.getInterface().addGeneric(gen, dtype, val)
