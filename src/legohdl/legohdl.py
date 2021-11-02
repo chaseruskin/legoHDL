@@ -345,8 +345,9 @@ scripts)?", warning=False)
 
         #trying to export a package file?
         if(self.hasFlag('pack')):
-            # :todo: implement 'omit' and 'inc' from command-line
-            self.autoPackage(omit=[], inc=[])
+            #reads lists 'omit' and 'inc' from command-line
+            self.autoPackage(omit=apt.strToList(self.getVar('omit')), \
+                inc=apt.strToList(self.getVar('inc')))
             return
 
         #capture the passed-in entity name

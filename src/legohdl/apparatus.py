@@ -347,12 +347,18 @@ class Apparatus:
         Converts a string seperated by `delim` to a list of its string values.
         Strips off whitespace for each value.
 
+        Returns an empty list if `c_str` is None.
+
         Parameters:
             c_str (str): unparsed string
             delim (str): valid delimiter to parse the string
         Returns:
             [(str)]: list of words/values found in the unparsed string
         '''
+        #return empty list if None is given.
+        if(c_str == None):
+            return []
+
         parsed = c_str.split(delim)
         #trim off any whitespace or \n characters
         for i in range(len(parsed)):
