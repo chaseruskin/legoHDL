@@ -106,6 +106,11 @@ class Vhdl(Language):
             elif(cseg[0].lower() == 'package' and cseg[1].lower() != 'body'):
                 log.info("Identified package "+cseg[1])
                 self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
+                dsgn_unit = self._designs[-1]
+                #link visible libraries and packages
+                dsgn_unit.linkLibs(libs, pkgs)
+                #reset package spaces
+                pkgs = []
                 pass
             #link a configuration
             elif(cseg[0].lower() == 'configuration'):
@@ -136,9 +141,6 @@ class Vhdl(Language):
         Returns:
             None
         '''
-        #make sure the design unit is an entity
-        if(u.getDesign() != Unit.Design.ENTITY):
-            return
         #get all available units availalble as components
         comps = []
         in_arch = False
@@ -153,7 +155,15 @@ class Vhdl(Language):
         for pkg in u.decodePkgs():
             print("Importing "+pkg.getTitle())
             comps += Language.ProcessedFiles[pkg.getFile()].getComponents(pkg)
+            #also further decode this package
+            if(pkg.isChecked() == False and recursive):
+                Language.ProcessedFiles[pkg.getFile()].decode(pkg, recursive)
             pass
+
+        #make sure the design unit is an entity to read architectures
+        if(u.getDesign() != Unit.Design.ENTITY):
+            u.setChecked(True)
+            return
 
         for cseg in csegs:
             #determine when to enter the architecture
@@ -225,7 +235,6 @@ class Vhdl(Language):
                         if(comp_unit.isChecked() == False and recursive):
                             Language.ProcessedFiles[comp_unit.getFile()].decode(comp_unit, recursive)
                     else:
-                        #print(old_cseg)
                         print(cseg)
                     #exit()  #exit for debugging 
                 pass

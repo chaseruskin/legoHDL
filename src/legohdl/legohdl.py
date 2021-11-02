@@ -481,6 +481,8 @@ scripts)?", warning=False)
             [' ']
 
         libs = []
+        #track what libraries are needed from the 'use' packages
+        libs_from_pkgs = []
         pkgs = []
         #get all units
         units = list(block.loadHDL().values())
@@ -491,22 +493,24 @@ scripts)?", warning=False)
             #only add designs that are in 'comp_names' list
             if(dsgn.E() not in comp_names):
                 continue
-            #copy any of their library declarations
-            for lib in dsgn.getLibs():
-                if(lib.lower() not in libs):
-                    pkg_data.insert(comment_len, 'library '+lib+';')
-                    libs += [lib.lower()]
             #copy any of their package declarations
             for pkg in dsgn.getPkgs():
                 #ensure package has not already been added
                 if(pkg.lower() not in pkgs):
-                    #ensure package is not itself
+                    #ensure package is not itself (cast to lower_case for evaluation)
                     pkg_parts = pkg.lower().split('.')
                     #skip if package is itself
                     if(len(pkg_parts) > 1 and pkg_parts[0] == 'work' and pkg_parts[1] == pkg_name.lower()):
                         continue
                     pkg_data.insert(comment_len+len(libs), 'use '+pkg+';')
                     pkgs += [pkg.lower()]
+                    #add to list of libraries that will need to be included
+                    libs_from_pkgs += [pkg_parts[0]]
+            #copy any of their library declarations
+            for lib in dsgn.getLibs():
+                if(lib.lower() not in libs and lib.lower() in libs_from_pkgs):
+                    pkg_data.insert(comment_len, 'library '+lib+';')
+                    libs += [lib.lower()]
 
             #add component declaration
             pkg_data += [dsgn.getInterface().writeDeclaration(form=Unit.Language.VHDL, tabs=1)]

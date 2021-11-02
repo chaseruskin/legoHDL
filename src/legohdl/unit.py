@@ -179,7 +179,6 @@ class Unit:
         dsgn_pkgs = []
         #iterate through each package string and try to find its object.
         for pkg in self._pkgs:
-            print(pkg)
             pkg_parts = pkg.split('.')
             lib_name = pkg_parts[0]
             #convert library name to current if work is being used
@@ -194,7 +193,7 @@ class Unit:
                 #add connection in the graph
                 self.addReq(dsgn_pkg)
                 pass
-        print(dsgn_pkgs)
+        print("DESIGN PACKAGES:",dsgn_pkgs)
         return dsgn_pkgs
 
 
@@ -238,6 +237,10 @@ class Unit:
     def resetHierarchy(cls):
         for u in cls.Hierarchy.getVertices():
             u.setChecked(False)
+            #remove dynamic design packages attr
+            if(hasattr(u, "_dsgn_pkgs")):
+                delattr(u, "_dsgn_pkgs")
+            pass
         Unit.Hierarchy.clear()
         pass
 
