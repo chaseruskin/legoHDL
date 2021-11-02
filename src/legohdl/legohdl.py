@@ -84,25 +84,9 @@ class legoHDL:
         Profile.load()
         Profile.tidy()
 
-        #initialize all Labels
-        Label.load()
-
-        #Workspace.printAll()
-
         #save all legohdl.cfg changes
         apt.save()
         Workspace.save()
-        
-        self.blockPKG = None
-        #self.working_block = Block(os.getcwd())
-        
-        #initialize registry with the workspace-level markets
-        if(Workspace.inWorkspace()):
-            #self.db = Registry(Workspace.getActive().getMarkets())
-            #Workspace.getActive().loadLocalBlocks()
-            #Workspace.getActive().loadCacheBlocks()
-            #Workspace.getActive().loadMarketBlocks()
-            pass
 
         #limit functionality if not in a workspace
         if(not Workspace.inWorkspace()):
@@ -117,8 +101,6 @@ class legoHDL:
             self.WS().autoRefresh(rate=apt.getRefreshRate())
 
         print(self)
-
-        #Block('/Users/chase/develop/eel4712c/lab4/', ws_path=Workspace.getActive().getPath())
 
         if('debug' == self._command):
             test()
@@ -695,7 +677,12 @@ scripts)?", warning=False)
     def _export(self):
         '''Run the 'graph' command.'''
 
+        #load labels
+        Label.load()
+        #load blocks and their designs
         self.WS().loadLocalBlocks(id_dsgns=True)
+
+        #get the working block
         block = Block.getCurrent()
 
         #trying to export a package file?
@@ -716,12 +703,8 @@ scripts)?", warning=False)
         else:
             #start with top unit (returns all units if no top unit is found (packages case))
             block.getUnits(top_dog.E())
+            Unit.Hierarchy.output(top_dog)
             pass
-
-        #print the dependency graph(s)
-        for k,v in Unit.Hierarchy._rev_adj_list.items():
-            if(len(v) == 0):
-                Unit.Hierarchy.output(k)
 
         unit_order,block_order = Unit.Hierarchy.topologicalSort()
 
@@ -1349,6 +1332,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 pass
             #modify label
             elif(k == 'label'):
+                #load labels
+                Label.load()
                 #verify proper format is passed in
                 if(var_key == ''):
                     log.error("Must provide a label name.")
@@ -1498,6 +1483,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             Script.load()
             Script.printList()
         elif(self.hasFlag("label")):
+            #load labels
+            Label.load()
             Label.printList()
         elif(self.hasFlag("market")):
             Market.printList(self.WS().getMarkets())
@@ -1528,6 +1515,11 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
                 gui_mode = not self.checkVar('settings', 'file')
             #try to open in gui
             if(gui_mode):
+                #load labels
+                Label.load()
+                #load scripts
+                Script.load()
+                #enable GUI
                 settings_gui = GUI()
                 #adjust success if initialization failed
                 gui_mode = settings_gui.initialized() 
