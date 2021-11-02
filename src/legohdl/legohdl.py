@@ -303,7 +303,7 @@ scripts)?", warning=False)
         block = Block.getCurrent()
 
         top = self.getItem()
-        top_dog,_,_ = block.identifyTopDog(top, inc_tb=True)
+        top_dog,_,_ = block.identifyTopDog(top, inc_tb=(not self.hasFlag('ignore-tb')))
         
         log.info("Generating dependency tree...")
         #start with top unit (returns all units if no top unit is found (packages case))
@@ -341,6 +341,8 @@ scripts)?", warning=False)
         #get the working block
         block = Block.getCurrent()
 
+        inc_tb = (not self.hasFlag('ignore-tb'))
+
         #trying to export a package file?
         if(self.hasFlag('pack')):
             # :todo: implement 'omit' and 'inc' from command-line
@@ -349,7 +351,7 @@ scripts)?", warning=False)
 
         #capture the passed-in entity name
         top = self.getItem()
-        top_dog,dsgn,tb = block.identifyTopDog(top, inc_tb=True)
+        top_dog,dsgn,tb = block.identifyTopDog(top, inc_tb=inc_tb)
 
         #get all units
         if(self.hasFlag('all')):
@@ -393,7 +395,7 @@ scripts)?", warning=False)
         blueprint_data += self.compileList(block, unit_order)
 
         #write top-level testbench entity label
-        if(tb != None):
+        if(tb != None and inc_tb):
             line = '@'
             if(tb.getLang() == Unit.Language.VHDL):
                 line = line+"VHDL"
