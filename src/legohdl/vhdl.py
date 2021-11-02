@@ -291,9 +291,15 @@ class Vhdl(Language):
                 #get the port data type
                 dtype = cseg[c_i+2:end]
                 #print("DATA TYPE:",dtype)
+                l = ''
+                r = ''
+                for i in range(len(dtype)):
+                    if(dtype[i].lower() == 'to' or dtype[i].lower() == 'downto'):
+                        l,r = self.getBounds(dtype, i, tokens=('(',')'))
+
                 for port in identifiers:
                     if(port != ','):
-                        u.getInterface().addPort(port, route, dtype)
+                        u.getInterface().addPort(port, route, dtype, (l,r))
                 pass
             elif(in_generics):
                 #find if an initial value is being set

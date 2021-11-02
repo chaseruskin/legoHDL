@@ -592,7 +592,10 @@ scripts)?", warning=False)
         for w in in_list:
             single_str = single_str + w + delim
         #return with last delimiter trimmed off
-        return single_str[0:-1]
+        if(len(delim)):
+            return single_str[:-1]
+        else:
+             return single_str
 
 
     @classmethod

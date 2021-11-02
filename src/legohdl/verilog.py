@@ -8,6 +8,8 @@
 from .language import Language
 import logging as log
 from .unit import Unit
+from .unit import Port
+from .unit import Generic
 
 
 class Verilog(Language):
@@ -136,22 +138,19 @@ class Verilog(Language):
         Returns:
             None
         '''
-        #initially entering module code
-        in_module = True
         #store generic identifiers
         g_ids = []
         #store port identifiers
         p_ids = []
-        #track amount of '(' and ')'
-        pb_cnt = 0
 
         for cseg in csegs:
-            print(cseg)
+            #print(cseg)
             #check for exit case - finding 'endmodule'
             if(cseg[0] == 'endmodule'):
-                exit()
+                print(u.getInterface())
+                #exit()
                 return
-            #check if inside the module declaration code statement
+            #get the list of generics and ports from module declaration statement
             if(cseg[0] == 'module'):
                 #handle generics
                 g_end = 0
@@ -159,48 +158,112 @@ class Verilog(Language):
                 if(cseg.count('#')):
                     g_index = g_index+cseg.index('#')
                     gseg = cseg[g_index:] #skip '#' and first '('
-                    #find when pb_cnt is zero
-                    pb_cnt = 1
-                    g_end = 0
-                    while pb_cnt > 0 and g_end <= len(gseg):
-                        #count pb's
-                        if (gseg[g_end] == '('):
-                            pb_cnt += 1
-                        elif(gseg[g_end] == ')'):
-                            pb_cnt -= 1
-                        #update to next index
-                        g_end += 1
-                    gseg = gseg[:g_end-1]
-                    print("GENERICS:",gseg)
-                    #append a ',' to end for algorithm
-                    gseg = gseg + [',']
-                    while gseg.count(',') and len(gseg) > 1:
-                        print(gseg)
-                        i = 0
-                        #get name right before assignment
-                        if(gseg[1] == '='):
-                            g_ids += [gseg[0]]
-                            #jump to next comma
-                            i = gseg.index(',')
-                        #get identifier right before comma
-                        elif(gseg[1] == ','):
-                            g_ids += [gseg[0]]
-                            #jump to next comma
-                            i = gseg.index(',')
-                        i = i+1
-                        gseg = gseg[i:]
-
-                    print("IDS:",g_ids)
-                    exit()   
-
+                    g_end, g_ids = self._getIdentifiers(gseg)
+                    print("GENERICS:",g_ids)
                     pass
-
                 #grab remaining items as the ports list
-                pseg = cseg[g_index+g_end+1:len(cseg)-1]
-                print("PORTS:",pseg)
+                pseg = cseg[g_index+g_end+1:]
+                _, p_ids = self._getIdentifiers(pseg)
+                print("PORTS:",p_ids)
                 pass
-                
+            #check module declaration statement for port declaration data
+            if(cseg[0] == 'module'):
+                route = None
+                dtype = []
+                l = ''
+                r = ''
+                entry_route = False
+                route_keywords = ['input', 'output', 'inout']
+                seg_i = 0
+                for c in cseg:
+                    #track what route is last declared
+                    if(c in route_keywords):
+                        route = c
+                        entry_route = True
+                        print("ROUTE",route)
+                        dtype = []
+                        l = ''
+                        r = ''
+                    #try to capture a datatype specified between route and identifier
+                    elif(entry_route and c not in p_ids):
+                        dtype += [c]
+                        if(c == ':'):
+                            l,r = self.getBounds(cseg, seg_i, ('[',']'))
+                    elif(route != None and c in p_ids):
+                        entry_route = False
+                        print('HERE')
+                        u.getInterface().addPort(c, route, dtype, (l,r))
+                    pass
+                    seg_i += 1
+                pass
+            #found an input declaration
+            elif(cseg[0] == 'input'):
+                pass
+            #found an output declaration
+            elif(cseg[0] == 'output'):
+                pass
+            #found an inout declaration
+            elif(cseg[0] == 'inout'):
+                pass
+            #found a parameter declaration
+            elif(cseg[0] == 'parameter'):
+                pass
+            #check if this is further defining a port
+            elif(cseg[0] == 'wire' and cseg[-1] in p_ids):
+                pass
+            #check if this is further defining a port
+            elif(cseg[0] == 'reg' and cseg[-1] in p_ids):
+                pass
         pass
+
+
+    def _getIdentifiers(self, cseg):
+        '''
+        Determines the list of identififers from the module declaration.
+
+        Parameters:
+            cseg ([str]): the module declaration line.
+        Returns:
+            dec_end (int): ending index of the given identifier section
+            ids ([str]): list of identifier names
+        '''
+        #track amount of brackets (begins with '(')
+        pb_cnt = 1
+        dec_end = 0
+        #store identifier names
+        ids = []
+        #find when this identifier section ends (pb_cnt == 0)
+        while pb_cnt > 0 and dec_end < len(cseg):
+            #count pb's
+            if (cseg[dec_end] == '('):
+                pb_cnt += 1
+            elif(cseg[dec_end] == ')'):
+                pb_cnt -= 1
+            #update to next index
+            dec_end += 1
+        #slice to the end of identifer section
+        cseg = cseg[:dec_end-1]
+        #append a ',' to end for algorithm
+        cseg = cseg + [',']
+        #iterate through every token 
+        while cseg.count(',') and len(cseg) > 1:
+            i = 0
+            #get name right before assignment
+            if(cseg[1] == '='):
+                ids += [cseg[0]]
+                #jump to next comma
+                i = cseg.index(',')
+            #get identifier right before comma
+            elif(cseg[1] == ','):
+                ids += [cseg[0]]
+                #jump to next comma
+                i = cseg.index(',')
+            #increment i with every passage
+            i = i+1
+            #slowly trim away code statement
+            cseg = cseg[i:]  
+
+        return dec_end-1, ids
 
 
     def getComponents(self, pkg_str):
@@ -336,6 +399,7 @@ class Verilog(Language):
         return design_book
 
 
+    @DeprecationWarning
     def collectPorts(self, unit, words):
         '''
         From a subset of the code stream, parse through and create HDL Port

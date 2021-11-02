@@ -528,8 +528,9 @@ class Unit:
 class Generic:
 
 
-    def __init__(self, name, dtype, value):
+    def __init__(self, name, form, dtype, value):
         self._name = name
+        self._form = form
         self._dtype = dtype
         self._value = value
         pass
@@ -613,12 +614,13 @@ class Port:
         pass
 
 
-    def __init__(self, name, way, dtype, value='', bus_width=('','')):
+    def __init__(self, name, form, way, dtype, value='', bus_width=('','')):
         '''
         Construct a port object.
 
         Parameters:
             name (str): port identifier
+            form (Unit.Design): natural coding language
             way (str): direction
             dtype (str): datatype
             value (str): initial value
@@ -628,6 +630,11 @@ class Port:
         '''
         #store the port's name
         self._name = name
+
+        self._form = form
+        
+        if(bus_width != ('','')):
+            self._bus_width = bus_width
 
         #store the port's direction data
         way = way.lower()
@@ -680,7 +687,7 @@ class Port:
         if(form == Unit.Language.VHDL):
             #write beginning of signal declaration
             s_txt = 'signal '+self._name+(spaces*' ')+': '
-            remaining = apt.listToStr(self._dtype)
+            remaining = self.castDatatype(form)
             #properly format the remaining of the signal
             fc = remaining.find(',')
             if(fc > -1):
@@ -692,17 +699,20 @@ class Port:
             pass
         #write VERILOG-style code
         elif(form == Unit.Language.VERILOG):
-            #skip over type declaration
-            flav = self._dtype
-            if('reg' in self._dtype or 'wire' in self._dtype):
-                flav = self._dtype[1:]
-            if(len(flav)):
-                s_txt = apt.listToStr(flav)
-                s_txt = s_txt.replace(',[', ' [')
-                s_txt = s_txt.replace(',', '')
+            s_txt = self.castDatatype(form)
+            s_txt = s_txt.replace(',[', ' [')
+            s_txt = s_txt.replace(',', '')
+            if(len(s_txt)):
                 s_txt = s_txt + " "
 
-            s_txt = 'wire ' + s_txt + self._name
+            s_txt = s_txt + self.getName()
+            #remove reg from any signals
+            if(s_txt.startswith('reg')):
+                s_txt = s_txt[s_txt.find('reg')+len('reg')+1:]
+            #make sure all signals are declared as 'wire'
+            if(s_txt.startswith('wire') == False):
+                s_txt = 'wire ' + s_txt
+            #add finishing ';'
             s_txt = s_txt + ';'
             pass
             
@@ -715,6 +725,39 @@ class Port:
 
     def getRoute(self):
         return self._route
+
+
+    def castDatatype(self, form):
+        '''
+        Returns converted datatype.
+        
+        Parameters:
+            form (Unit.Language): the coding language to cast to
+        Returns:
+            (str): proper data type for the respective coding language
+        '''
+        if(form == self._form):
+            return apt.listToStr(self._dtype)
+        #cast from verilog to vhdl
+        elif(form == Unit.Language.VHDL):
+            dtype = "std_logic"
+            if(hasattr(self, "_bus_width")):
+                dtype = dtype+"_vector("+self._bus_width[0]+" downto "+self._bus_width[1]+")"
+            return dtype
+        #cast from vhdl to verilog
+        elif(form == Unit.Language.VERILOG):
+            dtype = ''
+            a = 0
+            b = 1
+            for word in self._dtype:
+                #fix writing from LSB->MSB to MSB->LSB (swap bus width positions)
+                if(word.lower() == 'to'):
+                    a = 1
+                    b = 0
+                    break
+            if(hasattr(self, "_bus_width")):
+                dtype = "["+self._bus_width[a]+":"+self._bus_width[b]+"]"
+            return dtype
 
     
     def __repr__(self):
@@ -736,15 +779,15 @@ class Interface:
         pass
 
 
-    def addPort(self, name, way, dtype):
+    def addPort(self, name, way, dtype, width=('','')):
         #print("Port:",name,"going",way,"of type",dtype)
-        self._ports[name] = Port(name, way, dtype)
+        self._ports[name] = Port(name, self._default_form, way, dtype, bus_width=width)
         pass
 
 
     def addGeneric(self, name, dtype, value):
         #print("Generic:",name,"of type",dtype,"has value",value)
-        self._generics[name] = Generic(name, dtype, value)
+        self._generics[name] = Generic(name, self._default_form, dtype, value)
         pass
 
 
