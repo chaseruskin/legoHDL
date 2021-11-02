@@ -568,12 +568,14 @@ scripts)?", warning=False)
     def _get(self):
         '''Run the 'get' command.'''
 
-        self.WS().loadLocalBlocks()
+        self.WS().loadLocalBlocks(id_dsgns=True)
+
         if(self.hasFlag('about')):
             self.WS().decodeUnits()
         #make sure an entity is being requested
         if(self.getItem() == None):
             exit(log.error("Pass an entity name to get."))
+
         block = self.WS().shortcut(self.getItem(), req_entity=True)
         #:todo: make better
         _,_,_,_,ent = Block.snapTitle(self.getItem(), inc_ent=True)
@@ -587,8 +589,9 @@ scripts)?", warning=False)
         '''Run the 'init' command.'''
 
         cur_path = apt.fs(os.getcwd())
-        
+        #try to create a block at the current working directory
         block = Block(cur_path, self.WS())
+        #intialize block attributes/itself
         block.initialize(self.getItem(), self.getVar('remote'), self.hasFlag('fork'), self.getVar('summary'))
         pass
 
