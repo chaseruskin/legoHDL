@@ -74,11 +74,11 @@ class Label:
         #load shallow labels
         shallow = apt.SETTINGS['label']['shallow']
         for lbl,exts in shallow.items():
-            Label(lbl, exts, is_recur=False)
+            Label(lbl, apt.strToList(exts), is_recur=False)
         #load recursive labels
         recursive = apt.SETTINGS['label']['recursive']
         for lbl,exts in recursive.items():
-            Label(lbl, exts, is_recur=True)
+            Label(lbl, apt.strToList(exts), is_recur=True)
         pass
 
 
@@ -151,6 +151,10 @@ class Label:
 
 
     def getExtensions(self):
+        '''Returns _exts ([str]).'''
+        #ensure the extensions are list datatype
+        if(isinstance(self._exts, list) == False):
+            self._exts = apt.strToList(self._exts)
         return self._exts
 
 

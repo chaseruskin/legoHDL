@@ -321,9 +321,10 @@ scripts)?", warning=False)
         #ensure the current block is the last one on order
         block_order.remove(block.getFull())
         block_order.append(block.getFull())
+        block_order.reverse()
         for i in range(0, len(block_order)):
             b = block_order[i]
-            print(str(i+1)+' >\t'+b,end='\n')
+            print(str(len(block_order)-i)+' |^|-\t'+b,end='\n')
         print()
 
         return unit_order,block_order
@@ -363,14 +364,33 @@ scripts)?", warning=False)
 
         unit_order,block_order = Unit.Hierarchy.topologicalSort()
 
-        #get all label data :todo:
+        blueprint_data = []
+
+        #get all label data :todo: convert blocks from title str to objects
+        # or store the blocks at the unit level
         for title in block_order:
             for lbl in Label.Jar.values():
+                print(title)
                 print(lbl.getName(),lbl.getExtensions())
-                #gatherSources(lbl.getExtensions())
+                #get recursive labels from external blocks
+                if(lbl.isRecursive() == True):
+                    #:todo: get block from given title
+                    #paths = block.gatherSources(ext=lbl.getExtensions())
+                        #add every found file identified with this label to the blueprint
+                    #for p in paths:
+                        #blueprint_data += ['@'+lbl.getName()+' '+p]
+                    pass
+                #perform shallow-only label searching on current block
+                if(title == block_order[-1]):
+                    if(lbl.isRecursive() == False):
+                        paths = block.gatherSources(ext=lbl.getExtensions())
+                        #add every found file identified with this label to the blueprint
+                        for p in paths:
+                            blueprint_data += ['@'+lbl.getName()+' '+p]
+                pass
             pass
 
-        blueprint_data = self.compileList(block, unit_order)
+        blueprint_data += self.compileList(block, unit_order)
 
         #write top-level testbench entity label
         if(tb != None):
