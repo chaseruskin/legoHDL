@@ -8,8 +8,6 @@
 from .language import Language
 import logging as log
 from .unit import Unit
-from .unit import Port
-from .unit import Generic
 
 
 class Verilog(Language):

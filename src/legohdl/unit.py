@@ -63,10 +63,17 @@ class Unit:
         _,ext = os.path.splitext(self.getFile())
         ext = '*'+ext.lower()
 
+        self._libs = []
+        self._pkgs = []
+
         if(ext in apt.VHDL_CODE):
             self._language = self.Language.VHDL
         elif(ext in apt.VERILOG_CODE):
             self._language = self.Language.VERILOG
+            #automatically given verilog modules ieee library in case
+            # for generating auto packge file from verilog modules
+            self._libs = ['ieee']
+            self._pkgs = ['ieee.std_logic_1164.all']
 
         self._dsgn = dsgn
         
@@ -76,8 +83,6 @@ class Unit:
         self._V = V
         self._E = E
 
-        self._libs = []
-        self._pkgs = []
 
         self._checked = False
         self._config = None
