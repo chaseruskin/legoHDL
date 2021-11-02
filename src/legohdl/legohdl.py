@@ -755,7 +755,7 @@ scripts)?", warning=False)
         #get the current working block
         block = Block.getCurrent()
 
-        pkg_name = block.N()+"_pkg"
+        pkg_name = (block.N()+"_pkg").replace('-','_')
 
         #list of units to wrap in package file
         comp_names = []
