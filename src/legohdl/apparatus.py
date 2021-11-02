@@ -13,6 +13,8 @@ from .cfgfile import CfgFile as cfg
 
 
 class Apparatus:
+
+    #legohdl settings data structure
     SETTINGS = dict()
 
     #path to hidden legohdl folder
@@ -21,10 +23,6 @@ class Apparatus:
     #temporary path for various purposes
     TMP = HIDDEN+"tmp/"
 
-    #identify a valid market and its name
-    MRKT_EXT = ".mrkt"
-    #identify a valid profile and its name
-    PRFL_EXT = ".prfl"
     #identify custom configuration files
     CFG_EXT = ".cfg"
     #identify a valid HDL design project folder
@@ -42,12 +40,11 @@ class Apparatus:
     TEMPLATE = HIDDEN+"template/"
     #path to markets within legohdl
     MARKETS = HIDDEN+"markets/"
+    #path to workspaces within legohdl
+    WORKSPACE = HIDDEN+"workspaces/"
 
     #replace this name with HIDDEN path to the tool when found in paths
     ENV_NAME = "%LEGOHDL%"
-
-    #path to current workspace within legohdl (is updated on intialization)
-    WORKSPACE = HIDDEN+"workspaces/"
 
     #all available options allowed to be edited within the legohdl.cfg
     #append all non-field options here (editable dictionaries)
@@ -68,10 +65,7 @@ class Apparatus:
                 'script' : {},
                 'workspace' : {},
                 'market' : {}
-            }   
-
-    META = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', \
-            'remote', 'market', 'derives']
+            }
     
     #this is appended to the tag to make it unique for legoHDL
     TAG_ID = '-legohdl'    
@@ -98,9 +92,8 @@ class Apparatus:
     #an entity
     ENTITY_DELIM = ':'
 
-    __active_workspace = None
-
     DOCUMENTATION_URL = 'https://legohdl.readthedocs.io/en/latest/index.html'
+
 
     @classmethod
     def initialize(cls):
@@ -142,53 +135,23 @@ class Apparatus:
         cls.generateDefault(bool,"multi-develop","overlap-recursive",header="general")
         cls.generateDefault(int,"refresh-rate",header="general")
         cls.generateDefault(list,"profiles",header="general")
-            
+        #return if user was missing the legohdl hidden folder
         return ask_for_setup
 
-    @classmethod
-    def runSetup(cls):
-        is_select = cls.confirmation("This looks like your first time running \
-legoHDL! Would you like to use a profile (import settings, template, and \
-scripts)?", warning=False)
-        if(is_select):
-            #give user options to proceeding to load a profile
-            resp = input("""Enter:
-1) nothing for default profile
-2) a path or git repository to a new profile
-3) 'exit' to cancel
-""")
-            #continually prompt until get a valid response to move forward
-            while True:
-                if(resp.lower() == 'exit'):
-                    log.info('Profile configuration skipped.')
-                    break
-                elif(resp == ''):
-                    log.info("Setting up default profile...")
-                    cls.loadDefaultProfile()
-                    break
-                elif(cls.loadProfile(resp.lower())):
-                    break
-                resp = input()
-                pass
-        
-        if(not is_select or len(cls.SETTINGS['workspace'].keys()) == 0):
-            #ask to create workspace
-            ws_name = input("Enter a workspace name: ")
-            while(len(ws_name) == 0 or ws_name.isalnum() == False):
-                ws_name = input()
-            cls.SETTINGS['workspace'][ws_name] = dict()
-
-
-        #ask for name to store in settings
-        feedback = input("Enter your name: ")
-        cls.SETTINGS['general']['author'] = cls.SETTINGS['general']['author'] if(feedback.strip() == cfg.NULL) else feedback.strip()
-        #ask for test-editor to store in settings
-        feedback = input("Enter your text-editor: ")
-        cls.SETTINGS['general']['editor'] = cls.SETTINGS['general']['editor'] if(feedback.strip() == cfg.NULL) else feedback.strip()
-        pass
 
     @classmethod
     def generateDefault(cls, t, *args, header=None):
+        '''
+        Implements security check to make sure certain settings uphold a specific
+        datatype.
+
+        Parameters:
+            t (type): python datatype that should be here in settings
+            *args (*str): variable string (keys) requesting type t
+            header (str): optional first-level section where keys are located
+        Returns:
+            None
+        '''
         for a in args:
             if(header == None):
                 sett = cls.SETTINGS
@@ -204,6 +167,7 @@ scripts)?", warning=False)
                     sett[a] = cfg.castInt(val)
                 elif(t == list):
                     sett[a] = []
+
 
     @classmethod
     def load(cls):
@@ -225,21 +189,6 @@ scripts)?", warning=False)
         #save all safety measures
         cls.save()
         pass
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def getWorkspace(cls, key, modify=False, value=None):
-        '''
-        This method directly accesses the settings for the active workspace as a
-        dictionary. It allows for modification and accessing. Set modify=True to
-        write the value parameter to the key within the current workspace's
-        settings. Key can be 'path' or 'market'.
-        '''
-        if(not modify):
-            return cls.SETTINGS['workspace'][cls.SETTINGS['general']['active-workspace']][key]
-        else:
-            cls.SETTINGS['workspace'][cls.SETTINGS['general']['active-workspace']][key] = value
-            return True
 
 
     @classmethod
@@ -301,189 +250,26 @@ scripts)?", warning=False)
         os.makedirs(tmp_path)
         return tmp_path
 
+
     @classmethod
     def cleanTmpDir(cls):
+        '''Remove the tmporary directory within legoHDL.'''
+
         tmp_path = cls.fs(cls.HIDDEN+"tmp/")
         #check if temporary directory already exists
         if(os.path.exists(tmp_path)):
             shutil.rmtree(tmp_path, onerror=cls.rmReadOnly)
-        
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def getWorkspaceNames(cls):
-        '''
-        This method returns a dictionary of lower-case workspace names mapped 
-        with their case-sensitive folder names found within legohdl's workspace 
-        folder.
-        '''
-        if(hasattr(cls, '_ws_map')):
-            return cls._ws_map
-        cls._ws_map = {}
-        ws_names = os.listdir(cls.HIDDEN+"workspaces/")
-        for n in ws_names:
-            cls._ws_map[n.lower()] = n
-        return cls._ws_map
-
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def inWorkspace(cls):
-        #determine current workspace currently being used
-        cls.__active_workspace = cls.SETTINGS['general']['active-workspace']
-        if(cls.__active_workspace == cfg.NULL or cls.__active_workspace not in cls.SETTINGS['workspace'].keys() or \
-           os.path.isdir(cls.HIDDEN+"workspaces/"+cls.__active_workspace) == False):
-            return False
-        else:
-            return True
+        pass
 
 
     @classmethod
     def getAuthor(cls):
-        'Return the author string from the settings.'
+        '''Return the author (str) from the settings data structure.'''
+
         author = cls.SETTINGS['general']['author']
         if(author == None):
             author = ''
         return author
-
-
-    #[!] TO MOVE TO MARKET CLASS
-    @classmethod
-    @DeprecationWarning
-    def loadMarket(cls, value):
-        '''
-        This method determines if the value is a valid remote url wired to a
-        valid market (indicated by having a .mrkt file). Returns the market name
-        if successfully imported it, returns false otherwise. It will attempt to
-        add it in if the name is not already taken.
-        '''
-        tmp_dir = cls.HIDDEN+"tmp/"
-        mrkt_names = cls.getMarketNames()
-        value = cls.fs(value)
-        if(cls.isValidURL(value)):
-            #clone the repository and see if it is a valid profile
-            log.info("Grabbing market from... "+value)
-            os.makedirs(tmp_dir)
-            #git.Git(tmp_dir).clone(value)
-            url_name = value[value.rfind('/')+1:value.rfind('.git')]
-            path_to_check = cls.fs(tmp_dir+url_name)
-        else:
-            log.error("Invalid remote repository URL.")
-            return False
-
-        #check if a .prfl file exists for this folder (validates profile)
-        log.info("Locating .mrkt file... ")
-        mrkt_file = glob.glob(path_to_check+"*"+cls.MRKT_EXT)
-        if(len(mrkt_file)):
-            sel_mrkt = os.path.basename(mrkt_file[0].replace('.mrkt',''))
-            pass
-        else:
-            log.error("Invalid market; no .mrkt file found.")
-            #delete if it was cloned for evaluation
-            if(os.path.exists(tmp_dir)):   
-                shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
-            return False
-
-        success = (cls.isConflict(mrkt_names,sel_mrkt) == False)
-        if(success):
-            #insert market into markets directory
-            log.info("Importing new market "+sel_mrkt+"...")
-            if(os.path.exists(cls.MARKETS+sel_mrkt) == False):
-                shutil.copytree(path_to_check, cls.MARKETS+sel_mrkt)
-            else:
-                shutil.rmtree(cls.MARKETS+sel_mrkt, onerror=cls.rmReadOnly)
-                shutil.copytree(path_to_check, cls.MARKETS+sel_mrkt)
-            
-            cls.SETTINGS['market'][sel_mrkt] = value  
-        #remove temp directory
-        if(os.path.exists(tmp_dir)):  
-            shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
-        
-        if(success):
-            return sel_mrkt
-        else:
-            return success
-
-
-    #[!] TO MOVE TO PROFILE CLASS
-    @classmethod
-    @DeprecationWarning
-    def loadProfile(cls, value, explicit=False, append=False):
-        '''
-        This method determines if the value is an existing profile name or a git
-        repository/path to a valid profile. It will stage the profile into the 
-        correct place.
-        '''
-        prfl_dir = cls.HIDDEN+"profiles/"
-        tmp_dir = cls.HIDDEN+"tmp/"
-        #get all available profiles
-        prfl_names = cls.getProfileNames()
-        sel_prfl = None
-        #see if this is a profile that already exists
-        if(value.lower() in prfl_names.keys()):
-            sel_prfl = prfl_names[value.lower()]
-            log.info("Loading existing profile "+sel_prfl+"...")
-        else:
-            value = cls.fs(value)
-            if(cls.isValidURL(value)):
-                #clone the repository and see if it is a valid profile
-                log.info("Grabbing profile from... "+value)
-                os.makedirs(tmp_dir)
-                #git.Git(tmp_dir).clone(value)
-                url_name = value[value.rfind('/')+1:value.rfind('.git')]
-                path_to_check = cls.fs(tmp_dir+url_name)
-            #check if the path is a local directory
-            elif(os.path.isdir(value)):
-                log.info("Grabbing profile from... "+value)
-                path_prts = value.strip('/').split('/')
-                url_name = path_prts[len(path_prts)-1]
-                path_to_check = value
-                pass
-            elif(append):
-                #add to settings
-                cls.SETTINGS['general']['profiles'].append(value)
-                #create new directories if applicable
-                cls.dynamicProfiles()
-                return True
-            else:
-                log.error("This is not an existing profile name, path, or repository")
-                return False
-            
-            #check if a .prfl file exists for this folder (validates profile)
-            log.info("Locating .prfl file... ")
-            prfl_file = glob.glob(path_to_check+"*"+cls.PRFL_EXT)
-            if(len(prfl_file)):
-                sel_prfl = os.path.basename(prfl_file[0].replace('.prfl',''))
-                pass
-            else:
-                log.error("Invalid profile; no .prfl file found.")
-                #delete if it was cloned for evaluation
-                if(os.path.exists(tmp_dir)):   
-                    shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
-                
-                return False
-
-            #insert profile into profiles directory
-            log.info("Importing new profile "+sel_prfl+"...")
-            if(os.path.exists(prfl_dir+sel_prfl) == False):
-                shutil.copytree(path_to_check, prfl_dir+sel_prfl)
-            else:
-                shutil.rmtree(prfl_dir+sel_prfl, onerror=cls.rmReadOnly)
-                shutil.copytree(path_to_check, prfl_dir+sel_prfl)
-                
-            #remove temp directory
-            if(os.path.exists(tmp_dir)):  
-                shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
-            pass
-
-        #perform backend operation to overload settings, template, and scripts
-        if(append == False):
-            cls.importProfile(sel_prfl, explicit=explicit)
-
-        # add to settings if not already existing
-        if(sel_prfl not in cls.SETTINGS['general']['profiles']):
-            cls.SETTINGS['general']['profiles'].append(sel_prfl)
-        return True
 
 
     @classmethod
@@ -552,6 +338,7 @@ scripts)?", warning=False)
                 verify = input("[y/n]").lower()
             except KeyboardInterrupt:
                 exit("\nExited prompt.")
+        pass
 
 
     @classmethod
@@ -577,7 +364,8 @@ scripts)?", warning=False)
     @classmethod
     def listToStr(self, in_list, delim=','):
         '''
-        Converts a list to a string separated by `delim`.
+        Converts a list to a string separated by `delim`. The last delimiter
+        is omitted.
 
         Parameters:
             in_list ([str]): list of string items to convert
@@ -596,34 +384,6 @@ scripts)?", warning=False)
             return single_str[:len(single_str)-len(delim)]
         else:
              return single_str
-
-
-    @classmethod
-    def getRefreshRate(cls):
-        return cls.SETTINGS['general']['refresh-rate']
-
-
-    @classmethod
-    def setRefreshRate(cls, r):
-        #convert to integer
-        cfg.castInt(r)
-        #clamp upper and lower bounds
-        if(r > cls.MAX_RATE):
-            r = cls.MAX_RATE
-        elif(r < cls.MIN_RATE):
-            r = cls.MIN_RATE
-        #set in settings
-        cls.SETTINGS['general']['refresh-rate'] = r
-
-
-    @classmethod
-    def getTemplatePath(cls):
-        #load template path from settings
-        tmp = cls.SETTINGS['general']['template']
-        #return built-in template folder if invalid folder in settings
-        if(tmp == '' or os.path.exists(tmp) == False):
-            tmp = cls.TEMPLATE
-        return tmp
     
 
     @classmethod
@@ -640,13 +400,6 @@ scripts)?", warning=False)
             cfg.save(cls.SETTINGS, file, cls.getComments())
         pass
 
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def getLocal(cls):
-        if(cls.inWorkspace()):
-            return cls.fs(cls.SETTINGS['workspace'][cls.__active_workspace]['path'])
-        else:
-            return ''
 
     #return the block file metadata from a specific version tag already includes 'v'
     #if returned none then it is an invalid legohdl release point
@@ -681,96 +434,15 @@ scripts)?", warning=False)
             log.error("Block.cfg file version does not match for: "+tag+". Invalid version.")
             meta = None
         return meta
-
-    #[!] PREPARING FOR REMOVAL
-    @classmethod
-    def isConflict(cls, mapping, name):
-        '''
-        This method returns true if a naming conflict exists between the name
-        in question with a dictionary of the true names mapped by lower names.
-        '''
-        c = (name.lower() in mapping.keys() and mapping[name.lower()] != name)
-        if(c):
-            log.warning("Could not keep "+name+" due to name conlict with "+\
-                mapping[name.lower()]+".")
-        return c
-
-    #[!] PREPARING FOR REMOVAL
-    @classmethod
-    def getMarkets(cls, workspace_level=True):
-        '''
-        This method returns a dictionary consisting of the key as the market's 
-        eval name and the value as its root status (local or a valid git url).
-        Can be used to only gather info on current workspace markets or all
-        markets available.
-        '''
-        mrkt_roots = dict()
-        #key: name (lower-case), val: url
-        if(cls.inWorkspace() and workspace_level):
-            name_list = list(cls.getWorkspace('market'))
-            for name in name_list:
-                #see if there is conflict
-                if(cls.isConflict(cls.getMarketNames(), name)):
-                    #this means this name does have a folder in the markets/ 
-                    cls.getWorkspace('market').remove(name)
-                    del cls.SETTINGS['market'][name]
-                    continue
-                #must be case-matching between workspace market list and entire market list
-                if(name in cls.SETTINGS['market'].keys()):
-                    #store its root (location/path, aka is it remote or only local)
-                    mrkt_roots[name.lower()] = cls.SETTINGS['market'][name]
-                #this market DNE as any market!
-                else:
-                    cls.getWorkspace('market').remove(name)
-                pass
-        else:
-            name_list = list(cls.SETTINGS['market'].keys())
-            for name in name_list:
-                if(cls.isConflict(cls.getMarketNames(), name)):                
-                    #this means this name does have a folder in the markets/ 
-                    del cls.SETTINGS['market'][name]
-                    continue
-                #store its root (location/path, aka is it remote or only local)
-                mrkt_roots[name] = cls.SETTINGS['market'][name]
-
-        cls.save()
-        return mrkt_roots
-
-    #[!] PREPARING FOR REMOVAL
-    def resolveMarketConflict(cls, first_mrkt, second_mrkt):
-        '''
-        This method resolves naming conflicts between two markets that share
-        the same eval name (not necessarily the same true name). Returns true if
-        the second market (the market )
-        '''
-        log.warning("Duplicate market names have been detected; which one do you want to keep?")
-        print('1)',first_mrkt,':',cls.SETTINGS['market'][first_mrkt])
-        print('2)',second_mrkt,':',cls.SETTINGS['market'][second_mrkt])
-        resp = None
-        while True:
-            resp = input()
-            opt_1 = resp == '1' or resp == first_mrkt
-            opt_2 = resp == '2' or resp == second_mrkt
-            #keep second market
-            if(opt_2):
-                #remove first market from settings
-                del cls.SETTINGS['market'][first_mrkt]
-                if(os.path.exists(cls.MARKETS+first_mrkt)):
-                    shutil.rmtree(cls.MARKETS+first_mrkt,onerror=cls.rmReadOnly)
-                return True
-            #keep first market
-            elif(opt_1):
-                #remove second market from market settings
-                del cls.SETTINGS['market'][second_mrkt]
-                return False
-        pass
     
 
     @classmethod
     def execute(cls, *code, subproc=False, quiet=True, returnoutput=False):
         '''
-        Execute the command and runs it through the terminal. Immediately exits
-        the script if return code is non-zero and `returnoutput` is false.
+        Execute the command and runs it through the terminal. 
+        
+        Immediately exits the script if return code is non-zero and 
+        `returnoutput` is false.
 
         Parameters:
             code (*str): variable amount of arguments for execution
@@ -812,9 +484,11 @@ scripts)?", warning=False)
     @classmethod
     def fs(cls, path):
         '''
-        Properly formats a path string by fixing all `\` to be `/`. Will also
-        append an extra '/' if the ending of the path is not a file, indicated by having
-        no file extension. Will not alter URLs. Expands users in path.
+        Properly formats a path string by fixing all `\` to be `/`. 
+        
+        Also appends an extra '/' if the ending of the path is not a file, 
+        indicated by having no file extension. Will not alter URLs. Expands 
+        users in path.
 
         Parameters:
             path (str): an unformatted path
@@ -844,62 +518,6 @@ scripts)?", warning=False)
             path = path + '/'
         
         return path
-
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def getMarketNames(cls):
-        '''
-        Return a dictionary mapping a market's lower-case name (key) to its
-        real-case name (value). No market can share the same case-insensitive
-        name. This are the .mrkt files found in the market folder.
-        '''
-        if(hasattr(cls,"_mrkt_map")):
-            return cls._mrkt_map
-
-        cls._mrkt_map = {}
-        #find all markets
-        mrkt_files = glob.glob(cls.MARKETS+"**/*"+cls.MRKT_EXT, recursive=True)
-        for m in mrkt_files:
-            #get file name and exlude extension
-            name = os.path.basename(m).replace(cls.MRKT_EXT,'')
-            #ask user to resolve issue of multiple eval names
-            #if(name.lower() in cls._mrkt_map.keys()):
-                #cls.resolveMarketConflict(cls._mrkt_map[name.lower()], name)
-            #store the true-case name as value behind the lower-case name key
-            cls._mrkt_map[name.lower()] = name
-        
-        return cls._mrkt_map
-
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    @DeprecationWarning
-    def isValidURL(cls, url):
-        '''
-        This method takes a URL and tests it to see if it is a valid remote git
-        repository. Returns true if its valid else false.
-        '''
-        #first perform quick test to pass before actually verifying url
-        log.info("Checking ability to link to url...")
-        if(url == None or url.count(".git") == 0):
-            return False
-        try:
-            pass
-            #check_output(["git","ls-remote",url])
-        except:
-            return False
-        return True
-
-
-    #[!] PREPARING FOR REMOVAL $
-    @classmethod
-    def linkedMarket(cls):
-        '''
-        Returns true if the current workspace has some markets listed.
-        '''
-        rem = cls.SETTINGS['workspace'][cls.__active_workspace]['market']
-        return (rem != None and len(rem))
 
     
     @classmethod
@@ -950,6 +568,54 @@ scripts)?", warning=False)
                     tmp[lib][prj] = place2[lib][prj]
         return tmp
 
+
+    @classmethod
+    def getRefreshRate(cls):
+        '''Returns the refresh-rate (int) from the settings data structure.'''
+        return cls.SETTINGS['general']['refresh-rate']
+
+
+    @classmethod
+    def setRefreshRate(cls, r):
+        '''
+        Sets the refresh-rate to settings data structure.
+
+        Parameters:
+            r (int): how often to refresh markets
+        Returns:
+            None
+        '''
+        #convert to integer
+        cfg.castInt(r)
+        #clamp upper and lower bounds
+        if(r > cls.MAX_RATE):
+            r = cls.MAX_RATE
+        elif(r < cls.MIN_RATE):
+            r = cls.MIN_RATE
+        #set in settings
+        cls.SETTINGS['general']['refresh-rate'] = r
+        pass
+
+
+    @classmethod
+    def getTemplatePath(cls):
+        '''
+        Returns the template path (str) from the settings data structure.
+
+        If the path DNE or is blank, returns path to built-in template.
+        
+        Parameters:
+            None
+        Returns:
+            (str): path to template
+        '''
+        #load template path from settings
+        tmp = cls.SETTINGS['general']['template']
+        #return built-in template folder if invalid folder in settings
+        if(tmp == '' or os.path.exists(tmp) == False):
+            tmp = cls.TEMPLATE
+        return tmp
+
     
     @classmethod
     def getProgramPath(cls):
@@ -968,6 +634,7 @@ scripts)?", warning=False)
     
     @classmethod
     def getEditor(cls):
+        '''Returns the editor fromt the settings data-structure.'''
         return cls.SETTINGS['general']['editor']
 
 
@@ -986,24 +653,17 @@ scripts)?", warning=False)
             exit(log.error("Failed to remove path due to being open in another process."))
     pass
 
-
-    #[!] PREPARED FOR REMOVAL $
-    @classmethod
-    @DeprecationWarning
-    def isRemoteBare(cls, git_url):
-        tmp_dir = cls.HIDDEN+"tmp/"
-        #print(repo.git.rev_parse('--is-bare-repository '))
-        os.makedirs(tmp_dir, exist_ok=True)
-        #repo = git.Git(tmp_dir).clone(git_url)
-        name = os.listdir(tmp_dir)[0]
-        #repo = git.Repo(tmp_dir+name)
-        #isBare = repo.git.status('-uno').count('No commits yet\n') > 0
-        shutil.rmtree(tmp_dir, onerror=cls.rmReadOnly)
-        return None
-
     
     @classmethod
     def getComments(cls):
+        '''
+        Returns a dictionary of comments to be written to the settings.cfg file.
+
+        Parameters:
+            None
+        Returns:
+            cls.SETTING_COMMENTS (dict): settings section information
+        '''
         if(hasattr(cls, "SETTINGS_COMMENTS")):
             return cls.SETTINGS_COMMENTS
 

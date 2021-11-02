@@ -428,7 +428,7 @@ scripts)?", warning=False)
         pass
 
     #! === BUILD COMMAND ===
-
+    
     def build(self, script):
         '''
         This method performs the build command. It will search the available
