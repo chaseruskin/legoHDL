@@ -4,7 +4,7 @@
 # Description:
 #   The Label class. A Label object has a unique name that will be prepended
 #   with '@' in the blueprint file. A label has a list of extensions to be
-#   searched for within a block. A label can be recursive or shallow.
+#   searched for within a block. A label can be global or local.
 
 import logging as log
 from .map import Map
@@ -16,20 +16,20 @@ class Label:
     #store all label objs in a class variable container
     Jar = Map()
 
-    def __init__(self, name, exts, is_recur):
+    def __init__(self, name, exts, is_global):
         '''
         Creates Label instance.
 
         Parameters:
             name (str): label's name
             exts ([str]): list of glob-style file extensions
-            is_recur (bool): does the label affect all dependent blocks in a design
+            is_global (bool): does the label affect all dependent blocks in a design
         Returns:
             None
         '''
         self._name = name
         self._exts = exts
-        self._is_recur = is_recur
+        self._global = is_global
 
         #add to class container
         self.Jar[self.getName()] = self
@@ -71,14 +71,14 @@ class Label:
         Load all labels from settings.
 
         '''
-        #load shallow labels
-        shallow = apt.SETTINGS['label']['shallow']
-        for lbl,exts in shallow.items():
-            Label(lbl, apt.strToList(exts), is_recur=False)
-        #load recursive labels
-        recursive = apt.SETTINGS['label']['recursive']
-        for lbl,exts in recursive.items():
-            Label(lbl, apt.strToList(exts), is_recur=True)
+        #load local labels
+        local_lbls = apt.SETTINGS['label']['local']
+        for lbl,exts in local_lbls.items():
+            Label(lbl, apt.strToList(exts), is_global=False)
+        #load global labels
+        global_lbls = apt.SETTINGS['label']['global']
+        for lbl,exts in global_lbls.items():
+            Label(lbl, apt.strToList(exts), is_global=True)
         pass
 
 
@@ -92,13 +92,13 @@ class Label:
         Returns:
             None
         '''
-        serialized = {'recursive' : {}, 'shallow' : {}}
+        serialized = {'global' : {}, 'local' : {}}
         #serialize the Workspace objects into dictionary format for settings
         for lbl in cls.Jar.values():
-            if(lbl.isRecursive()):
-                serialized['recursive'][lbl.getName()] = apt.listToStr(lbl.getExtensions())
+            if(lbl.isGlobal()):
+                serialized['global'][lbl.getName()] = apt.listToStr(lbl.getExtensions())
             else:
-                serialized['shallow'][lbl.getName()] = apt.listToStr(lbl.getExtensions())
+                serialized['local'][lbl.getName()] = apt.listToStr(lbl.getExtensions())
         #update settings dictionary
         apt.SETTINGS['label'] = serialized
         apt.save()
@@ -108,17 +108,17 @@ class Label:
     @classmethod
     def printList(cls):
         '''
-        Prints formatted list for labels with recursive flag and file extensions.
+        Prints formatted list for labels with global flag and file extensions.
 
         Parameters:
             None
         Returns:
             None
         '''
-        print('{:<20}'.format("Label"),'{:<24}'.format("Extensions"),'{:<14}'.format("Recursive"))
+        print('{:<20}'.format("Label"),'{:<24}'.format("Extensions"),'{:<14}'.format("Global"))
         print("-"*20+" "+"-"*24+" "+"-"*14+" ")
         for lbl in cls.Jar.values():
-            rec = 'yes' if(lbl.isRecursive()) else '-'
+            rec = 'yes' if(lbl.isGlobal()) else '-'
             print('{:<20}'.format(lbl.getName()),'{:<24}'.format(apt.listToStr(lbl.getExtensions())),'{:<14}'.format(rec))
         pass
 
@@ -142,16 +142,18 @@ class Label:
         return True
 
     
-    def setRecursive(self, r):
-        self._is_recur = r
+    def setGlobal(self, g):
+        '''Sets _global (bool) attr.'''
+        self._global = g
 
 
-    def isRecursive(self):
-        return self._is_recur
+    def isGlobal(self):
+        '''Returns _global (bool) attr.'''
+        return self._global
 
 
     def getExtensions(self):
-        '''Returns _exts ([str]).'''
+        '''Returns _exts ([str]) attr.'''
         #ensure the extensions are list datatype
         if(isinstance(self._exts, list) == False):
             self._exts = apt.strToList(self._exts)
@@ -159,6 +161,7 @@ class Label:
 
 
     def getName(self):
+        '''Returns _name (str) attr.'''
         return self._name
 
 
@@ -167,7 +170,7 @@ class Label:
         ID: {hex(id(self))}
         Label: {self.getName()}
         Extensions: {self.getExtensions()}
-        Recursive: {self.isRecursive()}
+        Global: {self.isGlobal()}
         '''
 
     pass

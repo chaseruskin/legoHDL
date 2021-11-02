@@ -43,21 +43,21 @@ it will use the built-in template folder.",
 This is ideal for simulataneously working on interconnected blocks. When done, be sure to \
 release the blocks as new versions so any changes are set in stone (default is disabled).",
 
-        'overlap-recursive' : 
+        'overlap-global' : 
 "When enabled, on export the labels to be gathered can be the same file even if from the same project \
 across different versions (overlapping). If disabled, it will not write multiple labels for the same \
 file, even across different block versions (default is disabled).",
 
-        'label:shallow' : 
+        'label:local' : 
 "User-defined groupings of filetypes to be collected and written to the blueprint file on export. \
-Labels help bridge a custom workflow with the user's backend tool. Shallow labels are only searched \
+Labels help bridge a custom workflow with the user's backend tool. Local labels are only searched \
 for in the current block. An @ symbol will be automatically prepended to the label in the blueprint file.\n\n\
 Special default labels for *.vhd and *.vhdl are @VHDL-LIB, @VHDL-SRC, @VHDL-SIM, @VHDL-SIM-TOP, @VHDL-SRC-TOP, and for *.v and *.sv are @VLOG-LIB, @VLOG-SRC, \
 @VLOG-SIM, @VLOG-SIM-TOP, @VLOG-SRC-TOP.",
 
-        'label:recursive' : 
+        'label:global' : 
 "User-defined groupings of filetypes to be collected and written to the blueprint file on export. \
-Labels help bridge a custom workflow with the user's backend tool. Recursive labels are searched \
+Labels help bridge a custom workflow with the user's backend tool. Global labels are searched \
 for in every dependent block. An @ symbol will be automatically prepended to the label in the blueprint file.\n\n\
 Special default labels for *.vhd and *.vhdl are @VHDL-LIB, @VHDL-SRC, @VHDL-SIM, @VHDL-SIM-TOP, @VHDL-SRC-TOP, and for *.v and *.sv are @VLOG-LIB, @VLOG-SRC, \
 @VLOG-SIM, @VLOG-SIM-TOP, @VLOG-SRC-TOP.",
@@ -221,19 +221,19 @@ settings that will be merged in when importing that profile. A profile directory
                     pass
                 # --- LABELS ----
                 elif(key == 'label'):
-                    #load records directly from table for recursive (tgl_label == 0)
+                    #load records directly from table for global (tgl_label == 0)
                     if(self._tgl_labels.get() == 0):
-                        self._tk_vars[key]['recursive'] = {}
+                        self._tk_vars[key]['global'] = {}
                         for record in self._tb.getAllValues():
-                            self._tk_vars[key]['recursive'][record[0]] = record[1]
-                    #load records directly from table for shallow (tgl_label == 1)
+                            self._tk_vars[key]['global'][record[0]] = record[1]
+                    #load records directly from table for local (tgl_label == 1)
                     else:
-                        self._tk_vars[key]['shallow'] = {}
+                        self._tk_vars[key]['local'] = {}
                         for record in self._tb.getAllValues():
-                            self._tk_vars[key]['shallow'][record[0]] = record[1]
+                            self._tk_vars[key]['local'][record[0]] = record[1]
                     #copy dictionaries back to settings
-                    apt.SETTINGS[key]['shallow'] = self._tk_vars[key]['shallow'].copy()
-                    apt.SETTINGS[key]['recursive'] = self._tk_vars[key]['recursive'].copy()
+                    apt.SETTINGS[key]['local'] = self._tk_vars[key]['local'].copy()
+                    apt.SETTINGS[key]['global'] = self._tk_vars[key]['global'].copy()
                     pass
                 # --- WORKSPACES ---
                 elif(key == 'workspace'):
@@ -307,7 +307,7 @@ settings that will be merged in when importing that profile. A profile directory
         self._tk_vars = {section : {}}
         #re-write section title widget
         self._field_frame.config(text=section)        
-        # always start label section with shallow labels begin displayed
+        # always start label section with local labels begin displayed
         self._tgl_labels = tk.IntVar(value=1)
 
         # [!] load in legohdl.cfg variables
@@ -344,7 +344,7 @@ settings that will be merged in when importing that profile. A profile directory
                 elif(isinstance(value, bool)):
                     self._tk_vars[section][field] = tk.BooleanVar(value=apt.SETTINGS[section][field])
                     
-                    if(field == 'overlap-recursive'):
+                    if(field == 'overlap-global'):
                         ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._tk_vars[section][field], padx=padx, pady=pady)
                     elif(field == 'multi-develop'):
                         ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._tk_vars[section][field], padx=padx, pady=pady)
@@ -368,44 +368,44 @@ settings that will be merged in when importing that profile. A profile directory
             i = -1 #disable because we print comments in method
         elif(section == 'label'):
             #store 1-level dicionaries
-            self._tk_vars[section]['shallow'] = apt.SETTINGS[section]['shallow'].copy()
+            self._tk_vars[section]['local'] = apt.SETTINGS[section]['local'].copy()
            
-            def loadShallowTable(event=None):
-                #store recursive table
+            def loadLocalTable(event=None):
+                #store global table
                 #print(self._tb.getAllValues())
-                self._tk_vars[section]['recursive'] = {}
+                self._tk_vars[section]['global'] = {}
                 for record in self._tb.getAllValues():
-                    self._tk_vars[section]['recursive'][record[0]] = record[1]
+                    self._tk_vars[section]['global'][record[0]] = record[1]
                 #clear all records
                 self._tb.clearRecords()
-                #load labels from shallow list
-                for key,val in self._tk_vars[section]['shallow'].items():
+                #load labels from local list
+                for key,val in self._tk_vars[section]['local'].items():
                     self._tb.insertRecord([key,val])
-                self._comments.configure(text=self.COMMENTS[section+':shallow'])
+                self._comments.configure(text=self.COMMENTS[section+':local'])
                 pass
 
-            def loadRecursiveTable(event=None):
-                #store shallow label
+            def loadGlobalTable(event=None):
+                #store local label
                 #print(self._tb.getAllValues())
-                self._tk_vars[section]['shallow'] = {}
+                self._tk_vars[section]['local'] = {}
                 for record in self._tb.getAllValues():
-                    self._tk_vars[section]['shallow'][record[0]] = record[1]
+                    self._tk_vars[section]['local'][record[0]] = record[1]
                 #clear all records
                 self._tb.clearRecords()
-                #load labels from recursive list
-                for key,val in self._tk_vars[section]['recursive'].items():
+                #load labels from global list
+                for key,val in self._tk_vars[section]['global'].items():
                     self._tb.insertRecord([key,val])
-                self._comments.configure(text=self.COMMENTS[section+':recursive'])
+                self._comments.configure(text=self.COMMENTS[section+':global'])
                 pass
             
-            ToggleSwitch(self._field_frame, 'shallow', 'recursive', row=0, col=0, state_var=self._tgl_labels, offCmd=loadRecursiveTable, onCmd=loadShallowTable)
+            ToggleSwitch(self._field_frame, 'local', 'global', row=0, col=0, state_var=self._tgl_labels, offCmd=loadGlobalTable, onCmd=loadLocalTable)
             #create the table object
             self._tb = Table(self._field_frame, 'Name (@)', 'File extension', row=1, col=0)
             i = self._tb.mapPeripherals(self._field_frame)
 
             #load the table elements from the settings
-            loadShallowTable()
-            self._tk_vars[section]['recursive'] = apt.SETTINGS[section]['recursive'].copy()
+            loadLocalTable()
+            self._tk_vars[section]['global'] = apt.SETTINGS[section]['global'].copy()
             self._comments.grid(row=i, column=0, columnspan=10, padx=10, pady=2, sticky='w')
             i = -1
             pass
@@ -856,7 +856,7 @@ class ToggleSwitch:
         swt_frame = tk.Frame(tk_frame)
         swt_frame.grid(row=row, column=col, columnspan=10, sticky='ew', padx=padx, pady=pady)
         
-        # radio buttons toggle between recursive table and shallow table  
+        # radio buttons toggle between global table and local table  
         btn_on = tk.Radiobutton(swt_frame, indicatoron=0, text=on_txt, variable=state_var, value=1, width=8, command=onCmd)
         btn_off = tk.Radiobutton(swt_frame, indicatoron=0, text=off_txt, variable=state_var, value=0, width=8, command=offCmd)
         btn_off.pack(side=tk.RIGHT)

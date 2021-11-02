@@ -372,17 +372,17 @@ scripts)?", warning=False)
             for lbl in Label.Jar.values():
                 print(title)
                 print(lbl.getName(),lbl.getExtensions())
-                #get recursive labels from external blocks
-                if(lbl.isRecursive() == True):
+                #get global labels from external blocks
+                if(lbl.isGlobal() == True):
                     #:todo: get block from given title
                     #paths = block.gatherSources(ext=lbl.getExtensions())
                         #add every found file identified with this label to the blueprint
                     #for p in paths:
                         #blueprint_data += ['@'+lbl.getName()+' '+p]
                     pass
-                #perform shallow-only label searching on current block
+                #perform local-only label searching on current block
                 if(title == block_order[-1]):
-                    if(lbl.isRecursive() == False):
+                    if(lbl.isGlobal() == False):
                         paths = block.gatherSources(ext=lbl.getExtensions())
                         #add every found file identified with this label to the blueprint
                         for p in paths:
@@ -676,10 +676,10 @@ scripts)?", warning=False)
                 #modify existing label
                 if(var_key.lower() in Label.Jar.keys()):
                     Label.Jar[var_key].setExtensions(apt.strToList(var_val))
-                    Label.Jar[var_key].setRecursive(self.hasFlag('recursive'))
+                    Label.Jar[var_key].setGlobal(self.hasFlag('global'))
                 #create new label
                 else:
-                    Label(var_key, apt.listToStr(var_val), self.hasFlag('recursive'))
+                    Label(var_key, apt.listToStr(var_val), self.hasFlag('global'))
                 #save any changes
                 Label.save()
                 pass
@@ -756,7 +756,7 @@ scripts)?", warning=False)
                     apt.setRefreshRate(v)
                 else:
                     #convert to booleans values for these settings
-                    if(k == 'multi-develop' or k == 'overlap-recursive'):
+                    if(k == 'multi-develop' or k == 'overlap-global'):
                         v = cfg.castBool(v)
                     apt.SETTINGS['general'][k] = v
                 #save settings adjusments
@@ -1625,7 +1625,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         '''
         This method performs the export command. The requirements are organized 
         into a topologically sorted graph and written to the blueprint file. It
-        also searches for recursive/shallow custom labels within the required
+        also searches for global/local custom labels within the required
         blocks.
         '''
         log.info("Exporting...")
@@ -2280,7 +2280,7 @@ label, market, or workspace, will print their respective group found within the 
         print()
         print('{:<16}'.format("-alpha"),"alphabetically organize blocks")
         print('{:<16}'.format("-script"),"view scripts as name, command, path")
-        print('{:<16}'.format("-label"),"view labels as label, extension, recursive")
+        print('{:<16}'.format("-label"),"view labels as label, extension, global")
         print('{:<16}'.format("-market"),"view markets as market, url, linked to workspace")
         print('{:<16}'.format("-workspace"),"view workspaces as workspace, active, path, markets")
         print('{:<16}'.format("-profile"),"view available profiles to overload configurations")

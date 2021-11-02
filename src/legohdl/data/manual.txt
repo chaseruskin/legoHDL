@@ -553,7 +553,7 @@ SYNOPSIS:
         legohdl config [-market=<mrkt>[:<url>] [-link | -unlink]] [-active-workspace=<ws>] [-author=<name>] 
                 [-editor=<cmd>] [-template=<dir>] [-multi-develop=<bool>] [-overlap-recursive=<bool>]
                 [-refresh-rate=<rt>] [-profile=<profile-name>] [-script=<alias>:<cmd>] 
-                [-label=<label>:<extensions> [-recursive]] [-workspace=<ws>:<path>]
+                [-label=<label>:<extensions> [-global]] [-workspace=<ws>:<path>]
 
 DESCRIPTION:
         :todo:

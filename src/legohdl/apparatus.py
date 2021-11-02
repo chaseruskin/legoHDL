@@ -58,10 +58,10 @@ class Apparatus:
                     'profiles' : cfg.NULL, 
                     'multi-develop' : cfg.NULL, 
                     'refresh-rate' : cfg.NULL,
-                    'overlap-recursive' : cfg.NULL},
+                    'overlap-global' : cfg.NULL},
                 'label' : {
-                    'shallow' : {}, 
-                    'recursive' : {}},
+                    'local' : {}, 
+                    'global' : {}},
                 'script' : {},
                 'workspace' : {},
                 'market' : {}
@@ -130,9 +130,9 @@ class Apparatus:
         cls.SETTINGS = cls.fullMerge(cls.SETTINGS, cls.LAYOUT)
 
         #ensure all pieces of settings are correct
-        cls.generateDefault(dict,"shallow","recursive",header="label")
+        cls.generateDefault(dict,"local","global",header="label")
         cls.generateDefault(dict,"market","script","workspace",header=None)
-        cls.generateDefault(bool,"multi-develop","overlap-recursive",header="general")
+        cls.generateDefault(bool,"multi-develop","overlap-global",header="general")
         cls.generateDefault(int,"refresh-rate",header="general")
         cls.generateDefault(list,"profiles",header="general")
         #return if user was missing the legohdl hidden folder
@@ -172,9 +172,9 @@ class Apparatus:
     @classmethod
     def load(cls):
         #ensure all pieces of settings are correct
-        cls.generateDefault(dict,"shallow","recursive",header="label")
+        cls.generateDefault(dict,"local","global",header="label")
         cls.generateDefault(dict,"market","script","workspace",header=None,)
-        cls.generateDefault(bool,"multi-develop","overlap-recursive",header="general")
+        cls.generateDefault(bool,"multi-develop","overlap-global",header="general")
         cls.generateDefault(int,"refresh-rate",header="general")
         cls.generateDefault(list,"profiles",header="general")
 
@@ -738,7 +738,7 @@ class Apparatus:
 ; value:
 ;   integer (-1 to 1440)'''),
 
-    'overlap-recursive' : (cfg.VAR,\
+    'overlap-global' : (cfg.VAR,\
 '''
 ; description:
 ;   When enabled, on export the labels to be gathered can be the same file
@@ -756,14 +756,14 @@ class Apparatus:
 ;   blueprint file on export. Labels help bridge a custom workflow with the user's
 ;   backend tool.'''),
 
-    'shallow' : (cfg.HEADER,\
+    'local' : (cfg.HEADER,\
 '''
 ; description:
 ;   Find these files only throughout the current block.
 ; value:
 ;   assignments of string'''),
 
-    'recursive' : (cfg.HEADER,\
+    'global' : (cfg.HEADER,\
 '''
 ; description:
 ;   Find these files throughout all blocks used in the current design.
