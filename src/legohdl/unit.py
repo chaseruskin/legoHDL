@@ -11,6 +11,7 @@
 import os
 import logging as log
 from enum import Enum
+
 from .graph import Graph
 from .apparatus import Apparatus as apt
 from .map import Map
@@ -528,7 +529,7 @@ class Unit:
 class Generic:
 
 
-    def __init__(self, name, form, dtype, value):
+    def __init__(self, name, form, dtype, value=''):
         self._name = name
         self._form = form
         self._dtype = dtype
@@ -555,13 +556,14 @@ class Generic:
         return m_txt
         
 
-    def writeConstant(self, form, spaces=1):
+    def writeConstant(self, form, spaces=1, inc_const=True):
         '''
         Create the compatible code for declaring a constant from the given generic.
 
         Parameters:
             form (Unit.Language): VHDL or VERILOG compatible code
             spaces (int): number of spaces required between name and ':'
+            inc_const (bool): determine if to include keyword 'constant' for VHDL
         Returns:
             c_txt (str): compatible line of code to be printed
         '''
@@ -569,7 +571,9 @@ class Generic:
         #write VHDL-style code
         if(form == Unit.Language.VHDL):
             #write beginning of constant declaration
-            c_txt = 'constant '+self._name+(spaces*' ')+': '
+            if(inc_const):
+                c_txt = 'constant '
+            c_txt = c_txt+self._name+(spaces*' ')+': '
             remaining = apt.listToStr(self._dtype)
             #properly format the remaining of the constant
             fc = remaining.find(',(')
@@ -581,7 +585,7 @@ class Generic:
             #add type
             c_txt = c_txt + remaining
             #give default value
-            if(len(self._value)):
+            if(self._value != None and len(self._value)):
                 c_txt = c_txt + ' := ' + apt.listToStr(self._value)
             #add final ';'
             c_txt = c_txt + ';'
@@ -651,6 +655,24 @@ class Port:
         #store an initial value (optional)
         self._value = value
         pass
+
+
+    def writeDeclaration(self, form, spaces=1):
+        if(form == Unit.Language.VHDL):
+            dec_txt = self.getName() +(spaces*' ')+': ' + str(self.getRoute().name).lower()+' '
+
+            remaining = self.castDatatype(form)
+            #properly format the remaining of the signal
+            fc = remaining.find(',')
+            if(fc > -1):
+                remaining = remaining[:fc] + remaining[fc+1:]
+            remaining = remaining.replace('(,', '(')
+            remaining = remaining.replace(',)', ')')
+            remaining = remaining.replace(',', ' ')
+            dec_txt = dec_txt + remaining + ';'
+        elif(form == Unit.Language.VERILOG):
+            dec_txt = str(self.getRoute().name).lower()+'put ' + self.getName()+';'
+        return dec_txt
 
     
     def writeMapping(self, form, spaces=0):
@@ -1026,6 +1048,73 @@ class Interface:
             pass
         #print(mapping_txt)
         return mapping_txt
+
+    
+    def writeDeclaration(self, form, align=True, hang_end=True, tabs=0):
+        '''
+        Write the correct compatible code for a component declaration of the given
+        entity. For VERILOG, it will return the module declaration statement.
+
+        Parameters:
+            form (Unit.Language): VHDL or VERILOG compatible code style
+            align (bool): determine if identifiers should be all equally spaced
+            hand_end (bool): true if ) deserves its own line
+        Returns:
+            comp_txt (str): the compatible code to be printed
+        '''
+        #default selection is to write in original coding language
+        if(form == None):
+            form = self._default_form
+
+        comp_txt = ''
+        #default number of spaces when not aligning
+        spaces = 1
+        #write VHDL-style code
+        if(form == Unit.Language.VHDL):
+            comp_txt = (tabs*'\t')+'component ' + self.getName() + '\n'
+            #write generics
+            gens = list(self.getGenerics().values())
+            if(len(gens)):
+                farthest = self.computeLongestWord(self.getMappingNames(self.getGenerics()))
+                comp_txt  = comp_txt + (tabs*'\t')+'generic(' + '\n'
+                #write every generic
+                for gen in gens:
+                    if(align):
+                        spaces = farthest - len(gen.getName()) + 1
+                    comp_line = gen.writeConstant(form, spaces=spaces, inc_const=False)
+                    comp_txt = comp_txt + ((tabs+1)*'\t')+comp_line[:len(comp_line)-1] #trim off ';'
+                    if(gen != gens[-1]):
+                        comp_txt = comp_txt + ';\n'
+                    elif(hang_end):
+                         comp_txt = comp_txt + '\n'
+                #add final generic closing token
+                comp_txt = comp_txt + (tabs*'\t')+');\n'
+            #write ports
+            ports = list(self.getPorts().values())
+            if(len(ports)):
+                farthest = self.computeLongestWord(self.getMappingNames(self.getPorts()))
+                comp_txt = comp_txt + (tabs*'\t')+'port(' + '\n'
+                #write every port
+                for port in ports:
+                    if(align):
+                        spaces = farthest - len(port.getName()) + 1
+                    comp_line = port.writeDeclaration(form, spaces)
+                    comp_txt = comp_txt + ((tabs+1)*'\t')+comp_line[:len(comp_line)-1] #trim off ';'
+                    if(port != ports[-1]):
+                        comp_txt = comp_txt + ';\n'
+                    elif(hang_end):
+                        comp_txt = comp_txt + '\n'
+                #add final port closing token
+                comp_txt = comp_txt + (tabs*'\t')+');\n'
+            #add final closing segment
+            comp_txt = comp_txt + (tabs*'\t')+'end component;'
+            pass
+        #write VERILOG-style code
+        elif(form == Unit.Language.VERILOG):
+            comp_txt = 'module '+self.getName()
+            pass
+
+        return comp_txt
 
 
     def __str__(self):

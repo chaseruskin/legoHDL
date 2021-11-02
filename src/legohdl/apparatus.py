@@ -593,7 +593,7 @@ scripts)?", warning=False)
             single_str = single_str + w + delim
         #return with last delimiter trimmed off
         if(len(delim)):
-            return single_str[:-1]
+            return single_str[:len(single_str)-len(delim)]
         else:
              return single_str
 

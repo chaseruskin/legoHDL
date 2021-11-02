@@ -659,8 +659,6 @@ scripts)?", warning=False)
         for i in range(0, len(block_order)):
             b = block_order[i]
             print(str(i+1)+' >\t'+b,end='\n')
-            if(i < len(block_order)-1):
-                print(' ',end='')
         print()
 
         return unit_order,block_order
@@ -753,14 +751,35 @@ scripts)?", warning=False)
 
         pkg_name = block.N()+"_pkg"
 
-        pkg_data = ['-- Auto-generated package file by legoHDL.'] + ['package '+pkg_name] + [' ']
+        unit_names = block.loadHDL().values()
+        comp_names = []
+        for u in unit_names:
+            if(u.isTb() == False and u.isPkg() == False):
+                comp_names += [u.E()]
 
+        #initially fill with comment header section
+        pkg_data = ['-'*80] + \
+            ['-- Project: %BLOCK%'] + \
+            ['-- Created: %DATE%'] + \
+            ['-- Package: TEMPLATE'] + \
+            ['-- Description:'] + \
+            ['--  Auto-generated package file by legoHDL. Contains component declarations for'] + \
+            ['--    '+apt.listToStr(comp_names, delim='\n--    ')] + \
+            ['-'*80] + \
+            [' ']
+
+        #calculate the package comment header lines length
+        comment_len = len(pkg_data)
+
+        #place package declaration
+        pkg_data += [' '] + \
+            ['package '+pkg_name+' is'] + \
+            [' ']
 
         libs = []
         pkgs = []
-
         #get all units
-        units = block.loadHDL().values()
+        units = list(block.loadHDL().values())
         for dsgn in units:
             #only add design units (entities)
             if(dsgn.isTb() or dsgn.isPkg()):
@@ -768,16 +787,22 @@ scripts)?", warning=False)
             #copy any of their library declarations
             for lib in dsgn.getLibs():
                 if(lib.lower() not in libs):
-                    pkg_data.insert(1, 'library '+lib+';')
+                    pkg_data.insert(comment_len, 'library '+lib+';')
                     libs += [lib.lower()]
             #copy any of their package declarations
             for pkg in dsgn.getPkgs():
+                #ensure package has not already been added
                 if(pkg.lower() not in pkgs):
-                    pkg_data.insert(2, 'use '+pkg+';')
+                    #ensure package is not itself
+                    pkg_parts = pkg.lower().split('.')
+                    #skip if package is itself
+                    if(len(pkg_parts) > 1 and pkg_parts[0] == 'work' and pkg_parts[1] == pkg_name.lower()):
+                        continue
+                    pkg_data.insert(comment_len+len(libs), 'use '+pkg+';')
                     pkgs += [pkg.lower()]
 
-            pkg_data += ['\tcomponent '+dsgn.E()]
-            pkg_data += ['\tend component;'] + [' ']
+            pkg_data += [dsgn.getInterface().writeDeclaration(form=Unit.Language.VHDL, tabs=1)]
+            pkg_data += [' ']
             
         pkg_data += ['end package;']
 
@@ -788,7 +813,10 @@ scripts)?", warning=False)
         #dump contents into package file
         for line in pkg_data:
             pkg_file.write(line+"\n")
+        pkg_file.close()
 
+        #fill placeholders
+        block.fillPlaceholders(pkg_path, pkg_name)
         pass
 
 
