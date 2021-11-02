@@ -307,9 +307,8 @@ scripts)?", warning=False)
         
         log.info("Generating dependency tree...")
         #start with top unit (returns all units if no top unit is found (packages case))
-        us = block.getUnits(top_dog.E())
-        print(us['sevensegment'])
-        print(Unit.Hierarchy._adj_list)
+        block.getUnits(top_dog.E())
+
         hierarchy = Unit.Hierarchy
 
         #print the dependency tree
@@ -585,7 +584,7 @@ scripts)?", warning=False)
         _,_,_,_,ent = Block.snapTitle(self.getItem(), inc_ent=True)
         if(block == None):
             exit(log.error("Could not identify a block with "+self.getItem()))
-        block.get(ent, self.hasFlag('about'), self.hasFlag('arch'), self.hasFlag('inst'), lang=(self.getVar('inst')))
+        block.get(ent, self.hasFlag('about'), self.hasFlag('arch'), self.hasFlag('inst'), self.hasFlag('comp'), lang=(self.getVar('inst')))
         pass
 
 

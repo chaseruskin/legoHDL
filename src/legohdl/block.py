@@ -1853,7 +1853,7 @@ class Block:
             print(u)
 
 
-    def get(self, entity, about, listArch, inst, lang=None):
+    def get(self, entity, about, listArch, inst, comp, lang=None):
         '''
         Get various pieces of information about a given entity as well as any
         compatible code for instantiations.
@@ -1863,6 +1863,7 @@ class Block:
             about (bool): determine if to print the comment header
             listArch (bool): determine if to list the architectures
             inst (bool): determine if to print instantiation
+            comp (bool): determine if to print component declaration
             lang (str): VHDL or VLOG style language
         Returns:
             success (bool): determine if operation was successful
@@ -1886,6 +1887,10 @@ class Block:
         #print list of architectures
         if(listArch):
             print(ent.readArchitectures())
+        if(comp):
+            #:todo: write component declaration code for verilog modules
+            print(ent.getInterface().writeDeclaration(form=Unit.Language.VHDL))
+            print()
         if(inst):
             #determine the language to output instance
             if(lang != None):
@@ -1894,7 +1899,7 @@ class Block:
                 elif(lang.lower() == 'vlog'):
                     lang = Unit.Language.VERILOG
             print(ent.getInterface().writeConnections(form=lang))
-            print(ent.getInterface().writeInstance(form=lang))
+            print(ent.getInterface().writeInstance(form=lang, entity_inst=(comp == False)))
 
         return True
 

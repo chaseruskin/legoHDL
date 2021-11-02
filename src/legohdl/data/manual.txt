@@ -167,6 +167,11 @@ DESCRIPTION:
         By default, it will print the about section and the component declaration for
         VHDL entities or the module interface for Verilog modules.
 
+        If -comp is present when -inst is also present and the language outputted is
+        VHDL, the returned VHDL instantiation code will be a component instantiation.
+        If -comp is omitted in this scenario, the returned VHDL instantiation code
+        will be a direct entity instantiation.
+
 OPTIONS:
         <block>
                 The block's title. If omitted, the <entity> is searched for only
@@ -176,19 +181,17 @@ OPTIONS:
                 The design unit name.
 
         -comp[=<lang>]
-                Print the component instantation. This includes the component declaration,
-                relevant constants for each generic, relevant signals for each port,
-                and the component instantiation. For Verilog form, the module interface
-                is printed instead of a component declaration.
+                Print the component declaration. For Verilog language, the module 
+                interface is printed instead of a component declaration.
 
                 <lang> specifies what HDL language to use to print the formatted code. 
                 Accepted values are vlog and vhdl. Omitting <lang> prints the code in 
                 the entity's original language.
 
         -inst[=<lang>]
-                Print the direct entity instantiation (VHDL-93 feature). This includes
-                relevant constants for each generic, relevant signals for each port,
-                and the direct entity instantiation. 
+                Print the direct entity instantiation (VHDL-93 feature) or component
+                instantiation. This includes relevant constants for each generic, 
+                relevant signals for each port, and the instantiation code. 
                 
                 <lang> specifies what HDL language to use to print the formatted code. 
                 Accepted values are vlog and vhdl. Omitting <lang> prints the code in 

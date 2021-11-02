@@ -1082,48 +1082,51 @@ class Interface:
         if(form == None):
             form = self._default_form
 
+        #define tab character to be 4 spaces
+        T = ' '*4 
+        #store running component text
         comp_txt = ''
         #default number of spaces when not aligning
         spaces = 1
         #write VHDL-style code
         if(form == Unit.Language.VHDL):
-            comp_txt = (tabs*'\t')+'component ' + self.getName() + '\n'
+            comp_txt = (tabs*T)+'component ' + self.getName() + '\n'
             #write generics
             gens = list(self.getGenerics().values())
             if(len(gens)):
                 farthest = self.computeLongestWord(self.getMappingNames(self.getGenerics()))
-                comp_txt  = comp_txt + (tabs*'\t')+'generic(' + '\n'
+                comp_txt  = comp_txt + (tabs*T)+'generic(' + '\n'
                 #write every generic
                 for gen in gens:
                     if(align):
                         spaces = farthest - len(gen.getName()) + 1
                     comp_line = gen.writeConstant(form, spaces=spaces, inc_const=False)
-                    comp_txt = comp_txt + ((tabs+1)*'\t')+comp_line[:len(comp_line)-1] #trim off ';'
+                    comp_txt = comp_txt + ((tabs+1)*T)+comp_line[:len(comp_line)-1] #trim off ';'
                     if(gen != gens[-1]):
                         comp_txt = comp_txt + ';\n'
                     elif(hang_end):
                          comp_txt = comp_txt + '\n'
                 #add final generic closing token
-                comp_txt = comp_txt + (tabs*'\t')+');\n'
+                comp_txt = comp_txt + (tabs*T)+');\n'
             #write ports
             ports = list(self.getPorts().values())
             if(len(ports)):
                 farthest = self.computeLongestWord(self.getMappingNames(self.getPorts()))
-                comp_txt = comp_txt + (tabs*'\t')+'port(' + '\n'
+                comp_txt = comp_txt + (tabs*T)+'port(' + '\n'
                 #write every port
                 for port in ports:
                     if(align):
                         spaces = farthest - len(port.getName()) + 1
                     comp_line = port.writeDeclaration(form, spaces)
-                    comp_txt = comp_txt + ((tabs+1)*'\t')+comp_line[:len(comp_line)-1] #trim off ';'
+                    comp_txt = comp_txt + ((tabs+1)*T)+comp_line[:len(comp_line)-1] #trim off ';'
                     if(port != ports[-1]):
                         comp_txt = comp_txt + ';\n'
                     elif(hang_end):
                         comp_txt = comp_txt + '\n'
                 #add final port closing token
-                comp_txt = comp_txt + (tabs*'\t')+');\n'
+                comp_txt = comp_txt + (tabs*T)+');\n'
             #add final closing segment
-            comp_txt = comp_txt + (tabs*'\t')+'end component;'
+            comp_txt = comp_txt + (tabs*T)+'end component;'
             pass
         #write VERILOG-style code
         elif(form == Unit.Language.VERILOG):
