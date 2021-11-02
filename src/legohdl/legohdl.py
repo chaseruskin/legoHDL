@@ -704,16 +704,26 @@ scripts)?", warning=False)
             self.autoPackage(omit=[], inc=[])
             return
 
+        #capture the passed-in entity name
         top = self.getItem()
         top_dog,dsgn,tb = block.identifyTopDog(top, inc_tb=True)
 
-        #start with top unit (returns all units if no top unit is found (packages case))
-        block.getUnits(top_dog.E())
+        #get all units
+        if(self.hasFlag('all')):
+            block.getUnits()
+            pass
+        #get only necessary units
+        else:
+            #start with top unit (returns all units if no top unit is found (packages case))
+            block.getUnits(top_dog.E())
+            pass
+
+        #print the dependency graph(s)
+        for k,v in Unit.Hierarchy._rev_adj_list.items():
+            if(len(v) == 0):
+                Unit.Hierarchy.output(k)
 
         unit_order,block_order = Unit.Hierarchy.topologicalSort()
-
-        Unit.Hierarchy.output(top_dog, disp_full=True)
-        print(unit_order)
 
         #get all label data :todo:
         for title in block_order:

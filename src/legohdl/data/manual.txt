@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/01/2021
+; Modified: 11/02/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -242,10 +242,14 @@ NAME:
 
 SYNOPSIS:
         legohdl export [<entity>] [-tb=<tb>] [-ignore-tb] [-quiet] [-no-clean]
+                [-all]
         legohdl export -pack [-omit=<entities>] [-inc=<entities>]
 
 DESCRIPTION:
         :todo:
+
+        For generating a VHDL package file, passing -inc will ignore -omit if it
+        is passed to the command-line as well.
 
 OPTIONS:
         <entity>
@@ -264,6 +268,9 @@ OPTIONS:
 
         -no-clean
                 Do not delete the build/ directory when writing the blueprint.
+
+        -all
+                Add all block-level source files and their dependencies.
 
 * build
 NAME:
