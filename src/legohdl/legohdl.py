@@ -83,8 +83,7 @@ class legoHDL:
         #initialize all Profiles
         Profile.load()
         Profile.tidy()
-        #initialize all Scripts
-        Script.load()
+
         #initialize all Labels
         Label.load()
 
@@ -487,7 +486,7 @@ scripts)?", warning=False)
         apt.execute(cmd, quiet=False)
 
     #! === EXPORT/GRAPH COMMAND ===
-
+    @DeprecationWarning
     def export(self, block, top=None, options=[]):
         '''
         This method performs the export command. The requirements are organized 
@@ -632,6 +631,35 @@ scripts)?", warning=False)
         pass
 
 
+    def _build(self):
+        '''Run the 'build' command.'''
+
+        cur_block = Block(os.getcwd(), self.WS())
+        #make sure within a valid block directory
+        if(cur_block.isValid() == False):
+            log.error("Cannot call a script from outside a block directory!")
+            return
+        #initialize all Scripts
+        Script.load()
+        #get the script name
+        script = self.getItem()
+        #make sure a valid script title is passed
+        if(script == None or script[0] != '+'):
+            log.error("Calling a script must begin with a '+'!")
+            return
+        #make sure the script exists
+        elif(script[1:].lower() not in Script.Jar.keys()):
+            log.error("Script "+script[1:]+" does not exist!")
+            return
+        #find index where build script name was called
+        script_i = sys.argv.index(script)
+        #all arguments after script name are passed to the script
+        script_args = sys.argv[script_i+1:]
+
+        Script.Jar[script[1:]].execute(script_args)
+        pass
+
+
     def _graph(self):
         '''Run the 'graph' command.'''
 
@@ -678,10 +706,14 @@ scripts)?", warning=False)
 
         top = self.getItem()
         top_dog,dsgn,tb = block.identifyTopDog(top, inc_tb=True)
+
         #start with top unit (returns all units if no top unit is found (packages case))
         block.getUnits(top_dog.E())
 
         unit_order,block_order = Unit.Hierarchy.topologicalSort()
+
+        Unit.Hierarchy.output(top_dog, disp_full=True)
+        print(unit_order)
 
         #get all label data :todo:
         for title in block_order:
@@ -1288,6 +1320,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             #print(var_key, var_val)
             #modify script
             if(k == 'script'):
+                #load in script
+                Script.load()
                 #verify proper format is passed in
                 if(var_key == ''):
                     log.error("Must provide a script alias.")
@@ -1450,6 +1484,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
         '''Run 'list' command.'''
 
         if(self.hasFlag("script")):
+            #initialize all Scripts
+            Script.load()
             Script.printList()
         elif(self.hasFlag("label")):
             Label.printList()
@@ -1502,6 +1538,8 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
         #open scripts
         elif(self.hasFlag("script")):
+            #boot-up scripts
+            Script.load()
             #want to open the specified script?
             script_path = apt.fs(apt.HIDDEN+"scripts")
 
@@ -1654,7 +1692,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             pass
 
         elif('build' == cmd):
-            
+            self._build()
             pass
 
         elif('release' == cmd):

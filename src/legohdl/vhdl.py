@@ -125,13 +125,14 @@ class Vhdl(Language):
         return self._designs
 
 
-    def decode(self, u):
+    def decode(self, u, recursive=True):
         '''
         Decipher and collect data on a unit's instantiated lower-level entities.
         Does not decode package designs.
 
         Parameters:
             u (Unit): the unit file who's interface to update
+            recursive (bool): determine if to tunnel through entities
         Returns:
             None
         '''
@@ -225,8 +226,8 @@ class Vhdl(Language):
                     #add the unit as a requirement and decode it if exists
                     if(comp_unit != None):
                         u.addReq(comp_unit)
-                        if(comp_unit.isChecked() == False):
-                            Language.ProcessedFiles[comp_unit.getFile()].decode(comp_unit)
+                        if(comp_unit.isChecked() == False and recursive):
+                            Language.ProcessedFiles[comp_unit.getFile()].decode(comp_unit, recursive)
                     else:
                         #print(old_cseg)
                         print(cseg)

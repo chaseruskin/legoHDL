@@ -77,12 +77,13 @@ class Language(ABC):
     
 
     @abstractmethod
-    def decode(self, u):
+    def decode(self, u, recursive=True):
         '''
         Decipher and collect data on a unit's instantiated lower-level entities.
 
         Parameters:
             u (Unit): the unit file who's interface to update
+            recursive (bool): determine if to tunnel through entities
         Returns:
             None
         '''

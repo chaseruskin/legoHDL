@@ -138,6 +138,15 @@ class Script:
         return self._alias
 
 
+    def execute(self, args=[]):
+        '''
+        Execute the script's command.
+        '''
+        cmd = [self.getCommand()] + args
+        apt.execute(*cmd,quiet=False)
+        pass
+
+
     def getExe(self):
         return self._prog
 

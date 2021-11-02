@@ -1545,7 +1545,7 @@ class Block:
     
         self._top = None
         #constrain to only current block's units and fill out data on each unit
-        units = self.getUnits()
+        units = self.getUnits(recursive=False)
         #get the names of each unit available
         top_contenders = list(units.keys())
         #iterate through each unit and eliminate unlikely top-levels
@@ -1607,7 +1607,7 @@ class Block:
 
         self._bench = None 
         #load all project-level units
-        units = self.getUnits()
+        units = self.getUnits(recursive=False)
         benches = []
         #iterate through each available unit and eliminate it
         for unit in units.values():
@@ -1634,7 +1634,7 @@ class Block:
                 except KeyboardInterrupt:
                     exit("\nExited prompt.")
             #assign the testbench entered by the user
-            self._bench = self.getUnits()[validTop]
+            self._bench = units[validTop]
         #print what the detected testbench is
         if(self._bench != None):
             log.info("DETECTED TOP-LEVEL BENCH: "+self._bench.E())
@@ -1665,14 +1665,14 @@ class Block:
             top_tb (Unit): top-level testbench for top unit
         '''
         #make sure entities exist to search for
-        if((top == None or top == '') and len(self.getUnits()) == 0):
+        units = self.getUnits(recursive=False)
+        if((top == None or top == '') and len(units) == 0):
             exit(log.error("There are no available units in this block."))
-
 
         top_dog = top_dsgn = top_tb = None
         #find top if given
-        if(top != None and top != '' and top.lower() in self.getUnits().keys()):
-            top_dog = self.getUnits()[top]
+        if(top != None and top != '' and top.lower() in units.keys()):
+            top_dog = units[top]
             #assign as testbench if it is one
             if(top_dog.isTb()):
                 top_tb = top_dog
@@ -1685,6 +1685,8 @@ class Block:
                 if(top_tb != None and inc_tb):
                     top_dog = top_tb
 
+            #reset graph
+            Unit.resetHierarchy()
             return top_dog,top_dsgn,top_tb
         elif(top != None and top != ''):
             exit(log.error("Entity "+top+" does not exist within this block."))
@@ -1700,6 +1702,8 @@ class Block:
         else:
             top_dog = top_dsgn
 
+        #reset graph
+        Unit.resetHierarchy()
         # :todo: save appropiate changes to Block.cfg file?
         return top_dog,top_dsgn,top_tb
 
@@ -1815,15 +1819,19 @@ class Block:
         return self._units
 
     
-    def getUnits(self, top=None):
+    def getUnits(self, top=None, recursive=True):
         '''
         Returns a map for all filled HDL units found within the given block.
         
         If a top is specified, it will start deciphering from that Unit. Else, all
         HDL files within the block will be deciphered.
 
+        If recursive is set, it will recursively decode entities upon finding them
+        when decoding an architecture.
+
         Parameters:
             top (str): unit name to start with
+            recursive (bool): determine if to tunnel through entities
         Returns:
             units (Map): the Unit Map object down to M/L/N level
         '''
@@ -1831,11 +1839,11 @@ class Block:
 
         if(top != None and top.lower() in units.keys()):
             if(units[top].isChecked() == False):
-                Language.ProcessedFiles[units[top].getFile()].decode(units[top])
+                Language.ProcessedFiles[units[top].getFile()].decode(units[top], recursive)
         else:
             for u in units.values():
                 if(u.isChecked() == False):
-                    Language.ProcessedFiles[u.getFile()].decode(u)
+                    Language.ProcessedFiles[u.getFile()].decode(u, recursive)
         #self.printUnits()
         return units
 

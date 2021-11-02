@@ -76,12 +76,13 @@ class Verilog(Language):
         return self._designs
 
 
-    def decode(self, u):
+    def decode(self, u, recursive=True):
         '''
         Decipher and collect data on a unit's lower-level entities.
 
         Parameters:
             u (Unit): the unit file who's interface to update
+            recursive (bool): determine if to tunnel through entities
         Returns:
             None
         '''
@@ -118,8 +119,8 @@ class Verilog(Language):
                     #add as a requirement
                     u.addReq(comp_unit)
                     #enter decoding for the lower-level unit
-                    if(comp_unit.isChecked() == False):
-                        Language.ProcessedFiles[comp_unit.getFile()].decode(comp_unit)
+                    if(comp_unit.isChecked() == False and recursive):
+                        Language.ProcessedFiles[comp_unit.getFile()].decode(comp_unit, recursive)
                 pass
 
         pass

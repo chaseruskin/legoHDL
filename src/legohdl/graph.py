@@ -22,6 +22,13 @@ class Graph:
         #store the reverse connections in an adjacency list
         self._rev_adj_list = Map()
         pass
+
+
+    def clear(self):
+        '''Empty the graph data structures.'''
+        self._adj_list = Map()
+        self._rev_adj_list = Map()
+        pass
     
 
     def addEdge(self, integral, derivative):
@@ -73,10 +80,10 @@ class Graph:
             None
         '''
         if(u in self._adj_list.keys()):
-            self._adj_list.remove(u)
+            del self._adj_list[u]
         #store up-stream variation
         if(u in self._rev_adj_list.keys()):
-            self._rev_adj_list.remove(u)
+            del self._rev_adj_list[u]
         pass
 
 
@@ -152,7 +159,7 @@ class Graph:
         #determine number of dependencies a vertex has
         for v in self._adj_list.keys():
             nghbr_cnt[v] = len(self._adj_list[v])
-  
+
         #continue until all are transferred
         while len(order) < len(self._adj_list):
             #if a vertex has zero dependencies, add it to the list
@@ -189,7 +196,7 @@ class Graph:
             top (Unit): top-level unit to start graph from
             leaf (str): inner-recursive parameter to see what parent leaf was
             disp_full (bool): determine how to display entity (with full block title?)
-        Returns:    
+        Returns:  
             None
         '''
         edge_branch = '\-'
@@ -246,6 +253,7 @@ class Graph:
 
 
     def getVertices(self):
-        return len(self._adj_list)
+        '''Return list of all objects belonging to the graph.'''
+        return list(self._adj_list.keys())
 
     pass

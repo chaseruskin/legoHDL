@@ -214,8 +214,10 @@ class Unit:
 
     def setChecked(self, c):
         '''
-        Sets _checked attr to `c`. If True, then the unit object self will be
-        added to the graph as a vertex.
+        Sets _checked attr to `c`. 
+        
+        If True, then the unit object self will be added to the graph as a vertex. 
+        If False, then the unit object self will be removed from the graph.
 
         Parameters:
             c (bool): determine if unit has been checked (data completed/decoded)
@@ -225,7 +227,18 @@ class Unit:
         #add to hierarchy if complete
         if(c == True and not self.isChecked()):
             self.Hierarchy.addVertex(self)
+        #remove from hierarchy to restart graph
+        if(c == False and self.isChecked()):
+            self.Hierarchy.removeVertex(self)
         self._checked = c
+        pass
+
+
+    @classmethod
+    def resetHierarchy(cls):
+        for u in cls.Hierarchy.getVertices():
+            u.setChecked(False)
+        Unit.Hierarchy.clear()
         pass
 
     
