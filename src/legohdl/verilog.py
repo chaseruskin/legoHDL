@@ -30,11 +30,11 @@ class Verilog(Language):
 
         ### new important stuff
         self._seps = [':', '=', '(', ')', '#', ',', '.', '[', ']', '"']
-        self._dual_chars = ['<=']
+        self._dual_chars = ['<=', '==']
         self._comment = '//'
         self._atomics = ['end', 'endmodule', 'endtask', 'endcase', \
             'endfunction', 'endprimitive', 'endspecify', 'endtable', 'begin', \
-            'endgenerate']
+            'endgenerate', 'generate']
 
         self.spinCode()
         ###
@@ -63,7 +63,6 @@ class Verilog(Language):
         c_statements = self.spinCode()
 
         self._designs = []
-
         #looking for design units in each statement
         for cseg in c_statements:
             if(cseg[0] == 'module'):
@@ -87,9 +86,11 @@ class Verilog(Language):
         '''
         #get the code statements
         csegs = self.spinCode()
-        skips = ['reg', 'wire', 'module', 'always', 'case', 'while', 'repeat']
+        skips = ['reg', 'wire', 'module', 'always', 'case', 'while', \
+            'repeat']
 
         in_module = False
+        in_case = False
 
         for cseg in csegs:
             print(cseg)
@@ -104,13 +105,39 @@ class Verilog(Language):
                 u.setChecked(True)
                 return
 
+            if(cseg[0] == 'case'):
+                in_case = True
+            if(cseg[0] == 'endcase'):
+                in_case = False
+
             #look for equal amount of brackets
-            if(cseg.count('(') > 1 and (cseg.count('(') - cseg.count(')') == 0)):
+            if(cseg.count('(') > 0 and (cseg.count('(') - cseg.count(')') == 0)):
                 #now check for entity name
                 comp_name = cseg[0]
-                #skip a code label
+                #skip a code label from generate statement
                 if(cseg[0] == ':' and len(cseg) > 2):
                     comp_name = cseg[2]
+                #get comp name from a case-generate statement
+                elif(in_case and cseg.count(':')):
+                    comp_name = cseg[cseg.index(':')+1]
+                    if(comp_name.isdigit()):
+                        continue
+                #skip past if statements for if-generate statement
+                elif(cseg[0] == 'if' or cseg[1] == 'if'):
+                    pb_cnt = 1
+                    i = cseg.index('if')+2
+                    while pb_cnt > 0:
+                        if(cseg[i] == '('):
+                            pb_cnt += 1
+                        elif(cseg[i] == ')'):
+                            pb_cnt -=1
+                        i += 1
+                    comp_name = cseg[i]
+                    pass
+                #hop over 'else' keyword
+                elif(cseg[0] == 'else'):
+                    comp_name = cseg[1]
+
                 #skip keyword misleaders
                 if(comp_name in skips):
                     continue
@@ -179,28 +206,6 @@ class Verilog(Language):
                 l = ''
                 r = ''
                 val = ''
-                #iterate through to find generics
-                # for c in cseg:
-                #     #track what route is last declared
-                #     if(c = ','):
-                #         val = ''
-                #         route = c
-                #         entry_route = True
-                #         #print("ROUTE",route)
-                #         dtype = []
-                #         l = ''
-                #         r = ''
-                #     #try to capture a datatype specified between route and identifier
-                #     elif(entry_route and c not in g_ids):
-                #         dtype += [c]
-                #         if(c == ':'):
-                #             l,r = self.getBounds(cseg, seg_i, ('[',']'))
-                #     elif(route != None and c in p_ids):
-                #         entry_route = False
-                #         #print('HERE')
-                #         u.getInterface().addPort(c, route, dtype, (l,r))
-                #     pass
-                #     seg_i += 1
 
                 route = None
                 entry_route = False

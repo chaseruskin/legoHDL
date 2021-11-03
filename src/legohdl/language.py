@@ -264,6 +264,9 @@ class Language(ABC):
                     statement = []
                     #update remaining line string
                     line = line[sc_index+1:]
+                    #reset semi-colon index
+                    sc_index = -1
+                    pass
 
                 #add any code after ';'
                 statement += line[sc_index+1:].split()
