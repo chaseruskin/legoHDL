@@ -33,7 +33,8 @@ class Verilog(Language):
         self._dual_chars = ['<=']
         self._comment = '//'
         self._atomics = ['end', 'endmodule', 'endtask', 'endcase', \
-            'endfunction', 'endprimitive', 'endspecify', 'endtable', 'begin']
+            'endfunction', 'endprimitive', 'endspecify', 'endtable', 'begin', \
+            'endgenerate']
 
         self.spinCode()
         ###
@@ -91,6 +92,7 @@ class Verilog(Language):
         in_module = False
 
         for cseg in csegs:
+            print(cseg)
             #determine when entering module
             if(cseg[0] == 'module' and cseg[1] == u.E()):
                 in_module = True
@@ -106,6 +108,9 @@ class Verilog(Language):
             if(cseg.count('(') > 1 and (cseg.count('(') - cseg.count(')') == 0)):
                 #now check for entity name
                 comp_name = cseg[0]
+                #skip a code label
+                if(cseg[0] == ':' and len(cseg) > 2):
+                    comp_name = cseg[2]
                 #skip keyword misleaders
                 if(comp_name in skips):
                     continue
@@ -148,7 +153,8 @@ class Verilog(Language):
             #check for exit case - finding 'endmodule'
             if(cseg[0] == 'endmodule'):
                 print(u.getInterface())
-                #exit()
+                #if(u.E() == 'johnson_ctr'):
+                    #exit()
                 return
             #get the list of generics and ports from module declaration statement
             if(cseg[0] == 'module'):
@@ -168,13 +174,37 @@ class Verilog(Language):
                 pass
             #check module declaration statement for port declaration data
             if(cseg[0] == 'module'):
-                route = None
+                seg_i = 0
                 dtype = []
                 l = ''
                 r = ''
+                val = ''
+                #iterate through to find generics
+                # for c in cseg:
+                #     #track what route is last declared
+                #     if(c = ','):
+                #         val = ''
+                #         route = c
+                #         entry_route = True
+                #         #print("ROUTE",route)
+                #         dtype = []
+                #         l = ''
+                #         r = ''
+                #     #try to capture a datatype specified between route and identifier
+                #     elif(entry_route and c not in g_ids):
+                #         dtype += [c]
+                #         if(c == ':'):
+                #             l,r = self.getBounds(cseg, seg_i, ('[',']'))
+                #     elif(route != None and c in p_ids):
+                #         entry_route = False
+                #         #print('HERE')
+                #         u.getInterface().addPort(c, route, dtype, (l,r))
+                #     pass
+                #     seg_i += 1
+
+                route = None
                 entry_route = False
                 route_keywords = ['input', 'output', 'inout']
-                seg_i = 0
                 for c in cseg:
                     #track what route is last declared
                     if(c in route_keywords):
