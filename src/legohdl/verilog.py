@@ -142,8 +142,7 @@ class Verilog(Language):
                 if(comp_name in skips):
                     continue
                 #gather instantiated ports and generics
-                p_list = []
-                g_list = []
+                p_list, g_list = self.collectInstanceMaps(cseg[cseg.index(comp_name):])
                 #try to locate the unit with the given information
                 comp_unit = Unit.ICR(comp_name, lib=None, ports=p_list, gens=g_list)
                 if(comp_unit != None):
@@ -321,13 +320,86 @@ class Verilog(Language):
         If a component was instantiated by position, '?' will appear in the list to get
         an appropriate length of number of ports mapped.
 
+        Assumes first code word in the segment is the module name.
+
         Parameters:
             cseg ([str]): a vhdl code statement
         Returns:
             p_list ([str]): list of ports identified (all lower-case)
             g_list ([str]): list of generics identified (all lower-case)
         '''
-        pass
+        #print("COLLECTING INSTANCE NAMES...")
+        #print(cseg)   
+        #collect data on the port identifiers and generic identifiers 
+        p_list = []
+        g_list = []
+        #flags indicating when in relevant sections
+        in_generics = False
+        in_ports = False
+        #track bracket count
+        pb_cnt = 0
+        #store previous code word
+        prev_c = ''
+        #also track how many mappings occur for generics and ports
+        g_comma_cnt = 0
+        p_comma_cnt = 0
+        #step through each token
+        for c in cseg:
+            #track bracket count to know when entering/exiting sections
+            if(c == '('):
+                pb_cnt += 1
+            elif(c == ')'):
+                pb_cnt -= 1
+
+            #enter generics with '#' symbol
+            if(c == '#'):
+                in_generics = True
+            #enter ports when encounter the first '(' and not in generics
+            elif(c == '(' and pb_cnt == 1 and in_generics == False):
+                in_ports = True
+            #exiting an interface section when the bracket count is 0
+            elif(pb_cnt == 0):
+                in_generics = False
+                #break code segment iteration once ports are done
+                if(in_ports == True):
+                    in_ports = False
+                    break
+            #collect generics data
+            elif(in_generics):
+                #detect a interface identifier following a '.'
+                if(prev_c == '.'):
+                    #print("GEN:",c)
+                    g_list += [c]
+                #also count commas in case instance identifiers are not used
+                if(c == ',' or (g_comma_cnt == 0 and c != '(' and c!= ')')):
+                    g_comma_cnt += 1
+            #collect ports data
+            elif(in_ports):
+                #detect a interface identifier following a '.'
+                if(prev_c == '.'):
+                    #print("PORT:",c)
+                    p_list += [c]
+                #also count commas in case instance identifiers are not used
+                if(c == ',' or (p_comma_cnt == 0 and c != '(' and c!= ')')):
+                    p_comma_cnt += 1
+            #store the previous code token
+            prev_c = c
+            pass
+
+        #add ? for the missing instance mappings
+        diff = g_comma_cnt - len(g_list)
+        for i in range(diff):
+            g_list += ['?']
+
+        diff = p_comma_cnt - len(p_list)
+        for i in range(diff):
+            p_list += ['?']
+
+        #print("GEN COUNT:",g_comma_cnt)
+        #print("PORT COUNT:",p_comma_cnt)
+        #print(g_list)
+        #print(p_list)
+        return p_list, g_list
 
 
 
