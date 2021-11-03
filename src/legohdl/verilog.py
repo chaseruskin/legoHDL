@@ -93,7 +93,7 @@ class Verilog(Language):
         in_case = False
 
         for cseg in csegs:
-            print(cseg)
+            #print(cseg)
             #determine when entering module
             if(cseg[0] == 'module' and cseg[1] == u.E()):
                 in_module = True
