@@ -339,7 +339,7 @@ scripts)?", warning=False)
         block_order.reverse()
         for i in range(0, len(block_order)):
             b = block_order[i]
-            print(str(len(block_order)-i)+' |^|-\t'+b,end='\n')
+            print('['+str(len(block_order)-i)+']^-\t'+b,end='\n')
         print()
 
         return unit_order,block_order
@@ -504,8 +504,8 @@ scripts)?", warning=False)
             ['-- Created: %DATE%'] + \
             ['-- Package: TEMPLATE'] + \
             ['-- Description:'] + \
-            ['--  Auto-generated package file by legoHDL. Contains component declarations for'] + \
-            ['--    '+apt.listToStr(comp_names, delim='\n--    ')] + \
+            ['--  Auto-generated package file by legoHDL. Components declared:'] + \
+            ['--  * '+apt.listToStr(comp_names, delim='\n--  * ')] + \
             ['-'*80] + \
             [' ']
 
@@ -720,8 +720,11 @@ scripts)?", warning=False)
                         Profile('', url=v)
                     #try just new name
                     elif(v.lower() not in Profile.Jar.keys()):
-                        log.info("Creating new empty profile "+v+"...")
-                        Profile(v)
+                        if(v.lower() == 'default'):
+                            Profile.reloadDefault()
+                        else:
+                            log.info("Creating new empty profile "+v+"...")
+                            Profile(v)
                     else:
                         log.error("Profile "+v+" already exists.")
                         continue

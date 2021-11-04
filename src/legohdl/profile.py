@@ -310,7 +310,7 @@ class Profile:
             pass
 
         #create template design
-        with open(default.getProfileDir()+'template/src/template.vhd', 'w') as f:
+        with open(default.getProfileDir()+'template/src/TEMPLATE.vhd', 'w') as f:
             f.write('-- code here')
             pass
 

@@ -593,6 +593,11 @@ class Block:
             success (bool): determine if operation was successful
         '''
         fpath = apt.fs(fpath)
+
+        #make sure path will be used from current directory
+        if(fpath.startswith('./') == False):
+            fpath = './'+fpath
+
         base_path,fname = os.path.split(fpath)
         #remove extension from file's name to get template placeholder value
         fname,_ = os.path.splitext(fname)

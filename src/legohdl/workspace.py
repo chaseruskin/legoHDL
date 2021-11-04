@@ -64,12 +64,14 @@ class Workspace:
                 try:
                     path = input("Enter path for workspace "+self.getName()+": ")
                 except KeyboardInterrupt:
+                    Workspace.save(inc_active=False)
                     print()
                     exit(log.info("Workspace not created."))
                 while(self.setPath(path) == False):
                     try:
                         path = input("Enter path for workspace "+self.getName()+": ")
                     except KeyboardInterrupt:
+                        Workspace.save(inc_active=False)
                         print()
                         exit(log.info("Workspace not created."))
         
@@ -623,28 +625,34 @@ class Workspace:
 
 
     @classmethod
-    def save(cls):
+    def save(cls, inc_active=True):
         '''
         Serializes the Workspace objects and saves them to the settings dictionary.
 
         Parameters:
-            None
+            inc_active (bool): determine if to save the active workspace to settings
         Returns:
             None
         '''
         serialized = {}
         #serialize the Workspace objects into dictionary format for settings
         for ws in cls.Jar.values():
+            #do not save any workspace that has no path
+            if(ws.getPath() == ''):
+                continue
             serialized[ws.getName()] = {}
             serialized[ws.getName()]['path'] = ws.getPath()
             serialized[ws.getName()]['market'] = ws.getMarkets(returnnames=True, lowercase=False)
+        
         #update settings dictionary
         apt.SETTINGS['workspace'] = serialized
+        
         #update active workspace
-        if(cls.getActive() != None):
-            apt.SETTINGS['general']['active-workspace'] = cls.getActive().getName()
-        else:
-            apt.SETTINGS['general']['active-workspace'] = ''
+        if(inc_active):
+            if(cls.getActive() != None):
+                apt.SETTINGS['general']['active-workspace'] = cls.getActive().getName()
+            else:
+                apt.SETTINGS['general']['active-workspace'] = ''
 
         apt.save()
         pass
