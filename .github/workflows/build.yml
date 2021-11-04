@@ -12,10 +12,10 @@ jobs:
       - run: printf 'y\n\nchase\ngedit\n~/demo/\ny\n' | legohdl
       - run: legohdl new library1.Lab0
       - run: legohdl list
-      - run: legohdl config -market=:https://github.com/uf-eel4712c/uf-ece.git -link
+      - run: legohdl config -market=uf-ece:https://github.com/uf-eel4712c/uf-ece.git -link
       - run: legohdl list
+      - run: legohdl list -market
       - run: legohdl install sample.mux_2x1
       - run: legohdl info mux_2x1
-      - run: legohdl info sample.mux_2x1 -version
       - run: legohdl get sample.mux_2x1 -inst
       - run: legohdl get sample.mux_2x1 -arch
