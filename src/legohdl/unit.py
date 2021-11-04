@@ -1084,8 +1084,10 @@ class Interface:
                     #don't add ',\n' if on last generic
                     if(p == params[-1]): 
                         if(hang_end == True):
-                            mapping_txt = mapping_txt + "\n"
-                        mapping_txt = mapping_txt + ")\n" + inst_name
+                            mapping_txt = mapping_txt + "\n) "
+                        else:
+                            mapping_txt = mapping_txt + ")\n"
+                        mapping_txt = mapping_txt + inst_name
                     else:
                         mapping_txt = mapping_txt + ",\n"
             #no generics...so begin with instance name
