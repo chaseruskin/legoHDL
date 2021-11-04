@@ -619,10 +619,10 @@ scripts)?", warning=False)
             exit(log.error("Pass an entity name to get."))
 
         block = self.WS().shortcut(self.getItem(), req_entity=True)
-        #:todo: make better
-        _,_,_,_,ent = Block.snapTitle(self.getItem(), inc_ent=True)
         if(block == None):
             exit(log.error("Could not identify a block with "+self.getItem()))
+        #:todo: make better
+        _,_,_,_,ent = Block.snapTitle(self.getItem(), inc_ent=True)
         #print the relevant information for the requested unit
         block.get(entity=ent, about=self.hasFlag('about'), \
                         list_arch=self.hasFlag('arch'), \
