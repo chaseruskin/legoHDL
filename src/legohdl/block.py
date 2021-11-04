@@ -1913,7 +1913,15 @@ class Block:
             print()
         if(inst):
             print(ent.getInterface().writeConnections(form=lang))
-            print(ent.getInterface().writeInstance(form=lang, entity_inst=(comp == False)))
+            lib = None
+            #determine the entity's library name
+            if(comp == False):
+                lib = ent.L()
+                #use 'work' if the entity is in from the current block
+                if(ent in (Block.getCurrent().loadHDL().values())):
+                    lib = 'work'
+
+            print(ent.getInterface().writeInstance(lang=lang, entity_lib=lib))
 
         return True
 

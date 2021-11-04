@@ -978,14 +978,14 @@ class Interface:
         return connect_txt
     
 
-    def writeInstance(self, form=None, entity_inst=False, inst_name='uX', align=False, hang_end=True):
+    def writeInstance(self, lang=None, entity_lib=None, inst_name='uX', align=False, hang_end=True):
         '''
         Write the correct compatible code for an instantiation of the given
         entity.
 
         Parameters:
-            form (Unit.Language): VHDL or VERILOG compatible code style
-            entity_inst (bool): if VHDL, use entity instantiation
+            lang (Unit.Language): VHDL or VERILOG compatible code style
+            entity_lib (str): if VHDL and not None, use entity instantiation 
             inst_name (str): the name to give the instance
             align (bool): determine if names should be all equally spaced
             hand_end (bool): true if ) deserves its own line
@@ -993,8 +993,8 @@ class Interface:
             mapping_txt (str): the compatible code to be printed
         '''
         #default selection is to write in original coding language
-        if(form == None):
-            form = self._default_form
+        if(lang == None):
+            lang = self._default_form
 
         mapping_txt = ''
         #default number of spaces when not aligning
@@ -1004,12 +1004,12 @@ class Interface:
                 return mapping_txt
         
         #write VHDL-style code
-        if(form == Unit.Language.VHDL):
+        if(lang == Unit.Language.VHDL):
             #write the instance name and entity name
             mapping_txt = inst_name + " : "+self.getName()+"\n"
             #re-assign beginning of mapping to be a pure entity instance
-            if(entity_inst):
-                mapping_txt = inst_name+" : entity "+self.getLibrary()+"."+self.getName()+"\n"
+            if(entity_lib != None):
+                mapping_txt = inst_name+" : entity "+entity_lib+"."+self.getName()+"\n"
 
             #generics to map
             if(len(self.getGenerics())):
@@ -1021,7 +1021,7 @@ class Interface:
                 for i in range(len(gens)):
                     if(align):
                         spaces = farthest - len(gens[i]) + 1
-                    line =  self._generics[gens[i]].writeMapping(form, spaces)
+                    line =  self._generics[gens[i]].writeMapping(lang, spaces)
                     #add a comma if not on last generic
                     if(i != len(gens)-1):
                         line = line + ","
@@ -1050,7 +1050,7 @@ class Interface:
                 for i in range(len(ports)):
                     if(align):
                         spaces = farthest - len(ports[i]) + 1
-                    line = self._ports[ports[i]].writeMapping(form, spaces)
+                    line = self._ports[ports[i]].writeMapping(lang, spaces)
                     #add a comma if not on the last port
                     if(i != len(ports)-1):
                         line = line + ","
@@ -1069,7 +1069,7 @@ class Interface:
             mapping_txt = mapping_txt + ";\n"
             pass
         #write VERILOG-style code
-        elif(form == Unit.Language.VERILOG):
+        elif(lang == Unit.Language.VERILOG):
             #start with entity's identifier
             mapping_txt = self.getName()
             #write out parameter section
@@ -1080,7 +1080,7 @@ class Interface:
                 for p in params:
                     if(align):
                         spaces = farthest - len(p) + 1
-                    mapping_txt = mapping_txt + self.getGenerics()[p].writeMapping(form, spaces)
+                    mapping_txt = mapping_txt + self.getGenerics()[p].writeMapping(lang, spaces)
                     #don't add ',\n' if on last generic
                     if(p == params[-1]): 
                         if(hang_end == True):
@@ -1103,7 +1103,7 @@ class Interface:
                 for p in ports:
                     if(align):
                         spaces = farthest - len(p) + 1
-                    mapping_txt = mapping_txt + self.getPorts()[p].writeMapping(form, spaces)
+                    mapping_txt = mapping_txt + self.getPorts()[p].writeMapping(lang, spaces)
 
                     #don't add ,\n if on last port
                     if(p == ports[-1]):
