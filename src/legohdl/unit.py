@@ -978,7 +978,7 @@ class Interface:
         return connect_txt
     
 
-    def writeInstance(self, lang=None, entity_lib=None, inst_name='uX', align=False, hang_end=True):
+    def writeInstance(self, lang=None, entity_lib=None, inst_name='uX', align=True, hang_end=True, maps_on_newline=False):
         '''
         Write the correct compatible code for an instantiation of the given
         entity.
@@ -989,6 +989,7 @@ class Interface:
             inst_name (str): the name to give the instance
             align (bool): determine if names should be all equally spaced
             hand_end (bool): true if ) deserves its own line
+            maps_on_newline (bool): determine if start of a mapping deserves a newline
         Returns:
             mapping_txt (str): the compatible code to be printed
         '''
@@ -1006,10 +1007,13 @@ class Interface:
         #write VHDL-style code
         if(lang == Unit.Language.VHDL):
             #write the instance name and entity name
-            mapping_txt = inst_name + " : "+self.getName()+"\n"
+            mapping_txt = inst_name + " : "+self.getName()+" "
             #re-assign beginning of mapping to be a pure entity instance
             if(entity_lib != None):
-                mapping_txt = inst_name+" : entity "+entity_lib+"."+self.getName()+"\n"
+                mapping_txt = inst_name+" : entity "+entity_lib+"."+self.getName()+" "
+            #place mapping on new line
+            if(maps_on_newline):
+                 mapping_txt =  mapping_txt + "\n"
 
             #generics to map
             if(len(self.getGenerics())):
@@ -1033,13 +1037,13 @@ class Interface:
                     mapping_txt = mapping_txt + line+"\n"
                     pass
                 #add necessary closing
-                mapping_txt = mapping_txt + ")"
+                mapping_txt = mapping_txt + ") "
                 pass
 
             #ports to map
             if(len(self.getPorts())):
                 #add new line if generics were written
-                if(len(self.getGenerics())):
+                if(len(self.getGenerics()) and maps_on_newline):
                     mapping_txt = mapping_txt + "\n"
 
                 mapping_txt = mapping_txt + "port map(\n"
