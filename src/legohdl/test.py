@@ -218,9 +218,9 @@ def main():
 
         src = ['']*6
         src = ['/Users/chase/develop/eel4712c/lab1/src/fa.vhd',
+            '/Users/chase/desktop/testcode/counter.v',
             '/Users/chase/desktop/testcode/fa.vhd',
             '/Users/chase/develop/eel4712c/lab1/src/adder.vhd',
-            '/Users/chase/desktop/testcode/counter.v',
             '/Users/chase/develop/eel4712c/lab2/src/alu_ns.vhd',
             '/Users/chase/develop/eel4712c/DungeonRun/main_module.vhd',
             '/Users/chase/develop/eel4712c/DungeonRun/elapsed_time.vhd']
@@ -228,7 +228,7 @@ def main():
         names = [['', 'LIB1', 'BLK1'], ['', 'LIB1', 'BLK2'], ['', 'LIB1', 'BLK1']]
 
         vs = Map()
-        for i in range(0, 3):
+        for i in range(0, 2):
             if(src[i].endswith('.vhd')):
                 v = Vhdl(src[i], M=names[i][0], L=names[i][1], N=names[i][2])
                 vs[v] = v.identifyDesigns()

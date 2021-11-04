@@ -132,7 +132,10 @@ class Verilog(Language):
                         elif(cseg[i] == ')'):
                             pb_cnt -=1
                         i += 1
-                    comp_name = cseg[i]
+                    if(i < len(cseg)):
+                        comp_name = cseg[i]
+                    else:
+                        continue
                     pass
                 #hop over 'else' keyword
                 elif(cseg[0] == 'else'):
@@ -169,11 +172,15 @@ class Verilog(Language):
         Returns:
             None
         '''
+
         #store generic identifiers
         g_ids = []
         #store port identifiers
         p_ids = []
-
+        #keep information for where the generic declaration ends
+        g_end = 0
+        g_index = 2
+        #iterate through every code segment
         for cseg in csegs:
             #print(cseg)
             #check for exit case - finding 'endmodule'
@@ -204,8 +211,6 @@ class Verilog(Language):
                 dtype = []
                 l = ''
                 r = ''
-                val = ''
-
                 route = None
                 entry_route = False
                 route_keywords = ['input', 'output', 'inout']
@@ -225,10 +230,32 @@ class Verilog(Language):
                             l,r = self.getBounds(cseg, seg_i, ('[',']'))
                     elif(route != None and c in p_ids):
                         entry_route = False
-                        #print('HERE')
+                        #implicitly set port datatype as wire
+                        if(dtype == []):
+                            dtype = ['wire']
                         u.getInterface().addPort(c, route, dtype, (l,r))
                     pass
                     seg_i += 1
+
+                #only use segment about generics
+                gseg = cseg[g_index:g_index+g_end]
+                #iterate through all generics
+                for gen in g_ids:
+                    #print(gseg)
+                    val = []
+                    i_center = gseg.index(gen)
+                    tmpseg = gseg[i_center:]
+                    if(tmpseg.count('=')):
+                        tmpseg = tmpseg[tmpseg.index('=')+1:]
+                        i_end = len(tmpseg) #ignore final ')' if comes to that
+                        #find comma
+                        if(tmpseg.count(',')):
+                            i_end = tmpseg.index(',') 
+                        #between is the pieces for the value
+                        val = tmpseg[:i_end]
+                        #print("gen:",gen,val)
+                    u.getInterface().addGeneric(gen, [], val)
+
                 pass
             #found an input declaration
             elif(cseg[0] == 'input'):

@@ -622,7 +622,7 @@ class Signal:
                         dt = dt[len('reg'):]
                         dt = 'wire'+dt
                 #make sure all signals are declared as 'wire' implicitly
-                elif(dt.startswith('wire') == False):
+                elif(dt.startswith('wire') == False and keep_net == False):
                     if(len(dt)):
                         dt = 'wire '+dt
                     else:
@@ -716,7 +716,7 @@ class Generic(Signal):
         #write VERILOG-style code
         elif(lang == Unit.Language.VERILOG):
             dt = self.castDatatype(lang, keep_net=True)
-            print(dt)
+            #print(dt)
             if(inc_const):
                 c_txt = 'localparam'
             else:
