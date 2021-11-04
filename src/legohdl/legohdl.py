@@ -679,6 +679,9 @@ scripts)?", warning=False)
                     log.error("Must provide a script alias.")
                     continue
 
+                #check if the value has the ENV word in it to replace
+                var_val = var_val.replace(apt.ENV_NAME, apt.HIDDEN)
+
                 #modify existing script
                 if(var_key.lower() in Script.Jar.keys()):
                     Script.Jar[var_key].setCommand(var_val)

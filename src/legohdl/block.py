@@ -744,7 +744,7 @@ class Block:
 
         #make sure Block.cfg files do not exist beyond the current directory
         md_files = glob.glob(self.getPath()+"**/"+apt.MARKER, recursive=True)
-        if(len(md_files) > 0):
+        if(len(md_files) > 0 and self.isValid() == False):
             log.error("Cannot initialize a block when sub-directories are blocks.")
             return False
 
@@ -753,21 +753,26 @@ class Block:
         #block currently exists at this folder
         if(already_valid):
             #check if trying to configure remote (must be empty)
-            if(remote != None and Git.isBlankRepo(remote)):
-                success = self._repo.setRemoteURL(remote)
-                #update metadata if successfully set the url
-                if(success):
-                    self.setMeta("remote",remote)
+            if(remote != None):
+                if(Git.isBlankRepo(remote)):
+                    success = self._repo.setRemoteURL(remote)
+                    #update metadata if successfully set the url
+                    if(success):
+                        self.setMeta("remote",remote)
+                        self._repo.push()
+                else:
+                    log.error("Cannot set existing block to a non-empty remote.")
+                    return False
         #block does not currently exist at this folder
         else:
             exists = False
             #check if trying to use code from a remote repository
             if(remote != None):
-                if(Git.isValidRepo(remote, remote=True)):
+                if(Git.isValidRepo(remote, remote=True) and Git.isBlankRepo(remote) == True):
                     #make sure repository is not empty
-                    if(Git.isBlankRepo(remote) == True):
-                        log.error("Cannot initialize from an empty remote. See the 'new' command.")
-                        return False
+                    #if(Git.isBlankRepo(remote) == True):
+                        #log.error("Cannot initialize from an empty remote. See the 'new' command.")
+                        #return False
                     #create and clone to temporary spot
                     tmp = apt.makeTmpDir()
                     Git(tmp, clone=remote)
@@ -775,7 +780,7 @@ class Block:
                     #check if there is a block.cfg file here
                     for f in os.listdir(tmp):
                         if(f == apt.MARKER):
-                            print('a block file exists!')
+                            #print('a block file exists!')
                             exists = True
                             break
 
@@ -916,7 +921,7 @@ class Block:
         M,L,N,V = Block.snapTitle(title)
 
         if(valid and N == ''):
-            log.erro("Block must have a name component.")
+            log.error("Block must have a name component.")
             valid = False
         if(valid and L == ''):
             log.error("Block must have a library component.")
