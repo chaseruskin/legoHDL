@@ -816,10 +816,15 @@ scripts)?", warning=False)
         '''Run the 'del' command.'''
         
         #make sure the block exists in downloaded workspace path
-
+        block = self.WS().shortcut(self.getItem(), req_entity=False)
+        if(block == None):
+            exit(log.error("Could not identify a block with "+self.getItem()))
 
         #if block is nowhere else, ask for confirmation and warn user that
         #the block may be unrecoverable.
+
+        yes = apt.confirmation("Are you sure you want to remove block "+block.getFull()+" from the \
+workspace's local path?")
 
         pass
 
