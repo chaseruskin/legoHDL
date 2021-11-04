@@ -254,6 +254,22 @@ class Profile:
         apt.save()
         pass
 
+    
+    def readAbout(self):
+        '''
+        Gets the text within the .prfl file to be printed to the console.
+
+        Parameters:
+            None
+        Returns:
+            (str): text from .prfl file
+        '''
+        about_txt = ''
+        with open(self.getProfileDir()+self.getName()+self.EXT, 'r') as prfl:
+            for line in prfl.readlines():
+                about_txt = about_txt + line
+        return about_txt
+
 
     def update(self):
         '''
@@ -409,9 +425,8 @@ class Profile:
 
     @classmethod
     def load(cls):
-        '''
-        Load profiles from settings.
-        '''
+        '''Load profiles from settings.'''
+
         prfls = apt.SETTINGS['general']['profiles']
         for p in prfls:
             Profile(p)
@@ -420,9 +435,8 @@ class Profile:
 
     @classmethod
     def save(cls):
-        '''
-        Save profiles to settings.
-        '''
+        '''Save profiles to settings.'''
+
         serialize = []
         for prfl in cls.Jar.values():
             serialize += [prfl.getName()]

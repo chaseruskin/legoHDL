@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/02/2021
+; Modified: 11/04/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -535,6 +535,7 @@ NAME:
 
 SYNOPSIS:
         legohdl info <block> [-version]
+        legohdl info <profile> -profile
 
 DESCRIPTION:
         By default, will print the metadata about the given block. 
@@ -548,6 +549,12 @@ OPTIONS:
         
         -version
                 List all available versions for the specified block.
+        
+        <profile>
+                :ref:
+
+        -profile
+                Indicate that a profile is to be searched for its information.
 
 
 * config

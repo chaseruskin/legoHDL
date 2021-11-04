@@ -650,6 +650,16 @@ scripts)?", warning=False)
         #make sure the user passed in a value for the item
         if(self.getItem() == None):
             exit(log.error("Include a block's title to get its information."))
+        
+        if(self.hasFlag('profile')):
+            #make sure the requested profile exists to be read
+            if(self.getItem() not in Profile.Jar.keys()):
+                log.error("Profile "+self.getItem()+" does not exist!")
+                return
+            #print the profile's information
+            print(Profile.Jar[self.getItem()].readAbout())
+            print()
+            return
 
         block = self.WS().shortcut(self.getItem())
         if(block != None):
