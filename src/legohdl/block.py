@@ -773,11 +773,8 @@ class Block:
             exists = False
             #check if trying to use code from a remote repository
             if(remote != None):
-                if(Git.isValidRepo(remote, remote=True) and Git.isBlankRepo(remote) == True):
-                    #make sure repository is not empty
-                    #if(Git.isBlankRepo(remote) == True):
-                        #log.error("Cannot initialize from an empty remote. See the 'new' command.")
-                        #return False
+                #make sure repository is not empty
+                if(Git.isValidRepo(remote, remote=True) and Git.isBlankRepo(remote) == False):
                     #create and clone to temporary spot
                     tmp = apt.makeTmpDir()
                     Git(tmp, clone=remote)
@@ -1687,7 +1684,7 @@ class Block:
             if(top_dog.isTb()):
                 top_tb = top_dog
             #assign as design otherwise
-            else:
+            elif(top_dog != None):
                 top_dsgn = top_dog
                 #auto-detect the testbench
                 top_tb = self.identifyBench(top_dsgn.E())
@@ -1703,8 +1700,10 @@ class Block:
 
         #auto-detect the top level design
         top_dsgn = self.identifyTop()
-        #auto-detect the top level's testbench
-        top_tb = self.identifyBench(top_dsgn.E())
+        
+        if(top_dsgn != None):
+            #auto-detect the top level's testbench
+            top_tb = self.identifyBench(top_dsgn.E())
 
         #set top_dog as the testbench if found one and allowed to be included
         if(top_tb != None and inc_tb):
@@ -1730,9 +1729,6 @@ class Block:
         if(inc_ver):
             title = title+"("+self.V()+")"
         return title
-
-
-    
 
 
     def M(self):
@@ -1840,16 +1836,16 @@ class Block:
         when decoding an architecture.
 
         Parameters:
-            top (str): unit name to start with
+            top (Unit): unit object to start with
             recursive (bool): determine if to tunnel through entities
         Returns:
             units (Map): the Unit Map object down to M/L/N level
         '''
         units = self.loadHDL()
 
-        if(top != None and top.lower() in units.keys()):
-            if(units[top].isChecked() == False):
-                Language.ProcessedFiles[units[top].getFile()].decode(units[top], recursive)
+        if(top != None and top in units.values()):
+            if(top.isChecked() == False):
+                Language.ProcessedFiles[top.getFile()].decode(top, recursive)
         else:
             for u in units.values():
                 if(u.isChecked() == False):
@@ -1894,7 +1890,7 @@ class Block:
             pass
 
         #collect data about requested entity
-        self.getUnits(top=entity)
+        self.getUnits(top=units[entity])
         #grab the desired entity from the Map
         ent = units[entity]
 
@@ -2197,11 +2193,7 @@ class Block:
 
     @DeprecationWarning
     def ports(self, mapp, lib, pure_entity, entity=None, ver=None, showArc=False):
-        '''
-        Print helpful port mappings/declarations of a desired entity.
-        '''
-        #self.grabUnits()
-        self.getUnits(top=entity)
+        #self.getUnits(top=entity)
         info = ''
         if(entity == None):
             entity = self.getMeta("toplevel")

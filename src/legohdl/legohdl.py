@@ -321,11 +321,12 @@ scripts)?", warning=False)
         top_dog,_,_ = block.identifyTopDog(top, inc_tb=(not self.hasFlag('ignore-tb')))
         
         log.info("Generating dependency tree...")
+
         #start with top unit (returns all units if no top unit is found (packages case))
-        block.getUnits(top_dog.E())
+        block.getUnits(top_dog)
 
         hierarchy = Unit.Hierarchy
-
+        
         #print the dependency tree
         hierarchy.output(top_dog)
         print()
@@ -376,7 +377,7 @@ scripts)?", warning=False)
         #get only necessary units
         else:
             #start with top unit (returns all units if no top unit is found (packages case))
-            block.getUnits(top_dog.E())
+            block.getUnits(top_dog)
             Unit.Hierarchy.output(top_dog)
             pass
 

@@ -208,6 +208,11 @@ class Graph:
         #print title if method is on top-level entity
         if(first):
             print('--- DEPENDENCY TREE ---')
+        
+        #make sure a unit is passed as top
+        if(top == None):
+            print('N/A')
+            return
         #start with top level
         if(top not in self._adj_list.keys()):
             exit(log.error('Entity '+top.E()+' may be missing an architecture.'))
