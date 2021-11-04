@@ -1913,9 +1913,11 @@ class Block:
             #determine the entity's library name
             if(comp == False):
                 lib = ent.L()
-                #use 'work' if the entity is in from the current block
-                if(ent in (Block.getCurrent().loadHDL().values())):
-                    lib = 'work'
+                #try to see if within the current block (skip error)
+                if(Block.getCurrent(bypass=True) != None):
+                    #use 'work' if the entity is in from the current block 
+                    if(ent in (Block.getCurrent().loadHDL().values())):
+                        lib = 'work'
 
             print(ent.getInterface().writeInstance(lang=lang, entity_lib=lib))
 
