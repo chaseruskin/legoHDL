@@ -621,6 +621,12 @@ scripts)?", warning=False)
         block = self.WS().shortcut(self.getItem(), req_entity=True)
         if(block == None):
             exit(log.error("Could not identify a block with "+self.getItem()))
+
+        #fill in all units if running 'edges' flag
+        if(self.hasFlag('edges')):
+            for b in self.WS().getBlocks():
+                b.getUnits()
+
         #:todo: make better
         _,_,_,_,ent = Block.snapTitle(self.getItem(), inc_ent=True)
         #print the relevant information for the requested unit

@@ -730,6 +730,10 @@ class Workspace:
     def getName(self):
         return self._name
 
+    
+    def getBlocks(self):
+        return self._local_blocks
+
 
     def isActive(self):
         return self == self.getActive()
