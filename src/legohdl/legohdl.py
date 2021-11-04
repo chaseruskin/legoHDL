@@ -805,6 +805,18 @@ scripts)?", warning=False)
         pass
 
 
+    def _del(self):
+        '''Run the 'del' command.'''
+        
+        #make sure the block exists in downloaded workspace path
+
+
+        #if block is nowhere else, ask for confirmation and warn user that
+        #the block may be unrecoverable.
+
+        pass
+
+
     def _new(self):
         '''Run 'new' command.'''
 
@@ -1077,7 +1089,7 @@ scripts)?", warning=False)
             pass
 
         elif('del' == cmd):
-            
+            self._del()
             pass
 
         elif('list' == cmd):
