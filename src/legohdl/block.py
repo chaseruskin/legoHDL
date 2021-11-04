@@ -1874,6 +1874,15 @@ class Block:
         if(entity.lower() not in units.keys()):
             log.error("Entity "+entity+" not found in this block!")
             return False
+
+        #determine the language for outputting compatible code
+        if(lang != None):
+            if(lang.lower() == 'vhdl'):
+                lang = Unit.Language.VHDL
+            elif(lang.lower() == 'vlog'):
+                lang = Unit.Language.VERILOG
+            pass
+
         #collect data about requested entity
         self.getUnits(top=entity)
         #grab the desired entity from the Map
@@ -1890,15 +1899,9 @@ class Block:
             print(ent.readArchitectures())
         if(comp):
             #:todo: write component declaration code for verilog modules
-            print(ent.getInterface().writeDeclaration(form=Unit.Language.VHDL))
+            print(ent.getInterface().writeDeclaration(form=lang))
             print()
         if(inst):
-            #determine the language to output instance
-            if(lang != None):
-                if(lang.lower() == 'vhdl'):
-                    lang = Unit.Language.VHDL
-                elif(lang.lower() == 'vlog'):
-                    lang = Unit.Language.VERILOG
             print(ent.getInterface().writeConnections(form=lang))
             print(ent.getInterface().writeInstance(form=lang, entity_inst=(comp == False)))
 

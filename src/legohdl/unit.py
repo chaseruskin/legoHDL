@@ -547,42 +547,151 @@ class Unit:
     pass
 
 
-class Generic:
+class Signal:
 
+    def __init__(self, name, lang, dtype):
+        '''
+        Construct a Signal object.
 
-    def __init__(self, name, form, dtype, value=''):
+        Parameters:
+            name (str): port identifier
+            lang (Unit.Language): natural coding language
+            dtype ([str]): list of tokens that make up the datatype
+        Returns:
+            None
+        '''
         self._name = name
-        self._form = form
+        self._lang = lang
         self._dtype = dtype
-        self._value = value
         pass
 
 
-    def writeMapping(self, form, spaces=0):
+    def writeMapping(self, lang, spaces=0):
         '''
-        Create the compatible code for mapping a given generic.
+        Create the compatible code for mapping a given signal.
 
         Parameters:
-            form (Unit.Language): VHDL or VERILOG compatible code
+            lang (Unit.Language): VHDL or VERILOG coding format
             spaces (int): number of spaces required between name and '=>'
         Returns:
             m_txt (str): compatible line of code to be printed
         '''
         r_space = 1 if(spaces > 0) else 0
 
-        if(form == Unit.Language.VHDL):
-            m_txt = "    "+self._name+(spaces*' ')+"=>"+(r_space*' ')+self._name
-        elif(form == Unit.Language.VERILOG):
-            m_txt = "    ."+self._name+(spaces*' ')+"("+self._name+")"
+        if(lang == Unit.Language.VHDL):
+            m_txt = "    "+self.getName()+(spaces*' ')+"=>"+(r_space*' ')+self.getName()
+        elif(lang == Unit.Language.VERILOG):
+            m_txt = "    ."+self.getName()+(spaces*' ')+"("+self.getName()+")"
         return m_txt
+
+
+    def castDatatype(self, lang, keep_net=False):
+        '''
+        Returns converted datatype. Won't perform any conversions if `lang` is
+        the original language for the datatype.
+
+        Converts _dtype ([str]) to (str).
+        
+        Parameters:
+            lang (Unit.Language): the coding language to cast to
+            keep_net (bool): determine if to keep original verilog net or convert all to wire
+        Returns:
+            (str): proper data type for the respective coding language
+        '''
+        #return the true stored datatype if the the original language is requested
+        if(lang == self.getLang()):
+            dt = apt.listToStr(self.getDatatype())
+            if(lang == Unit.Language.VHDL):
+                fc = dt.find(',(')
+                if(fc > -1):
+                    #drop that comma
+                    dt = dt[:fc] + dt[fc+1:]
+                    #properly format string repr
+                    dt = dt.replace('(,', '(')
+                    dt = dt.replace(',)', ')')
+                    dt = dt.replace(',', ' ')
+                pass
+            elif(lang == Unit.Language.VERILOG):
+                #properly format string repr
+                dt = dt.replace(',[', ' [')
+                dt = dt.replace(',', '')
+                #print("new",dt)
+                if(dt.startswith('reg')):
+                    #remove reg from any signals and convert to wire
+                    if(keep_net == False):
+                        dt = dt[len('reg'):]
+                        dt = 'wire'+dt
+                #make sure all signals are declared as 'wire' implicitly
+                elif(dt.startswith('wire') == False):
+                    if(len(dt)):
+                        dt = 'wire '+dt
+                    else:
+                        dt = 'wire'
+                pass
+            return dt
+        #cast from verilog to vhdl
+        elif(lang == Unit.Language.VHDL):
+            if('integer' in self.getDatatype()):
+                return 'integer'
+
+            dtype = "std_logic"
+            if(hasattr(self, "_bus_width")):
+                dtype = dtype+"_vector("+self._bus_width[0]+" downto "+self._bus_width[1]+")"
+            return dtype
+        #cast from vhdl to verilog
+        elif(lang == Unit.Language.VERILOG):
+            dtype = ''
+            a = 0
+            b = 1
+            for word in self.getDatatype():
+                #fix writing from LSB->MSB to MSB->LSB (swap bus width positions)
+                if(word.lower() == 'to'):
+                    a = 1
+                    b = 0
+                    break
+            if(hasattr(self, "_bus_width")):
+                dtype = "["+self._bus_width[a]+":"+self._bus_width[b]+"]"
+            #skip forcing wire declaration if keep_net is True
+            if(keep_net == True):
+                pass
+            #add wire declaration
+            elif(len(dtype)):
+                dtype = 'wire '+dtype
+            else:
+                dtype = 'wire'
+
+            return dtype
+
+
+    def getName(self):
+        return self._name
+
+    
+    def getLang(self):
+        return self._lang
+
+    
+    def getDatatype(self):
+        return self._dtype
+
+    pass
+
+
+class Generic(Signal):
+
+
+    def __init__(self, name, lang, dtype, value=[]):
+        super().__init__(name, lang, dtype)
+        self._value = value
+        pass
         
 
-    def writeConstant(self, form, spaces=1, inc_const=True):
+    def writeConstant(self, lang, spaces=1, inc_const=True):
         '''
         Create the compatible code for declaring a constant from the given generic.
 
         Parameters:
-            form (Unit.Language): VHDL or VERILOG compatible code
+            lang (Unit.Language): VHDL or VERILOG compatible code
             spaces (int): number of spaces required between name and ':'
             inc_const (bool): determine if to include keyword 'constant' for VHDL
         Returns:
@@ -590,37 +699,47 @@ class Generic:
         '''
         c_txt = ''
         #write VHDL-style code
-        if(form == Unit.Language.VHDL):
+        if(lang == Unit.Language.VHDL):
             #write beginning of constant declaration
             if(inc_const):
                 c_txt = 'constant '
-            c_txt = c_txt+self._name+(spaces*' ')+': '
-            remaining = apt.listToStr(self._dtype)
-            #properly format the remaining of the constant
-            fc = remaining.find(',(')
-            if(fc > -1):
-                remaining = remaining[:fc] + remaining[fc+1:]
-            remaining = remaining.replace('(,', '(')
-            remaining = remaining.replace(',)', ')')
-            remaining = remaining.replace(',', ' ')
-            #add type
-            c_txt = c_txt + remaining
-            #give default value
-            if(self._value != None and len(self._value)):
-                c_txt = c_txt + ' := ' + apt.listToStr(self._value,'')
+            #add identifier and correct amount of spaces
+            c_txt = c_txt + self.getName() + (spaces*' ') + ': '
+            #add data type
+            c_txt = c_txt + self.castDatatype(lang)
+            #give default value (if exists)
+            if(len(self.getValue())):
+                c_txt = c_txt + ' := ' + self.getValue()
             #add final ';'
             c_txt = c_txt + ';'
             pass
         #write VERILOG-style code
-        elif(form == Unit.Language.VERILOG):
-            print('Here is where verilog parameters would be declared.')
+        elif(lang == Unit.Language.VERILOG):
+            dt = self.castDatatype(lang, keep_net=True)
+            print(dt)
+            if(inc_const):
+                c_txt = 'localparam'
+            else:
+                c_txt = 'parameter'
+            #add-in datatype declaration (prepended with space)
+            if(len(dt)):
+                c_txt = c_txt+' '+dt
+
+            #add correct amount of spaces and then identifier
+            c_txt = c_txt + (spaces*' ') + self.getName()
+            #give default value (if exists)
+            if(len(self.getValue())):
+                c_txt = c_txt + ' = ' + self.getValue()
+            #add final ';'
+            c_txt = c_txt + ';'
             pass
 
         return c_txt
 
 
-    def getName(self):
-        return self._name
+    def getValue(self):
+        '''Converts _value ([str]) to (str) with no spaces.'''
+        return apt.listToStr(self._value,'')
 
 
     def __repr__(self):
@@ -629,7 +748,7 @@ class Generic:
     pass
 
 
-class Port:
+class Port(Signal):
 
 
     class Route(Enum):
@@ -639,24 +758,21 @@ class Port:
         pass
 
 
-    def __init__(self, name, form, way, dtype, value='', bus_width=('','')):
+    def __init__(self, name, lang, way, dtype, value='', bus_width=('','')):
         '''
         Construct a port object.
 
         Parameters:
             name (str): port identifier
-            form (Unit.Design): natural coding language
+            lang (Unit.Language): natural coding language
             way (str): direction
-            dtype (str): datatype
+            dtype ([str]): list of tokens that make up the datatype
             value (str): initial value
             bus_width ((str, str)): the lower and upper (exclusive) ends of a bus
         Returns:
             None
         '''
-        #store the port's name
-        self._name = name
-
-        self._form = form
+        super().__init__(name, lang, dtype)
         
         if(bus_width != ('','')):
             self._bus_width = bus_width
@@ -670,91 +786,49 @@ class Port:
         elif(way.startswith('out')):
             self._route = self.Route.OUT
 
-        #store the datatype
-        self._dtype = dtype
-
         #store an initial value (optional)
         self._value = value
         pass
 
 
-    def writeDeclaration(self, form, spaces=1):
-        if(form == Unit.Language.VHDL):
-            dec_txt = self.getName() +(spaces*' ')+': ' + str(self.getRoute().name).lower()+' '
-
-            remaining = self.castDatatype(form)
-            #properly format the remaining of the signal
-            fc = remaining.find(',')
-            if(fc > -1):
-                remaining = remaining[:fc] + remaining[fc+1:]
-            remaining = remaining.replace('(,', '(')
-            remaining = remaining.replace(',)', ')')
-            remaining = remaining.replace(',', ' ')
+    def writeDeclaration(self, lang, spaces=1):
+        if(lang == Unit.Language.VHDL):
+            dec_txt = self.getName() + (spaces*' ') + ': ' + self.castRoute(lang)+' '
+            remaining = self.castDatatype(lang)
             dec_txt = dec_txt + remaining + ';'
-        elif(form == Unit.Language.VERILOG):
-            dec_txt = str(self.getRoute().name).lower()+'put ' + self.getName()+';'
+        elif(lang == Unit.Language.VERILOG):
+            dt = self.castDatatype(lang, keep_net=True)
+            dec_txt = self.castRoute(lang) + ' ' + dt
+
+            dec_txt = dec_txt + (spaces*' ') + self.getName()+';'
         return dec_txt
 
-    
-    def writeMapping(self, form, spaces=0):
-        '''
-        Create the compatible code for mapping a given port.
 
-        Parameters:
-            form (Unit.Language): VHDL or VERILOG compatible code
-            spaces (int): number of spaces required between name and '=>'
-        Returns:
-            m_txt (str): compatible line of code to be printed
-        '''
-        r_space = 1 if(spaces > 0) else 0
-
-        if(form == Unit.Language.VHDL):
-            m_txt = "    "+self._name+(spaces*' ')+"=>"+(r_space*' ')+self._name
-        elif(form == Unit.Language.VERILOG):
-            m_txt = "    ."+self._name+(spaces*' ')+"("+self._name+")"
-        return m_txt
-
-
-    def writeSignal(self, form, spaces=1):
+    def writeSignal(self, lang, spaces=1):
         '''
         Create the compatible code for declaring a signal from the given port.
 
         Parameters:
-            form (Unit.Language): VHDL or VERILOG compatible code
+            lang (Unit.Language): VHDL or VERILOG compatible code
             spaces (int): number of spaces required between name and ':'
         Returns:
             s_txt (str): compatible line of code to be printed
         '''
         s_txt = ''
         #write VHDL-style code
-        if(form == Unit.Language.VHDL):
+        if(lang == Unit.Language.VHDL):
             #write beginning of signal declaration
             s_txt = 'signal '+self._name+(spaces*' ')+': '
-            remaining = self.castDatatype(form)
-            #properly format the remaining of the signal
-            fc = remaining.find(',')
-            if(fc > -1):
-                remaining = remaining[:fc] + remaining[fc+1:]
-            remaining = remaining.replace('(,', '(')
-            remaining = remaining.replace(',)', ')')
-            remaining = remaining.replace(',', ' ')
+            remaining = self.castDatatype(lang)
             s_txt = s_txt + remaining + ';'
             pass
         #write VERILOG-style code
-        elif(form == Unit.Language.VERILOG):
-            s_txt = self.castDatatype(form)
-            s_txt = s_txt.replace(',[', ' [')
-            s_txt = s_txt.replace(',', '')
+        elif(lang == Unit.Language.VERILOG):
+            s_txt = self.castDatatype(lang, keep_net=False)
             if(len(s_txt)):
                 s_txt = s_txt + " "
 
             s_txt = s_txt + self.getName()
-            #remove reg from any signals
-            if(s_txt.startswith('reg')):
-                s_txt = s_txt[s_txt.find('reg')+len('reg')+1:]
-            #make sure all signals are declared as 'wire'
-            if(s_txt.startswith('wire') == False):
-                s_txt = 'wire ' + s_txt
             #add finishing ';'
             s_txt = s_txt + ';'
             pass
@@ -762,49 +836,25 @@ class Port:
         return s_txt
 
 
-    def getName(self):
-        return self._name
-
-
     def getRoute(self):
         return self._route
 
 
-    def castDatatype(self, form):
-        '''
-        Returns converted datatype.
-        
-        Parameters:
-            form (Unit.Language): the coding language to cast to
-        Returns:
-            (str): proper data type for the respective coding language
-        '''
-        if(form == self._form):
-            return apt.listToStr(self._dtype)
-        #cast from verilog to vhdl
-        elif(form == Unit.Language.VHDL):
-            dtype = "std_logic"
-            if(hasattr(self, "_bus_width")):
-                dtype = dtype+"_vector("+self._bus_width[0]+" downto "+self._bus_width[1]+")"
-            return dtype
-        #cast from vhdl to verilog
-        elif(form == Unit.Language.VERILOG):
-            dtype = ''
-            a = 0
-            b = 1
-            for word in self._dtype:
-                #fix writing from LSB->MSB to MSB->LSB (swap bus width positions)
-                if(word.lower() == 'to'):
-                    a = 1
-                    b = 0
-                    break
-            if(hasattr(self, "_bus_width")):
-                dtype = "["+self._bus_width[a]+":"+self._bus_width[b]+"]"
-            return dtype
+    def castRoute(self, lang, even=True):
+        '''Converts _route (Port.Route) to (str). `even` will ensure even spaces for
+        all directions.'''
+        spaces = 0
+        if(even and self.getRoute() == self.Route.IN):
+            spaces = 1
+        if(lang == Unit.Language.VERILOG):
+            rt = str(self.getRoute().name).lower()+'put'+(spaces*' ')
+        elif(lang == Unit.Language.VHDL):
+            rt = str(self.getRoute().name).lower()+(spaces*' ')
+        return rt
 
     
     def __repr__(self):
-        return f'''\n{self.getName()} - {self.getRoute()} * {self._dtype}'''
+        return f'''\n{self.getName()} - {self.getRoute()} * {self.getDatatype()}'''
 
     pass
 
@@ -918,7 +968,7 @@ class Interface:
 
         #determine farthest reach signal name
         farthest = self.computeLongestWord(self.getMappingNames(self.getPorts()))
-
+        
         #write signals
         for p in self.getPorts().values():
             if(align):
@@ -1136,6 +1186,57 @@ class Interface:
         #write VERILOG-style code
         elif(form == Unit.Language.VERILOG):
             comp_txt = 'module '+self.getName()
+
+            #get the generics
+            gens = list(self.getGenerics().values())
+            #add the generics (if exists)
+            if(len(gens)):
+                comp_txt = comp_txt + ' #(\n'
+                #add-in every generic as a 'parameter'
+                for gen in gens:
+                    gen_dec = ((tabs+1)*T)+gen.writeConstant(form, spaces=spaces, inc_const=False)
+                    #chop off semicolon
+                    gen_dec = gen_dec[:len(gen_dec)-1]
+                    if(gen == gens[-1]):
+                        #check if to hang end
+                        if(hang_end):
+                            gen_dec = gen_dec + '\n'
+                        gen_dec = gen_dec + ')'
+                    else:
+                        gen_dec = gen_dec + ',\n'
+                    comp_txt = comp_txt + gen_dec
+                pass
+
+            #get the ports
+            ports = list(self.getPorts().values())
+            #add the ports (if exists)
+            if(len(ports)):
+                comp_txt = comp_txt + ' (\n'
+                #get all datatypes
+                ports_dt = []
+                for p in ports:
+                    ports_dt += [p.castDatatype(form, keep_net=True)]
+                #compute longest datatype
+                farthest = self.computeLongestWord(ports_dt)
+                #add-in every port
+                for port in ports:
+                    if(align):
+                        spaces = farthest - len(port.castDatatype(form, keep_net=True)) + 1
+                    port_dec = ((tabs+1)*T)+port.writeDeclaration(form, spaces=spaces)
+                    #chop off semicolon
+                    port_dec = port_dec[:len(port_dec)-1]
+                    if(port == ports[-1]):
+                        #check if to hang end
+                        if(hang_end):
+                            port_dec = port_dec + '\n'
+                        port_dec = port_dec + ')'
+                    else:
+                        port_dec = port_dec + ',\n'
+                    comp_txt = comp_txt + port_dec
+                pass
+            
+            #add final semicolon
+            comp_txt = comp_txt + ';'
             pass
 
         return comp_txt
