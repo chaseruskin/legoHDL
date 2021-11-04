@@ -12,6 +12,7 @@ from .vhdl import Vhdl
 from .verilog import Verilog
 import logging as log
 from .market import Market
+from enum import Enum
 from .cfgfile import CfgFile as cfg
 from .apparatus import Apparatus as apt
 from .unit import Unit
@@ -22,6 +23,14 @@ from .map import Map
 
 #a Block is a package/module that is signified by having the marker file
 class Block:
+
+    #define the various places a block can exist
+    class Level(Enum):
+        DNLD  = 0
+        INSTL = 1
+        AVAIL = 2
+        pass
+
 
     LAYOUT = {'block' : {
                 'name' : cfg.NULL,
@@ -38,8 +47,11 @@ class Block:
     #class attribute that is a block object found on current path
     _Current = None
 
+    #class container listing storing all created blocks
+    Inventory = Map()
 
-    def __init__(self, path, ws, title=''):
+
+    def __init__(self, path, ws, lvl=Level.DNLD):
         '''
         Create a legohdl Block object. 
         
@@ -49,7 +61,7 @@ class Block:
         Parameters:
             path (str): the filepath to the Block's root directory
             ws (Workspace): the workspace this block belongs to
-            title (str): M.L.N.V format
+            lvl (Block.Level): the level at which the block exists
         '''
         #store the block's workspace path
         self._ws_path = ws.getPath()
@@ -59,6 +71,8 @@ class Block:
         self._path = apt.fs(path)
         #is this a valid Block marker?
         fname = os.path.basename(path)
+
+        self._lvl = lvl
         
         if(fname == apt.MARKER):
             self._path,_ = os.path.split(path)
@@ -73,12 +87,15 @@ class Block:
                     break
         #check if valid
         if(self.isValid()):
+            #create Git object
             self._repo = Git(self.getPath())
             #are the two paths equal to each other? then this is the current block
             if(apt.isEqualPath(self.getPath(), os.getcwd())):
                 self.setCurrent(self)
             #load from metadata
             self.loadMeta()
+            #add the block to the inventory
+            self.addToInventory()
             pass
         pass
 
@@ -86,6 +103,37 @@ class Block:
     @classmethod
     def setCurrent(cls, b):
         cls._Current = b
+
+
+    def getLvl(self):
+        '''Casts _lvl (Block.Level) to (int).'''
+        return int(self._lvl.value)
+
+
+    def addToInventory(self):
+        '''
+        Adds the self block object to the class container at the correct level.
+
+        Parameters:
+            None
+        Returns:
+            (bool): determine if the block was successfully added (spot empty)
+        '''
+        #make sure appropriate scopes exists in inventory
+        if(self.M() not in Block.Inventory.keys()):
+            Block.Inventory[self.M()] = Map()
+        if(self.L() not in Block.Inventory[self.M()].keys()):
+            Block.Inventory[self.M()][self.L()] = Map()
+        #define empty tuple for all of a block's levels
+        if(self.N() not in Block.Inventory[self.M()][self.L()].keys()):
+            Block.Inventory[self.M()][self.L()][self.N()] = [None, None, None]
+        #check if the level location is empty
+        if(Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] != None):
+            log.error("Block "+self.getFull()+" already exists at level "+self.getLvl()+"!")
+            return False
+        #add to inventory
+        Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] = self
+        return True
 
 
     @classmethod

@@ -280,6 +280,12 @@ class Apparatus:
 
 
     @classmethod
+    def getMultiDevelop(cls):
+        '''Return the multi-develop (bool) from the settings data structure.'''
+        return cls.SETTINGS['general']['multi-develop']
+
+
+    @classmethod
     def getTemplateFiles(cls, returnlist=False):
         '''
         Returns a list of all available files within the template, excluding the

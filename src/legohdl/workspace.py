@@ -245,75 +245,88 @@ class Workspace:
         pass
 
     
-    def loadLocalBlocks(self, id_dsgns=False):
+    def loadBlocks(self, id_dsgns=False):
         '''
-        Find all valid blocks within the local workspace path. Updates the 
-        _local_blocks Map.
+        Loads all blocks found at all levels: dnld (workspace path), instl (workspace
+        cache), avail (workspace markets).
+
+        When id_dsgns is True, this method uses the 'multi-develop' setting to 
+        determine which level has precedence in loadHDL(). 
+        
+        'multi-develop' set to False will only loadHDL() from cache. 'multi-develop' 
+        set to True will first try to loadHDL() from dnld, and if DNE, then try
+        to loadHDL() from block's cache.
+
+        Either way, if inside a current block, that block's HDL will be loaded over
+        its cache.
 
         Parameters:
-            id_dsgns (bool): load all local design units
+            id_dsgns (bool): identify design units (loadHDL) from blocks
         Returns:
-            None
+            _all_blocks ([Block]): list of all block objects
         '''
-        if(hasattr(self, "_local_blocks")):
-            return self._local_blocks
+        if(hasattr(self, "_all_blocks")):
+            return self._all_blocks
 
         # :todo: all local blocks only need to be loaded if multi-develop is ON
 
-        self._local_blocks = []
+        mult_dev = apt.getMultiDevelop()
+        print(mult_dev)
+        #exit()
+
+        self._all_blocks = []
         #glob on the local workspace path
         print("Local Blocks on:",self.getPath())
         marker_files = glob.glob(self.getPath()+"**/*/"+apt.MARKER, recursive=True)
-        #print(marker_files)
+        #iterate through all found downloads
         for mf in marker_files:
-            b = Block(mf, self)
-            self._local_blocks += [b]
-            if(id_dsgns):
-                b.loadHDL()
-            
-        return self._local_blocks
+            b = Block(mf, self, Block.Level.DNLD)
+            if(mult_dev == True):
+                self._all_blocks += [b]
+                if(id_dsgns):
+                    b.loadHDL()
+            pass
+        #print(Block.Inventory)
+        #exit()
+        #after loading local blocks, determine if the user is within a current block
+        current = Block.getCurrent(bypass=True)
+        if(current != None and current not in self._all_blocks):
+            self._all_blocks += [current]
+        #if the user is within a current block, load the HDL from its DNLD level (not INSTL)
 
-
-    def loadCacheBlocks(self):
-        '''
-        Find all valid blocks within the workspace cache. Updates the 
-        _cache_blocks Map.
-
-        Parameters:
-            None
-        Returns:
-            None
-        '''
         #glob on the workspace cache path
         print("Cache Blocks on:",self.getCachePath())
         marker_files = glob.glob(self.getCachePath()+"**/*/"+apt.MARKER, recursive=True)
-       
-        cache_markers = []
+        #iterate through all found installations
         for mf in marker_files:
-            #the block must also be a valid git repository at its root
+            #the block must also have a valid git repository at its root
             root,_ = os.path.split(mf)
             if(Git.isValidRepo(root, remote=False)):
-                cache_markers += [mf]
-        print(cache_markers)
-        pass
-
-    
-    def loadMarketBlocks(self):
-        '''
-        Find all valid blocks within the workspace cache. Updates the 
-        _market_blocks Map.
-
-        Parameters:
-            None
-        Returns:
-            None
-        '''
+                b = Block(mf, self, Block.Level.INSTL)
+                #get the spot for this block's download 
+                dnld_b = Block.Inventory[b.M()][b.L()][b.N()][Block.Level.DNLD.value]
+                #add this block if a download DNE or the dnld does not match current when
+                #not in multi-develop mode
+                if(dnld_b == None or (mult_dev == False and current != dnld_b)):
+                    self._all_blocks += [b]
+                    if(id_dsgns):
+                        b.loadHDL()
+            pass
+            
         #glob on each market path
         marker_files = []
+        #find all marker files in each of the workspace's markets
         for mrkt in self.getMarkets():
             marker_files += glob.glob(mrkt.getMarketDir()+"**/*/"+apt.MARKER, recursive=True)
-        print(marker_files)
-        pass
+        #iterate through all found availables
+        for mf in marker_files:
+            b = Block(mf, self, Block.Level.AVAIL)
+            self._all_blocks += [b]
+            pass
+        #print(Block.Inventory)
+        #self.listUnits()
+        #exit()
+        return self._all_blocks
 
 
     def shortcut(self, title, req_entity=False):
@@ -348,7 +361,7 @@ class Workspace:
             sects[2] = ''
 
         # [!] load all necessary blocks before searching
-        l_blocks = self.loadLocalBlocks()
+        l_blocks = self.loadBlocks()
         
         #track list of possible blocks as moving up the chain
         possible_blocks = []
@@ -434,7 +447,7 @@ class Workspace:
         Returns:
             None
         '''
-        blocks = self.loadLocalBlocks()
+        blocks = self.loadBlocks()
         log.info("Collecting all unit data...")
         for b in blocks:
             us = b.loadHDL()
@@ -454,13 +467,28 @@ class Workspace:
             None
         '''
         # [!] load the necessary blocks
-        blocks = self.loadLocalBlocks()
+        self.loadBlocks()
+
+        #get all blocks from inventory
         
         print('{:<12}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<8}'.format("Version"),'{:<16}'.format("Market"))
         print("-"*12+" "+"-"*20+" "+"-"*8+" "+"-"*8+" "+"-"*16)
-        for bk in blocks:
-            v = '' if(bk.getVersion() == '0.0.0') else bk.getVersion()
-            print('{:<12}'.format(bk.L()),'{:<20}'.format(bk.N()),'{:<8}'.format("dnld"),'{:<8}'.format(v),'{:<16}'.format(bk.M()))
+        for mrkts in Block.Inventory.values():
+            for libs in mrkts.values():
+                for lvls in libs.values():
+                    sts = ''
+                    if(lvls[2] != None):
+                        bk = lvls[2]
+                        sts = 'a'
+                    if(lvls[1] != None):
+                        bk = lvls[1]
+                        sts = 'i|'+sts
+                    if(lvls[0] != None):
+                        bk = lvls[0]
+                        sts = 'd|'+sts
+                    v = '' if(bk.getVersion() == '0.0.0') else bk.getVersion()
+                    print('{:<12}'.format(bk.L()),'{:<20}'.format(bk.N()),'{:<8}'.format(sts),'{:<8}'.format(v),'{:<16}'.format(bk.M()))
+                    pass
         pass
 
 
@@ -474,7 +502,7 @@ class Workspace:
             None
         '''
         # [!] load the necessary blocks
-        blocks = self.loadLocalBlocks()
+        blocks = self.loadBlocks()
         
         #collect all units
         units = []

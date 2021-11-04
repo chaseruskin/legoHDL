@@ -314,7 +314,7 @@ scripts)?", warning=False)
     def _graph(self):
         '''Run the 'graph' command.'''
 
-        self.WS().loadLocalBlocks(id_dsgns=True)
+        self.WS().loadBlocks(id_dsgns=True)
         block = Block.getCurrent()
 
         top = self.getItem()
@@ -352,7 +352,7 @@ scripts)?", warning=False)
         #load labels
         Label.load()
         #load blocks and their designs
-        self.WS().loadLocalBlocks(id_dsgns=True)
+        self.WS().loadBlocks(id_dsgns=True)
 
         #get the working block
         block = Block.getCurrent()
@@ -610,7 +610,7 @@ scripts)?", warning=False)
     def _get(self):
         '''Run the 'get' command.'''
 
-        self.WS().loadLocalBlocks(id_dsgns=True)
+        self.WS().loadBlocks(id_dsgns=True)
 
         if(self.hasFlag('about')):
             self.WS().decodeUnits()
