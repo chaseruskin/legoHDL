@@ -234,8 +234,8 @@ scripts)?", warning=False)
             #give user options to proceeding to load a profile
             resp = input("""Enter:
 1) nothing for default profile
-2) a path or git repository to a new profile
-3) 'exit' to cancel
+2) a path or git repository to a profile
+3) 'exit' to cancel configuration
 """)
             #continually prompt until get a valid response to move forward
             while True:
@@ -246,8 +246,11 @@ scripts)?", warning=False)
                     log.info("Setting up default profile...")
                     Profile.reloadDefault(importing=True)
                     break
-                elif(Profile('', url=resp)):
-                    break
+                else:
+                    p = Profile('', url=resp)
+                    if(p.successful()):
+                        p.importLoadout()
+                        break
                 resp = input()
                 pass
         #decided to not run setup prompt or we have no workspaces
@@ -256,14 +259,26 @@ scripts)?", warning=False)
             ws_name = input("Enter a workspace name: ")
             while(len(ws_name) == 0 or ws_name.isalnum() == False):
                 ws_name = input()
-            apt.SETTINGS['workspace'][ws_name] = dict()
+            ws_path = input("Enter a workspace path: ")
+            while(len(ws_name) == 0):
+                ws_path = input()
+            Workspace(ws_name, ws_path)
             
         #ask for name to store in settings
         feedback = input("Enter your name: ")
-        apt.SETTINGS['general']['author'] = apt.SETTINGS['general']['author'] if(feedback.strip() == cfg.NULL) else feedback.strip()
-        #ask for test-editor to store in settings
-        feedback = input("Enter your text-editor: ")
-        apt.SETTINGS['general']['editor'] = apt.SETTINGS['general']['editor'] if(feedback.strip() == cfg.NULL) else feedback.strip()
+        if(feedback.strip() != cfg.NULL):
+            apt.setAuthor(feedback.strip())
+
+        alter_editor = True
+        #display what the current value is for the text-editor
+        if(len(apt.getEditor())):
+            alter_editor = apt.confirmation("Text editor is currently set to: \
+                \n\n\t"+apt.getEditor()+"\n\nChange?",warning=False)
+        #ask for text-editor to store in settings
+        if(alter_editor):
+            feedback = input("Enter your text-editor: ")
+            if(feedback.strip() != cfg.NULL):
+                apt.setEditor(feedback.strip())
         pass
 
 

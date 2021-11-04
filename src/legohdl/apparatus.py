@@ -273,6 +273,13 @@ class Apparatus:
 
 
     @classmethod
+    def setAuthor(cls, author):
+        '''Sets the author (str) to the settings data structure.'''
+        cls.SETTINGS['general']['author'] = author
+        pass
+
+
+    @classmethod
     def getTemplateFiles(cls, returnlist=False):
         '''
         Returns a list of all available files within the template, excluding the
@@ -640,8 +647,15 @@ class Apparatus:
     
     @classmethod
     def getEditor(cls):
-        '''Returns the editor fromt the settings data-structure.'''
+        '''Returns the editor to the settings data-structure.'''
         return cls.SETTINGS['general']['editor']
+
+
+    @classmethod
+    def setEditor(cls, editor):
+        '''Sets the editor to the settings data-structure.'''
+        cls.SETTINGS['general']['editor'] = editor
+        pass
 
 
     @classmethod

@@ -38,9 +38,9 @@ class Profile:
         Returns:
             None
         '''
-        success = True
+        self._success = True
         if(url != None):
-            success = self.loadFromURL(url)
+            self._success = self.loadFromURL(url)
         else:
             #set profile's name
             self._name = name
@@ -55,9 +55,14 @@ class Profile:
             self._repo = Git(self.getProfileDir())
         
         #add to the catalog
-        if(success):
+        if(self._success):
             self.Jar[self.getName()] = self
         pass
+
+
+    def successful(self):
+        '''Returns True if a profile was successfully initialized.'''
+        return self._success
 
     
     def loadFromURL(self, url):

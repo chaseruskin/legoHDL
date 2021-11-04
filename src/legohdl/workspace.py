@@ -120,7 +120,7 @@ class Workspace:
             #prompt user
             carry_on = apt.confirmation("Workspace "+self.getName()+"'s local path does not exist. Create "+p+"?")
             if(carry_on):
-                os.mkdir(p)
+                os.makedirs(p, exist_ok=True)
                 self._path = p
                 return True
             else:
@@ -617,7 +617,8 @@ class Workspace:
 
         wspcs = apt.SETTINGS['workspace']
         for ws in wspcs.keys():
-            Workspace(ws, wspcs[ws]['path'], wspcs[ws]['market'])
+            if('path' in wspcs[ws].keys() and 'market' in wspcs[ws].keys()):
+                Workspace(ws, wspcs[ws]['path'], wspcs[ws]['market'])
         pass
 
 
@@ -688,7 +689,10 @@ class Workspace:
         elif(len(cls.Jar.keys()) and cls._ActiveWorkspace == None):
             random_ws = list(cls.Jar.keys())[0]
             cls._ActiveWorkspace = cls.Jar[random_ws]
-            log.info("Workspace "+ws+" does not exist. Auto-assigning active workspace to "+cls._ActiveWorkspace.getName()+"...")
+            msgi = "No active workspace set."
+            if(ws != ''):
+                msgi = "Workspace "+ws+" does not exist."
+            log.info(msgi+" Auto-assigning active workspace to "+cls._ActiveWorkspace.getName()+"...")
             return True
         #still was not able to set the active workspace with the given argument
         elif(cls._ActiveWorkspace != None):
