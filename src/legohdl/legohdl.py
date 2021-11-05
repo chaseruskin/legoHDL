@@ -656,15 +656,11 @@ scripts)?", warning=False)
             else:
                 exit(log.error("Cannot use "+title+" because it is not downloaded or installed!"))
 
-        if(self.hasFlag('about')):
-            block.decodeUnits()
-
         #fill in all units if running 'edges' flag
         if(self.hasFlag('edges')):
-            for b in visibles:
-                b.getUnits()
+            self.WS().decodeUnits()
 
-        #:todo: make better
+        #get the entity name
         _,_,_,_,ent = Block.snapTitle(self.getItem(), inc_ent=True)
         #print the relevant information for the requested unit
         block.get(entity=ent, about=self.hasFlag('about'), \

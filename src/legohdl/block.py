@@ -2033,7 +2033,7 @@ class Block:
         #get quick idea of what units exist for this block
         units = self.loadHDL()
         if(entity.lower() not in units.keys()):
-            log.error("Entity "+entity+" not found in this block!")
+            log.error("Entity "+entity+" not found in block "+self.getFull()+"!")
             return False
 
         #determine the language for outputting compatible code
