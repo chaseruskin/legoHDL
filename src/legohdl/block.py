@@ -190,7 +190,7 @@ class Block:
         
         self._instls = Map()
 
-        print(self.getPath())
+        #print(self.getPath())
         #get all folders one path below
         dirs = os.listdir(self.getPath()+'..')
         for d in dirs:
@@ -200,6 +200,20 @@ class Block:
         if(returnvers):
                 return list(self._instls.keys())
         return self._instls
+
+
+    def delete(self):
+        '''
+        Deletes the block object. Removes its path. Does not update any variables like
+        the graph.
+        
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
+        pass
 
 
     def getLvlBlock(self, lvl):
@@ -1969,6 +1983,22 @@ class Block:
     def printUnits(self):
         for u in self._units.values():
             print(u)
+
+
+    @classmethod
+    def getAllBlocks(cls):
+        if(hasattr(cls, '_all_blocks')):
+            return cls._all_blocks
+        cls._all_blocks = []
+        for mrkts in cls.Inventory.values():
+            for libs in mrkts.values():
+                for blks in libs.values():
+                    for lvl in blks:
+                        if(lvl != None):
+                            cls._all_blocks += [lvl]
+                            break
+                        pass
+        return cls._all_blocks
 
 
     def get(self, entity, about, list_arch, inst, comp, lang, edges):

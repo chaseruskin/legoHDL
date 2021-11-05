@@ -156,6 +156,29 @@ class legoHDL:
             return None
 
     
+    def getVerNum(self):
+        '''
+        Get the version from the version flag (if one was passed). Searches 
+        flags for a valid version. Returns None if not found. 
+        
+        Parameters:
+            None
+        Returns:
+            _ver (str): valid version format (v0.0.0)
+        '''
+        if(hasattr(self, '_ver')):
+            return self._ver
+
+        self._ver = None
+        #search through all flags
+        for f in self._flags:
+            if(Block.validVer(f, maj_place=False) or Block.validVer(f, maj_place=True)):
+                self._ver = Block.stdVer(f)
+                break
+
+        return self._ver
+
+    
     def getItem(self, raw=False):
         '''
         Get the value of the item argument. Returns None if item is empty
@@ -650,6 +673,50 @@ scripts)?", warning=False)
         block.initialize(self.getItem(), self.getVar('remote'), self.hasFlag('fork'), self.getVar('summary'))
         pass
 
+
+    def _install(self):
+        '''Run the 'install' command.'''
+
+        #load blocks
+        self.WS().loadBlocks()
+
+
+        pass
+
+    
+    def _uninstall(self):
+        '''Run the 'uninstall' command.'''
+
+        #load blocks
+        self.WS().loadBlocks()
+        #shortcut name
+        block = self.WS().shortcut(self.getItem(), visibility=False)
+        #check if block exists
+        if(block == None):
+            exit(log.error("Could not identify a block with "+self.getItem()))
+        #check if block is installed
+        installer = block.getLvlBlock(Block.Level.INSTL)
+        if(installer == None):
+            exit(log.error("Block "+block.getFull()+" is not installed to the cache!"))
+        #prompt to verify action :todo: use real block objects
+        installations = installer.getInstalls(returnvers=True)
+        #scale down to only version
+        ver_num = self.getVerNum()
+        if(ver_num != None):
+            if(ver_num in installations):
+                installations = [ver_num]
+            else:
+                exit(log.error("Version "+ver_num+" may not exist or be installed to the cache!"))
+
+        print("From "+installer.getFull()+" would remove: \n\t" + \
+            apt.listToStr(installations,'\n\t'))
+        yes = apt.confirmation('Proceed to uninstall?',warning=False)
+        if(yes):
+            for i in installations:
+                print("Uninstalled "+i)
+                i.delete()
+        pass
+
     
     def _info(self):
         '''Run the 'info' command.'''
@@ -972,10 +1039,15 @@ workspace's local path?")
                 log.error("Profile "+self._item+" does not exist.")
             pass
         #open block
-        else: # :todo:
-            block = self.WS().shortcut(self.getItem())
+        else:
+            #search all blocks (visibility off)
+            block = self.WS().shortcut(self.getItem(), visibility=False)
             if(block != None):
-                block.openInEditor()
+                #verify the block to open has download status
+                if(block.getLvlBlock(Block.Level.DNLD) != None):
+                    block.getLvlBlock(Block.Level.DNLD).openInEditor()
+                else:
+                    exit(log.error("Block "+block.getFull()+" is not downloaded!"))
             else:
                 exit(log.error("No block "+self._item+" exists in your workspace."))
             pass
@@ -1120,7 +1192,7 @@ workspace's local path?")
             pass
 
         elif('uninstall' == cmd):
-            
+            self._uninstall()
             pass
 
         elif('download' == cmd):

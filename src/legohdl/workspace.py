@@ -264,27 +264,22 @@ class Workspace:
         #1. Search for downloaded blocks
 
         #glob on the local workspace path
-        print("Local Blocks on:",self.getPath())
+        #print("Local Blocks on:",self.getPath())
         marker_files = glob.glob(self.getPath()+"**/*/"+apt.MARKER, recursive=True)
         #iterate through all found downloads
         for mf in marker_files:
             b = Block(mf, self, Block.Level.DNLD)
-            if(mult_dev == True):
+            #if the user is within a current block, load the HDL from its DNLD level (not INSTL)
+            if(mult_dev == True or Block.getCurrent(bypass=True) == b):
                 self._visible_blocks += [b]
                 if(id_dsgns):
                     b.loadHDL()
             pass
 
-        #after loading local blocks, determine if the user is within a current block
-        current = Block.getCurrent(bypass=True)
-        #if the user is within a current block, load the HDL from its DNLD level (not INSTL)
-        if(current != None and current not in self._visible_blocks):
-            self._visible_blocks += [current]
-
         #2. Search for installed blocks
 
         #glob on the workspace cache path
-        print("Cache Blocks on:",self.getCachePath())
+        #print("Cache Blocks on:",self.getCachePath())
         marker_files = glob.glob(self.getCachePath()+"**/*/"+apt.MARKER, recursive=True)
         #iterate through all found installations
         for mf in marker_files:
@@ -296,7 +291,7 @@ class Workspace:
                 dnld_b = Block.Inventory[b.M()][b.L()][b.N()][Block.Level.DNLD.value]
                 #add this block if a download DNE or the dnld does not match current when
                 #not in multi-develop mode
-                if(dnld_b == None or (mult_dev == False and current != dnld_b)):
+                if(dnld_b == None or (mult_dev == False and Block.getCurrent(bypass=True) != dnld_b)):
                     self._visible_blocks += [b]
                     if(id_dsgns):
                         b.loadHDL()
@@ -319,7 +314,15 @@ class Workspace:
         return self._visible_blocks
 
 
-    def shortcut(self, title, req_entity=False):
+    def getInvisibleBlocks(self):
+        '''Returns list of blocks not visible by user.'''
+        if(hasattr(self, "_invisible_blocks")):
+            return self._invisible_blocks
+        self.loadBlocks()
+        return self._invisible_blocks
+
+
+    def shortcut(self, title, req_entity=False, visibility=True):
         '''
         Returns the Block from a shortened title. If title is empty, then
         it refers to the current block.
@@ -330,6 +333,7 @@ class Workspace:
         Parameters:
             title (str): partial or full M.L.N with optional E attached
             req_entity (bool): determine if only thing given then it is an entity
+            visibility (bool): determine if to only look for visible blocks
         Returns:
             (Block): the identified block from the shortened title
         '''
@@ -351,7 +355,10 @@ class Workspace:
             sects[2] = ''
 
         # [!] load all necessary blocks before searching
-        l_blocks = self.loadBlocks()
+        blocks = self.loadBlocks()      
+        #use all blocks when visibility is off
+        if(visibility == False):
+            blocks = Block.getAllBlocks()
         
         #track list of possible blocks as moving up the chain
         possible_blocks = []
@@ -361,7 +368,7 @@ class Workspace:
             #collect list of all entities
             reg = Map()
             reg[entity] = []
-            for bk in l_blocks:
+            for bk in blocks:
                 es = bk.loadHDL(returnnames=True)
                 for e in es:
                     if(e.lower() not in reg.keys()):
@@ -388,8 +395,9 @@ class Workspace:
                 break
             reg = Map()
             reg[term] = []
-            for bk in l_blocks:
+            for bk in blocks:
                 t = bk.getTitle(index=start, dist=0)[0]
+                #store the block under the given section name
                 if(t.lower() not in reg.keys()):
                     reg[t] = []
                 reg[t] += [bk]
@@ -782,10 +790,6 @@ class Workspace:
 
     def getName(self):
         return self._name
-
-    
-    def getBlocks(self):
-        return self._local_blocks
 
 
     def isActive(self):
