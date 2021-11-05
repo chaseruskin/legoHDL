@@ -644,15 +644,17 @@ scripts)?", warning=False)
         if(block == None):
             exit(log.error("Could not identify a block for entity "+self.getItem()))
 
+        #remember title for error statement in case block becomes None
+        title = block.getFull()
         #verify the block is visible to the user
         if(apt.getMultiDevelop() == False):
             block = block.getLvlBlock(Block.Level.INSTL)
           
         if(block not in visibles):
             if(apt.getMultiDevelop() == False):
-                exit(log.error("Cannot use "+block.getFull()+" because it is not installed!"))
+                exit(log.error("Cannot use "+title+" because it is not installed!"))
             else:
-                exit(log.error("Cannot use "+block.getFull()+" because it is not downloaded or installed!"))
+                exit(log.error("Cannot use "+title+" because it is not downloaded or installed!"))
 
         if(self.hasFlag('about')):
             block.decodeUnits()
