@@ -230,20 +230,6 @@ class Workspace:
             log.warning("Could not unlink unknown market "+mrkt+" from "+self.getName()+".")
             return False
 
-
-    def getAvailableBlocks(self, multi_develop=False):
-        '''
-        Returns all available blocks. Some may be hidden under others (cache overwrites
-        positions of downloaded blocks when multi-develop is False).
-        
-        Parameters:
-            multi_develop (bool): determine if download blocks have precedence over cache
-        Returns:
-            map
-        '''
-
-        pass
-
     
     def loadBlocks(self, id_dsgns=False):
         '''
@@ -260,6 +246,8 @@ class Workspace:
         Either way, if inside a current block, that block's HDL will be loaded over
         its cache.
 
+        Dynamically creates _visible_blocks ([Block]) attribute to be reused.
+
         Parameters:
             id_dsgns (bool): identify design units (loadHDL) from blocks
         Returns:
@@ -268,13 +256,13 @@ class Workspace:
         if(hasattr(self, "_visible_blocks")):
             return self._visible_blocks
 
-        # :todo: all local blocks only need to be loaded if multi-develop is ON
-
-        mult_dev = apt.getMultiDevelop()
-        print(mult_dev)
-        #exit()
-
         self._visible_blocks = []
+
+        #read the setting for multi-develop
+        mult_dev = apt.getMultiDevelop()
+
+        #1. Search for downloaded blocks
+
         #glob on the local workspace path
         print("Local Blocks on:",self.getPath())
         marker_files = glob.glob(self.getPath()+"**/*/"+apt.MARKER, recursive=True)
@@ -286,13 +274,14 @@ class Workspace:
                 if(id_dsgns):
                     b.loadHDL()
             pass
-        #print(Block.Inventory)
-        #exit()
+
         #after loading local blocks, determine if the user is within a current block
         current = Block.getCurrent(bypass=True)
+        #if the user is within a current block, load the HDL from its DNLD level (not INSTL)
         if(current != None and current not in self._visible_blocks):
             self._visible_blocks += [current]
-        #if the user is within a current block, load the HDL from its DNLD level (not INSTL)
+
+        #2. Search for installed blocks
 
         #glob on the workspace cache path
         print("Cache Blocks on:",self.getCachePath())
@@ -312,6 +301,8 @@ class Workspace:
                     if(id_dsgns):
                         b.loadHDL()
             pass
+
+        #3. Search for available blocks
             
         #glob on each market path
         marker_files = []
@@ -321,11 +312,10 @@ class Workspace:
         #iterate through all found availables
         for mf in marker_files:
             b = Block(mf, self, Block.Level.AVAIL)
-            #self._visible_blocks += [b]
+            #do not add this block to list of visible blocks because it has no
+            #units associated with it, only metadata
             pass
-        #print(Block.Inventory)
-        #self.listUnits()
-        #exit()
+
         return self._visible_blocks
 
 

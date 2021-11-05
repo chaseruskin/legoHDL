@@ -537,7 +537,7 @@ NAME:
         info - Read detailed information about a block
 
 SYNOPSIS:
-        legohdl info <block> [-version]
+        legohdl info <block> [-stats] [-vers]
         legohdl info <profile> -profile
 
 DESCRIPTION:
@@ -550,9 +550,12 @@ OPTIONS:
         <block>
                 :ref:
         
-        -version
+        -stats
+                Get relevant stats about the block such as units created.
+
+        -vers
                 List all available versions for the specified block.
-        
+
         <profile>
                 :ref:
 

@@ -670,7 +670,7 @@ scripts)?", warning=False)
 
         block = self.WS().shortcut(self.getItem())
         if(block != None):
-            print(block.readInfo(self.hasFlag('all'), self.hasFlag('stats'), self.hasFlag('versions'))) 
+            print(block.readInfo(self.hasFlag('all'), self.hasFlag('stats'), self.hasFlag('vers'))) 
         pass
 
 

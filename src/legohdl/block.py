@@ -8,6 +8,8 @@
 
 import os, shutil, stat, glob
 from datetime import date
+
+from .graph import Graph
 from .vhdl import Vhdl
 from .verilog import Verilog
 import logging as log
@@ -49,6 +51,9 @@ class Block:
 
     #class container listing storing all created blocks
     Inventory = Map()
+
+    #class container storing the relationships between blocks
+    Hierarchy = Graph()
 
 
     def __init__(self, path, ws, lvl=Level.DNLD):
@@ -96,6 +101,10 @@ class Block:
             self.loadMeta()
             #add the block to the inventory
             self.addToInventory()
+
+            #store specifc installation versions in a map
+            if(self._lvl == Block.Level.INSTL):
+                self.getInstalls()
             pass
         pass
 
@@ -105,9 +114,12 @@ class Block:
         cls._Current = b
 
 
-    def getLvl(self):
+    def getLvl(self, to_int=True):
         '''Casts _lvl (Block.Level) to (int).'''
-        return int(self._lvl.value)
+        if(to_int):
+            return int(self._lvl.value)
+        else:
+            return self._lvl
 
 
     def addToInventory(self):
@@ -133,6 +145,11 @@ class Block:
             return False
         #add to inventory
         Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] = self
+
+        #update graph
+        Block.Hierarchy.addVertex(self.getFull(inc_ver=True))
+        for d in self.getMeta('derives'):
+            Block.Hierarchy.addEdge(self.getFull(inc_ver=True), d)
         return True
 
 
@@ -149,6 +166,54 @@ class Block:
             return self._path.lower()
         else:
             return self._path
+
+
+    def getInstalls(self, returnvers=False):
+        '''
+        Dynamically creates and returns map of block objects that are found
+        in cache as specific installations.
+
+        The Map uses the version number (folder name) as the key and the block
+        object as the value.
+
+        Parameters:
+            returnvers (bool): determine if to only return keys (versions)
+        Returns:
+            _instls [Map(Block)]: list of specific block installations
+            or
+            [str]: list of version keys when returnvers is set
+        '''
+        if(hasattr(self, '_instls')):
+            if(returnvers):
+                return list(self._instls.keys())
+            return self._instls
+        
+        self._instls = Map()
+
+        print(self.getPath())
+        #get all folders one path below
+        dirs = os.listdir(self.getPath()+'..')
+        for d in dirs:
+            if(Block.validVer(d, maj_place=True) or Block.validVer(d, maj_place=False)):
+                self._instls[d] = None
+
+        if(returnvers):
+                return list(self._instls.keys())
+        return self._instls
+
+
+    def getLvlBlock(self, lvl):
+        '''
+        Tries to get the block of same M.L.N but at the request level.
+
+        Returns None if the block does not exist at that level.
+
+        Parameters:
+            lvl (Block.Level): which level to get self block from
+        Returns:
+            (Block): the block from requested level
+        '''
+        return Block.Inventory[self.M()][self.L()][self.N()][int(lvl.value)]
 
 
     #download block from a url (can be from cache or remote)
@@ -1992,26 +2057,42 @@ class Block:
                 #stop reading :todo:
                 if(not readall and False):
                     break
-        
-        if(stats):
-            info_txt =  info_txt + '\n--- STATS ---'
-            vhdl_cnt, vlog_cnt = self.getLangUnitCount()
-            if(vhdl_cnt > 0):
-                txt = '\nVHDL units: '+str(vhdl_cnt)
-                info_txt = info_txt + txt
-            if(vlog_cnt > 0):
-                txt = '\nVERILOG units: '+str(vlog_cnt)
-                info_txt = info_txt + txt
 
+        #read relevant stats
+        if(stats):
+            info_txt = info_txt + '\n--- STATS ---'
+            info_txt = info_txt + '\nIntegrated into:\n'
+            info_txt = info_txt + '\t'+apt.listToStr(Block.Hierarchy.getNeighbors(self.getFull(inc_ver=True), upstream=True),'\n\t')
+            vhdl_units = []
+            vlog_units = []
+            for u in self.loadHDL().values():
+                if(u.getLang() == Unit.Language.VHDL):
+                    vhdl_units += [u.E()]
+                elif(u.getLang() == Unit.Language.VERILOG):
+                    vlog_units += [u.E()]
+
+            if(len(vhdl_units) > 0):
+                txt = '\nVHDL units:\n\t'+apt.listToStr(vhdl_units,'\n\t')
+                info_txt = info_txt + txt
+            if(len(vlog_units) > 0):
+                txt = '\nVERILOG units:\n\t'+apt.listToStr(vlog_units,'\n\t')
+                info_txt = info_txt + txt
+        #read the list of versions implemented and obtainable
         if(versions):
+            info_txt = ''
             #get installation versions
             instl_versions = []
-
-            info_txt = ''
-            # sort versions
+            instller = self.getLvlBlock(Block.Level.INSTL)
+            if(instller != None):
+                instl_versions = instller.getInstalls(returnvers=True)
+            #sort the versions available in cache
+            instl_versions = self.sortVersions(instl_versions)
+            
+            #sort the versions found on the self block
             all_versions = self.sortVersions(self.getTaggedVersions())
             #track what major versions have been identified
             maj_vers = []
+            #iterate through all versions
             for x in all_versions:
                 #constrain the list to what the user inputted
                 #if(ver != None and x.startswith(ver) == False):
