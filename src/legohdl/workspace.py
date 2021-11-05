@@ -285,6 +285,7 @@ class Workspace:
         for mf in marker_files:
             #the block must also have a valid git repository at its root
             root,_ = os.path.split(mf)
+            #note: only the head installation has the git repository
             if(Git.isValidRepo(root, remote=False)):
                 b = Block(mf, self, Block.Level.INSTL)
                 #get the spot for this block's download 
@@ -314,18 +315,10 @@ class Workspace:
         return self._visible_blocks
 
 
-    def getInvisibleBlocks(self):
-        '''Returns list of blocks not visible by user.'''
-        if(hasattr(self, "_invisible_blocks")):
-            return self._invisible_blocks
-        self.loadBlocks()
-        return self._invisible_blocks
-
-
-    def shortcut(self, title, req_entity=False, visibility=True):
+    def shortcut(self, title, req_entity=False, visibility=True, ref_current=True):
         '''
-        Returns the Block from a shortened title. If title is empty, then
-        it refers to the current block.
+        Returns the Block from a shortened title. If title is empty and 
+        'ref_current' is set, then tries to refer to the current block.
 
         Sometimes an entity is required for certain commands; so it can be
         assumed entity (instead of block name) if only thing given.
@@ -334,6 +327,7 @@ class Workspace:
             title (str): partial or full M.L.N with optional E attached
             req_entity (bool): determine if only thing given then it is an entity
             visibility (bool): determine if to only look for visible blocks
+            ref_current (bool): determine if to try to assign empty title to current block
         Returns:
             (Block): the identified block from the shortened title
         '''
@@ -430,7 +424,7 @@ class Workspace:
                     exit(print())
             pass
         #using the current block if title is empty string
-        if(title == '' or title == None):
+        if(ref_current and (title == '' or title == None)):
             return Block.getCurrent()
         #return None if all attempts have failed and not returned anything yet
         return None

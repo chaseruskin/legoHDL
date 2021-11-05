@@ -31,6 +31,7 @@ class Block:
         DNLD  = 0
         INSTL = 1
         AVAIL = 2
+        VER   = 3
         pass
 
 
@@ -68,10 +69,8 @@ class Block:
             ws (Workspace): the workspace this block belongs to
             lvl (Block.Level): the level at which the block exists
         '''
-        #store the block's workspace path
-        self._ws_path = ws.getPath()
-        #store the block's available markets from its workspace
-        self._ws_markets = ws.getMarkets(returnnames=True)
+        #store the block's workspace
+        self._ws = ws
         
         self._path = apt.fs(path)
         #is this a valid Block marker?
@@ -92,18 +91,19 @@ class Block:
                     break
         #check if valid
         if(self.isValid()):
-            #create Git object
-            self._repo = Git(self.getPath())
+            #create Git object if not a VER
+            if(self._lvl != Block.Level.VER):
+                self._repo = Git(self.getPath())
             #are the two paths equal to each other? then this is the current block
             if(apt.isEqualPath(self.getPath(), os.getcwd())):
                 self.setCurrent(self)
             #load from metadata
             self.loadMeta()
             #add the block to the inventory
-            self.addToInventory()
+            success = self.addToInventory()
 
             #store specifc installation versions in a map
-            if(self._lvl == Block.Level.INSTL):
+            if(success and self._lvl == Block.Level.INSTL):
                 self.getInstalls()
             pass
         pass
@@ -126,6 +126,8 @@ class Block:
         '''
         Adds the self block object to the class container at the correct level.
 
+        Blocks of level VER are skipped when trying to add to the Inventory.
+
         Parameters:
             None
         Returns:
@@ -140,16 +142,19 @@ class Block:
         if(self.N() not in Block.Inventory[self.M()][self.L()].keys()):
             Block.Inventory[self.M()][self.L()][self.N()] = [None, None, None]
         #check if the level location is empty
-        if(Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] != None):
-            log.error("Block "+self.getFull()+" already exists at level "+self.getLvl()+"!")
-            return False
-        #add to inventory
-        Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] = self
+        if(self.getLvl() < len(Block.Inventory[self.M()][self.L()][self.N()])):
+            if(Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] != None):
+                log.error("Block "+self.getFull()+" already exists at level "+str(self.getLvl())+"!")
+                return False
+            #add to inventory if spot is empty
+            else:
+                Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] = self
 
         #update graph
         Block.Hierarchy.addVertex(self.getFull(inc_ver=True))
         for d in self.getMeta('derives'):
             Block.Hierarchy.addEdge(self.getFull(inc_ver=True), d)
+
         return True
 
 
@@ -158,6 +163,11 @@ class Block:
         if(bypass == False and cls._Current == None):
             exit(log.error("Not in a valid block!"))
         return cls._Current
+
+
+    def getWorkspace(self):
+        '''Returns the block's workspace _ws (Workspace).'''
+        return self._ws
 
 
     #return the block's root path
@@ -192,10 +202,13 @@ class Block:
 
         #print(self.getPath())
         #get all folders one path below
-        dirs = os.listdir(self.getPath()+'..')
+        base_path,_ = os.path.split(self.getPath()[:len(self.getPath())-1])
+        base_path = apt.fs(base_path)
+        dirs = os.listdir(base_path)
         for d in dirs:
             if(Block.validVer(d, maj_place=True) or Block.validVer(d, maj_place=False)):
-                self._instls[d] = None
+                path = apt.fs(base_path+d+'/')
+                self._instls[d] = Block(path, self.getWorkspace(), lvl=Block.Level.VER)
 
         if(returnvers):
                 return list(self._instls.keys())
@@ -617,7 +630,7 @@ class Block:
         return apt.isSubPath(apt.MARKETS, self.getPath())
 
     def isLocal(self):
-        return apt.isSubPath(self._ws_path, self.getPath())
+        return apt.isSubPath(self.getWorkspace().getPath(), self.getPath())
 
     def bindMarket(self, mkt):
         if(mkt != None):
@@ -673,7 +686,7 @@ class Block:
         #ensure the market is valid
         if(self.getMeta('market') != ''):
             m = self.getMeta('market')
-            if(m.lower() not in self._ws_markets):
+            if(m.lower() not in self.getWorkspace().getMarkets(returnnames=True)):
                 log.warning("Market "+m+" is removed from "+self.getTitle_old()+" because the market is not available in this workspace.")
                 self.setMeta('market', '')
             pass
@@ -777,7 +790,7 @@ class Block:
             return False
 
         #make sure path is within the workspace path
-        if(apt.isSubPath(self._ws_path, self.getPath()) == False):
+        if(apt.isSubPath(self.getWorkspace().getPath(), self.getPath()) == False):
             log.info("Path is not within the workspace!")
             return False
 
@@ -820,7 +833,7 @@ class Block:
 
         #check if market is in an allowed market
         if(M != ''):
-            if(M.lower() in self._ws_markets):
+            if(M.lower() in self.getWorkspace().getMarkets(returnnames=True)):
                 self.setMeta("market", M)
             else:
                 log.warning("Skipping invalid market name "+M+"...")
@@ -870,7 +883,7 @@ class Block:
             success (bool): determine if initialization was successful
         '''
         #make sure the current path is within the workspace path
-        if(apt.isSubPath(self._ws_path, self.getPath()) == False):
+        if(apt.isSubPath(self.getWorkspace().getPath(), self.getPath()) == False):
             log.error("Cannot initialize a block outside of the workspace path.")
             return False
 

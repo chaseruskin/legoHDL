@@ -633,21 +633,33 @@ scripts)?", warning=False)
     def _get(self):
         '''Run the 'get' command.'''
 
-        self.WS().loadBlocks(id_dsgns=True)
+        visibles = self.WS().loadBlocks(id_dsgns=True)
 
-        if(self.hasFlag('about')):
-            self.WS().decodeUnits()
         #make sure an entity is being requested
         if(self.getItem() == None):
             exit(log.error("Pass an entity name to get."))
 
-        block = self.WS().shortcut(self.getItem(), req_entity=True)
+        #verify a block under this name exists
+        block = self.WS().shortcut(self.getItem(), req_entity=True, visibility=False)
         if(block == None):
-            exit(log.error("Could not identify a block with "+self.getItem()))
+            exit(log.error("Could not identify a block for entity "+self.getItem()))
+
+        #verify the block is visible to the user
+        if(apt.getMultiDevelop() == False):
+            block = block.getLvlBlock(Block.Level.INSTL)
+          
+        if(block not in visibles):
+            if(apt.getMultiDevelop() == False):
+                exit(log.error("Cannot use "+block.getFull()+" because it is not installed!"))
+            else:
+                exit(log.error("Cannot use "+block.getFull()+" because it is not downloaded or installed!"))
+
+        if(self.hasFlag('about')):
+            block.decodeUnits()
 
         #fill in all units if running 'edges' flag
         if(self.hasFlag('edges')):
-            for b in self.WS().getBlocks():
+            for b in visibles:
                 b.getUnits()
 
         #:todo: make better
@@ -679,6 +691,9 @@ scripts)?", warning=False)
 
         #load blocks
         self.WS().loadBlocks()
+
+        #shortcut
+
 
 
         pass
@@ -721,9 +736,12 @@ scripts)?", warning=False)
     def _info(self):
         '''Run the 'info' command.'''
 
+        #get the block object from all possible blocks
+        block = self.WS().shortcut(self.getItem(raw=True), visibility=False)
+
         #make sure the user passed in a value for the item
-        if(self.getItem() == None):
-            exit(log.error("Include a block's title to get its information."))
+        if(block == None):
+            exit(log.error("Could not find a block as "+self.getItem(raw=True)))
         
         if(self.hasFlag('profile')):
             #make sure the requested profile exists to be read
@@ -735,9 +753,9 @@ scripts)?", warning=False)
             print()
             return
 
-        block = self.WS().shortcut(self.getItem())
-        if(block != None):
-            print(block.readInfo(self.hasFlag('all'), self.hasFlag('stats'), self.hasFlag('vers'))) 
+        print(block.readInfo(self.hasFlag('all'), \
+            self.hasFlag('stats'), \
+            self.hasFlag('vers')))
         pass
 
 
@@ -1031,17 +1049,17 @@ workspace's local path?")
         #open profile
         elif(self.hasFlag("profile")):
             #open the specified path to the profile if it exists
-            if(self._item.lower() in Profile.Jar.keys()):
-                prfl_path = Profile.Jar[self._item].getProfileDir()
-                log.info("Opening profile "+self._item+" at... "+prfl_path)
+            if(self.getItem(raw=True).lower() in Profile.Jar.keys()):
+                prfl_path = Profile.Jar[self.getItem(raw=True)].getProfileDir()
+                log.info("Opening profile "+self.getItem(raw=True)+" at... "+prfl_path)
                 apt.execute(apt.getEditor(), prfl_path)
             else:
-                log.error("Profile "+self._item+" does not exist.")
+                log.error("Profile "+self.getItem(raw=True)+" does not exist.")
             pass
         #open block
         else:
             #search all blocks (visibility off)
-            block = self.WS().shortcut(self.getItem(), visibility=False)
+            block = self.WS().shortcut(self.getItem(raw=True), visibility=False)
             if(block != None):
                 #verify the block to open has download status
                 if(block.getLvlBlock(Block.Level.DNLD) != None):
@@ -1049,7 +1067,7 @@ workspace's local path?")
                 else:
                     exit(log.error("Block "+block.getFull()+" is not downloaded!"))
             else:
-                exit(log.error("No block "+self._item+" exists in your workspace."))
+                exit(log.error("No block "+self.getItem(raw=True)+" exists in your workspace."))
             pass
         pass
             
