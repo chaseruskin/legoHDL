@@ -1519,14 +1519,13 @@ class Block:
 
 
     @classmethod
-    def snapTitle(cls, title, lower=True, inc_ent=False):
+    def snapTitle(cls, title, inc_ent=False):
         '''
         Break a title into its 4 components, if possible. Returns M,L,N,V as
-        strings.
+        strings. Returns '' for each missing part.
 
         Parameters:
             title (str): the string to be parsed into title components
-            lower (bool): return components as all lower-case (true) or normal (false)
             inc_ent (bool): also return the entity name if found
         Returns:
             M (str): block market

@@ -898,8 +898,11 @@ workspace's local path?")
             #categorize by hidden files (skipped)
             #and visible files (files that are copied in on using template)
         else:
-            M,L,N,_ = Block.snapTitle(self.getItem())
-            self.WS().listBlocks(M, N, L)
+            self.WS().listBlocks(title=self.getItem(), \
+                alpha=self.hasFlag('alpha'), \
+                instl=self.hasFlag('instl'), \
+                dnld=self.hasFlag('dnld'), \
+                avail=self.hasFlag('avail'))
         pass
 
 

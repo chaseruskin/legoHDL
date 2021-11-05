@@ -370,7 +370,7 @@ NAME:
         list - View a variety of legoHDL-related things
 
 SYNOPSIS:
-        legohdl list [<search>] [-entity] [-alpha] [-install] [-download]
+        legohdl list [<search>] [-entity] [-alpha] [-dnld] [-instl] [-avail]
         legohdl list [-script | -label | -market | -workspace | -profile | -template]
 
 DESCRIPTION:
@@ -388,11 +388,14 @@ OPTIONS:
         -alpha
                 Organize the list in alphabetical order.
 
-        -install
+        -instl
                 Filter only installed blocks or entities.
 
-        -download
-                Filter only downloaded blocks or entities.
+        -dnld
+                Filter only downloaded blocks or entities.    
+
+        -avail
+                Filter only available blocks or entities from markets.
         
         -script
                 Return the list of scripts. Fields are alias and command.

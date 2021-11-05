@@ -263,10 +263,10 @@ class Workspace:
         Parameters:
             id_dsgns (bool): identify design units (loadHDL) from blocks
         Returns:
-            _all_blocks ([Block]): list of all block objects
+            _visible_blocks ([Block]): list of all block objects in cache or path
         '''
-        if(hasattr(self, "_all_blocks")):
-            return self._all_blocks
+        if(hasattr(self, "_visible_blocks")):
+            return self._visible_blocks
 
         # :todo: all local blocks only need to be loaded if multi-develop is ON
 
@@ -274,7 +274,7 @@ class Workspace:
         print(mult_dev)
         #exit()
 
-        self._all_blocks = []
+        self._visible_blocks = []
         #glob on the local workspace path
         print("Local Blocks on:",self.getPath())
         marker_files = glob.glob(self.getPath()+"**/*/"+apt.MARKER, recursive=True)
@@ -282,7 +282,7 @@ class Workspace:
         for mf in marker_files:
             b = Block(mf, self, Block.Level.DNLD)
             if(mult_dev == True):
-                self._all_blocks += [b]
+                self._visible_blocks += [b]
                 if(id_dsgns):
                     b.loadHDL()
             pass
@@ -290,8 +290,8 @@ class Workspace:
         #exit()
         #after loading local blocks, determine if the user is within a current block
         current = Block.getCurrent(bypass=True)
-        if(current != None and current not in self._all_blocks):
-            self._all_blocks += [current]
+        if(current != None and current not in self._visible_blocks):
+            self._visible_blocks += [current]
         #if the user is within a current block, load the HDL from its DNLD level (not INSTL)
 
         #glob on the workspace cache path
@@ -308,7 +308,7 @@ class Workspace:
                 #add this block if a download DNE or the dnld does not match current when
                 #not in multi-develop mode
                 if(dnld_b == None or (mult_dev == False and current != dnld_b)):
-                    self._all_blocks += [b]
+                    self._visible_blocks += [b]
                     if(id_dsgns):
                         b.loadHDL()
             pass
@@ -321,12 +321,12 @@ class Workspace:
         #iterate through all found availables
         for mf in marker_files:
             b = Block(mf, self, Block.Level.AVAIL)
-            self._all_blocks += [b]
+            #self._visible_blocks += [b]
             pass
         #print(Block.Inventory)
         #self.listUnits()
         #exit()
-        return self._all_blocks
+        return self._visible_blocks
 
 
     def shortcut(self, title, req_entity=False):
@@ -457,36 +457,71 @@ class Workspace:
         pass
 
 
-    def listBlocks(self, M, L, N, alpha=False, instl=False, dnld=False):
+    def listBlocks(self, title, alpha=False, instl=False, dnld=False, avail=False):
         '''
         Print a formatted table of the available blocks.
 
         Parameters:
-            :todo:
+            title (str): block title to be broken into parts for searching
+            alpha (bool): determine if to alphabetize the block list order
+            instl (bool): determine if to capture only blocks that are installed
+            dnld (bool): determine if to capture only blocks that are downloaded
+            avail (bool): determine if to capture blocks available from market
         Returns:
             None
         '''
-        # [!] load the necessary blocks
+        #[!] load the necessary blocks
         self.loadBlocks()
 
+        #split the title into parts
+        M,L,N,_ = Block.snapTitle(title, inc_ent=False)
+
         #get all blocks from inventory
-        
         print('{:<12}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<8}'.format("Version"),'{:<16}'.format("Market"))
         print("-"*12+" "+"-"*20+" "+"-"*8+" "+"-"*8+" "+"-"*16)
-        for mrkts in Block.Inventory.values():
-            for libs in mrkts.values():
-                for lvls in libs.values():
-                    sts = ''
-                    if(lvls[2] != None):
-                        bk = lvls[2]
-                        sts = 'a'
-                    if(lvls[1] != None):
-                        bk = lvls[1]
-                        sts = 'i|'+sts
-                    if(lvls[0] != None):
-                        bk = lvls[0]
-                        sts = 'd|'+sts
+        #iterate through every market
+        for mrkt_k,mrkts in Block.Inventory.items():
+            if(mrkt_k.startswith(M.lower()) == False):
+                continue
+            #iterate through every library
+            for lib_k,libs in mrkts.items():
+                if(lib_k.startswith(L.lower()) == False):
+                    continue
+                #iterate through every block
+                for blk_k,lvls in libs.items():
+                    if(blk_k.startswith(N.lower()) == False):
+                        continue
+                    downloaded = installed = available = ' '
+                    disp_d = disp_i = disp_a =  False
+                    #if none were set on command-line default to display everything
+                    if((dnld or instl or avail) == False):
+                        dnld = instl = avail = True
+
+                    #with each lower level, overwrite the block object to print
+                    if(lvls[Block.Level.AVAIL.value] != None):
+                        bk = lvls[Block.Level.AVAIL.value]
+                        available = 'A'
+                        disp_a = True
+                    if(lvls[Block.Level.INSTL.value] != None):
+                        bk = lvls[Block.Level.INSTL.value]
+                        installed = 'I'
+                        disp_i = True
+                    if(lvls[Block.Level.DNLD.value] != None):
+                        bk = lvls[Block.Level.DNLD.value]
+                        downloaded = 'D'
+                        disp_d = True
+                    #one condition pair must be true to display the block
+                    if((disp_a and avail) or (disp_i and instl) or (disp_d and dnld)):
+                        pass
+                    else:
+                        continue
+                    #character to separate different status bits
+                    spacer = ' '
+                    #format the status column's data
+                    sts = downloaded + spacer + installed + spacer + available
+                    #leave version empty if its been unreleased
                     v = '' if(bk.getVersion() == '0.0.0') else bk.getVersion()
+                    #format the data to print to the console
                     print('{:<12}'.format(bk.L()),'{:<20}'.format(bk.N()),'{:<8}'.format(sts),'{:<8}'.format(v),'{:<16}'.format(bk.M()))
                     pass
         pass
