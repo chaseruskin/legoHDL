@@ -9,6 +9,8 @@
 import os, shutil, stat, glob
 from datetime import date
 
+from legohdl.gui import ToggleSwitch
+
 from .graph import Graph
 from .vhdl import Vhdl
 from .verilog import Verilog
@@ -1072,97 +1074,6 @@ class Block:
         return valid
 
 
-    #dynamically grab the origin url if it has been changed/added by user using git
-    @DeprecationWarning
-    def grabGitRemote(self, newValue=None, override=False):
-        if(hasattr(self, "_remote") and not override):
-            return self._remote
-        if(hasattr(self, "_repo") == False or self._repo == None):
-            self._remote = None
-            return self._remote
-        if(newValue != None):
-            self._remote = newValue
-            return self._remote
-        #try to grab from git repo object
-        self._remote = None
-        #print(self._repo.remotes)
-        if(len(self._repo.remotes)):
-            origin = self._repo.remotes
-            for o in origin:
-                if(o.url == self.getPath()):
-                    continue
-                elif(o.url.endswith(".git")):
-                    self._remote = o.url
-                    break
-        #make sure to save if it differs
-        if("remote" in self.getMeta().keys() and self.getMeta("remote") != self._remote):
-            self.setMeta('remote', self._remote)
-            self.save()
-        return self._remote
-
-    #generate new link to remote if previously unestablished (only for creation)
-    @DeprecationWarning
-    def genRemote(self, push):
-        if(self.isLinked()):
-            remote_url = self.getMeta("remote")
-            if(remote_url == None):
-                remote_url = self.grabGitRemote()
-            try: #attach to remote code base
-                self._repo.create_remote('origin', remote_url) 
-            except: #relink origin to new remote url
-                pass
-            if(remote_url == None):
-                return
-            log.info("Writing "+remote_url+" as remote origin...")
-            with self._repo.remotes.origin.config_writer as cw:
-                cw.set("url", remote_url)
-            if(push):
-                pass
-                #self._repo.git.push("-u","origin",str(self._repo.head.reference))
-        pass
-
-    #push to remote repository
-    @DeprecationWarning
-    def pushRemote(self):
-        self._repo.remotes.origin.push(refspec='{}:{}'.format(self._repo.head.reference, self._repo.head.reference))
-        self._repo.remotes.origin.push("--tags")
-
-    #push to remote repository if exists
-    @DeprecationWarning
-    def pull(self):
-        if(self.grabGitRemote() != None):
-            log.info(self.getTitle_old()+" already exists in local path; pulling from remote...")
-            self._repo.remotes.origin.pull()
-        else:
-            log.info(self.getTitle_old()+" already exists in local path")
-
-    #has ability to return as lower case for comparison within legoHDL
-    @DeprecationWarning
-    def getName(self, low=True):
-        if(self.getMeta("name") != None):
-            if(low):
-                return self.getMeta("name").lower()
-            else:
-                return self.getMeta("name")
-        if(low):
-            return self.__name.lower()
-        else:
-            return self.__name
-
-    #has ability to return as lower case for comparison within legoHDL
-    @DeprecationWarning
-    def getLib(self, low=True):
-        if(self.getMeta("library") != None):
-            if(low):
-                return self.getMeta("library").lower()
-            else:
-                return self.getMeta("library")
-        if(low):
-            return self.__lib.lower()
-        else:
-            return self.__lib
-
-
     def getMeta(self, key=None, every=False, sect='block'):
         '''
         Returns the value stored in the block metadata, else retuns None if
@@ -1304,6 +1215,70 @@ class Block:
         '''Opens this block with the configured text-editor.'''
         log.info("Opening "+self.getTitle_old()+" at... "+self.getPath())
         apt.execute(apt.getEditor(), self.getPath())
+        pass
+
+
+    def install(self, ver=None):
+        '''
+        Installs this block to the cache. 
+        
+        If the block has DNLD or AVAIL status, it will install the 
+        'latest'/main cache block. If the block has INSTL status, it will install 
+        the version according to the 'ver' parameter. Returns None if failed.
+
+        Parameters:
+            ver (str): a valid version format
+        Returns:
+            (Block): the newly installed block. 
+        '''
+        #determine if looking to install main cache block
+        if(self.getLvl(to_int=False) == Block.Level.DNLD or \
+            self.getLvl(to_int=False) == Block.Level.AVAIL):
+            print("Installing latest block to cache...")
+            #create new cache directory
+            pass
+        #check if looking to install a specific 'side' version
+        elif(self.getLvl(to_int=False) == Block.Level.INSTL):
+            #make sure the version is valid
+            if(ver not in self.getTaggedVersions()):
+                log.error("Version "+ver+" does not exist for "+self.getFull()+".")
+                return None
+            #make sure the version is not already installed
+            if(ver in self.getInstalls(returnvers=True)):
+                log.error("Version "+ver+" is already installed for "+self.getFull()+".")
+                return None
+
+            print('Installing version '+ver)
+            #checkout the correct version
+            self._repo.git('checkout','tags/'+ver+apt.TAG_ID)
+
+            #create cache directory based on this block's path
+            cache_path = self.getPath()+'../'+ver+'/'
+            print(cache_path)
+            #copy in all files from self
+            shutil.copytree(self.getPath(), cache_path)
+
+            #delete specific version's git repository data
+            repo = Git(cache_path)
+            repo.delete()
+            
+            #create new block object as a specific version in the cache
+            b = Block(cache_path, ws=self.getWorkspace(), lvl=Block.Level.VER)
+
+            #revert last checkout to latest version
+            self._repo.git('checkout','-')
+
+            #modify all entity/unit names within the specific version to reflect
+            #that specific version
+            #:todo:
+            
+            print(b)
+            return b
+            pass
+        #return None otherwise
+        else:
+            return None
+
         pass
     
 
@@ -1457,7 +1432,7 @@ class Block:
         pass
 
 
-    def install(self, cache_dir, ver=None, src=None):
+    def install_old(self, cache_dir, ver=None, src=None):
         '''
         Install from cache (copy files) unless 'src' is set to a remote for git
         cloning. Also updates the parent (major version) if the newly installed
@@ -2165,6 +2140,95 @@ class Block:
 # === ARCHIVED CODE... TO DELETE ===============================================
 # ==============================================================================
 # ==============================================================================
+#dynamically grab the origin url if it has been changed/added by user using git
+    @DeprecationWarning
+    def grabGitRemote(self, newValue=None, override=False):
+        if(hasattr(self, "_remote") and not override):
+            return self._remote
+        if(hasattr(self, "_repo") == False or self._repo == None):
+            self._remote = None
+            return self._remote
+        if(newValue != None):
+            self._remote = newValue
+            return self._remote
+        #try to grab from git repo object
+        self._remote = None
+        #print(self._repo.remotes)
+        if(len(self._repo.remotes)):
+            origin = self._repo.remotes
+            for o in origin:
+                if(o.url == self.getPath()):
+                    continue
+                elif(o.url.endswith(".git")):
+                    self._remote = o.url
+                    break
+        #make sure to save if it differs
+        if("remote" in self.getMeta().keys() and self.getMeta("remote") != self._remote):
+            self.setMeta('remote', self._remote)
+            self.save()
+        return self._remote
+
+    #generate new link to remote if previously unestablished (only for creation)
+    @DeprecationWarning
+    def genRemote(self, push):
+        if(self.isLinked()):
+            remote_url = self.getMeta("remote")
+            if(remote_url == None):
+                remote_url = self.grabGitRemote()
+            try: #attach to remote code base
+                self._repo.create_remote('origin', remote_url) 
+            except: #relink origin to new remote url
+                pass
+            if(remote_url == None):
+                return
+            log.info("Writing "+remote_url+" as remote origin...")
+            with self._repo.remotes.origin.config_writer as cw:
+                cw.set("url", remote_url)
+            if(push):
+                pass
+                #self._repo.git.push("-u","origin",str(self._repo.head.reference))
+        pass
+
+    #push to remote repository
+    @DeprecationWarning
+    def pushRemote(self):
+        self._repo.remotes.origin.push(refspec='{}:{}'.format(self._repo.head.reference, self._repo.head.reference))
+        self._repo.remotes.origin.push("--tags")
+
+    #push to remote repository if exists
+    @DeprecationWarning
+    def pull(self):
+        if(self.grabGitRemote() != None):
+            log.info(self.getTitle_old()+" already exists in local path; pulling from remote...")
+            self._repo.remotes.origin.pull()
+        else:
+            log.info(self.getTitle_old()+" already exists in local path")
+
+    #has ability to return as lower case for comparison within legoHDL
+    @DeprecationWarning
+    def getName(self, low=True):
+        if(self.getMeta("name") != None):
+            if(low):
+                return self.getMeta("name").lower()
+            else:
+                return self.getMeta("name")
+        if(low):
+            return self.__name.lower()
+        else:
+            return self.__name
+
+    #has ability to return as lower case for comparison within legoHDL
+    @DeprecationWarning
+    def getLib(self, low=True):
+        if(self.getMeta("library") != None):
+            if(low):
+                return self.getMeta("library").lower()
+            else:
+                return self.getMeta("library")
+        if(low):
+            return self.__lib.lower()
+        else:
+            return self.__lib
     @DeprecationWarning
     def grabUnits(self, toplevel=None, override=False):
         '''

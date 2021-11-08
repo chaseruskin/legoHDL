@@ -690,11 +690,21 @@ scripts)?", warning=False)
 
         #load blocks
         self.WS().loadBlocks()
+        #shortcut name
+        block = self.WS().shortcut(self.getItem(), visibility=False)
 
-        #shortcut
+        #first check if the block is found in install
+        instl = block.getLvlBlock(Block.Level.INSTL)
 
-
-
+        #install latest/controller for this block
+        if(instl == None):
+            instl = block.install()
+            pass
+        
+        #install specific version if specifed
+        if(self.getVerNum() != None):
+            print("Installing...")
+            instl.install(ver=self.getVerNum())
         pass
 
     
@@ -1214,7 +1224,7 @@ workspace's local path?")
             pass
 
         elif('install' == cmd):
-            
+            self._install()
             pass
 
         elif('uninstall' == cmd):
