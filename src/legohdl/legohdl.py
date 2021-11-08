@@ -712,23 +712,28 @@ scripts)?", warning=False)
         installer = block.getLvlBlock(Block.Level.INSTL)
         if(installer == None):
             exit(log.error("Block "+block.getFull()+" is not installed to the cache!"))
-        #prompt to verify action :todo: use real block objects
-        installations = installer.getInstalls(returnvers=True)
+        #prompt to verify action
+        installations = installer.getInstalls()
         #scale down to only version
         ver_num = self.getVerNum()
         if(ver_num != None):
-            if(ver_num in installations):
-                installations = [ver_num]
+            if(ver_num in installations.keys()):
+                tmp = installations[ver_num]
+                installations = Map()
+                installations[ver_num] = tmp
             else:
                 exit(log.error("Version "+ver_num+" may not exist or be installed to the cache!"))
 
         print("From "+installer.getFull()+" would remove: \n\t" + \
-            apt.listToStr(installations,'\n\t'))
+            apt.listToStr(list(installations.keys()),'\n\t'))
         yes = apt.confirmation('Proceed to uninstall?',warning=False)
         if(yes):
             for i in installations:
                 print("Uninstalled "+i)
                 i.delete()
+            log.info("Success")
+        else:
+            log.info('Cancelled.')
         pass
 
     
