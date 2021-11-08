@@ -634,20 +634,21 @@ scripts)?", warning=False)
         '''Run the 'get' command.'''
 
         visibles = self.WS().loadBlocks(id_dsgns=True)
+        print('here')
 
         #make sure an entity is being requested
         if(self.getItem() == None):
             exit(log.error("Pass an entity name to get."))
 
         #verify a block under this name exists
-        block = self.WS().shortcut(self.getItem(), req_entity=True, visibility=False)
+        block = self.WS().shortcut(self.getItem(), req_entity=True, visibility=True)
         if(block == None):
             exit(log.error("Could not identify a block for entity "+self.getItem()))
 
         #remember title for error statement in case block becomes None
         title = block.getFull()
         #verify the block is visible to the user
-        if(apt.getMultiDevelop() == False):
+        if(apt.getMultiDevelop() == False and block != Block.getCurrent(bypass=True)):
             block = block.getLvlBlock(Block.Level.INSTL)
           
         if(block not in visibles):

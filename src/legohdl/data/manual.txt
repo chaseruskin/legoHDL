@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/04/2021
+; Modified: 11/08/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -158,7 +158,7 @@ NAME:
 
 SYNOPSIS:
         legohdl get [<block>:]<entity> [-comp[=<lang>] | -inst[=<lang>]] [-arch] 
-                [-about] [-edges]
+                [-about] [-edges] [-dnld | -instl]
 
 DESCRIPTION:
         When trying to access current block-level entities, the <block>
@@ -212,6 +212,14 @@ OPTIONS:
                 Print the units are required by this unit and print the units 
                 that integrate this unit into their design. Gets the edges from
                 the hierarchical graph.
+
+        -dnld
+                Search the downloaded blocks to get this entity, regardless of
+                the status of 'multi-develop'.
+
+        -instl
+                Search the installed blocks to get this entity, regardless of 
+                the status of 'multi-develop'.
 
 
 * graph
