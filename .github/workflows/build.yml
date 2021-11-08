@@ -16,6 +16,6 @@ jobs:
       - run: legohdl list
       - run: legohdl list -market
       - run: legohdl install sample.mux_2x1
-      - run: legohdl info mux_2x1
-      - run: legohdl get sample.mux_2x1 -inst
-      - run: legohdl get sample.mux_2x1 -arch
+      - run: legohdl info uf-ece.sample.mux_2x1
+      - run: legohdl get sample.mux_2x1:mux_2x1 -inst
+      - run: legohdl get mux_2x1 -arch
