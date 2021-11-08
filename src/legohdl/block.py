@@ -91,8 +91,8 @@ class Block:
                     break
         #check if valid
         if(self.isValid()):
-            #create Git object if not a VER
-            if(self._lvl != Block.Level.VER):
+            #create Git object if not a VER or not AVAIL (in market)
+            if(self._lvl != Block.Level.VER and self._lvl != Block.Level.AVAIL):
                 self._repo = Git(self.getPath())
             #are the two paths equal to each other? then this is the current block
             if(apt.isEqualPath(self.getPath(), os.getcwd())):

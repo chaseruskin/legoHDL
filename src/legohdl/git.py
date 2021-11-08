@@ -18,7 +18,7 @@ class Git:
 
     QUIET = True
 
-    def __init__(self, path, clone=None):
+    def __init__(self, path, clone=None, ensure_exists=True):
         '''
         Create a Git instance. This is a repository-like object. Will `init`
         if one DNE at local path, or try to `clone` to `path` name if `clone` is
@@ -28,6 +28,7 @@ class Git:
         Parameters:
             path (str): path to initialize git to
             clone (str): path/remote url to clone from
+            ensure_exists (bool): determine if to force create a repo if DNE
         Returns:
             None
         '''
@@ -57,7 +58,7 @@ class Git:
                 apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
                 pass
         #check if git exists here for local repository
-        elif(self.isValidRepo(self.getPath(), remote=False) == False):
+        elif(self.isValidRepo(self.getPath(), remote=False) == False and ensure_exists):
             #initialize a new repository if DNE
             self.git('init')
         pass
