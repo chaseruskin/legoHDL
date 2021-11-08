@@ -724,12 +724,16 @@ scripts)?", warning=False)
             else:
                 exit(log.error("Version "+ver_num+" may not exist or be installed to the cache!"))
 
+        #display helpful information to user about what installations will be deleted
         print("From "+installer.getFull()+" would remove: \n\t" + \
             apt.listToStr(list(installations.keys()),'\n\t'))
+
         yes = apt.confirmation('Proceed to uninstall?',warning=False)
         if(yes):
-            for i in installations:
-                print("Uninstalled "+i)
+            #iterate through every installation to uninstall
+            for i in installations.values():
+                print("Uninstalled "+i.getFull(inc_ver=True))
+                #delete from cache
                 i.delete()
             log.info("Success")
         else:
