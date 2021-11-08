@@ -1235,7 +1235,19 @@ class Block:
         if(self.getLvl(to_int=False) == Block.Level.DNLD or \
             self.getLvl(to_int=False) == Block.Level.AVAIL):
             print("Installing latest block to cache...")
+
+            #if a remote is available clone to tmp directory
+
+            #else clone the downloaded block to tmp directory
+
             #create new cache directory
+
+            #checkout from latest legohdl version tag
+
+            #clone git repository to new cache directory
+
+            #clean up temp directory
+            
             pass
         #check if looking to install a specific 'side' version
         elif(self.getLvl(to_int=False) == Block.Level.INSTL):
