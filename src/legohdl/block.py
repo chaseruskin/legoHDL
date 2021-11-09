@@ -142,12 +142,12 @@ class Block:
             (bool): determine if the block was successfully added (spot empty)
         '''
         #make sure appropriate scopes exists in inventory
-        if(self.M() not in Block.Inventory.keys()):
+        if(self.M().lower() not in Block.Inventory.keys()):
             Block.Inventory[self.M()] = Map()
-        if(self.L() not in Block.Inventory[self.M()].keys()):
+        if(self.L().lower() not in Block.Inventory[self.M()].keys()):
             Block.Inventory[self.M()][self.L()] = Map()
         #define empty tuple for all of a block's levels
-        if(self.N() not in Block.Inventory[self.M()][self.L()].keys()):
+        if(self.N().lower() not in Block.Inventory[self.M()][self.L()].keys()):
             Block.Inventory[self.M()][self.L()][self.N()] = [None, None, None]
         #check if the level location is empty
         if(self.getLvl() < len(Block.Inventory[self.M()][self.L()][self.N()])):
@@ -225,14 +225,30 @@ class Block:
 
     def delete(self):
         '''
-        Deletes the block object. Removes its path. Does not update any variables like
-        the graph.
+        Deletes the block object. Removes its path. Does not update any class variables,
+        such as the graph.
         
         Parameters:
             None
         Returns:
             None
         '''
+        #get the status of the levels for this block
+        lvls = Block.Inventory[self.M()][self.L()][self.N()]
+        #if block is nowhere else, ask for confirmation and warn user that
+        #the block may be unrecoverable.
+        yes = True
+        if(lvls.count(None) == len(lvls)-1):
+            yes = apt.confirmation("Block "+self.getFull()+" does not exist anywhere else; deleting "+\
+                "it from the workspace path may make it unrecoverable. Delete anyway?")
+        else:
+            yes = apt.confirmation("Are you sure you want to remove block "+self.getFull()+" from the "+\
+                "workspace's local path?")
+
+        if(yes == False):
+            log.info("Cancelled.")
+            return
+        #delete the directory
         shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
         pass
 

@@ -272,6 +272,7 @@ class Workspace:
         #iterate through all found downloads
         for mf in marker_files:
             b = Block(mf, self, Block.Level.DNLD)
+            #print(b)
             self._dnld_blocks += [b]
             #if the user is within a current block, load the HDL from its DNLD level (not INSTL)
             if(mult_dev == True or Block.getCurrent(bypass=True) == b):
