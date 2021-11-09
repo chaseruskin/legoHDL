@@ -880,6 +880,32 @@ class Block:
         return True
 
 
+    def getFilesHDL(self):
+        '''
+        Returns a list of the HDL files associated with this block.
+
+        Dynamically creates _hdl_files ([Language]) attr for faster repeated use.
+
+        Parameters:
+            None
+        Returns:
+            _hdl_files ([Language]): list of HDL Language file objects
+        '''
+        if(hasattr(self, "_hdl_files")):
+            return self._hdl_files
+
+        self._hdl_files = []
+
+        #get file paths
+        files = self.gatherSources()
+
+        #create Language objects
+        for f in files:
+            self._hdl_files += [Language(f, self.M(), self.L(), self.N(), self.V())]
+
+        return self._hdl_files
+
+
     def initialize(self, title, remote=None, fork=False, summary=None):
         '''
         Initializes an existing remote repository or current working directory
@@ -1261,21 +1287,28 @@ class Block:
             #ensure the block has release points (versions)
             if(latest_ver == Block.NULL_VER):
                 log.error("This block cannot be installed becuase it has no release points.")
-            else:
-                #checkout from latest legohdl version tag (highest version number)
-                tmp_block._repo.git('checkout','tags/'+latest_ver+apt.TAG_ID)
-                
-                #create new cache directory
-                block_cache_path = self.getWorkspace().getCachePath()+self.L()+'/'+self.N()+'/'
-                os.makedirs(block_cache_path, exist_ok=True)
+                apt.cleanTmpDir()
+                return None
+            
+            #checkout from latest legohdl version tag (highest version number)
+            tmp_block._repo.git('checkout','tags/'+latest_ver+apt.TAG_ID)
+            
+            #create new cache directory
+            block_cache_path = self.getWorkspace().getCachePath()+self.L()+'/'+self.N()+'/'
+            os.makedirs(block_cache_path, exist_ok=True)
 
-                #clone git repository to new cache directory
-                Git(block_cache_path+self.N(), ensure_exists=False).git('clone', \
-                    apt.TMP, block_cache_path+self.N(), '--single-branch')
+            #clone git repository to new cache directory
+            Git(block_cache_path+self.N(), ensure_exists=False).git('clone', \
+                apt.TMP, block_cache_path+self.N(), '--single-branch')
 
             #clean up tmp directory
             apt.cleanTmpDir()
-            pass
+
+            #create new block installed block
+            instl_block = Block(block_cache_path+self.N(), ws=self.getWorkspace(), lvl=Block.Level.INSTL)
+            #return the installed block for potential future use
+            return instl_block
+
         #check if looking to install a specific 'side' version
         elif(self.getLvl(to_int=False) == Block.Level.INSTL):
             #make sure the version is valid
@@ -1309,13 +1342,15 @@ class Block:
 
             #modify all entity/unit names within the specific version to reflect
             #that specific version
-            #:todo:
             #get all unit names
-            unit_names = self.getUnits(top=None, recursive=False)
+            unit_names = b.getUnits(top=None, recursive=False)
             mod_unit_names = []
             for key,u in unit_names.items():
                 print(key)
-                mod_unit_names += [key+'_'+ver.replace('.','_')]
+                mod_unit_names += [[key, key+'_'+ver.replace('.','_')]]
+
+            for key,u in unit_names.items():
+                Language.ProcessedFiles[u.getFile()].swapUnitNames(mod_unit_names)
             
             
             print(mod_unit_names)
@@ -1325,6 +1360,9 @@ class Block:
         #return None otherwise
         else:
             return None
+
+
+    def updateCacheMajors(self):
 
         pass
     
@@ -1969,7 +2007,7 @@ class Block:
         #load all VHDL files
         vhd_files = self.gatherSources(apt.VHDL_CODE, path=self.getPath())
         for v in vhd_files:
-            Vhdl(v, M=self.M(), L=self.L(), N=self.N())
+            Vhdl(v, self)
         #load all VERILOG files
         verilog_files = self.gatherSources(apt.VERILOG_CODE, path=self.getPath())
         for v in verilog_files:
@@ -2150,8 +2188,11 @@ class Block:
             instller = self.getLvlBlock(Block.Level.INSTL)
             if(instller != None):
                 instl_versions = instller.getInstalls(returnvers=True)
+            #additionally add what version the main cached block is
+            instl_versions += [instller.getHighestTaggedVersion()]
             #sort the versions available in cache
             instl_versions = self.sortVersions(instl_versions)
+
             
             #sort the versions found on the self block
             all_versions = self.sortVersions(self.getTaggedVersions())
@@ -2165,7 +2206,8 @@ class Block:
                 info_txt = info_txt + x + '\t'
                 #notify user of the installs in cache
                 if(x in instl_versions):
-                    info_txt = info_txt + '*'
+                    if(x != instl_versions[0] or instl_versions.count(x) > 1):
+                        info_txt = info_txt + '*'
                     #notify that it is a parent version
                     parent_ver = x[:x.find('.')]
                     if(parent_ver in instl_versions and parent_ver not in maj_vers):

@@ -16,7 +16,7 @@ class Git:
     #track all valid and invalid urls for faster performance (as well as if blank)
     _URLstatus = {}
 
-    QUIET = False
+    QUIET = True
 
     def __init__(self, path, clone=None, ensure_exists=True):
         '''
@@ -48,8 +48,7 @@ class Git:
                 elif(self.isValidRepo(self.getPath(), remote=False) == False):
                     #clone from remote url
                     log.info("Cloning repository from "+clone+"...")
-                    _,err = apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
-                    print(err)
+                    apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
                 else:
                     log.error("Cannot clone to an already initialized git repository.")
             #verify its a valid local repository and clone from local repository

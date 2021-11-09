@@ -42,23 +42,20 @@ class Unit:
     Bottle = Map()
 
 
-    def __init__(self, filepath, dsgn, M, L, N, V, E, about_txt=''):
+    def __init__(self, name, filepath, dsgn, lang_obj):
         '''
         Create a design unit object.
 
         Parameters:
+            name (str): the unit's name
             filepath (str): the file where the design unit was found
             dsgn (Design): the design type
-            M (str): the block market this unit belongs to
-            L (str): the block library this unit belongs to
-            N (str): the block name this unit belongs to
-            E (str): the unit's name
-            about_txt (str): the comment header block found at the top of its file
+            lang_obj (Language): the Language object this unit belongs to (also carries a Block)
         Returns:
             None   
         '''
         self._filepath = apt.fs(filepath)
-        self.setAbout(about_txt)
+        self.setAbout(lang_obj.getAbout())
 
         _,ext = os.path.splitext(self.getFile())
         ext = '*'+ext.lower()
@@ -77,11 +74,11 @@ class Unit:
 
         self._dsgn = dsgn
         
-        self._M = M
-        self._L = L
-        self._N = N
-        self._V = V
-        self._E = E
+        self._M = lang_obj.getOwner().M()
+        self._L = lang_obj.getOwner().L()
+        self._N = lang_obj.getOwner().N()
+        self._V = lang_obj.getOwner().V()
+        self._E = name
 
 
         self._checked = False
@@ -128,6 +125,9 @@ class Unit:
         self.Bottle[self.L()][self.E()] += [self]
 
         pass
+
+    def getOwner(self):
+        '''Returns _lang_obj'''
 
 
     def linkLibs(self, libs, pkgs):

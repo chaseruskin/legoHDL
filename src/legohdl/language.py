@@ -10,9 +10,7 @@
 #   entities/design units from its code, depending on if its 1 of the 2 
 #   supported languages: VHDL or verilog.
 
-from os import stat
-from posixpath import basename
-import sys
+import sys, re
 from abc import ABC, abstractmethod
 from .apparatus import Apparatus as apt
 import logging as log
@@ -24,16 +22,13 @@ class Language(ABC):
     #class container to store a list of all known files
     ProcessedFiles = Map()
 
-    def __init__(self, fpath, M='', L='', N='', V=''):
+    def __init__(self, fpath, block):
         '''
         Create an HDL language file object.
 
         Parameters:
             fpath (str): HDL file path
-            M (str): the legohdl block market the file belongs to
-            L (str): the legohdl block library the file belongs to
-            N (str): the legohdl block name the file belongs to
-            V (str): the legohdl block version the file belongs to
+            block (Block): the Block the file belongs to
         Returns:
             None
         '''
@@ -45,12 +40,8 @@ class Language(ABC):
             if(apt.isEqualPath(self.getPath(), pf)):
                 log.info("Already processed: "+self.getPath())
                 return
-
-        #remember what block owns this file :todo: make neater (pass a tuple)
-        self._M = M if(M != None) else ''
-        self._L = L if(L != None) else ''
-        self._N = N if(N != None) else ''
-        self._V = V if(V != None) else ''
+        #remember the block this file belongs to
+        self._block = block
 
         self._multi = ('/*', '*/')
 
@@ -398,30 +389,47 @@ class Language(ABC):
 
 
     def getPath(self):
+        '''Returns this _file_path (str) for this Language object.'''
         return self._file_path
 
 
-    def M(self):
-        return self._M
-
-
-    def L(self):
-        return self._L
-
-
-    def N(self):
-        return self._N
-
-
-    def V(self):
-        return self._V
+    def getOwner(self):
+        '''Returns the _block (Block) that owns this file.'''
+        return self._block
 
 
     def __str__(self):
         return f'''
         file: {self.getPath()}
-        owner: {self.M()+'.'+self.L()+'.'+self.N()+'('+self.V()+')'}
+        owner: {self.getOwner().M()+'.'+self.getOwner().L()+'.'+self.getOwner().N()+'('+self.getOwner().V()+')'}
         '''
+
+
+    def swapUnitNames(self, name_pairs):
+        print(name_pairs)
+        
+        data = []
+        #open the file
+        with open(self.getPath(), 'r') as f:
+            data = f.readlines()
+            #iterate through every name pair to find/replace
+            for pair in name_pairs:
+                print('PAIR:',pair)
+                #replace pairs only that have complete word
+                expression = re.compile('\\b'+pair[0]+'\\b', re.IGNORECASE)
+                #iterate through every line of the file data
+                for i in range(len(data)):
+                    data[i] = expression.sub(pair[1], data[i])
+                pass
+            
+            print(data)
+            pass
+
+        #rewrite the file with new replacements
+        with open(self.getPath(), 'w') as f:
+            f.writelines(data)
+
+        pass
 
 
     # :todo: rename and polish

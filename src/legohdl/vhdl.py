@@ -17,20 +17,17 @@ from .map import Map
 class Vhdl(Language):
 
 
-    def __init__(self, fpath, M='', L='', N='', V=''):
+    def __init__(self, fpath, block):
         '''
         Create a VHDL language file object.
 
         Parameters:
             fpath (str): HDL file path
-            M (str): the legohdl block market the file belongs to
-            L (str): the legohdl block library the file belongs to
-            N (str): the legohdl block name the file belongs to
-            V (str): the legohdl block version the file belongs to
+            block (Block): the Block the file belongs to
         Returns:
             None
         '''
-        super().__init__(fpath, M, L, N, V)
+        super().__init__(fpath, block)
 
         ### new important stuff
         self._seps = [':', '=', '(', ')', '>', '<', ',', '"']
@@ -94,7 +91,7 @@ class Vhdl(Language):
             #declare an entity
             if(cseg[0].lower() == 'entity'):
                 log.info("Identified entity: "+cseg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
+                self._designs += [Unit(cseg[1], self.getPath(), Unit.Design.ENTITY, self)]
                 dsgn_unit = self._designs[-1]
                 self.getInterface(dsgn_unit, c_statements[c_statements.index(cseg):])
                 #link visible libraries and packages
@@ -105,7 +102,7 @@ class Vhdl(Language):
             #declare a package unit
             elif(cseg[0].lower() == 'package' and cseg[1].lower() != 'body'):
                 log.info("Identified package "+cseg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.PACKAGE, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
+                self._designs += [Unit(cseg[1], self.getPath(), Unit.Design.PACKAGE, self)]
                 dsgn_unit = self._designs[-1]
                 #link visible libraries and packages
                 dsgn_unit.linkLibs(libs, pkgs)
@@ -117,14 +114,14 @@ class Vhdl(Language):
                 log.info("Identified configuration "+cseg[1]+" for entity: "+cseg[3])
                 #get who owns this configuration
                 dsgn_entity = cseg[3]
-                Unit.Jar[self.M()][self.L()][self.N()][dsgn_entity].linkConfig(cseg[1])
+                Unit.Jar[self.getOwner().M()][self.getOwner().L()][self.getOwner().N()][dsgn_entity].linkConfig(cseg[1])
                 pass
             #link an architecture
             elif(cseg[0].lower() == 'architecture'):
                 log.info("Identified architecture "+cseg[1]+" for entity: "+cseg[3])
                 #get who owns this architecture
                 dsgn_entity = cseg[3]
-                Unit.Jar[self.M()][self.L()][self.N()][dsgn_entity].linkArch(cseg[1])
+                Unit.Jar[self.getOwner().M()][self.getOwner().L()][self.getOwner().N()][dsgn_entity].linkArch(cseg[1])
                 pass
 
         return self._designs
@@ -216,7 +213,7 @@ class Vhdl(Language):
                                 lib = comp_parts[0]
                             #reference self library if it's 'work'
                             elif(comp_parts[0].lower() == 'work'):
-                                lib = self.L()
+                                lib = self.getOwner().L()
                     #the last piece is the entity name
                     comp_name = comp_parts[-1]
                     #ensure the component name has its component declaration visible
