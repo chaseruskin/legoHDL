@@ -695,6 +695,7 @@ scripts)?", warning=False)
 
         #install latest/controller for this block
         if(instl == None):
+            print("Installing...")
             instl = block.install()
             pass
         
@@ -702,6 +703,12 @@ scripts)?", warning=False)
         if(self.getVerNum() != None):
             print("Installing...")
             instl.install(ver=self.getVerNum())
+
+        #recursively install each requirement :todo:
+        if(self.hasFlag('requirements')):
+            print(instl.getMeta('derives'))
+            pass
+
         pass
 
     
