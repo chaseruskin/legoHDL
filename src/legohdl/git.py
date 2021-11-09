@@ -18,7 +18,7 @@ class Git:
 
     QUIET = False
 
-    def __init__(self, path, clone=None, ensure_exists=True, args=[]):
+    def __init__(self, path, clone=None, ensure_exists=True):
         '''
         Create a Git instance. This is a repository-like object. Will `init`
         if one DNE at local path, or try to `clone` to `path` name if `clone` is
@@ -29,7 +29,6 @@ class Git:
             path (str): path to initialize git to
             clone (str): path/remote url to clone from
             ensure_exists (bool): determine if to force create a repo if DNE
-            args ([str]): additional arguments to pass when cloning repository
         Returns:
             None
         '''
@@ -49,14 +48,15 @@ class Git:
                 elif(self.isValidRepo(self.getPath(), remote=False) == False):
                     #clone from remote url
                     log.info("Cloning repository from "+clone+"...")
-                    apt.execute('git', 'clone', clone, self.getPath(), apt.listToStr(args, ' '), quiet=self.QUIET, returnoutput=True)
+                    _,err = apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
+                    print(err)
                 else:
                     log.error("Cannot clone to an already initialized git repository.")
             #verify its a valid local repository and clone from local repository
             elif(self.isValidRepo(clone, remote=False) == True and self.isBlankRepo(clone) == False):
                 if(len(os.listdir(self.getPath()))):
                     exit(log.error("Cannot clone to a non-empty directory."))
-                apt.execute('git', 'clone', clone, self.getPath(), apt.listToStr(args, ' '), quiet=self.QUIET, returnoutput=True)
+                apt.execute('git', 'clone', clone, self.getPath(), quiet=self.QUIET, returnoutput=True)
                 pass
         #check if git exists here for local repository
         elif(self.isValidRepo(self.getPath(), remote=False) == False and ensure_exists):

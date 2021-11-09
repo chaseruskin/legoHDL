@@ -1270,7 +1270,8 @@ class Block:
                 os.makedirs(block_cache_path, exist_ok=True)
 
                 #clone git repository to new cache directory
-                Git(block_cache_path+self.N(), clone=apt.TMP, args='--single-branch')
+                Git(block_cache_path+self.N(), ensure_exists=False).git('clone', \
+                    apt.TMP, block_cache_path+self.N(), '--single-branch')
 
             #clean up tmp directory
             apt.cleanTmpDir()
@@ -1309,7 +1310,15 @@ class Block:
             #modify all entity/unit names within the specific version to reflect
             #that specific version
             #:todo:
+            #get all unit names
+            unit_names = self.getUnits(top=None, recursive=False)
+            mod_unit_names = []
+            for key,u in unit_names.items():
+                print(key)
+                mod_unit_names += [key+'_'+ver.replace('.','_')]
             
+            
+            print(mod_unit_names)
             print(b)
             return b
             pass
