@@ -550,7 +550,8 @@ class Block:
         '''
         if(hasattr(self, '_tags')):
             return self._tags
-
+        if(hasattr(self, '_repo') == False):
+            return []
         all_tags,_ = self._repo.git('tag','-l')
         #print(all_tags)
         #split into list
@@ -1314,6 +1315,12 @@ class Block:
             
             #checkout from latest legohdl version tag (highest version number)
             tmp_block._repo.git('checkout','tags/'+latest_ver+apt.TAG_ID)
+
+            #make sure block's state is not corrupted
+            if(tmp_block.isValid() == False):
+                log.error("This block version is corrupted and cannot be installed.")
+                apt.cleanTmpDir()
+                return None
             
             #create new cache directory
             block_cache_path = self.getWorkspace().getCachePath()+self.L()+'/'+self.N()+'/'
@@ -1370,6 +1377,12 @@ class Block:
             #revert last checkout to latest version
             self._repo.git('checkout','-')
 
+            #make sure block's state is not corrupted
+            if(b.isValid() == False):
+                log.error("This block version is corrupted and cannot be installed.")
+                shutil.rmtree(cache_path, onerror=apt.rmReadOnly)
+                return None
+
             #get all unit names
             unit_names = b.getUnits(top=None, recursive=False)
             #store the pairs of unit names to find/replace
@@ -1397,7 +1410,6 @@ class Block:
             #disable write permissions for specific version block
             b.modWritePermissions(False)
             return b
-            pass
         #return None otherwise
         else:
             return None
