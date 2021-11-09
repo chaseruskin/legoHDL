@@ -311,12 +311,12 @@ class Market:
         Returns:
             None
         '''
-        print('{:<15}'.format("Market"),'{:<48}'.format("Remote Repository"),'{:<12}'.format("Block Count"),'{:<12}'.format("Active"))
-        print("-"*15+" "+"-"*48+" "+"-"*12+" "+"-"*8)
+        print('{:<15}'.format("Market"),'{:<48}'.format("Remote Repository"),'{:<7}'.format("Blocks"),'{:<7}'.format("Active"))
+        print("-"*15+" "+"-"*48+" "+"-"*7+" "+"-"*7)
         for mrkt in cls.Jar.values():
             active = 'yes' if(mrkt in active_markets) else '-'
             val = mrkt._repo.getRemoteURL() if(mrkt.isRemote()) else 'local'
-            print('{:<15}'.format(mrkt.getName()),'{:<48}'.format(val),'{:<12}'.format(mrkt.getBlockCount()),'{:<8}'.format(active))
+            print('{:<15}'.format(mrkt.getName()),'{:<48}'.format(val),'{:<7}'.format(mrkt.getBlockCount()),'{:<7}'.format(active))
             pass
 
         pass
