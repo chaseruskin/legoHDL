@@ -365,7 +365,7 @@ class Block:
 
 
     def getVersion(self):
-        '''Returns version without 'v' prependend.'''
+        '''Returns version without 'v' prepended.'''
         return self.getMeta('version')
 
 
@@ -1274,6 +1274,32 @@ class Block:
         pass
 
 
+    def isCorrupt(self, ver, disp_err=True):
+        '''
+        Determines if the given block's requested version/state is corrupted
+        or can be used.
+        
+        Parameters:
+            ver (str): version under test in proper format (v0.0.0)
+            disp_err (bool): determine if to print an error statement on finding corruption
+        Returns:
+            corrupt (bool): if the metadata is invalid for a release point
+        '''
+        corrupt = False
+
+        if(self.isValid() == False):
+            corrupt = True
+
+        #ensure the latest tag matches the version found in metadata (valid release)
+        if(not corrupt and ver[1:] != self.getVersion()):
+            corrupt = True
+
+        if(disp_err and corrupt):
+            log.error("This block's version "+ver+" is corrupted and cannot be installed.")
+
+        return corrupt
+
+
     def install(self, ver=None):
         '''
         Installs this block to the cache. 
@@ -1290,7 +1316,7 @@ class Block:
         #determine if looking to install main cache block
         if(self.getLvl(to_int=False) == Block.Level.DNLD or \
             self.getLvl(to_int=False) == Block.Level.AVAIL):
-            print("Installing latest block to cache...")
+            log.info("Installing block's latest version to cache...")
 
             #if a remote is available clone to tmp directory
             rem = self.getMeta('remote')
@@ -1309,7 +1335,7 @@ class Block:
 
             #ensure the block has release points (versions)
             if(latest_ver == Block.NULL_VER):
-                log.error("This block cannot be installed becuase it has no release points.")
+                log.error("This block cannot be installed because it has no release points.")
                 apt.cleanTmpDir()
                 return None
             
@@ -1317,8 +1343,7 @@ class Block:
             tmp_block._repo.git('checkout','tags/'+latest_ver+apt.TAG_ID)
 
             #make sure block's state is not corrupted
-            if(tmp_block.isValid() == False):
-                log.error("This block version is corrupted and cannot be installed.")
+            if(tmp_block.isCorrupt(latest_ver)):
                 apt.cleanTmpDir()
                 return None
             
@@ -1353,7 +1378,7 @@ class Block:
                 log.error("Version "+ver+" is already installed for "+self.getFull()+".")
                 return None
 
-            print('Installing version '+ver)
+            log.info("Installing "+self.getFull()+'('+ver+')...')
 
             #make files write-able
             self.modWritePermissions(True)
@@ -1363,7 +1388,7 @@ class Block:
 
             #create cache directory based on this block's path
             cache_path = self.getPath()+'../'+ver+'/'
-            print(cache_path)
+            #print(cache_path)
             #copy in all files from self
             shutil.copytree(self.getPath(), cache_path)
 
@@ -1378,8 +1403,7 @@ class Block:
             self._repo.git('checkout','-')
 
             #make sure block's state is not corrupted
-            if(b.isValid() == False):
-                log.error("This block version is corrupted and cannot be installed.")
+            if(b.isCorrupt(ver)):
                 shutil.rmtree(cache_path, onerror=apt.rmReadOnly)
                 return None
 

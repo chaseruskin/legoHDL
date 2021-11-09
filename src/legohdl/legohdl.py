@@ -695,13 +695,11 @@ scripts)?", warning=False)
 
         #install latest/controller for this block
         if(instl == None):
-            print("Installing...")
             instl = block.install()
             pass
         
         #install specific version if specifed
         if(self.getVerNum() != None):
-            print("Installing...")
             instl.install(ver=self.getVerNum())
 
         #recursively install each requirement :todo:

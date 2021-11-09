@@ -358,9 +358,9 @@ class Unit:
     @classmethod
     def jarExists(cls, M, L, N):
         '''Returns True if the Jar has M/L/N key levels.'''
-        if(M in cls.Jar.keys()):
-            if(L in cls.Jar[M].keys()):
-                return (N in cls.Jar[M][L].keys())
+        if(M.lower() in cls.Jar.keys()):
+            if(L.lower() in cls.Jar[M].keys()):
+                return (N.lower() in cls.Jar[M][L].keys())
         return False
 
 
