@@ -129,11 +129,15 @@ class Graph:
         '''
         Topologically sort the graph to compute a hierarchical build order.
 
+        If no units are found, then the program exits with error. The current
+        block (block linked to last unit in order) will be the last block
+        in the block_order.
+
         Parameters:
             None
         Returns:
             order ([Unit]): sorted build order of Unit entity-type objects
-            block_order ([str]): sorted order of block title's required for build
+            block_order ([Block]): sorted order of blocks required for build
         '''
         #store list of design entities in their correct order
         order = [] 
