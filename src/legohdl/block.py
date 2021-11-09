@@ -201,26 +201,36 @@ class Block:
             or
             [str]: list of version keys when returnvers is set
         '''
-        if(hasattr(self, '_instls')):
+        #first ensure using the installation level
+        instl = self.getLvlBlock(Block.Level.INSTL)
+
+        #return empy structures if installation DNE
+        if(instl == None):
             if(returnvers):
-                return list(self._instls.keys())
-            return self._instls
-        
-        self._instls = Map()
+                return []
+            return Map()
+
+        #dynamically use existing attribute computation
+        if(hasattr(instl, '_instls')):
+            if(returnvers):
+                return list(instl._instls.keys())
+            return instl._instls
+
+        instl._instls = Map()
 
         #print(self.getPath())
         #get all folders one path below
-        base_path,_ = os.path.split(self.getPath()[:len(self.getPath())-1])
+        base_path,_ = os.path.split(instl.getPath()[:len(instl.getPath())-1])
         base_path = apt.fs(base_path)
         dirs = os.listdir(base_path)
         for d in dirs:
             if(Block.validVer(d, maj_place=True) or Block.validVer(d, maj_place=False)):
                 path = apt.fs(base_path+d+'/')
-                self._instls[d] = Block(path, self.getWorkspace(), lvl=Block.Level.VER)
+                instl._instls[d] = Block(path, instl.getWorkspace(), lvl=Block.Level.VER)
 
         if(returnvers):
-                return list(self._instls.keys())
-        return self._instls
+                return list(instl._instls.keys())
+        return instl._instls
 
 
     def delete(self):
@@ -1575,36 +1585,68 @@ class Block:
         pass
 
 
-    def updateDerivatives(self, block_list):
+    def updateDerivatives(self):
         '''
         Updates the metadata section 'derives' for required blocks needed by
         the current block.
 
+        Only lists the 1st level direct block requirements. These are the neighbors
+        in a block graph for this block's vertex.
+
         Parameters:
-            block_list ([Block]): a list of blocks used in the current design
+            None
         Returns:
             None
         '''
-        #:todo: needs better way to find its direct dependencies (and span over all hdl code)
-        #print(Block.Hierarchy)
-        #print(Block.Inventory)
-        block_titles = []
-        update = False
-        #update if the length of the dependencies has changed
-        if(len(self.getMeta('derives')) != len(block_list)):
-            update = True
-        for b in block_list:
+        #get every unit from this block
+        units = self.getUnits(top=None)
+        
+        block_reqs = []
+        direct_reqs = []
+        #get the list of direct requirements
+        for u in units.values():
+            direct_reqs += u.getReqs()
+
+        #for each direct required unit, add its block
+        for dr in direct_reqs:
+            if(dr.getLanguageFile().getOwner() not in block_reqs):
+                block_reqs += [dr.getLanguageFile().getOwner()]
+
+        #store block titles in a map to compare without case sense
+        block_titles = Map()
+
+        block_derives = Map()
+        for bd in self.getMeta('derives'):
+            block_derives[bd] = bd
+
+        #iterate through every block requirement to add its title
+        for b in block_reqs:
             #skip listing itself as block dependency
             if(b == self):
                 continue
+            block_titles[b.getFull(inc_ver=True)] = b.getFull(inc_ver=True)
+            pass
 
-            block_titles += [b.getFull(inc_ver=True)]
+        update = False
+        
+        #update if the length of the dependencies has changed
+        if(len(block_derives) != len(block_titles)):
+            update = True
 
-            if(block_titles[-1] not in self.getMeta('derives')):
+        #iterate through every already-listed block derivative
+        for b in block_derives.keys():
+            if(b not in block_titles.keys()):
                 update = True
-            
+                break
+
+        #iterate through every found block requirement
+        for b in block_titles.keys():
+            if(b not in block_derives.keys()):
+                update = True
+                break
+
         if(update):
-            self.setMeta('derives', block_titles)
+            self.setMeta('derives', list(block_titles.values()))
             self.save()
         pass
 

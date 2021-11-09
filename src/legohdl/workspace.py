@@ -318,6 +318,12 @@ class Workspace:
             #units associated with it, only metadata
             pass
 
+        #4. ID all specific version blocks if identifying designs
+        if(id_dsgns):
+            for vis_block in self._visible_blocks:
+                for spec_block in vis_block.getInstalls().values():
+                    spec_block.loadHDL()
+
         return self._visible_blocks
 
 

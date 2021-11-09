@@ -473,7 +473,7 @@ scripts)?", warning=False)
             blueprint.write(line+'\n')
 
         #update block's dependencies
-        block.updateDerivatives(block_order)
+        block.updateDerivatives()
 
         pass
 
@@ -1392,7 +1392,7 @@ if __name__ == "__main__":
         top_dog,_,_ = block.identifyTopDog(None)
         #update block requirements
         _,block_order = self._graph(block, top_dog)
-        block.updateDerivatives(block_order)
+        block.updateDerivatives()
         block.release(msg, ver, options)
         #don't look to market when updating if the block does not link to market anymore
         bypassMrkt = (block.getMeta('market') not in apt.getMarkets())
