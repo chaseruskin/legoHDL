@@ -104,8 +104,11 @@ class Block:
                 self.setCurrent(self)
             #load from metadata
             self.loadMeta()
+            
             #add the block to the inventory
-            success = self.addToInventory()
+            success = False
+            if(self._lvl != Block.Level.TMP):
+                success = self.addToInventory()
 
             #store specifc installation versions in a map
             if(success and self._lvl == Block.Level.INSTL):
@@ -1299,6 +1302,10 @@ class Block:
 
             #create new block installed block
             instl_block = Block(block_cache_path+self.N(), ws=self.getWorkspace(), lvl=Block.Level.INSTL)
+
+            #make files read-only
+            instl_block.modWritePermissions(False)
+
             #return the installed block for potential future use
             return instl_block
 
@@ -1314,6 +1321,10 @@ class Block:
                 return None
 
             print('Installing version '+ver)
+
+            #make files write-able
+            self.modWritePermissions(True)
+
             #checkout the correct version
             self._repo.git('checkout','tags/'+ver+apt.TAG_ID)
 
@@ -1332,8 +1343,6 @@ class Block:
 
             #revert last checkout to latest version
             self._repo.git('checkout','-')
-
-
 
             #get all unit names
             unit_names = b.getUnits(top=None, recursive=False)
@@ -1356,6 +1365,11 @@ class Block:
             print(lang_files)
             print(mod_unit_names)
             print(b)
+
+            #re-disable write permissions for installation block
+            self.modWritePermissions(False)
+            #disable write permissions for specific version block
+            b.modWritePermissions(False)
             return b
             pass
         #return None otherwise
@@ -1410,98 +1424,19 @@ class Block:
         return self._repo.remoteExists()
 
 
-    def copyVersionCache(self, ver, folder):
-        '''
-        Copies new folder to cache from base installation path and updates
-        entity names within the block to have the correct appened "_v". Assumes
-        to be a valid release point before entering this method.
-        '''
-        #checkout version
-        self._repo.git('checkout',ver+apt.TAG_ID)  
-        #copy files
-        version_path = self.getPath()+"../"+folder+"/"
-        base_path = self.getPath()
-        shutil.copytree(self.getPath(), version_path)
-        #log.info(version_path)
-        #delete the git repository for saving space and is not needed
-        shutil.rmtree(version_path+"/.git/", onerror=apt.rmReadOnly)
-        #temp set local path to be inside version
-        self._path = version_path
-        #enable write permissions
-        self.modWritePermissions(enable=True)
-        #now get project sources, rename the entities and packages
-        prj_srcs = self.grabCurrentDesigns(override=True)
-        #create the string version of the version
-        str_ver = "_"+folder.replace(".","_")
-        for lib in prj_srcs.values():
-            #generate list of tuple pairs of (old name, new name)
-            name_pairs = {'VHDL' : [], 'VERILOG' : []}
-            for u in lib.values():
-                n = u.getName(low=False)
-                if(u.getLanguageType() == Unit.Language.VHDL):
-                    #sort from shortest to highest
-                    for i in range(len(name_pairs['VHDL'])):
-                        if(len(name_pairs) == 0 or len(name_pairs['VHDL'][i][0]) > len(n)):
-                            name_pairs['VHDL'].insert(i, (n.lower(), (n+str_ver).lower()))
-                            break
-                    else:
-                        name_pairs['VHDL'].append((n.lower(), (n+str_ver).lower()))
-              
-                elif(u.getLanguageType() == Unit.Language.VERILOG):
-                    #sort from shortest to highest
-                    for i in range(len(name_pairs['VERILOG'])):
-                        if(len(name_pairs) == 0 or len(name_pairs['VERILOG'][i][0]) > len(n)):
-                            name_pairs['VERILOG'].insert(i, (n, n+str_ver))
-                            break
-                    else:
-                        name_pairs['VERILOG'].append((n, n+str_ver))
-
-            #start with shortest names first
-    
-            #go through each unit file to update unit names in VHDL files
-            for u in lib.values():
-                u.getLang().setUnitName(name_pairs)
-
-        #update the metadata file here to reflect changes
-        with open(self.getPath()+apt.MARKER, 'r') as f:
-            ver_meta = cfg.load(f, ignore_depth=True)
-        if(ver_meta['block']['toplevel'] != cfg.NULL):
-            ver_meta['block']['toplevel'] = ver_meta['block']['toplevel']+str_ver
-        if(ver_meta['block']['bench'] != cfg.NULL):
-            ver_meta['block']['bench'] = ver_meta['block']['bench']+str_ver
-
-        #save metadata adjustments
-        self.save(meta=ver_meta)
-
-        #disable write permissions
-        self.modWritePermissions(enable=False)
-
-        #change local path back to base install
-        self._path = base_path
-
-        #switch back to latest version in cache
-        if(ver[1:] != self.getMeta("version")):
-            self._repo.git('checkout','-')
-        pass
-
-
-    def modWritePermissions(self, enable, path=None):
+    def modWritePermissions(self, enable):
         '''
         Disable modification/write permissions of all files specified on this
         block's path.
 
+        Hidden files do not get their write permissions modified.
+
         Parameters:
             enable (bool): determine if files to have write permissions
-            path (str): path to file or directory to change (default = block's path)
         Returns:
             None
         '''
-        if(path == None):
-            path = self.getPath()
-        else:
-            path = apt.fs(path)
-
-        all_files = glob.glob(path+"**/*.*", recursive=True)
+        all_files = glob.glob(self.getPath()+"**/*.*", recursive=True)
 
         for f in all_files:
             #get current file permissions
@@ -1630,23 +1565,30 @@ class Block:
         the current block.
 
         Parameters:
-            block_list ([str]): a list of block titles
+            block_list ([Block]): a list of blocks used in the current design
         Returns:
             None
         '''
-        #print("Derives:",block_list)
+        #:todo: needs better way to find its direct dependencies (and span over all hdl code)
+        #print(Block.Hierarchy)
+        #print(Block.Inventory)
+        block_titles = []
         update = False
-        #remove itself from the block list dependencies
-        if(self.getTitle_old(mrkt=True) in block_list):
-            block_list.remove(self.getTitle_old(mrkt=True))
+        #update if the length of the dependencies has changed
         if(len(self.getMeta('derives')) != len(block_list)):
             update = True
         for b in block_list:
-            if(b not in self.getMeta('derives')):
+            #skip listing itself as block dependency
+            if(b == self):
+                continue
+
+            block_titles += [b.getFull(inc_ver=True)]
+
+            if(block_titles[-1] not in self.getMeta('derives')):
                 update = True
-                break
+            
         if(update):
-            self.setMeta('derives', list(block_list))
+            self.setMeta('derives', block_titles)
             self.save()
         pass
 
@@ -2240,6 +2182,80 @@ class Block:
 # === ARCHIVED CODE... TO DELETE ===============================================
 # ==============================================================================
 # ==============================================================================
+    @DeprecationWarning
+    def copyVersionCache(self, ver, folder):
+        '''
+        Copies new folder to cache from base installation path and updates
+        entity names within the block to have the correct appened "_v". Assumes
+        to be a valid release point before entering this method.
+        '''
+        #checkout version
+        self._repo.git('checkout',ver+apt.TAG_ID)  
+        #copy files
+        version_path = self.getPath()+"../"+folder+"/"
+        base_path = self.getPath()
+        shutil.copytree(self.getPath(), version_path)
+        #log.info(version_path)
+        #delete the git repository for saving space and is not needed
+        shutil.rmtree(version_path+"/.git/", onerror=apt.rmReadOnly)
+        #temp set local path to be inside version
+        self._path = version_path
+        #enable write permissions
+        self.modWritePermissions(enable=True)
+        #now get project sources, rename the entities and packages
+        prj_srcs = self.grabCurrentDesigns(override=True)
+        #create the string version of the version
+        str_ver = "_"+folder.replace(".","_")
+        for lib in prj_srcs.values():
+            #generate list of tuple pairs of (old name, new name)
+            name_pairs = {'VHDL' : [], 'VERILOG' : []}
+            for u in lib.values():
+                n = u.getName(low=False)
+                if(u.getLanguageType() == Unit.Language.VHDL):
+                    #sort from shortest to highest
+                    for i in range(len(name_pairs['VHDL'])):
+                        if(len(name_pairs) == 0 or len(name_pairs['VHDL'][i][0]) > len(n)):
+                            name_pairs['VHDL'].insert(i, (n.lower(), (n+str_ver).lower()))
+                            break
+                    else:
+                        name_pairs['VHDL'].append((n.lower(), (n+str_ver).lower()))
+              
+                elif(u.getLanguageType() == Unit.Language.VERILOG):
+                    #sort from shortest to highest
+                    for i in range(len(name_pairs['VERILOG'])):
+                        if(len(name_pairs) == 0 or len(name_pairs['VERILOG'][i][0]) > len(n)):
+                            name_pairs['VERILOG'].insert(i, (n, n+str_ver))
+                            break
+                    else:
+                        name_pairs['VERILOG'].append((n, n+str_ver))
+
+            #start with shortest names first
+    
+            #go through each unit file to update unit names in VHDL files
+            for u in lib.values():
+                u.getLang().setUnitName(name_pairs)
+
+        #update the metadata file here to reflect changes
+        with open(self.getPath()+apt.MARKER, 'r') as f:
+            ver_meta = cfg.load(f, ignore_depth=True)
+        if(ver_meta['block']['toplevel'] != cfg.NULL):
+            ver_meta['block']['toplevel'] = ver_meta['block']['toplevel']+str_ver
+        if(ver_meta['block']['bench'] != cfg.NULL):
+            ver_meta['block']['bench'] = ver_meta['block']['bench']+str_ver
+
+        #save metadata adjustments
+        self.save(meta=ver_meta)
+
+        #disable write permissions
+        self.modWritePermissions(enable=False)
+
+        #change local path back to base install
+        self._path = base_path
+
+        #switch back to latest version in cache
+        if(ver[1:] != self.getMeta("version")):
+            self._repo.git('checkout','-')
+        pass
 #dynamically grab the origin url if it has been changed/added by user using git
     @DeprecationWarning
     def grabGitRemote(self, newValue=None, override=False):

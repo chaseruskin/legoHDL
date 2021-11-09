@@ -410,7 +410,7 @@ scripts)?", warning=False)
             for lbl in Label.Jar.values():
                 #get global labels from external blocks
                 if(lbl.isGlobal() == True):
-                    #:todo: get block from given title
+                    #gather files with specific label extension
                     paths = b.gatherSources(ext=lbl.getExtensions())
                     #add every found file identified with this label to the blueprint
                     for p in paths:
@@ -471,6 +471,9 @@ scripts)?", warning=False)
         #write all data to the blueprint
         for line in blueprint_data:
             blueprint.write(line+'\n')
+
+        #update block's dependencies
+        block.updateDerivatives(block_order)
 
         pass
 
@@ -727,6 +730,9 @@ scripts)?", warning=False)
                 installations[ver_num] = tmp
             else:
                 exit(log.error("Version "+ver_num+" may not exist or be installed to the cache!"))
+        #includes latest
+        else:
+            installations['latest'] = installer
 
         #display helpful information to user about what installations will be deleted
         print("From "+installer.getFull()+" would remove: \n\t" + \
@@ -739,7 +745,16 @@ scripts)?", warning=False)
                 print("Uninstalled "+i.getFull(inc_ver=True))
                 #delete from cache
                 i.delete()
+
+            #remove this block's cache path name if uninstalling the main cache block
+            if(installer in installations.values()):
+                shutil.rmtree(self.WS().getCachePath()+installer.L()+'/'+installer.N()+'/', onerror=apt.rmReadOnly)
+            #remove this block's cache path library if empty
+            if(len(os.listdir(self.WS().getCachePath()+installer.L()+'/')) == 0):
+                shutil.rmtree(self.WS().getCachePath()+installer.L()+'/', onerror=apt.rmReadOnly)
+
             log.info("Success")
+
         else:
             log.info('Cancelled.')
         pass
