@@ -9,8 +9,6 @@
 import os, shutil, stat, glob
 from datetime import date
 
-from legohdl.gui import ToggleSwitch
-
 from .graph import Graph
 from .vhdl import Vhdl
 from .verilog import Verilog
@@ -34,6 +32,7 @@ class Block:
         INSTL = 1
         AVAIL = 2
         VER   = 3
+        TMP   = 9
         pass
 
 
@@ -57,6 +56,9 @@ class Block:
 
     #class container storing the relationships between blocks
     Hierarchy = Graph()
+
+    #an unreleased block's version number
+    NULL_VER = 'v0.0.0'
 
 
     def __init__(self, path, ws, lvl=Level.DNLD):
@@ -93,8 +95,9 @@ class Block:
                     break
         #check if valid
         if(self.isValid()):
-            #create Git object if not a VER or not AVAIL (in market)
-            if(self._lvl != Block.Level.VER and self._lvl != Block.Level.AVAIL):
+            #create Git object if is download block or main installation
+            if(self._lvl == Block.Level.DNLD or self._lvl == Block.Level.INSTL or \
+                self._lvl == Block.Level.TMP):
                 self._repo = Git(self.getPath())
             #are the two paths equal to each other? then this is the current block
             if(apt.isEqualPath(self.getPath(), os.getcwd())):
@@ -332,19 +335,27 @@ class Block:
         return m+self.L()+'.'+self.N()
 
 
-    #return the version as only digit string, ex: 1.2.3
     def getVersion(self):
+        '''Returns version without 'v' prependend.'''
         return self.getMeta('version')
 
 
-    #return highest tagged version for this block's repository
     def getHighestTaggedVersion(self):
+        '''
+        Returns the highest tagged version for this block's repository or (v0.0.0 
+        if none found).
+
+        Parameters:
+            None
+        Returns:
+            highest (str): highest version in format ('v0.0.0')
+        '''
         all_vers = self.getTaggedVersions()
         highest = '0.0.0'
         for v in all_vers:
             if(self.biggerVer(highest,v[1:]) == v[1:]):
                 highest = v[1:]
-        return highest
+        return 'v'+highest
 
 
     def waitOnChangelog(self):
@@ -642,10 +653,6 @@ class Block:
         pass
 
 
-    def getAvailableVers(self):
-        return ['v'+self.getHighestTaggedVersion()]
-
-
     def secureMeta(self):
         '''
         Performs safety measures on the block's metadata. Only runs once before
@@ -676,10 +683,10 @@ class Block:
             self.setMeta('derives',list())
 
         if(hasattr(self, "_repo")):
-            #grab list of available versions
-            avail_vers = self.getAvailableVers()     
+            #grab highest available version
+            correct_ver = self.getHighestTaggedVersion()[1:]   
             #dynamically determine the latest valid release point
-            self.setMeta('version', avail_vers[0][1:])
+            self.setMeta('version', correct_ver)
 
             #set the remote correctly
             self.setMeta('remote', self._repo.getRemoteURL())
@@ -1237,17 +1244,36 @@ class Block:
             print("Installing latest block to cache...")
 
             #if a remote is available clone to tmp directory
-
+            rem = self.getMeta('remote')
+            if(Git.isValidRepo(rem, remote=True)):
+                Git(apt.TMP, clone=rem)
             #else clone the downloaded block to tmp directory
+            elif(self.getLvl(to_int=False) == Block.Level.DNLD):
+                Git(apt.TMP, clone=self.getPath())
+            else:
+                log.error("Cannot access block's repository.")
+                return None
 
-            #create new cache directory
+            #get block's latest release point
+            tmp_block = Block(apt.TMP, self.getWorkspace(), lvl=Block.Level.TMP)
+            latest_ver = tmp_block.getHighestTaggedVersion()
 
-            #checkout from latest legohdl version tag
+            #ensure the block has release points (versions)
+            if(latest_ver == Block.NULL_VER):
+                log.error("This block cannot be installed becuase it has no release points.")
+            else:
+                #checkout from latest legohdl version tag (highest version number)
+                tmp_block._repo.git('checkout','tags/'+latest_ver+apt.TAG_ID)
+                
+                #create new cache directory
+                block_cache_path = self.getWorkspace().getCachePath()+self.L()+'/'+self.N()+'/'
+                os.makedirs(block_cache_path, exist_ok=True)
 
-            #clone git repository to new cache directory
+                #clone git repository to new cache directory
+                Git(block_cache_path+self.N(), clone=apt.TMP, args='--single-branch')
 
-            #clean up temp directory
-            
+            #clean up tmp directory
+            apt.cleanTmpDir()
             pass
         #check if looking to install a specific 'side' version
         elif(self.getLvl(to_int=False) == Block.Level.INSTL):
