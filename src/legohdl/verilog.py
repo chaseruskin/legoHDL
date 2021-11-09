@@ -13,22 +13,18 @@ from .unit import Unit
 class Verilog(Language):
 
 
-    def __init__(self, fpath, M='', L='', N='', V=''):
+    def __init__(self, fpath, block):
         '''
         Create a VERILOG language file object.
 
         Parameters:
             fpath (str): HDL file path
-            M (str): the legohdl block market the file belongs to
-            L (str): the legohdl block library the file belongs to
-            N (str): the legohdl block name the file belongs to
-            V (str): the legohdl block version the file belongs to
+            block (Block): the block this language file belongs to
         Returns:
             None
         '''
-        super().__init__(fpath, M, L, N, V)
+        super().__init__(fpath, block)
 
-        ### new important stuff
         self._seps = [':', '=', '(', ')', '#', ',', '.', '[', ']', '"']
         self._dual_chars = ['<=', '==']
         self._comment = '//'
@@ -37,7 +33,6 @@ class Verilog(Language):
             'endgenerate', 'generate']
 
         self.spinCode()
-        ###
 
         #run with VERILOG decoder
         self.identifyDesigns()
@@ -67,7 +62,7 @@ class Verilog(Language):
         for cseg in c_statements:
             if(cseg[0] == 'module'):
                 log.info("Identified module "+cseg[1])
-                self._designs += [Unit(self.getPath(), Unit.Design.ENTITY, self.M(), self.L(), self.N(), self.V(), cseg[1], about_txt=self.getAbout())]
+                self._designs += [Unit(cseg[1], self.getPath(), Unit.Design.ENTITY, self)]
                 dsgn_unit = self._designs[-1]
                 self.getInterface(dsgn_unit, c_statements[c_statements.index(cseg):])
                 pass
@@ -153,7 +148,7 @@ class Verilog(Language):
                     u.addReq(comp_unit)
                     #enter decoding for the lower-level unit
                     if(comp_unit.isChecked() == False and recursive):
-                        Language.ProcessedFiles[comp_unit.getFile()].decode(comp_unit, recursive)
+                        comp_unit.getLanguageFile().decode(comp_unit, recursive)
                 pass
 
         pass

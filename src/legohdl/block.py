@@ -894,15 +894,8 @@ class Block:
         if(hasattr(self, "_hdl_files")):
             return self._hdl_files
 
-        self._hdl_files = []
-
-        #get file paths
-        files = self.gatherSources()
-
-        #create Language objects
-        for f in files:
-            self._hdl_files += [Language(f, self.M(), self.L(), self.N(), self.V())]
-
+        #load hdl files (creates attr _hdl_files)
+        self.loadHDL()
         return self._hdl_files
 
 
@@ -1340,19 +1333,27 @@ class Block:
             #revert last checkout to latest version
             self._repo.git('checkout','-')
 
-            #modify all entity/unit names within the specific version to reflect
-            #that specific version
+
+
             #get all unit names
             unit_names = b.getUnits(top=None, recursive=False)
-            mod_unit_names = []
+            #store the pairs of unit names to find/replace
+            mod_unit_names = [] 
+            #store what language objects will need to swap unit names
+            lang_files = [] 
+            #iterate through every unit to create find/replace pairings
             for key,u in unit_names.items():
-                print(key)
                 mod_unit_names += [[key, key+'_'+ver.replace('.','_')]]
+                #add its file to the list if not already included
+                if(u.getLanguageFile() not in lang_files):
+                    lang_files += [u.getLanguageFile()]
 
-            for key,u in unit_names.items():
-                Language.ProcessedFiles[u.getFile()].swapUnitNames(mod_unit_names)
+            #modify all entity/unit names within the specific version to reflect
+            #that specific version
+            for f in lang_files:
+                f.swapUnitNames(mod_unit_names)
             
-            
+            print(lang_files)
             print(mod_unit_names)
             print(b)
             return b
@@ -2003,15 +2004,17 @@ class Block:
             if(returnnames):
                 return list(self._units.keys())
             return self._units
+
+        self._hdl_files = []
         #open each found source file and identify their units
         #load all VHDL files
         vhd_files = self.gatherSources(apt.VHDL_CODE, path=self.getPath())
         for v in vhd_files:
-            Vhdl(v, self)
+            self._hdl_files += [Vhdl(v, self)]
         #load all VERILOG files
         verilog_files = self.gatherSources(apt.VERILOG_CODE, path=self.getPath())
         for v in verilog_files:
-            Verilog(v, M=self.M(), L=self.L(), N=self.N())
+            self._hdl_files += [Verilog(v, self)]
 
         #check if the level exists in the Jar
         if(Unit.jarExists(self.M(), self.L(), self.N())):
@@ -2044,11 +2047,11 @@ class Block:
 
         if(top != None and top in units.values()):
             if(top.isChecked() == False):
-                Language.ProcessedFiles[top.getFile()].decode(top, recursive)
+                top.getLanguageFile().decode(top, recursive)
         else:
             for u in units.values():
                 if(u.isChecked() == False):
-                    Language.ProcessedFiles[u.getFile()].decode(u, recursive)
+                    u.getLanguageFile().decode(u, recursive)
         #self.printUnits()
         return units
 
@@ -2221,6 +2224,14 @@ class Block:
                 #add new line for next version to be formatted
                 info_txt = info_txt + '\n'
         return info_txt
+
+
+
+
+
+
+
+
 
 
 
@@ -2534,7 +2545,7 @@ class Block:
             if(showArc):
                 #fill out decipher to get architectures
                 u = Unit.Bottle[self.L()][entity]
-                Language.ProcessedFiles[u.getFile()].decipher()
+                u.getLanguageFile().decipher()
                 info = u.writeArchitectures()
             #display the port interface
             else:

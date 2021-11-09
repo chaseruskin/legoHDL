@@ -445,12 +445,12 @@ class Workspace:
             None
         '''
         blocks = self.loadBlocks()
-        print(blocks)
+        #print(blocks)
         log.info("Collecting all unit data...")
         for b in blocks:
             us = b.loadHDL()
             for u in us.values():
-                Language.ProcessedFiles[u.getFile()].decode(u, recursive=False)
+                u.getLanguageFile().decode(u, recursive=False)
         log.info("done.")
         pass
 

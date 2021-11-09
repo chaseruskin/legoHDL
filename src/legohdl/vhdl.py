@@ -151,10 +151,10 @@ class Vhdl(Language):
         #collect all visible component declarations
         for pkg in u.decodePkgs():
             print("Importing "+pkg.getTitle())
-            comps += Language.ProcessedFiles[pkg.getFile()].getComponents(pkg)
+            comps += pkg.getLanguageFile().getComponents(pkg)
             #also further decode this package
             if(pkg.isChecked() == False and recursive):
-                Language.ProcessedFiles[pkg.getFile()].decode(pkg, recursive)
+                pkg.getLanguageFile().decode(pkg, recursive)
             pass
 
         #make sure the design unit is an entity to read architectures
@@ -230,7 +230,7 @@ class Vhdl(Language):
                     if(comp_unit != None):
                         u.addReq(comp_unit)
                         if(comp_unit.isChecked() == False and recursive):
-                            Language.ProcessedFiles[comp_unit.getFile()].decode(comp_unit, recursive)
+                            comp_unit.getLanguageFile().decode(comp_unit, recursive)
                     else:
                         print(cseg)
                     #exit()  #exit for debugging 

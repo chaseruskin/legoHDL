@@ -135,25 +135,10 @@ class Graph:
             order ([Unit]): sorted build order of Unit entity-type objects
             block_order ([str]): sorted order of block title's required for build
         '''
-        order = [] # return list of design entities in their correct order
-
-        block_order = [] # return list of blocks in their correct order
-        block_tracker = [] # used for case-insensitive comparison
-
-
-        def addBlock(m, l, n):
-            nonlocal block_order, block_tracker
-
-            mrkt_prepend = ''
-            if(m != None and m != ''):
-                mrkt_prepend = m+'.'
-            #check if block has already been added
-            title = mrkt_prepend+l+'.'+n
-            if(title.lower() in block_tracker):
-                return
-            block_tracker.append(title.lower())
-            block_order.append(title)
-
+        #store list of design entities in their correct order
+        order = [] 
+        #store list of blocks in their correct order
+        block_order = [] 
 
         nghbr_cnt = Map()
         #determine number of dependencies a vertex has
@@ -168,7 +153,8 @@ class Graph:
                     #add unit object to list
                     order.append(unit)
                     #add block name to list
-                    addBlock(unit.M(), unit.L(), unit.N())
+                    if(unit.getLanguageFile().getOwner() not in block_order):
+                        block_order += [unit.getLanguageFile().getOwner()]
                     #will not be recounted
                     nghbr_cnt[unit] = -1 
                     #who all depends on this module?
@@ -180,7 +166,11 @@ class Graph:
                 pass
 
         if(len(block_order) == 0):
-            exit(log.error("Invalid current block, try adding a VHDL file"))
+            exit(log.error("Invalid current block, try adding a VHDL file."))
+            
+        #ensure current block is last in the order
+        block_order.remove(order[-1].getLanguageFile().getOwner())
+        block_order.append(order[-1].getLanguageFile().getOwner())
 
         return order,block_order
 

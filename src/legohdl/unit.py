@@ -55,14 +55,14 @@ class Unit:
             None   
         '''
         self._filepath = apt.fs(filepath)
+        self._lang_obj = lang_obj
         self.setAbout(lang_obj.getAbout())
-
-        _,ext = os.path.splitext(self.getFile())
-        ext = '*'+ext.lower()
 
         self._libs = []
         self._pkgs = []
 
+        _,ext = os.path.splitext(self.getFile())
+        ext = '*'+ext.lower()
         if(ext in apt.VHDL_CODE):
             self._language = self.Language.VHDL
         elif(ext in apt.VERILOG_CODE):
@@ -126,8 +126,10 @@ class Unit:
 
         pass
 
-    def getOwner(self):
-        '''Returns _lang_obj'''
+
+    def getLanguageFile(self):
+        '''Returns _lang_obj (Language).'''
+        return self._lang_obj
 
 
     def linkLibs(self, libs, pkgs):

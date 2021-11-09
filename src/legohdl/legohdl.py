@@ -357,13 +357,10 @@ scripts)?", warning=False)
         unit_order,block_order = hierarchy.topologicalSort()
 
         print('---  BLOCK ORDER   ---')
-        #ensure the current block is the last one on order
-        block_order.remove(block.getFull())
-        block_order.append(block.getFull())
         block_order.reverse()
         for i in range(0, len(block_order)):
             b = block_order[i]
-            print('['+str(len(block_order)-i)+']^-\t'+b,end='\n')
+            print('['+str(len(block_order)-i)+']^-\t'+b.getFull(inc_ver=True),end='\n')
         print()
 
         return unit_order,block_order
@@ -408,22 +405,19 @@ scripts)?", warning=False)
 
         blueprint_data = []
 
-        #get all label data :todo: convert blocks from title str to objects
-        # or store the blocks at the unit level
-        for title in block_order:
+        #get all label data from blocks
+        for b in block_order:
             for lbl in Label.Jar.values():
-                print(title)
-                print(lbl.getName(),lbl.getExtensions())
                 #get global labels from external blocks
                 if(lbl.isGlobal() == True):
                     #:todo: get block from given title
-                    #paths = block.gatherSources(ext=lbl.getExtensions())
-                        #add every found file identified with this label to the blueprint
-                    #for p in paths:
-                        #blueprint_data += ['@'+lbl.getName()+' '+p]
+                    paths = b.gatherSources(ext=lbl.getExtensions())
+                    #add every found file identified with this label to the blueprint
+                    for p in paths:
+                        blueprint_data += ['@'+lbl.getName()+' '+p]
                     pass
                 #perform local-only label searching on current block
-                if(title == block_order[-1]):
+                if(b == block_order[-1]):
                     if(lbl.isGlobal() == False):
                         paths = block.gatherSources(ext=lbl.getExtensions())
                         #add every found file identified with this label to the blueprint

@@ -13,14 +13,10 @@
 import sys, re
 from abc import ABC, abstractmethod
 from .apparatus import Apparatus as apt
-import logging as log
-from .map import Map
 
 
 class Language(ABC):
 
-    #class container to store a list of all known files
-    ProcessedFiles = Map()
 
     def __init__(self, fpath, block):
         '''
@@ -36,18 +32,10 @@ class Language(ABC):
         #format the file path
         self._file_path = apt.fs(fpath)
 
-        for pf in self.ProcessedFiles.keys():
-            if(apt.isEqualPath(self.getPath(), pf)):
-                log.info("Already processed: "+self.getPath())
-                return
         #remember the block this file belongs to
         self._block = block
 
         self._multi = ('/*', '*/')
-
-        #add to processed list :todo: use indices in a table instead? Then
-        #give this index to the unit that is owned by this file
-        self.ProcessedFiles[self.getPath()] = self
         pass
     
     
@@ -406,33 +394,49 @@ class Language(ABC):
 
 
     def swapUnitNames(self, name_pairs):
-        print(name_pairs)
-        
+        '''
+        Uses a regular expression to find/replace all unit identifiers. Ignores
+        case sensitivity when finding names.
+
+        Parameters:
+            name_pairs ([[str]]): list of pairs of names to be [found, replaced]
+        Returns:
+            None
+        '''
         data = []
         #open the file
         with open(self.getPath(), 'r') as f:
             data = f.readlines()
             #iterate through every name pair to find/replace
             for pair in name_pairs:
-                print('PAIR:',pair)
                 #replace pairs only that have complete word
                 expression = re.compile('\\b'+pair[0]+'\\b', re.IGNORECASE)
                 #iterate through every line of the file data
                 for i in range(len(data)):
                     data[i] = expression.sub(pair[1], data[i])
                 pass
-            
-            print(data)
             pass
 
         #rewrite the file with new replacements
         with open(self.getPath(), 'w') as f:
             f.writelines(data)
-
         pass
 
 
+
+
+    
+
+
+# ==============================================================================
+# ==============================================================================
+# === ARCHIVED CODE... TO DELETE ===============================================
+# ==============================================================================
+# ==============================================================================
+
+
     # :todo: rename and polish
+    @DeprecationWarning
     def setUnitName(self, name_pairs, keep_case):
         '''
         Find all unit names within the source file and replace with its new
@@ -507,20 +511,8 @@ class Language(ABC):
 
 
 
-
-
-
-
-    
-
-
-# ==============================================================================
-# ==============================================================================
-# === ARCHIVED CODE... TO DELETE ===============================================
-# ==============================================================================
-# ==============================================================================
 # :todo: refactor and polish
-    #@DeprecationWarning
+    @DeprecationWarning
     def generateCodeStream(self, keep_case, keep_term, *extra_parsers, keep_parenth=True):
         '''
         Turn an HDL file into a list of its words.
