@@ -367,7 +367,7 @@ scripts)?", warning=False)
 
 
     def _export(self):
-        '''Run the 'graph' command.'''
+        '''Run the 'export' command.'''
 
         #load labels
         Label.load()
@@ -452,9 +452,6 @@ scripts)?", warning=False)
                 line = line+"VLOG"
             #add to blueprint's data for top-level design
             blueprint_data += [line+"-SRC-TOP "+dsgn.E()+" "+dsgn.getFile()]
-
-        log.info("Exporting blueprint...")
-        log.info("Block's path: "+block.getPath())
         
         #clean the build directory
         log.info("Cleaning build folder...")
@@ -464,6 +461,8 @@ scripts)?", warning=False)
         #create the build directory
         os.makedirs(build_dir, exist_ok=True)
 
+        log.info("Exporting blueprint...")
+        
         #create the blueprint file
         blueprint_path = build_dir+"blueprint"
         blueprint = open(blueprint_path, 'w')
@@ -472,9 +471,10 @@ scripts)?", warning=False)
         for line in blueprint_data:
             blueprint.write(line+'\n')
 
+        log.info("Blueprint found at: "+blueprint_path)
+
         #update block's dependencies
         block.updateDerivatives()
-
         pass
 
 
@@ -498,6 +498,8 @@ scripts)?", warning=False)
 
         #list of units to wrap in package file
         comp_names = []
+
+        log.info("Exporting VHDL package file "+pkg_name+".vhd...")
 
         #get all unit objects
         unit_names = block.loadHDL().values()
@@ -589,6 +591,8 @@ scripts)?", warning=False)
 
         #fill placeholders
         block.fillPlaceholders(pkg_path, pkg_name)
+
+        log.info("VHDL package file found at: "+pkg_path)
         pass
 
 
@@ -639,7 +643,7 @@ scripts)?", warning=False)
         #verify a block under this name exists
         block = self.WS().shortcut(self.getItem(), req_entity=True, visibility=True)
         if(block == None):
-            exit(log.error("Could not identify a block for entity "+self.getItem()))
+            exit(log.error("Could not identify a block for entity "+self.getItem()+'.'))
 
         #remember title for error statement in case block becomes None
         title = block.getFull()
@@ -691,8 +695,7 @@ scripts)?", warning=False)
         block = self.WS().shortcut(self.getItem(), visibility=False)
 
         if(block == None):
-            title = '' if(self.getItem() == None) else self.getItem()
-            log.error("Cannot find block under "+title+'.')
+            log.error("Could not identify a block with "+self.getItem()+'.')
             return
 
         #recursively install each requirement
@@ -728,12 +731,12 @@ scripts)?", warning=False)
         block = self.WS().shortcut(self.getItem(), visibility=False)
         #check if block exists
         if(block == None):
-            exit(log.error("Could not identify a block with "+self.getItem()))
+            exit(log.error("Could not identify a block with "+self.getItem()+'.'))
 
         success = block.uninstall(self.getVerNum(places=[1,2,3]))
 
         if(success):
-            log.info("Success")
+            log.info("Success.")
         pass
 
     

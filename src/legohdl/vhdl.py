@@ -146,6 +146,10 @@ class Vhdl(Language):
         #get all code statements
         csegs = self.spinCode()
 
+        #do not decode unit again if already decoded
+        if(u.isChecked()):
+            return
+
         # :todo: get configurations support (similiar to find/replace)
 
         #collect all visible component declarations

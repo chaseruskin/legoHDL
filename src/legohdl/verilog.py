@@ -87,6 +87,10 @@ class Verilog(Language):
         in_module = False
         in_case = False
 
+        #do not decode unit again if already decoded
+        if(u.isChecked()):
+            return
+
         for cseg in csegs:
             #print(cseg)
             #determine when entering module

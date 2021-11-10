@@ -257,9 +257,6 @@ class Workspace:
             return self._visible_blocks
 
         self._visible_blocks = []
-        # :todo: use these attributes for 'get' command?
-        self._dnld_blocks = []
-        self._instl_blocks = []
 
         #read the setting for multi-develop
         mult_dev = apt.getMultiDevelop()
@@ -272,8 +269,6 @@ class Workspace:
         #iterate through all found downloads
         for mf in marker_files:
             b = Block(mf, self, Block.Level.DNLD)
-            #print(b)
-            self._dnld_blocks += [b]
             #if the user is within a current block, load the HDL from its DNLD level (not INSTL)
             if(mult_dev == True or Block.getCurrent(bypass=True) == b):
                 self._visible_blocks += [b]
@@ -293,7 +288,6 @@ class Workspace:
             #note: only the head installation has the git repository
             if(Git.isValidRepo(root, remote=False)):
                 b = Block(mf, self, Block.Level.INSTL)
-                self._instl_blocks += [b]
                 #get the spot for this block's download 
                 dnld_b = Block.Inventory[b.M()][b.L()][b.N()][Block.Level.DNLD.value]
                 #add this block if a download DNE or the dnld does not match current when
