@@ -144,7 +144,7 @@ class Market:
         log.info("Publishing "+block.getFull(inc_ver=True)+" to market "+self.getName()+"...")
         
         #make sure the market is up-to-date
-        self.refresh()
+        self.refresh(quiet=True)
 
         #make sure the path exists in market
         path = self.getMarketDir()+block.L()+'/'+block.N()+'/'
@@ -174,13 +174,13 @@ class Market:
         pass
 
 
-    def refresh(self):
+    def refresh(self, quiet=False):
         '''
         If has a remote repository, checks with it to ensure the current branch
         is up-to-date and pulls any changes.
         
         Parameters:
-            None
+            quiet (bool): determine if to display information to user or keep quiet
         Returns:
             None
         '''
@@ -193,7 +193,7 @@ class Market:
                 log.info("success")
             else:
                 log.info("Already up-to-date.")
-        else:
+        elif(quiet == False):
             log.info("Market "+self.getName()+" is local and does not require refresh.")
         pass
 

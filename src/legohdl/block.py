@@ -487,12 +487,15 @@ class Block:
         #synch changes with remote repository
         self._repo.push()
 
-        #no market to publish to
+        #no market to publish to then release algorithm is complete
         if(len(self.getMeta('market')) == 0):
             return
+
         #check if a remote exists
         if(self._repo.remoteExists() == False):
-            pass
+            log.error("Could not publish to a market because a remote repository does not exist.")
+            return
+            
         #try to find the market
         mrkt = None
         for m in self.getWorkspace().getMarkets():
@@ -507,6 +510,25 @@ class Block:
         mrkt.publish(self)
 
         pass
+
+
+    def stripExcessMeta(self, varis=[]):
+        '''
+        Removes excess metadata from the block section.
+        
+        Parameters:
+            varis ([str]): variables to remove under 'block' section
+        Returns:
+            (dict): copy of metadata stripped down
+        '''
+        meta = self.getMeta(every=True)
+        for v in varis:
+            #find the variable in block
+            if(v in meta['block']):
+                del meta['block'][v]
+            pass
+
+        return meta
     
 
     def download(self):
