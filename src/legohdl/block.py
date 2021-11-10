@@ -490,6 +490,9 @@ class Block:
         #no market to publish to
         if(len(self.getMeta('market')) == 0):
             return
+        #check if a remote exists
+        if(self._repo.remoteExists() == False):
+            pass
         #try to find the market
         mrkt = None
         for m in self.getWorkspace().getMarkets():
