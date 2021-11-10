@@ -90,7 +90,7 @@ class Vhdl(Language):
                 pass
             #declare an entity
             if(cseg[0].lower() == 'entity'):
-                log.info("Identified entity: "+cseg[1])
+                #log.info("Identified entity: "+cseg[1])
                 self._designs += [Unit(cseg[1], self.getPath(), Unit.Design.ENTITY, self)]
                 dsgn_unit = self._designs[-1]
                 self.getInterface(dsgn_unit, c_statements[c_statements.index(cseg):])
@@ -101,7 +101,7 @@ class Vhdl(Language):
                 pass
             #declare a package unit
             elif(cseg[0].lower() == 'package' and cseg[1].lower() != 'body'):
-                log.info("Identified package "+cseg[1])
+                #log.info("Identified package "+cseg[1])
                 self._designs += [Unit(cseg[1], self.getPath(), Unit.Design.PACKAGE, self)]
                 dsgn_unit = self._designs[-1]
                 #link visible libraries and packages
@@ -111,14 +111,14 @@ class Vhdl(Language):
                 pass
             #link a configuration
             elif(cseg[0].lower() == 'configuration'):
-                log.info("Identified configuration "+cseg[1]+" for entity: "+cseg[3])
+                #log.info("Identified configuration "+cseg[1]+" for entity: "+cseg[3])
                 #get who owns this configuration
                 dsgn_entity = cseg[3]
                 Unit.Jar[self.getOwner().M()][self.getOwner().L()][self.getOwner().N()][dsgn_entity].linkConfig(cseg[1])
                 pass
             #link an architecture
             elif(cseg[0].lower() == 'architecture'):
-                log.info("Identified architecture "+cseg[1]+" for entity: "+cseg[3])
+                #log.info("Identified architecture "+cseg[1]+" for entity: "+cseg[3])
                 #get who owns this architecture
                 dsgn_entity = cseg[3]
                 Unit.Jar[self.getOwner().M()][self.getOwner().L()][self.getOwner().N()][dsgn_entity].linkArch(cseg[1])

@@ -277,61 +277,6 @@ class Block:
         '''
         return Block.Inventory[self.M()][self.L()][self.N()][int(lvl.value)]
 
-
-    #download block from a url (can be from cache or remote)
-    def downloadFromURL(self, rem, in_place=False):
-        tmp_dir = apt.HIDDEN+"tmp/"
-        if(in_place):
-            #self._repo = git.Repo(self.getPath())
-            #self.pull()
-            exit(print("TODO"))
-            return True
-
-        success = True
-
-        rem = apt.fs(rem)
-        #new path is default to local/library/
-        new_path = None #apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/")
-        os.makedirs(new_path, exist_ok=True)
-        #create temp directory to clone project into
-        os.makedirs(tmp_dir, exist_ok=True)
-        #clone project
-        #git.Git(tmp_dir).clone(rem)
-
-        exit(print("TODO"))
-        self._path = new_path+self.getName(low=False)
-
-        #this is a remote url, so when it clones we must make sure to rename the base folder
-        if(rem.endswith(".git")):
-            url_name = rem[rem.rfind('/')+1:rem.rfind('.git')]
-        #this was cloned from a cached folder
-        else:
-            path_prts = rem.strip('/').split('/')
-            url_name = path_prts[len(path_prts)-1]
-        #rename the cloned folder to the case sensitive name of the block
-        try:
-            shutil.copytree(tmp_dir+url_name, self.getPath())
-        #remove a folder that exists here because its not a block!
-        except(OSError, FileExistsError):
-            try:
-                shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
-                shutil.copytree(tmp_dir+url_name, self.getPath())
-            except:
-                log.error("Download failed. A block is blocking the download path "+self.getPath()+".")
-                success = False
-
-        #assign the repo of the newly downloaded block
-        #self._repo = git.Repo(self.getPath())
-        #remove temp directory
-        shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
-        
-        #if downloaded from cache, make a master branch if no remote  
-        if(len(self._repo.heads) == 0):
-            #self._repo.git.checkout("-b","master")
-            pass
-
-        return success
-
     
     def getTitle(self, index, dist=0):
         '''
@@ -389,6 +334,7 @@ class Block:
 
 
     def waitOnChangelog(self):
+        #:todo make better/review
         change_file = self.getPath()+apt.CHANGELOG
         #check that a changelog exists for this block
         if(os.path.exists(change_file)):
@@ -412,98 +358,15 @@ class Block:
         return
 
 
-    def release(self, msg=None, ver=None, options=[]):
-        '''
-        Release the block as a new version.
-        '''
-        if(self._repo.getRemoteURL() != ''):
-            log.info("Verifying remote origin is up to date...")
-            self._repo.git('remote','update')
-            resp,_ = self._repo.git('status','-uno')
-            if(resp.count('Your branch is up to date with') == 0 and resp.count('Your branch is ahead of') == 0):
-                exit(log.error("Your branch conflicts with the remote; release failed."))
-
-        #get current version numbers of latest valid tag
-        highestVer = self.getHighestTaggedVersion()
-        major,minor,patch = self.sepVer(highestVer)
-        #ensure the requested version is larger than previous if it was manually set
-        if(ver != None and (self.validVer(ver) == False or self.biggerVer(ver,highestVer) == highestVer)):
-            next_min_version = "v"+str(major)+"."+str(minor)+"."+str(patch+1)
-            exit(log.error("Invalid version. Next minimum version is: "+next_min_version))
-        #capture the actual legohdl version to print to console
-        b_major,b_minor,b_patch = self.sepVer(self.getVersion())
-        oldVerInfo = "Releasing v"+str(b_major)+"."+str(b_minor)+"."+str(b_patch)
-        #determine next version if not manually set but set by 1 of 3 flags
-        if(ver == None):
-            #increment version numbering according to flag
-            if(options.count("maj")):
-                major += 1
-                minor = patch = 0
-            elif(options.count("min")):
-                minor += 1
-                patch = 0
-            elif(options.count("fix")):
-                patch += 1
-            #no correct flag was found
-            else:
-                exit(log.error("No valid version flag was identified."))
-        #get version numbering from manual set
-        else:
-            ver = ver[1:]
-            major,minor,patch = self.sepVer(ver)
-        #update string syntax for new version
-        ver = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
-        log.info(oldVerInfo+" -> "+ver)
-        
-        if(ver == '' or ver[0] != 'v'):
-            return
-        #in order to release to market, we must have a valid git remote url
-        url = self.getMeta('remote')
-        if(url == ''):
-            if(True): #:todo:
-                cont = apt.confirmation("legohdl will not release to market "+self.__market.getName()+" because this block is not tied to a remote. Proceed anyway?")
-                #user decided that is not OKAY, exiting release
-                if(cont == False):
-                    exit(log.info("Did not release "+ver))
-
-        #user decided to proceed with release
-        self.setMeta('version', ver[1:])
-        self.save()
-
-        #try to allow user to edit changelog before proceeding
-        self.waitOnChangelog()
-
-        log.info("Saving...")
-        #add only changes made to Block.cfg file
-        if(options.count('strict')):
-            self._repo.add(apt.MARKER)
-            if(os.path.exists(self.getPath()+apt.CHANGELOG)):
-                self._repo.add(apt.CHANGELOG)
-        #add all untracked changes to be included in the release commit
-        else:   
-            self._repo.add('.')
-        #default message
-        if(msg == None):
-            msg = "Releases version "+self.getVersion()
-        #commit new changes with message
-        self._repo.commit(msg)
-        #create a tag with this version
-        self._repo.git('tag',ver+apt.TAG_ID)
-
-        sorted_versions = self.sortVersions(self.getTaggedVersions())
-        
-        #push to remote codebase
-        self._repo.push()
-
-        #publish on market/bazaar! (also publish all versions not found)
-        # :todo:
-        # if(self.__market != None):
-        #     changelog_txt = self.getChangeLog(self.getPath())
-        #     self.__market.publish(self.getMeta(every=True), options, sorted_versions, changelog_txt)
-        # elif(self.getMeta("market") != None):
-        #     log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
+    def release(self):
+        #:todo:
         pass
     
+
+    def download(self):
+        #:todo:
+        pass
+
 
     def sortVersions(self, unsorted_vers):
         '''
@@ -601,20 +464,14 @@ class Block:
         return lver
 
 
-    def __str__(self):
-        return f'''
-        id: {hex(id(self))}
-        block: {self.M()+'.'+self.L()+'.'+self.N()+'('+self.V()+')'}
-        path: {self.getPath()}
-        '''
-
-
     @classmethod
     def validVer(cls, ver, maj_place=False):
         '''
         Returns true if can be separated into 3 numeric values and starts with 'v'.
         '''
         ver = cls.stdVer(ver)
+        #:todo: make better/cleaner/nicer
+
         #must have 2 dots and start with 'v'
         if(not maj_place and (ver == None or ver.count(".") != 2 or ver.startswith('v') == False)):
             return False
@@ -864,12 +721,13 @@ class Block:
             with open(self.getPath()+apt.MARKER, 'w') as mdf:
                 cfg.save(self.LAYOUT, mdf, ignore_depth=True, space_headers=True)
 
-        #fill in data for Block.cfg :todo:
         #load in empty meta
         self.loadMeta()
 
         #break into 4 title sections
         M,L,N,_ = Block.snapTitle(title)
+
+        #fill in preliminary data for block.cfg metadata
 
         #check if market is in an allowed market
         if(M != ''):
@@ -881,8 +739,6 @@ class Block:
         self.setMeta('library', L)
         self.setMeta('name', N)
         self.setMeta('version', '0.0.0')
-        #determine top-level and bench designs
-        # :todo:
 
         #fill in placeholders
         if(cp_template):
@@ -897,7 +753,7 @@ class Block:
         #update meta's remote url
         self.setMeta('remote', self._repo.getRemoteURL())
 
-        print(self.getMeta(every=True))
+        #print(self.getMeta(every=True))
         #save all changes to meta
         self.save(force=True)
 
@@ -1197,76 +1053,6 @@ class Block:
         else:
             return None
 
-
-    #print out the metadata for this block
-    @DeprecationWarning
-    def show(self, listVers=False, ver=None, dispChange=False):
-        cache_path = apt.HIDDEN+"workspaces/"+apt.SETTINGS['general']['active-workspace']+"/cache/"+self.getLib()+"/"+self.getName()+"/"
-        install_vers = []
-        #display the changelog if available
-        if(dispChange):
-            changelog_txt = self.getChangeLog(self.getPath())
-            if(changelog_txt != None):
-                for l in changelog_txt:
-                    print(l,end='')
-                print()
-            else:
-
-                exit(log.error("No CHANGELOG.md file exists for "+self.getTitle_old()+". Add one in the next release."))
-            return
-        #grab all installed versions in the cache
-        if(os.path.isdir(cache_path)):
-            install_vers = os.listdir(cache_path)
-
-        #print out the block's current metadata (found in local path)
-        if(listVers == False and ver == None):
-            #print(self.getMeta(every=True))
-            with open(self.getMetaFile(), 'r') as file:
-                for line in file:
-                    print(line,sep='',end='')
-        #print out specific metadata about version if installed in cache
-        elif(listVers == False and ver != None):
-            if(ver in install_vers):
-                with open(cache_path+ver+"/"+apt.MARKER, 'r') as file:
-                    for line in file:
-                        print(line,sep='',end='')
-            else:
-                exit(log.error("The flagged version is not installed to the cache"))
-        #list all versions available for this block
-        else:
-            #a file exists if in market called version.log
-            if(self.isMarket()):
-                with open(self.getPath()+apt.VER_LOG, 'r') as file:
-                    for line in file.readlines():
-                        v = line.split()[0]
-                        print(v)
-            else:
-                ver_sorted = self.sortVersions(self.getTaggedVersions())
-                # :done: also * the installed versions
-                #soln : grab list dir of all valid versions in cache, and match them with '*'
-                # :todo : show 'x' amount at a time? then use 'f' and 'b' to paginate
-                #track what major versions have been identified
-                maj_vers = []
-                for x in ver_sorted:
-                    #constrain the list to what the user inputted
-                    if(ver != None and x.startswith(ver) == False):
-                        continue
-                    print(x,end='\t')
-                    #notify user of the installs in cache
-                    if(x in install_vers):
-                        print("*",end='')
-                        #notify that it is a parent version
-                        parent_ver = x[:x.find('.')]
-                        if(parent_ver in install_vers and parent_ver not in maj_vers):
-                            print("\t"+parent_ver,end='')
-                        maj_vers.append(parent_ver)
-                        
-                    #this is the current version
-                    if(x[1:] == self.getMeta("version") and not self.isLocal()):
-                        print("\tlatest",end='')
-
-                    print()
-    
 
     def openInEditor(self):
         '''Opens this block with the configured text-editor.'''
@@ -1604,112 +1390,6 @@ class Block:
                 w_permissions = ~stat.S_IWUSR & ~stat.S_IWGRP & ~stat.S_IWOTH
                 os.chmod(f, cur_permissions & w_permissions)
             pass
-        pass
-
-
-    def install_old(self, cache_dir, ver=None, src=None):
-        '''
-        Install from cache (copy files) unless 'src' is set to a remote for git
-        cloning. Also updates the parent (major version) if the newly installed
-        version is higher.
-        '''
-        #create cache directory
-        cache_dir = apt.fs(cache_dir)
-        cache_dir = cache_dir+self.getLib()+"/"+self.getName()+"/"
-        os.makedirs(cache_dir, exist_ok=True)
-                
-        base_cache_dir = cache_dir
-        #log.debug("Cache directory: "+cache_dir)
-        specific_cache_dir = base_cache_dir+self.getName()+"/"
-
-        base_installed = (src == None and os.path.exists(specific_cache_dir))
-
-        #ensure version is good
-        if(ver == None):
-            ver = 'v'+self.getVersion()
-        if(ver[0] != 'v'):
-            ver = 'v'+ver
-        if(ver == 'v0.0.0'):
-            (log.error("Version "+ver+" is not available to install."))
-            return
-
-        log.info("Installing block "+self.getTitle_old(low=False)+" version "+ver+"...")
-        # 1. first download from remote if the base installation DNE or tag DNE
-        if(not base_installed):
-            #print("cache dir",cache_dir)
-            #print(src)
-            #remove old branch folder if exists
-            if(os.path.exists(specific_cache_dir)):
-                shutil.rmtree(specific_cache_dir, onerror=apt.rmReadOnly)
-            #clone and checkout specific version tag
-            Git.git('-C',cache_dir,'clone',src,'--branch',ver+apt.TAG_ID,'--single-branch')
-            #git.Git(cache_dir).clone(src,"--branch",ver+apt.TAG_ID,"--single-branch")
-            #url name is the only folder here that's not a valid version
-            src = src.lower().replace(".git","")
-            for folder in os.listdir(cache_dir):
-                if(src.endswith(folder.lower())):
-                    url_name = folder
-                    break
-            else:
-                cut_slash = self.getPath()[:len(self.getPath())-1]
-                url_name = cut_slash[cut_slash.rfind('/'):]
-
-            shutil.move(cache_dir+url_name, specific_cache_dir)
-            self._path = specific_cache_dir+"/"
-            base_installed = True
-
-            # :todo: 1a. modify all project files to become read-only
-            self.modWritePermissions(enable=False)
- 
-        self._repo = Git(self.getPath())
-        self.loadMeta()
-
-        #2. now perform install from cache
-        instl_vers = os.listdir(base_cache_dir)       
-        if(self.validVer(ver)):
-            #ensure this version is actually tagged
-            if(ver in self.getTaggedVersions()):
-                self._repo.git('checkout',ver+apt.TAG_ID)
-                #copy files and move them to correct spot
-                if(ver[1:] == self.getMeta("version")):
-                    meta = self.getMeta(every=True)
-                else:
-                    meta = apt.getBlockFile(self._repo, ver, specific_cache_dir, in_branch=False)
-                
-                #check if version is actually already installed
-                if ver in instl_vers:
-                    log.info("Version "+ver+" is already installed.")
-                else:  
-                    if(meta != None):
-                        #install to its version number
-                        self.copyVersionCache(ver=ver, folder=ver)
-                    else:
-                        log.error("whomp whomp")
-                        return
-
-                #now that we have a valid version and the meta is good, try to install to major ver
-                #get "major" value
-                maj = ver[:ver.find('.')]
-                maj_path = cache_dir+maj+"/"
-                #make new path if does not exist
-                if(os.path.isdir(maj_path) == False):
-                    log.info("Installing block "+self.getTitle_old(low=False)+" version "+maj+"...")
-                    self.copyVersionCache(ver=ver, folder=maj)
-                #check the version that is living in this folder
-                else:
-                    with open(maj_path+apt.MARKER,'r') as f:
-                        maj_meta = cfg.load(f, ignore_depth=True)
-                        f.close()
-                        pass
-                    if(self.biggerVer(maj_meta['block']['version'], meta['block']['version']) == meta['block']['version']):
-                        log.info("Updating block "+self.getTitle_old(low=False)+" version "+maj+"...")
-                        #remove old king
-                        shutil.rmtree(maj_path, onerror=apt.rmReadOnly)
-                        #replace with new king for this major version
-                        self.copyVersionCache(ver="v"+meta['block']['version'], folder=maj)
-                    pass
-            else:
-                log.error("Version "+ver+" is not available to install.")
         pass
 
 
@@ -2234,7 +1914,6 @@ class Block:
         if(list_arch):
             print(ent.readArchitectures())
         if(comp):
-            #:todo: write component declaration code for verilog modules
             print(ent.getInterface().writeDeclaration(form=lang))
             print()
         if(inst):
@@ -2254,27 +1933,24 @@ class Block:
         return True
 
 
-    def readInfo(self, readall, stats=False, versions=False):
+    def readInfo(self, stats=False, versions=False, ver=None):
         '''
         Return information relevant to the current block (metadata).
 
         Parameters:
-            readall (bool): determine if to print ALL metadata
             stats (bool): determine if to print additional stats
             versions (bool): determine if to print the available versions
+            ver (str): a constraint string for how to filter available versions (v1.0.0:1.9.0)
         Returns:
             info_txt (str): information text to be printed to console
         '''
         #make sure the metadata is properly formatted
         self.secureMeta()
-        #get the metadata
+        #read the metadata by default
         info_txt = '--- METADATA ---\n'
         with open(self.getMetaFile(), 'r') as file:
             for line in file:
                 info_txt = info_txt + line
-                #stop reading :todo:
-                if(not readall and False):
-                    break
 
         #read relevant stats
         if(stats):
@@ -2295,6 +1971,7 @@ class Block:
             if(len(vlog_units) > 0):
                 txt = '\nVERILOG units:\n\t'+apt.listToStr(vlog_units,'\n\t')
                 info_txt = info_txt + txt
+
         #read the list of versions implemented and obtainable
         if(versions):
             info_txt = ''
@@ -2314,9 +1991,9 @@ class Block:
             maj_vers = []
             #iterate through all versions
             for x in all_versions:
-                #constrain the list to what the user inputted
-                #if(ver != None and x.startswith(ver) == False):
-                    #continue
+                #:todo: constrain the list to what the user inputted
+                if(ver != None and False):
+                    continue
                 info_txt = info_txt + x + '\t'
                 #notify user of the installs in cache
                 if(x in instl_versions):
@@ -2330,7 +2007,7 @@ class Block:
                                 info_txt = info_txt + '\t' + maj_ver
                                 maj_vers.append(maj_ver)
                     
-                    #get the highest version from instl_versions (that is what's called latest) :todo:
+                    #latest is the highest version from instl_versions
                     if(x == instl_versions[0]):
                         info_txt = info_txt + '\t' + 'latest'
                 pass
@@ -2339,7 +2016,12 @@ class Block:
         return info_txt
 
 
-
+    def __str__(self):
+        return f'''
+        id: {hex(id(self))}
+        block: {self.M()+'.'+self.L()+'.'+self.N()+'('+self.V()+')'}
+        path: {self.getPath()}
+        '''
 
 
 
@@ -2353,6 +2035,326 @@ class Block:
 # === ARCHIVED CODE... TO DELETE ===============================================
 # ==============================================================================
 # ==============================================================================
+    @DeprecationWarning
+    def release_old(self, msg=None, ver=None, options=[]):
+        '''
+        Release the block as a new version.
+        '''
+        if(self._repo.getRemoteURL() != ''):
+            log.info("Verifying remote origin is up to date...")
+            self._repo.git('remote','update')
+            resp,_ = self._repo.git('status','-uno')
+            if(resp.count('Your branch is up to date with') == 0 and resp.count('Your branch is ahead of') == 0):
+                exit(log.error("Your branch conflicts with the remote; release failed."))
+
+        #get current version numbers of latest valid tag
+        highestVer = self.getHighestTaggedVersion()
+        major,minor,patch = self.sepVer(highestVer)
+        #ensure the requested version is larger than previous if it was manually set
+        if(ver != None and (self.validVer(ver) == False or self.biggerVer(ver,highestVer) == highestVer)):
+            next_min_version = "v"+str(major)+"."+str(minor)+"."+str(patch+1)
+            exit(log.error("Invalid version. Next minimum version is: "+next_min_version))
+        #capture the actual legohdl version to print to console
+        b_major,b_minor,b_patch = self.sepVer(self.getVersion())
+        oldVerInfo = "Releasing v"+str(b_major)+"."+str(b_minor)+"."+str(b_patch)
+        #determine next version if not manually set but set by 1 of 3 flags
+        if(ver == None):
+            #increment version numbering according to flag
+            if(options.count("maj")):
+                major += 1
+                minor = patch = 0
+            elif(options.count("min")):
+                minor += 1
+                patch = 0
+            elif(options.count("fix")):
+                patch += 1
+            #no correct flag was found
+            else:
+                exit(log.error("No valid version flag was identified."))
+        #get version numbering from manual set
+        else:
+            ver = ver[1:]
+            major,minor,patch = self.sepVer(ver)
+        #update string syntax for new version
+        ver = 'v'+str(major)+'.'+str(minor)+'.'+str(patch)
+        log.info(oldVerInfo+" -> "+ver)
+        
+        if(ver == '' or ver[0] != 'v'):
+            return
+        #in order to release to market, we must have a valid git remote url
+        url = self.getMeta('remote')
+        if(url == ''):
+            if(True): #:todo:
+                cont = apt.confirmation("legohdl will not release to market "+self.__market.getName()+" because this block is not tied to a remote. Proceed anyway?")
+                #user decided that is not OKAY, exiting release
+                if(cont == False):
+                    exit(log.info("Did not release "+ver))
+
+        #user decided to proceed with release
+        self.setMeta('version', ver[1:])
+        self.save()
+
+        #try to allow user to edit changelog before proceeding
+        self.waitOnChangelog()
+
+        log.info("Saving...")
+        #add only changes made to Block.cfg file
+        if(options.count('strict')):
+            self._repo.add(apt.MARKER)
+            if(os.path.exists(self.getPath()+apt.CHANGELOG)):
+                self._repo.add(apt.CHANGELOG)
+        #add all untracked changes to be included in the release commit
+        else:   
+            self._repo.add('.')
+        #default message
+        if(msg == None):
+            msg = "Releases version "+self.getVersion()
+        #commit new changes with message
+        self._repo.commit(msg)
+        #create a tag with this version
+        self._repo.git('tag',ver+apt.TAG_ID)
+
+        sorted_versions = self.sortVersions(self.getTaggedVersions())
+        
+        #push to remote codebase
+        self._repo.push()
+
+        #publish on market/bazaar! (also publish all versions not found)
+        # :todo:
+        # if(self.__market != None):
+        #     changelog_txt = self.getChangeLog(self.getPath())
+        #     self.__market.publish(self.getMeta(every=True), options, sorted_versions, changelog_txt)
+        # elif(self.getMeta("market") != None):
+        #     log.warning("Market "+self.getMeta("market")+" is not attached to this workspace.")
+        pass
+#download block from a url (can be from cache or remote)
+    @DeprecationWarning
+    def downloadFromURL(self, rem, in_place=False):
+        tmp_dir = apt.HIDDEN+"tmp/"
+        if(in_place):
+            #self._repo = git.Repo(self.getPath())
+            #self.pull()
+            exit(print("TODO"))
+            return True
+
+        success = True
+
+        rem = apt.fs(rem)
+        #new path is default to local/library/
+        new_path = None #apt.fs(Workspace.getActive().getPath()+"/"+self.getLib(low=False)+"/")
+        os.makedirs(new_path, exist_ok=True)
+        #create temp directory to clone project into
+        os.makedirs(tmp_dir, exist_ok=True)
+        #clone project
+        #git.Git(tmp_dir).clone(rem)
+
+        exit(print("TODO"))
+        self._path = new_path+self.getName(low=False)
+
+        #this is a remote url, so when it clones we must make sure to rename the base folder
+        if(rem.endswith(".git")):
+            url_name = rem[rem.rfind('/')+1:rem.rfind('.git')]
+        #this was cloned from a cached folder
+        else:
+            path_prts = rem.strip('/').split('/')
+            url_name = path_prts[len(path_prts)-1]
+        #rename the cloned folder to the case sensitive name of the block
+        try:
+            shutil.copytree(tmp_dir+url_name, self.getPath())
+        #remove a folder that exists here because its not a block!
+        except(OSError, FileExistsError):
+            try:
+                shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
+                shutil.copytree(tmp_dir+url_name, self.getPath())
+            except:
+                log.error("Download failed. A block is blocking the download path "+self.getPath()+".")
+                success = False
+
+        #assign the repo of the newly downloaded block
+        #self._repo = git.Repo(self.getPath())
+        #remove temp directory
+        shutil.rmtree(tmp_dir, onerror=apt.rmReadOnly)
+        
+        #if downloaded from cache, make a master branch if no remote  
+        if(len(self._repo.heads) == 0):
+            #self._repo.git.checkout("-b","master")
+            pass
+
+        return success
+    @DeprecationWarning
+    def install_old(self, cache_dir, ver=None, src=None):
+        '''
+        Install from cache (copy files) unless 'src' is set to a remote for git
+        cloning. Also updates the parent (major version) if the newly installed
+        version is higher.
+        '''
+        #create cache directory
+        cache_dir = apt.fs(cache_dir)
+        cache_dir = cache_dir+self.getLib()+"/"+self.getName()+"/"
+        os.makedirs(cache_dir, exist_ok=True)
+                
+        base_cache_dir = cache_dir
+        #log.debug("Cache directory: "+cache_dir)
+        specific_cache_dir = base_cache_dir+self.getName()+"/"
+
+        base_installed = (src == None and os.path.exists(specific_cache_dir))
+
+        #ensure version is good
+        if(ver == None):
+            ver = 'v'+self.getVersion()
+        if(ver[0] != 'v'):
+            ver = 'v'+ver
+        if(ver == 'v0.0.0'):
+            (log.error("Version "+ver+" is not available to install."))
+            return
+
+        log.info("Installing block "+self.getTitle_old(low=False)+" version "+ver+"...")
+        # 1. first download from remote if the base installation DNE or tag DNE
+        if(not base_installed):
+            #print("cache dir",cache_dir)
+            #print(src)
+            #remove old branch folder if exists
+            if(os.path.exists(specific_cache_dir)):
+                shutil.rmtree(specific_cache_dir, onerror=apt.rmReadOnly)
+            #clone and checkout specific version tag
+            Git.git('-C',cache_dir,'clone',src,'--branch',ver+apt.TAG_ID,'--single-branch')
+            #git.Git(cache_dir).clone(src,"--branch",ver+apt.TAG_ID,"--single-branch")
+            #url name is the only folder here that's not a valid version
+            src = src.lower().replace(".git","")
+            for folder in os.listdir(cache_dir):
+                if(src.endswith(folder.lower())):
+                    url_name = folder
+                    break
+            else:
+                cut_slash = self.getPath()[:len(self.getPath())-1]
+                url_name = cut_slash[cut_slash.rfind('/'):]
+
+            shutil.move(cache_dir+url_name, specific_cache_dir)
+            self._path = specific_cache_dir+"/"
+            base_installed = True
+
+            # :todo: 1a. modify all project files to become read-only
+            self.modWritePermissions(enable=False)
+ 
+        self._repo = Git(self.getPath())
+        self.loadMeta()
+
+        #2. now perform install from cache
+        instl_vers = os.listdir(base_cache_dir)       
+        if(self.validVer(ver)):
+            #ensure this version is actually tagged
+            if(ver in self.getTaggedVersions()):
+                self._repo.git('checkout',ver+apt.TAG_ID)
+                #copy files and move them to correct spot
+                if(ver[1:] == self.getMeta("version")):
+                    meta = self.getMeta(every=True)
+                else:
+                    meta = apt.getBlockFile(self._repo, ver, specific_cache_dir, in_branch=False)
+                
+                #check if version is actually already installed
+                if ver in instl_vers:
+                    log.info("Version "+ver+" is already installed.")
+                else:  
+                    if(meta != None):
+                        #install to its version number
+                        self.copyVersionCache(ver=ver, folder=ver)
+                    else:
+                        log.error("whomp whomp")
+                        return
+
+                #now that we have a valid version and the meta is good, try to install to major ver
+                #get "major" value
+                maj = ver[:ver.find('.')]
+                maj_path = cache_dir+maj+"/"
+                #make new path if does not exist
+                if(os.path.isdir(maj_path) == False):
+                    log.info("Installing block "+self.getTitle_old(low=False)+" version "+maj+"...")
+                    self.copyVersionCache(ver=ver, folder=maj)
+                #check the version that is living in this folder
+                else:
+                    with open(maj_path+apt.MARKER,'r') as f:
+                        maj_meta = cfg.load(f, ignore_depth=True)
+                        f.close()
+                        pass
+                    if(self.biggerVer(maj_meta['block']['version'], meta['block']['version']) == meta['block']['version']):
+                        log.info("Updating block "+self.getTitle_old(low=False)+" version "+maj+"...")
+                        #remove old king
+                        shutil.rmtree(maj_path, onerror=apt.rmReadOnly)
+                        #replace with new king for this major version
+                        self.copyVersionCache(ver="v"+meta['block']['version'], folder=maj)
+                    pass
+            else:
+                log.error("Version "+ver+" is not available to install.")
+        pass
+#print out the metadata for this block
+    @DeprecationWarning
+    def show(self, listVers=False, ver=None, dispChange=False):
+        cache_path = apt.HIDDEN+"workspaces/"+apt.SETTINGS['general']['active-workspace']+"/cache/"+self.getLib()+"/"+self.getName()+"/"
+        install_vers = []
+        #display the changelog if available
+        if(dispChange):
+            changelog_txt = self.getChangeLog(self.getPath())
+            if(changelog_txt != None):
+                for l in changelog_txt:
+                    print(l,end='')
+                print()
+            else:
+
+                exit(log.error("No CHANGELOG.md file exists for "+self.getTitle_old()+". Add one in the next release."))
+            return
+        #grab all installed versions in the cache
+        if(os.path.isdir(cache_path)):
+            install_vers = os.listdir(cache_path)
+
+        #print out the block's current metadata (found in local path)
+        if(listVers == False and ver == None):
+            #print(self.getMeta(every=True))
+            with open(self.getMetaFile(), 'r') as file:
+                for line in file:
+                    print(line,sep='',end='')
+        #print out specific metadata about version if installed in cache
+        elif(listVers == False and ver != None):
+            if(ver in install_vers):
+                with open(cache_path+ver+"/"+apt.MARKER, 'r') as file:
+                    for line in file:
+                        print(line,sep='',end='')
+            else:
+                exit(log.error("The flagged version is not installed to the cache"))
+        #list all versions available for this block
+        else:
+            #a file exists if in market called version.log
+            if(self.isMarket()):
+                with open(self.getPath()+apt.VER_LOG, 'r') as file:
+                    for line in file.readlines():
+                        v = line.split()[0]
+                        print(v)
+            else:
+                ver_sorted = self.sortVersions(self.getTaggedVersions())
+                # :done: also * the installed versions
+                #soln : grab list dir of all valid versions in cache, and match them with '*'
+                # :todo : show 'x' amount at a time? then use 'f' and 'b' to paginate
+                #track what major versions have been identified
+                maj_vers = []
+                for x in ver_sorted:
+                    #constrain the list to what the user inputted
+                    if(ver != None and x.startswith(ver) == False):
+                        continue
+                    print(x,end='\t')
+                    #notify user of the installs in cache
+                    if(x in install_vers):
+                        print("*",end='')
+                        #notify that it is a parent version
+                        parent_ver = x[:x.find('.')]
+                        if(parent_ver in install_vers and parent_ver not in maj_vers):
+                            print("\t"+parent_ver,end='')
+                        maj_vers.append(parent_ver)
+                        
+                    #this is the current version
+                    if(x[1:] == self.getMeta("version") and not self.isLocal()):
+                        print("\tlatest",end='')
+
+                    print()
+    
     @DeprecationWarning
     def copyVersionCache(self, ver, folder):
         '''

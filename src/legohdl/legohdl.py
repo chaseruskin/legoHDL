@@ -748,8 +748,7 @@ scripts)?", warning=False)
             print()
             return
 
-        print(block.readInfo(self.hasFlag('all'), \
-            self.hasFlag('stats'), \
+        print(block.readInfo(self.hasFlag('stats'), \
             self.hasFlag('vers')))
         pass
 

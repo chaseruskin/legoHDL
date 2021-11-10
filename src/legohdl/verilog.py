@@ -61,7 +61,7 @@ class Verilog(Language):
         #looking for design units in each statement
         for cseg in c_statements:
             if(cseg[0] == 'module'):
-                log.info("Identified module "+cseg[1])
+                #log.info("Identified module "+cseg[1])
                 self._designs += [Unit(cseg[1], self.getPath(), Unit.Design.ENTITY, self)]
                 dsgn_unit = self._designs[-1]
                 self.getInterface(dsgn_unit, c_statements[c_statements.index(cseg):])
