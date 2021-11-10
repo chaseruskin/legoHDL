@@ -218,7 +218,6 @@ class Block:
 
         instl._instls = Map()
 
-        #print(self.getPath())
         #get all folders one path below
         base_path,_ = os.path.split(instl.getPath()[:len(instl.getPath())-1])
         base_path = apt.fs(base_path)
@@ -233,13 +232,13 @@ class Block:
         return instl._instls
 
 
-    def delete(self):
+    def delete(self, prompt=False):
         '''
         Deletes the block object. Removes its path. Does not update any class variables,
         such as the graph.
         
         Parameters:
-            None
+            prompt (bool): determine if to issue prompt if deleting a DNLD block
         Returns:
             None
         '''
@@ -251,7 +250,7 @@ class Block:
         if(lvls.count(None) == len(lvls)-1):
             yes = apt.confirmation("Block "+self.getFull()+" does not exist anywhere else; deleting "+\
                 "it from the workspace path may make it unrecoverable. Delete anyway?")
-        else:
+        elif(self.getLvl(to_int=False) == Block.Level.DNLD and prompt):
             yes = apt.confirmation("Are you sure you want to remove block "+self.getFull()+" from the "+\
                 "workspace's local path?")
 
@@ -380,11 +379,11 @@ class Block:
             highest (str): highest version in format ('v0.0.0')
         '''
         all_vers = self.getTaggedVersions()
-        highest = '0.0.0'
+        highest = 'v0.0.0'
         for v in all_vers:
-            if(self.biggerVer(highest,v[1:]) == v[1:]):
-                highest = v[1:]
-        return 'v'+highest
+            if(self.cmpVer(highest,v) == v):
+                highest = v
+        return highest
 
 
     def waitOnChangelog(self):
@@ -516,7 +515,7 @@ class Block:
             '''
             sorting = []
             while len(l1) and len(r1):
-                if(Block.biggerVer(l1[0],r1[0]) == r1[0]):
+                if(Block.cmpVer(l1[0],r1[0]) == r1[0]):
                     sorting.append(r1.pop(0))
                 else:
                     sorting.append(l1.pop(0))
@@ -579,15 +578,15 @@ class Block:
 
 
     @classmethod
-    def biggerVer(cls, lver, rver):
+    def cmpVer(cls, lver, rver):
         '''
-        Compare two versions. Retuns the higher version, or RHS if both equal.
+        Compare two versions. Retuns the higher version, or 'rver' if both equal.
 
         Parameters:
-            lver (str): lhs version
-            rver (str): rhs version
+            lver (str): lhs version disregarding format
+            rver (str): rhs version disregarding format
         Returns:
-            ver (str): version of higher values MAJOR.MINOR.PATCH
+            ver (str): the parameter (lver or rver) who had higher values
         '''
         l1,l2,l3 = cls.sepVer(lver)
         r1,r2,r3 = cls.sepVer(rver)
@@ -1367,96 +1366,142 @@ class Block:
             #return the installed block for potential future use
             return instl_block
 
-        #check if looking to install a specific 'side' version
-        elif(self.getLvl(to_int=False) == Block.Level.INSTL):
-            #make sure the version is valid
-            if(ver not in self.getTaggedVersions()):
-                log.error("Version "+ver+" does not exist for "+self.getFull()+".")
-                return None
-            #make sure the version is not already installed
-            if(ver in self.getInstalls(returnvers=True)):
-                log.error("Version "+ver+" is already installed for "+self.getFull()+".")
-                return None
-
-            log.info("Installing "+self.getFull()+'('+ver+')...')
-
-            #make files write-able
-            self.modWritePermissions(True)
-
-            #checkout the correct version
-            self._repo.git('checkout','tags/'+ver+apt.TAG_ID)
-
-            #create cache directory based on this block's path
-            cache_path = self.getPath()+'../'+ver+'/'
-            #print(cache_path)
-            #copy in all files from self
-            shutil.copytree(self.getPath(), cache_path)
-
-            #delete specific version's git repository data
-            repo = Git(cache_path)
-            repo.delete()
-            
-            #create new block object as a specific version in the cache
-            b = Block(cache_path, ws=self.getWorkspace(), lvl=Block.Level.VER)
-
-            #revert last checkout to latest version
-            self._repo.git('checkout','-')
-
-            #make sure block's state is not corrupted
-            if(b.isCorrupt(ver)):
-                shutil.rmtree(cache_path, onerror=apt.rmReadOnly)
-                return None
-
-            #get all unit names
-            unit_names = b.getUnits(top=None, recursive=False)
-            #store the pairs of unit names to find/replace
-            mod_unit_names = [] 
-            #store what language objects will need to swap unit names
-            lang_files = [] 
-            #iterate through every unit to create find/replace pairings
-            for key,u in unit_names.items():
-                mod_unit_names += [[key, key+'_'+ver.replace('.','_')]]
-                #add its file to the list if not already included
-                if(u.getLanguageFile() not in lang_files):
-                    lang_files += [u.getLanguageFile()]
-
-            #modify all entity/unit names within the specific version to reflect
-            #that specific version
-            for f in lang_files:
-                f.swapUnitNames(mod_unit_names)
-            
-            print(lang_files)
-            print(mod_unit_names)
-            print(b)
-
-            #re-disable write permissions for installation block
-            self.modWritePermissions(False)
-            #disable write permissions for specific version block
-            b.modWritePermissions(False)
-            return b
-        #return None otherwise
-        else:
+        #make sure trying to install a specific 'side' version
+        elif(self.getLvl(to_int=False) != Block.Level.INSTL):
             return None
 
+        #make sure the version is valid
+        if(ver not in self.getTaggedVersions()):
+            log.error("Version "+ver+" does not exist for "+self.getFull()+".")
+            return None
+        #make sure the version is not already installed
+        if(ver in self.getInstalls(returnvers=True)):
+            log.error("Version "+ver+" is already installed for "+self.getFull()+".")
+            return None
 
-    def updateCacheMajors(self):
+        log.info("Installing "+self.getFull()+'('+ver+')...')
 
+        #make files write-able
+        self.modWritePermissions(True)
+
+        #install the specific version
+        b = self.installSubVersion(ver, places=3)
+
+        #clear the jar to act on clean unit data structures for next install
+        Unit.resetJar()
+
+        #try to update the sub-version associated with this specific version
+        if(b != None):
+            self.installSubVersion(ver, places=1)
+
+        #re-disable write permissions for installation block
+        self.modWritePermissions(False)
+        
+        return b
+
+
+    def installSubVersion(self, ver, places=1):
+        '''
+        Updates the sub-version to the latest applicable version ver, if
+        it exceeds the existing version in sub-version.
+
+        Parameters:
+            ver (str): proper version format under test (v0.0.0)
+            places (int): number of version sections to evaluate
+        Returns:
+            (Block): the specific version block installed
+        '''
+        parts = ver.split('.')
+        sub_ver = apt.listToStr(parts[:places], delim='.')
+        #print(sub_ver)
+
+        #check if the sub version is already installed
+        if(sub_ver in self.getInstalls(returnvers=True)):
+            #get the version already standing in this subversion spot
+            standing_block = self.getInstalls()[sub_ver]
+            cur_ver = standing_block.getMeta('version')
+            #compare version under test with version here
+            if(self.cmpVer(ver, cur_ver) == cur_ver):
+                #do not overwrite the version here if 'cur_ver' is greater
+                return None
+            #delete old block in this place to install bigger version 'ver'
+            standing_block.delete()
+
+        #proceed to create sub version 
+
+        #create cache directory based on this block's path
+        cache_path = self.getPath()+'../'+sub_ver+'/'
+
+        #checkout the correct version
+        self._repo.git('checkout','tags/'+ver+apt.TAG_ID)
+
+        #copy in all files from self
+        shutil.copytree(self.getPath(), cache_path)
+
+        #delete specific version's git repository data
+        repo = Git(cache_path)
+        repo.delete()
+        
+        #create new block object as a specific version in the cache
+        b = Block(cache_path, ws=self.getWorkspace(), lvl=Block.Level.VER)
+
+        #revert last checkout to latest version
+        self._repo.git('checkout','-')
+
+        #make sure block's state is not corrupted
+        if(b.isCorrupt(ver)):
+            shutil.rmtree(cache_path, onerror=apt.rmReadOnly)
+            return None
+
+        #get all unit names
+        unit_names = b.getUnits(top=None, recursive=False)
+        #store the pairs of unit names to find/replace
+        mod_unit_names = []
+        #store what language objects will need to swap unit names
+        lang_files = [] 
+        #iterate through every unit to create find/replace pairings
+        for key,u in unit_names.items():
+            mod_unit_names += [[key, key+'_'+sub_ver.replace('.','_')]]
+            #add its file to the list if not already included
+            if(u.getLanguageFile() not in lang_files):
+                lang_files += [u.getLanguageFile()]
+
+        #modify all entity/unit names within the specific version to reflect
+        #that specific version
+        for f in lang_files:
+            f.swapUnitNames(mod_unit_names)
+
+        print(f)
+        print(mod_unit_names)
+        print(b)
+
+        #alter fields for toplevel and bench
+        for n in mod_unit_names:
+            if(n[0].lower() == b.getMeta('toplevel').lower()):
+                b.setMeta('toplevel', n[1])
+            if(n[0].lower() == b.getMeta('bench').lower()):
+                b.setMeta('bench', n[1])
+        b.save(force=True)
+
+        #disable write permissions for specific version block
+        b.modWritePermissions(False)
+
+        return b
         pass
     
 
-    def save(self, meta=None, force=False):
+    def save(self, force=False):
         '''
         Write the metadata back to the marker file only if the data has changed
         since initializing this block as an object in python.
 
         Parameters:
-            meta (dict): :todo:
             force (bool): determine if to save no matter _meta_backup status
         Returns:
             success (bool): returns True if the file was written and saved.
         '''
         #do no rewrite meta data if nothing has changed
-        if(meta == None and force == False):
+        if(force == False):
             if(hasattr(self, "_meta_backup")):
                 #do not save if backup metadata is the same at the current metadata
                 if(self._meta_backup == self.getMeta()):
@@ -1465,19 +1510,11 @@ class Block:
             else:
                 return False
 
-        #default is to load the block's metadata
-        if(meta == None):
-            meta = self.getMeta(every=True)
-
-        if(hasattr(self, "_meta_backup")):
-            if(self._meta_backup != self.getMeta()):
-                #print("its different!") #use for debugging
-                pass
-
-        #write back cfg values with respect to order
+        #write back cfg values
         with open(self.getMetaFile(), 'w') as file:
-            cfg.save(meta, file, ignore_depth=True, space_headers=True)
-            file.close()
+            cfg.save(self.getMeta(every=True), file, ignore_depth=True, space_headers=True)
+            pass
+
         return True
 
 
@@ -1708,7 +1745,7 @@ class Block:
 
 
     @classmethod
-    def snapTitle(cls, title, inc_ent=False):
+    def snapTitle(cls, title, inc_ent=False, delim='.'):
         '''
         Break a title into its 4 components, if possible. Returns M,L,N,V as
         strings. Returns '' for each missing part.
@@ -1723,22 +1760,6 @@ class Block:
             V (str): block version
             E (str): entity in the title if inc_ent is True
         '''
-        delimiter = '.'
-        def parseDelimiter(t):
-            '''
-            Returns component, remaining string.
-            '''
-            tmp = ''
-            #locate right-most delimiter
-            d_i = t.rfind(delimiter)
-            #if it exists, split and return value
-            if(d_i > -1):
-                tmp = t[d_i+1:]
-                t = t[:d_i]
-                return tmp,t
-            else:
-                return t,''
-
         if(title == None):
             if(inc_ent):
                 return '','','','','' #return 5 blanks
@@ -1752,7 +1773,7 @@ class Block:
             title = title[:v_index]
 
         #split into pieces
-        pieces = title.split('.')
+        pieces = title.split(delim)
         sects = ['']*3
         diff = 3 - len(pieces)
         for i in range(len(pieces)-1, -1, -1):
@@ -2231,7 +2252,6 @@ class Block:
             instl_versions += [instller.getHighestTaggedVersion()]
             #sort the versions available in cache
             instl_versions = self.sortVersions(instl_versions)
-
             
             #sort the versions found on the self block
             all_versions = self.sortVersions(self.getTaggedVersions())
@@ -2247,11 +2267,13 @@ class Block:
                 if(x in instl_versions):
                     if(x != instl_versions[0] or instl_versions.count(x) > 1):
                         info_txt = info_txt + '*'
-                    #notify that it is a parent version
-                    parent_ver = x[:x.find('.')]
-                    if(parent_ver in instl_versions and parent_ver not in maj_vers):
-                        info_txt = info_txt + '\t' + parent_ver
-                    maj_vers.append(parent_ver)
+
+                        #identify what version are sub versions
+                        maj_ver = apt.listToStr(x.split('.')[:1], delim='.')
+                        if(maj_ver in instl_versions):
+                            if(maj_ver not in maj_vers):
+                                info_txt = info_txt + '\t' + maj_ver
+                                maj_vers.append(maj_ver)
                     
                     #get the highest version from instl_versions (that is what's called latest) :todo:
                     if(x == instl_versions[0]):
@@ -2338,7 +2360,7 @@ class Block:
             ver_meta['block']['bench'] = ver_meta['block']['bench']+str_ver
 
         #save metadata adjustments
-        self.save(meta=ver_meta)
+        #self.save(meta=ver_meta)
 
         #disable write permissions
         self.modWritePermissions(enable=False)
@@ -2723,7 +2745,8 @@ class Block:
 
         #create the marker file
         with open(self.getPath()+apt.MARKER, 'w') as f:
-            cfg.save(self.LAYOUT, f, ignore_depth=True, space_headers=True)
+            #cfg.save(self.LAYOUT, f, ignore_depth=True, space_headers=True)
+            pass
 
         #search through all templated files and fill in placeholders
         if(fresh):

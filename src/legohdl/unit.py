@@ -254,6 +254,13 @@ class Unit:
         Unit.Hierarchy.clear()
         pass
 
+
+    @classmethod
+    def resetJar(cls):
+        cls.Jar = Map()
+        cls.Bottle = Map()
+        pass
+
     
     def setAbout(self, a_txt):
         '''Sets the _about_txt (str) attr.'''
