@@ -687,25 +687,35 @@ scripts)?", warning=False)
 
         #load blocks
         self.WS().loadBlocks()
+
         #shortcut name
         block = self.WS().shortcut(self.getItem(), visibility=False)
 
+        if(block == None):
+            title = '' if(self.getItem() == None) else self.getItem()
+            log.error("Cannot find block under "+title+'.')
+            return
+
+        #recursively install each requirement
+        if(self.hasFlag('requirements')):
+            block.installReqs()
+            return
+
         #first check if the block is found in install
         instl = block.getLvlBlock(Block.Level.INSTL)
+
+        ver_num = self.getVerNum(places=[3])
 
         #install latest/controller for this block
         if(instl == None):
             instl = block.install()
             pass
+        elif(ver_num == None):
+            log.info("The latest version for "+instl.getFull()+" is already installed.")
         
         #install specific version if specifed
-        if(self.getVerNum(places=[3]) != None):
+        if(ver_num != None):
             instl.install(ver=self.getVerNum())
-
-        #recursively install each requirement :todo:
-        if(self.hasFlag('requirements')):
-            print(instl.getMeta('derives'))
-            pass
 
         pass
 

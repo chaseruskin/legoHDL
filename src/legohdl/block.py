@@ -1110,6 +1110,42 @@ class Block:
         return corrupt
 
 
+    def installReqs(self, tracking=[]):
+        '''
+        Recursive method to install all required blocks.
+
+        Parameters:
+            tracking ([string]): list of already installed requirements
+        Returns:
+            None
+        '''
+        for title in self.getMeta('derives'):
+            #skip blocks already identified for installation
+            if(title.lower() in tracking):
+                continue
+            #update what blocks have been identified for installation
+            tracking += [title.lower()]
+            #break titles into discrete sections
+            M,L,N,V = Block.snapTitle(title)
+            #get the block associated with the title
+            b = self.getWorkspace().shortcut(M+'.'+L+'.'+N, visibility=False)
+            #check if the block was found in the current workspace
+            if(b == None):
+                log.error("Unable to locate required block "+title+".")
+                continue
+            #recursively install requirements
+            b.installReqs(tracking)
+            #check if an installation already exists
+            instllr = b.getLvlBlock(Block.Level.INSTL)
+            #install main cache block
+            if(instllr == None):
+                instllr = b.install()
+            #install specific version block to cache
+            instllr.install(ver=V)
+            pass
+        pass
+
+
     def install(self, ver=None):
         '''
         Installs this block to the cache. 
@@ -1189,7 +1225,7 @@ class Block:
             return None
         #make sure the version is not already installed
         if(ver in self.getInstalls(returnvers=True)):
-            log.error("Version "+ver+" is already installed for "+self.getFull()+".")
+            log.info("Version "+ver+" is already installed for "+self.getFull()+".")
             return None
 
         log.info("Installing "+self.getFull()+'('+ver+')...')
@@ -1339,8 +1375,9 @@ class Block:
             if(len(uninstallations) == 0):
                 log.error("Version "+ver+" may not exist or be installed to the cache!")
                 return False
-        #includes latest
+        #includes latest and everything else
         else:
+            uninstallations = installations
             uninstallations['latest'] = instl
 
         #display helpful information to user about what installations will be deleted
@@ -1651,6 +1688,7 @@ class Block:
             for dep in unit.getReqs():
                 if(dep.E().lower() == entity_name and unit.isTb()):
                     benches.append(unit)
+            pass
         #perfect; only 1 was found  
         if(len(benches) == 1):
             self._bench = benches[0]

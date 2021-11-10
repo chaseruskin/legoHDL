@@ -318,9 +318,11 @@ class Workspace:
             #units associated with it, only metadata
             pass
 
-        #4. ID all specific version blocks if identifying designs
+        #4. ID all specific version blocks if identifying designs (except current block)
         if(id_dsgns):
             for vis_block in self._visible_blocks:
+                if(vis_block == Block.getCurrent(bypass=True)):
+                    continue
                 for spec_block in vis_block.getInstalls().values():
                     spec_block.loadHDL()
 
@@ -343,6 +345,8 @@ class Workspace:
         Returns:
             (Block): the identified block from the shortened title
         '''
+        if(title == None):
+            title = ''
         #split into pieces
         pieces = title.split('.')
         sects = ['']*3
