@@ -203,7 +203,7 @@ class Unit:
                 #add connection in the graph
                 self.addReq(dsgn_pkg)
                 pass
-        print("DESIGN PACKAGES:",dsgn_pkgs)
+        #print("DESIGN PACKAGES:",dsgn_pkgs)
         return dsgn_pkgs
 
 
@@ -245,6 +245,15 @@ class Unit:
 
     @classmethod
     def resetHierarchy(cls):
+        '''
+        Unchecks all units, removes _dsgn_pkgs attr, and removes all vertices from
+        the Hierarchy graph.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
         for u in cls.Hierarchy.getVertices():
             u.setChecked(False)
             #remove dynamic design packages attr
@@ -257,6 +266,7 @@ class Unit:
 
     @classmethod
     def resetJar(cls):
+        '''Clears Jar (Map) and Bottle (Map) class attrs.'''
         cls.Jar = Map()
         cls.Bottle = Map()
         pass
@@ -406,7 +416,7 @@ class Unit:
         dsgn_unit = None
         #the choice is clear; only one option available to be this design unit
         if(len(potentials) == 1):
-            log.info("Instantiating "+potentials[0].getTitle())
+            #log.info("Instantiating "+potentials[0].getTitle())
             dsgn_unit = potentials[0]
             pass
         #perform intelligent component recognition by comparing ports and generics
@@ -447,7 +457,7 @@ class Unit:
             dsgn_unit = potentials[i]
             log.info("Intelligently selected "+dsgn_unit.getTitle())
         else:
-            log.error("Not a valid instance found within the bottle "+str(lib)+" "+dsgn_name)
+            #log.error("Not a valid instance found within the bottle "+str(lib)+" "+dsgn_name)
             pass
 
         # :todo: remember design for next encounter?

@@ -150,7 +150,7 @@ class Vhdl(Language):
 
         #collect all visible component declarations
         for pkg in u.decodePkgs():
-            print("Importing "+pkg.getTitle())
+            #print("Importing "+pkg.getTitle())
             comps += pkg.getLanguageFile().getComponents(pkg)
             #also further decode this package
             if(pkg.isChecked() == False and recursive):
@@ -184,7 +184,7 @@ class Vhdl(Language):
 
             #find component declarations
             if(cseg[0].lower() == 'component'):
-                log.info("Declared component: "+cseg[1])
+                #log.info("Declared component: "+cseg[1])
                 comps += [cseg[1].lower()]
 
             #find instantiations    
@@ -205,7 +205,7 @@ class Vhdl(Language):
                     #determine if a library is attached to this entity name
                     comp_parts = comp_name.split('.')
                     
-                    print(comp_parts)
+                    #print(comp_parts)
                     if(len(comp_parts) == 2):
                         #must have first piece be a library name
                         if(entity_style):
@@ -219,7 +219,7 @@ class Vhdl(Language):
                     #ensure the component name has its component declaration visible
                     if(entity_style == False):
                         if(comp_name.lower() not in comps):
-                            log.error("COMPONENT DECLARATION NOT FOUND: "+comp_name)
+                            #log.error("COMPONENT DECLARATION NOT FOUND: "+comp_name)
                             continue
 
                     #gather instantiated ports and generics
@@ -232,7 +232,8 @@ class Vhdl(Language):
                         if(comp_unit.isChecked() == False and recursive):
                             comp_unit.getLanguageFile().decode(comp_unit, recursive)
                     else:
-                        print(cseg)
+                        #print(cseg)
+                        pass
                     #exit()  #exit for debugging 
                 pass
         pass
@@ -310,7 +311,7 @@ class Vhdl(Language):
                 pass
             elif(in_generics):
                 #find if an initial value is being set
-                val = None
+                val = []
                 v_i = end
                 if(cseg.count(':=')):
                     v_i = cseg.index(':=')

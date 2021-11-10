@@ -392,9 +392,10 @@ class Workspace:
             elif(num_blocks > 1):
                 possible_blocks = reg[entity]
                 if(len(sects[2]) == 0):
-                    log.info("Ambiguous title; conflicts with")
+                    log.info("Ambiguous unit; conflicts with")
+                    #display the units/titles that conflict with input
                     for bk in reg[entity]:
-                        print('\t'+bk.getFull()+":"+entity)
+                        print('\t '+bk.getFull()+":"+entity)
                     exit(print())
             pass
         #search through all block names
@@ -433,10 +434,16 @@ class Workspace:
                     possible_blocks = next_blocks
                     continue
                 else:
-                    #ran out of guesses...report the conflicting titles
-                    log.info("Ambiguous title; conflicts with")
+                    #ran out of guesses...report the conflicting titles/units
+                    if(req_entity):             
+                        log.info("Ambiguous unit; conflicts with")
+                    else:
+                        log.info("Ambiguous title; conflicts with")
                     for bk in reg[term]:
-                        print('\t'+bk.getFull())
+                        if(req_entity):
+                            print('\t '+bk.getFull()+":"+entity)
+                        else:
+                            print('\t '+bk.getFull())
                     exit(print())
             pass
         #using the current block if title is empty string

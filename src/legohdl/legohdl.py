@@ -631,7 +631,6 @@ scripts)?", warning=False)
         '''Run the 'get' command.'''
 
         visibles = self.WS().loadBlocks(id_dsgns=True)
-        print('here')
 
         #make sure an entity is being requested
         if(self.getItem() == None):

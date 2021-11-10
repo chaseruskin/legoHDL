@@ -1368,7 +1368,7 @@ class Block:
                         break
                 if(skip):
                     continue
-                print(v)
+                #print(v)
                 uninstallations[v] = installations[v]
                 pass
             #check if any versions were captured in algorithm
