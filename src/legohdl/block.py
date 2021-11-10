@@ -259,6 +259,8 @@ class Block:
             return
         #delete the directory
         shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
+
+        #:todo: continually clean up empty folders
         pass
 
 
@@ -1385,14 +1387,14 @@ class Block:
         self.modWritePermissions(True)
 
         #install the specific version
-        b = self.installSubVersion(ver, places=3)
+        b = self.installPartialVersion(ver, places=3)
 
         #clear the jar to act on clean unit data structures for next install
         Unit.resetJar()
 
         #try to update the sub-version associated with this specific version
         if(b != None):
-            self.installSubVersion(ver, places=1)
+            self.installPartialVersion(ver, places=1)
 
         #re-disable write permissions for installation block
         self.modWritePermissions(False)
@@ -1400,7 +1402,7 @@ class Block:
         return b
 
 
-    def installSubVersion(self, ver, places=1):
+    def installPartialVersion(self, ver, places=1):
         '''
         Updates the sub-version to the latest applicable version ver, if
         it exceeds the existing version in sub-version.
@@ -1471,10 +1473,6 @@ class Block:
         for f in lang_files:
             f.swapUnitNames(mod_unit_names)
 
-        print(f)
-        print(mod_unit_names)
-        print(b)
-
         #alter fields for toplevel and bench
         for n in mod_unit_names:
             if(n[0].lower() == b.getMeta('toplevel').lower()):
@@ -1487,7 +1485,64 @@ class Block:
         b.modWritePermissions(False)
 
         return b
-        pass
+
+    
+    def uninstall(self, ver):
+        '''
+        Uninstall the given block from the cache using its INSTL status block.
+        
+        Also uninstalls a specific version passed by 'ver', and updates partial
+        versions when needed.
+
+        Parameters:
+            ver (str): version in proper format (v0.0.0)
+        Returns:
+            (bool): determine if the operation was successful
+        '''
+        instl = self.getLvlBlock(Block.Level.INSTL)
+        #make sure the block is installed
+        if(instl == None):
+            log.error("Block "+self.getFull()+" is not installed to the cache!")
+            return False
+
+        #get the map for what versions exist in cache for this block
+        installations = instl.getInstalls()
+        #scale down to only version
+        if(ver != None):
+            if(ver in installations.keys()):
+                tmp = installations[ver]
+                installations = Map()
+                installations[ver] = tmp
+            else:
+                log.error("Version "+ver+" may not exist or be installed to the cache!")
+                return False
+        #includes latest
+        else:
+            installations['latest'] = instl
+
+        #display helpful information to user about what installations will be deleted
+        print("From "+self.getFull()+" would remove: \n\t" + \
+            apt.listToStr(list(installations.keys()),'\n\t'))
+
+        #prompt to verify action
+        yes = apt.confirmation('Proceed to uninstall?',warning=False)
+        if(yes == False):
+            log.info("Cancelled.")
+            return False
+
+        #iterate through every installation to uninstall
+        for i in installations.values():
+            print("Uninstalled "+i.getFull(inc_ver=True))
+            #delete from cache
+            i.delete()
+        #remove this block's cache path name if uninstalling the main cache block
+        if(instl in installations.values()):
+            shutil.rmtree(self.getWorkspace().getCachePath()+instl.L()+'/'+instl.N()+'/', onerror=apt.rmReadOnly)
+        #remove this block's cache path library if empty
+        if(len(os.listdir(self.getWorkspace().getCachePath()+instl.L()+'/')) == 0):
+            shutil.rmtree(self.getWorkspace().getCachePath()+instl.L()+'/', onerror=apt.rmReadOnly)
+
+        return True
     
 
     def save(self, force=False):

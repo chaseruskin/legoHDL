@@ -720,48 +720,11 @@ scripts)?", warning=False)
         #check if block exists
         if(block == None):
             exit(log.error("Could not identify a block with "+self.getItem()))
-        #check if block is installed
-        installer = block.getLvlBlock(Block.Level.INSTL)
-        if(installer == None):
-            exit(log.error("Block "+block.getFull()+" is not installed to the cache!"))
-        #prompt to verify action
-        installations = installer.getInstalls()
-        #scale down to only version
-        ver_num = self.getVerNum()
-        if(ver_num != None):
-            if(ver_num in installations.keys()):
-                tmp = installations[ver_num]
-                installations = Map()
-                installations[ver_num] = tmp
-            else:
-                exit(log.error("Version "+ver_num+" may not exist or be installed to the cache!"))
-        #includes latest
-        else:
-            installations['latest'] = installer
 
-        #display helpful information to user about what installations will be deleted
-        print("From "+installer.getFull()+" would remove: \n\t" + \
-            apt.listToStr(list(installations.keys()),'\n\t'))
+        success = block.uninstall(self.getVerNum())
 
-        yes = apt.confirmation('Proceed to uninstall?',warning=False)
-        if(yes):
-            #iterate through every installation to uninstall
-            for i in installations.values():
-                print("Uninstalled "+i.getFull(inc_ver=True))
-                #delete from cache
-                i.delete()
-
-            #remove this block's cache path name if uninstalling the main cache block
-            if(installer in installations.values()):
-                shutil.rmtree(self.WS().getCachePath()+installer.L()+'/'+installer.N()+'/', onerror=apt.rmReadOnly)
-            #remove this block's cache path library if empty
-            if(len(os.listdir(self.WS().getCachePath()+installer.L()+'/')) == 0):
-                shutil.rmtree(self.WS().getCachePath()+installer.L()+'/', onerror=apt.rmReadOnly)
-
+        if(success):
             log.info("Success")
-
-        else:
-            log.info('Cancelled.')
         pass
 
     
