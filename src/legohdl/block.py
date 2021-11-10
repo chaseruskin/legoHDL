@@ -7,6 +7,7 @@
 #   root folder.
 
 import os, shutil, stat, glob
+from platform import version
 from posixpath import split
 from datetime import date
 
@@ -377,8 +378,78 @@ class Block:
         return
 
 
-    def release(self):
-        #:todo:
+    def release(self, next_ver, msg=None, dry_run=False):
+        '''
+        Releases a new version for a block to be utilized in other designs.
+
+        A dry-run will not affect any part of the block and is used for helping
+        the user see if the release will go smoothly.
+
+        Parameters:
+            next_ver (str): requested version to be the next release point
+            msg (str): the message to go along with the git commit
+            dry_run (bool): determine if to fake the release to see if things would go smoothly
+        Returns:
+            None
+        '''
+        #ensure at least one parameter was passed
+        if(next_ver == None):
+            log.error("No version given for next release point.")
+            return
+
+        inc_major = next_ver.lower() == 'major'
+        inc_minor = next_ver.lower() == 'minor'
+        inc_patch = next_ver.lower() == 'patch'
+        use_version = Block.validVer(next_ver, places=[3])
+
+        #1. Verify the repository has the latest commits
+
+        #ensure the metadata looks good
+        self.secureMeta()
+
+        #make sure the repository is up to date
+        if(self._repo.isLatest() == False):
+            log.error("Verify the repository is up-to-date before releasing.")
+            return
+
+        highest_ver = self.getHighestTaggedVersion()
+
+        #2. compute next version number
+
+        #make sure the next version is higher than any previous
+        if(use_version):
+            if(Block.cmpVer(next_ver, highest_ver) == highest_ver):
+                log.error("Specified version "+next_ver+" is not higher than latest version "+highest_ver+"!")
+                return
+        #increment major value +1 :todo:
+        elif(inc_major):
+            next_ver = highest_ver
+        #incremente minor value +1
+        elif(inc_minor):
+            next_ver = highest_ver
+        #increment patch value +1
+        elif(inc_patch):
+            next_ver = highest_ver
+        #ensure at least one parameter was given correctly
+        else:
+            log.error("Invalid next version given as "+next_ver+'.')
+            return
+
+        #3. Make sure block dependencies/derivatives and metadata are up-to-date
+
+
+        #4. Make a new git commit
+
+        #insert default message
+        if(msg == None):
+            msg = "Releases legohdl version "+next_ver
+
+        #5. Create a new git tag
+
+
+        #6. Push to market if applicable
+
+
         pass
     
 
@@ -553,20 +624,6 @@ class Block:
         return r_major,r_minor,r_patch
 
 
-    def isMarket(self):
-        return apt.isSubPath(apt.MARKETS, self.getPath())
-
-    def isLocal(self):
-        return apt.isSubPath(self.getWorkspace().getPath(), self.getPath())
-
-    def bindMarket(self, mkt):
-        if(mkt != None):
-            log.info("Tying "+mkt+" as the market for "+self.getTitle_old(low=False))
-        self.setMeta('market', mkt)
-        self.save()
-        pass
-
-
     def secureMeta(self):
         '''
         Performs safety measures on the block's metadata. Only runs once before
@@ -610,7 +667,7 @@ class Block:
         if(self.getMeta('market') != ''):
             m = self.getMeta('market')
             if(m.lower() not in self.getWorkspace().getMarkets(returnnames=True)):
-                log.warning("Market "+m+" is removed from "+self.getTitle_old()+" because the market is not available in this workspace.")
+                log.warning("Market "+m+" is removed from "+self.getFull()+" because the market is not available in this workspace.")
                 self.setMeta('market', '')
             pass
 
@@ -1803,14 +1860,16 @@ class Block:
 
 
     def M(self):
+        '''Returns _M (str) attr market.'''
         if(hasattr(self, "_M")):
             return self._M 
         #read from metadata
         self._M = self.getMeta('market')
-        return self._M if(self._M != None) else ''
+        return self._M
 
 
     def L(self):
+        '''Returns _L (str) attr block library.'''
         if(hasattr(self, "_L")):
             return self._L
         #read from metadata
@@ -1819,6 +1878,7 @@ class Block:
     
 
     def N(self):
+        '''Returns _N (str) attr project name.'''
         if(hasattr(self, "_N")):
             return self._N 
         #read from metadata
@@ -1827,6 +1887,7 @@ class Block:
 
 
     def V(self):
+        '''Returns _V (str) attr proper version format (v0.0.0).'''
         if(hasattr(self, "_V")):
             return self._V
         #read from metadata

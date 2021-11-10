@@ -1000,6 +1000,20 @@ scripts)?", warning=False)
         pass
 
 
+    def _release(self):
+        '''Run the 'release' command.'''
+
+        #load blocks
+        self.WS().loadBlocks()
+
+        #identify current block
+        block = Block.getCurrent()
+
+        block.release(self.getItem(), msg=self.getVar("msg"), \
+            dry_run=self.hasFlag('dry-run'))
+        pass
+
+
     def _open(self):
         '''Run 'open' command.'''
 
@@ -1199,7 +1213,7 @@ scripts)?", warning=False)
             pass
 
         elif('release' == cmd):
-            
+            self._release()
             pass
 
         elif('del' == cmd):
