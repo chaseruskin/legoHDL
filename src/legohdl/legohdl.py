@@ -193,7 +193,7 @@ class legoHDL:
         if(raw):
             return it
         #make sure the item is not a flag
-        if(len(it) and it[1:] in self._flags):
+        if(len(it) and it[1:].lower() in self._flags):
             it = None
         #make sure the item is not a blank string
         if(it == ''):
@@ -994,9 +994,9 @@ scripts)?", warning=False)
         else:
             self.WS().listBlocks(title=self.getItem(), \
                 alpha=self.hasFlag('alpha'), \
-                instl=self.hasFlag('instl'), \
-                dnld=self.hasFlag('dnld'), \
-                avail=self.hasFlag('avail'))
+                instl=self.hasFlag('i'), \
+                dnld=self.hasFlag('d'), \
+                avail=self.hasFlag('a'))
         pass
 
 
