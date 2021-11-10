@@ -146,67 +146,31 @@ class Market:
         #make sure the market is up-to-date
         self.refresh()
 
-        return
+        #make sure the path exists in market
+        path = self.getMarketDir()+block.L()+'/'+block.N()+'/'
+        os.makedirs(path, exist_ok=True)
 
-        #store important data scoped for easier access
-        block_meta = meta['block']
-        #get the current branches name
-        active_branch = self._repo.getBranch()
-
-        #switch to side branch if '-soft' flag raised
-        tmp_branch = block_meta['library']+"."+block_meta['name']+"-"+block_meta['version']
-        #try to publish on a side branch (possibly for team reviewing)
-        if(options.count("soft")):
-            if(self._repo.remoteExists()):
-                log.info("Checking out new side branch '"+tmp_branch+"' for publishing to "+self.getName()+"...")
-                self._repo.git("checkout","-b",tmp_branch)
-            else:
-                log.warning("Cannot perform soft release because market "+self.getName()+" has no remote.")
-
-        #locate block's directory within market
-        block_dir = apt.fs(self.getMarketDir()+"/"+block_meta['library']+"/"+block_meta['name']+"/")
-        os.makedirs(block_dir,exist_ok=True)
+        meta_path = path+apt.MARKER
         
-        #read in all logging info about valid release points
-        file_data = []
-        #insert any versions found as valid release points to version.log
-        for v in all_vers:
-            file_data = file_data + [v+"\n"]
-        #rewrite version.log file to track all valid versions
-        with open(block_dir+apt.VER_LOG,'w') as f:
-                f.writelines(file_data)
-                pass
+        #add more information to the metadata before publishing to market
+        meta = block.getMeta(every=True).copy()
 
-        #save changelog 
-        if(changelog != None):
-            with open(block_dir+apt.CHANGELOG,'w') as f:
-                for line in changelog:
-                    f.write(line)
-                f.close()
-                pass
+        meta['block']['versions'] = block.sortVersions(block.getTaggedVersions())
 
-        #save cfg file
-        with open(block_dir+apt.MARKER, 'w') as file:
-            cfg.save(meta, file, ignore_depth=True, space_headers=True)
-            file.close()
+        #write metadata to marker file in market for this block
+        with open(meta_path, 'w') as meta_file:
+            cfg.save(meta, meta_file, ignore_depth=True, space_headers=True)
+            pass
 
-        #stage changes to repository (only add and stage the file that was made)
-        rel_git_path = block_meta['library']+'/'+block_meta['name']+'/'
-        self._repo.add(rel_git_path+apt.MARKER, rel_git_path+apt.VER_LOG)
-        if(changelog != None):
-            self._repo.add(rel_git_path+apt.CHANGELOG)
+        #stage changes
+        self._repo.add(block.L()+'/'+block.N()+'/'+apt.MARKER)
 
-        #commit new version
-        self._repo.git.commit('-m',"Adds "+block_meta['library']+'.'+block_meta['name']+"-v"+block_meta['version'])
+        self._repo.commit("Publishes "+block.getFull(inc_ver=True))
 
-        #sync with remote
+        #synchronize changes with its remote
         self._repo.push()
 
-        #revert back to previous branch if needed
-        if(self._repo.getBranch() != active_branch):
-            self._repo.git('checkout',active_branch)
-            #delete temporal branch used for soft release
-            self._repo.git('branch','-d',tmp_branch)
+        log.info("Success.")
         pass
 
 

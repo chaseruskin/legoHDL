@@ -456,6 +456,10 @@ class Block:
 
         #3. Make sure block dependencies/derivatives and metadata are up-to-date
 
+        #update dynamic attributes
+        self._V = next_ver
+        self._tags += [next_ver]
+
         self.setMeta('version', next_ver[1:])
         self.updateDerivatives()
         self.save(force=True)
@@ -483,6 +487,9 @@ class Block:
         #synch changes with remote repository
         self._repo.push()
 
+        #no market to publish to
+        if(len(self.getMeta('market')) == 0):
+            return
         #try to find the market
         mrkt = None
         for m in self.getWorkspace().getMarkets():
@@ -490,7 +497,7 @@ class Block:
                 mrkt = m
                 break
         else:
-            log.error("Could not publish because market "+self.M()+" is not found in this workspace.")
+            log.warning("Could not publish because market "+self.M()+" is not found in this workspace.")
             return
 
         #publish to the market

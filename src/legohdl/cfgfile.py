@@ -206,8 +206,8 @@ class CfgFile:
             datafile (file): a python file object to be written in cfg format
             comments (dict): a dictionary of strings where the keys are headers where 
             the comments will be placed before that header/assignment
-            ignore_depth (bool):
-            space_headers (bool):
+            ignore_depth (bool): ignores tabs and assumes each variable is one level within headers
+            space_headers (bool): determine if to write newlines for subsequent headers
         Returns:
             (bool): true if save was successful
         '''
