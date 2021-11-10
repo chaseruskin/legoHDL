@@ -131,22 +131,22 @@ class Market:
         return success
 
 
-    def publish(self, meta, options=[], all_vers=[], changelog=None):
+    def publish(self, block):
         '''
         Publishes a block's new metadata to the market and syncs with remote
         repository.
 
         Parameters:
-            meta (dict): the metadata from the block's cfg file
-            options ([str]): list of options supported by publish method
-            all_vers ([str]): list of all available versions for this block
-            changelog (str): the changelog file data
+            block (Block): the block to publish to this market
         Returns:
             None
         '''
-        log.info("Publishing block to market "+self.getName()+"...")
-        #first ensure the market is up-to-date
+        log.info("Publishing "+block.getFull(inc_ver=True)+" to market "+self.getName()+"...")
+        
+        #make sure the market is up-to-date
         self.refresh()
+
+        return
 
         #store important data scoped for easier access
         block_meta = meta['block']

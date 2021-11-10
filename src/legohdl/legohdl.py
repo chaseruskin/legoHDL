@@ -1003,8 +1003,8 @@ scripts)?", warning=False)
     def _release(self):
         '''Run the 'release' command.'''
 
-        #load blocks
-        self.WS().loadBlocks()
+        #load blocks and their designs
+        self.WS().loadBlocks(id_dsgns=True)
 
         #identify current block
         block = Block.getCurrent()

@@ -814,7 +814,7 @@ class Workspace:
 
         Parameters:
             returnnames (bool): true will return market names
-            lowercase (boll): true will return lower-case names if returnnames is enabled
+            lowercase (bool): true will return lower-case names if returnnames is enabled
         Returns:
             ([Market]) or ([str]): list of available markets
             

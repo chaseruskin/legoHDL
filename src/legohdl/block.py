@@ -378,7 +378,7 @@ class Block:
         return
 
 
-    def release(self, next_ver, msg=None, dry_run=False):
+    def release(self, next_ver, msg=None, dry_run=False, only_meta=False):
         '''
         Releases a new version for a block to be utilized in other designs.
 
@@ -389,6 +389,7 @@ class Block:
             next_ver (str): requested version to be the next release point
             msg (str): the message to go along with the git commit
             dry_run (bool): determine if to fake the release to see if things would go smoothly
+            only_meta (bool): determine if to add/commit only metadata file or all unsaved changes
         Returns:
             None
         '''
@@ -404,15 +405,21 @@ class Block:
 
         #1. Verify the repository has the latest commits
 
-        #ensure the metadata looks good
+        #make sure the metadata looks good
         self.secureMeta()
 
         #make sure the repository is up to date
+        log.info("Verifying repository is up-to-date...")
         if(self._repo.isLatest() == False):
             log.error("Verify the repository is up-to-date before releasing.")
             return
 
         highest_ver = self.getHighestTaggedVersion()
+        p_maj,p_min,p_fix = Block.sepVer(highest_ver)
+
+        #make sure the metadata is not corrupted
+        if(self.isCorrupt(highest_ver)):
+            return
 
         #2. compute next version number
 
@@ -421,34 +428,73 @@ class Block:
             if(Block.cmpVer(next_ver, highest_ver) == highest_ver):
                 log.error("Specified version "+next_ver+" is not higher than latest version "+highest_ver+"!")
                 return
-        #increment major value +1 :todo:
+        #increment major value +1
         elif(inc_major):
-            next_ver = highest_ver
-        #incremente minor value +1
+            p_maj += 1
+            p_min = p_fix = 0
+            next_ver = 'v'+str(p_maj)+'.'+str(p_min)+'.'+str(p_fix)
+        #incremente minor value
         elif(inc_minor):
-            next_ver = highest_ver
-        #increment patch value +1
+            p_min += 1
+            p_fix = 0
+            next_ver = 'v'+str(p_maj)+'.'+str(p_min)+'.'+str(p_fix)
+        #increment patch value
         elif(inc_patch):
-            next_ver = highest_ver
+            p_fix += 1
+            next_ver = 'v'+str(p_maj)+'.'+str(p_min)+'.'+str(p_fix)
         #ensure at least one parameter was given correctly
         else:
             log.error("Invalid next version given as "+next_ver+'.')
             return
 
+        log.info("Saving block release point "+next_ver+"...")
+
+        #ensure version has a 'v' in prepended
+        next_ver = next_ver.lower()
+        if(next_ver[0] != 'v'):
+            next_ver = 'v'+next_ver
+
         #3. Make sure block dependencies/derivatives and metadata are up-to-date
 
+        self.setMeta('version', next_ver[1:])
+        self.updateDerivatives()
+        self.save(force=True)
 
         #4. Make a new git commit
+
+        if(only_meta):
+            self._repo.add(apt.MARKER)
+        else:
+            self._repo.add('.')
 
         #insert default message
         if(msg == None):
             msg = "Releases legohdl version "+next_ver
 
+        self._repo.commit(msg)
+
         #5. Create a new git tag
 
+        self._repo.git('tag',next_ver+apt.TAG_ID)
 
-        #6. Push to market if applicable
 
+        #6. Push to remote and to market if applicable
+
+        #synch changes with remote repository
+        self._repo.push()
+
+        #try to find the market
+        mrkt = None
+        for m in self.getWorkspace().getMarkets():
+            if(self.getMeta('market').lower() == m.getName().lower()):
+                mrkt = m
+                break
+        else:
+            log.error("Could not publish because market "+self.M()+" is not found in this workspace.")
+            return
+
+        #publish to the market
+        mrkt.publish(self)
 
         pass
     
@@ -667,8 +713,9 @@ class Block:
         if(self.getMeta('market') != ''):
             m = self.getMeta('market')
             if(m.lower() not in self.getWorkspace().getMarkets(returnnames=True)):
-                log.warning("Market "+m+" is removed from "+self.getFull()+" because the market is not available in this workspace.")
-                self.setMeta('market', '')
+                log.warning("Market "+m+" from "+self.getFull()+" is not available in this workspace.")
+                #self.setMeta('market', '')
+                pass
             pass
 
         #dynamically create attr to only allow operation to occur once
@@ -1541,9 +1588,10 @@ class Block:
         Returns:
             None
         '''
+        log.info("Updating block's dependencies...")
         #get every unit from this block
         units = self.getUnits(top=None)
-        
+
         block_reqs = []
         direct_reqs = []
         #get the list of direct requirements
@@ -1589,8 +1637,11 @@ class Block:
                 break
 
         if(update):
+            log.info("Saving new dependencies to metadata...")
             self.setMeta('derives', list(block_titles.values()))
             self.save()
+        else:
+            log.info("No change in dependencies found.")
         pass
 
 
@@ -2115,18 +2166,22 @@ class Block:
         #read the list of versions implemented and obtainable
         if(versions):
             info_txt = ''
-            #get installation versions
+            
             instl_versions = []
+            #try to see if there are any installation versions
             instller = self.getLvlBlock(Block.Level.INSTL)
             if(instller != None):
                 instl_versions = instller.getInstalls(returnvers=True)
-            #additionally add what version the main cached block is
-            instl_versions += [instller.getHighestTaggedVersion()]
+                #additionally add what version the main cached block is
+                instl_versions += [instller.getHighestTaggedVersion()]
+                pass
+
             #sort the versions available in cache
             instl_versions = self.sortVersions(instl_versions)
             
             #sort the versions found on the self block
             all_versions = self.sortVersions(self.getTaggedVersions())
+            
             #track what major versions have been identified
             maj_vers = []
             #iterate through all versions
