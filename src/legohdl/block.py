@@ -261,6 +261,9 @@ class Block:
             return
         #delete the directory
         shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
+        #display message to user indicating deletion was successful
+        if(self.getLvl(to_int=False) == Block.Level.DNLD):
+            log.info("Deleted block "+self.getFull()+" from downloads.")
 
         #try to continually clean up empty folders
         nested = self.getPath()

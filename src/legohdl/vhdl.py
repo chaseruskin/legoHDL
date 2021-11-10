@@ -328,7 +328,7 @@ class Vhdl(Language):
                         u.getInterface().addGeneric(gen, dtype, val)
             #print(cseg)
             pass
-        print(u.getInterface())
+        #print(u.getInterface())
         pass
 
 
@@ -361,7 +361,7 @@ class Vhdl(Language):
             if(cseg[0].lower() == 'component'):
                 comps += [cseg[1].lower()]
             pass
-        print("Components from this package:",comps)
+        #print("Components from this package:",comps)
         return comps
 
     

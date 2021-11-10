@@ -679,7 +679,7 @@ class Workspace:
         if(refresh):
             #display what interval is being refreshed on the day
             infoo = "("+str(stage)+"/"+str(rate)+")" if(rate > 0) else ''
-            log.info("Automatically refreshing workspace markets... "+infoo)
+            log.info("Automatically refreshing workspace "+self.getName()+" markets... "+infoo)
             #refresh all markets attached to this workspace
             for mrkt in self.getMarkets():
                 mrkt.refresh()

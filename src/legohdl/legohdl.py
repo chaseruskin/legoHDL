@@ -957,7 +957,7 @@ scripts)?", warning=False)
             for mkrt in Market.Jar.values():
                 mkrt.refresh()
         elif(self.getItem() == None):
-            log.info("Refreshing all workspace markets...")
+            log.info("Refreshing all workspace "+self.WS().getName()+" markets...")
             for mrkt in self.WS().getMarkets():
                 mrkt.refresh()
         elif(self.getItem() in Market.Jar.keys()):

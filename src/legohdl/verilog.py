@@ -180,7 +180,7 @@ class Verilog(Language):
             #print(cseg)
             #check for exit case - finding 'endmodule'
             if(cseg[0] == 'endmodule'):
-                print(u.getInterface())
+                #print(u.getInterface())
                 #if(u.E() == 'johnson_ctr'):
                     #exit()
                 return
@@ -193,12 +193,12 @@ class Verilog(Language):
                     g_index = g_index+cseg.index('#')
                     gseg = cseg[g_index:] #skip '#' and first '('
                     g_end, g_ids = self._getIdentifiers(gseg)
-                    print("GENERICS:",g_ids)
+                    #print("GENERICS:",g_ids)
                     pass
                 #grab remaining items as the ports list
                 pseg = cseg[g_index+g_end+1:]
                 _, p_ids = self._getIdentifiers(pseg)
-                print("PORTS:",p_ids)
+                #print("PORTS:",p_ids)
                 pass
             #check module declaration statement for port declaration data
             if(cseg[0] == 'module'):
