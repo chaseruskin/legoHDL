@@ -7,6 +7,7 @@
 #   root folder.
 
 import os, shutil, stat, glob
+from posixpath import split
 from datetime import date
 
 from .graph import Graph
@@ -223,7 +224,7 @@ class Block:
         base_path = apt.fs(base_path)
         dirs = os.listdir(base_path)
         for d in dirs:
-            if(Block.validVer(d, maj_place=True) or Block.validVer(d, maj_place=False)):
+            if(Block.validVer(d, places=[1,3])):
                 path = apt.fs(base_path+d+'/')
                 instl._instls[d] = Block(path, instl.getWorkspace(), lvl=Block.Level.VER)
 
@@ -232,13 +233,14 @@ class Block:
         return instl._instls
 
 
-    def delete(self, prompt=False):
+    def delete(self, prompt=False, squeeze=0):
         '''
         Deletes the block object. Removes its path. Does not update any class variables,
         such as the graph.
         
         Parameters:
             prompt (bool): determine if to issue prompt if deleting a DNLD block
+            squeeze (int): number of possible empty nested folders to remove
         Returns:
             None
         '''
@@ -260,7 +262,21 @@ class Block:
         #delete the directory
         shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
 
-        #:todo: continually clean up empty folders
+        #try to continually clean up empty folders
+        nested = self.getPath()
+        for i in range(squeeze):
+            #remove the trailing slash '/'
+            nested = nested[:len(nested)-1]
+            #step back 1 directory
+            nested,_ = os.path.split(nested)
+            #print(nested)
+            #try to remove this directory
+            if(len(os.listdir(nested)) == 0):
+                shutil.rmtree(nested, onerror=apt.rmReadOnly)
+            #not encountering empty directories anymore
+            else:
+                break
+            pass
         pass
 
 
@@ -465,30 +481,37 @@ class Block:
 
 
     @classmethod
-    def validVer(cls, ver, maj_place=False):
+    def validVer(cls, ver, places=[3]):
         '''
-        Returns true if can be separated into 3 numeric values and starts with 'v'.
-        '''
-        ver = cls.stdVer(ver)
-        #:todo: make better/cleaner/nicer
+        Validates a string to determine if its a valid version format. 'ver' does
+        not need to have a 'v' in front.
 
-        #must have 2 dots and start with 'v'
-        if(not maj_place and (ver == None or ver.count(".") != 2 or ver.startswith('v') == False)):
+        Parameters:
+            ver (str): the string to test if is valid version format
+            places ([int]): the number of version parts to test against
+        Returns:
+            (bool): if 'ver' meets the version requirements for validation
+        '''
+        #standardize the version string
+        ver = cls.stdVer(ver)
+        #split the version into its parts
+        parts = ver.split('.')
+
+        #number of parts must equal the number of places being tested
+        if(len(parts) not in places):
             return False
-        #must have 0 dots and start with 'v' when only evaluating major value
-        elif(maj_place and (ver == None or ver.count(".") != 0 or ver.startswith("v") == False)):
-            return False
-        #trim off initial 'v'
-        ver = ver[1:]
-        f_dot = ver.find('.')
-        l_dot = ver.rfind('.')
-        #the significant value (major) must be a digit
-        if(maj_place):
-            return ver.isdecimal()
+        
+        #truncate 'v' from beginning of first part
+        if(parts[0].lower().startswith('v')):
+            parts[0] = parts[0][1:]
+
         #all sections must only contain digits
-        return (ver[:f_dot].isdecimal() and \
-                ver[f_dot+1:l_dot].isdecimal() and \
-                ver[l_dot+1:].isdecimal())
+        for p in parts:
+            if(p.isdecimal() == False):
+                return False
+
+        #valid version if passes test for all parts being decimal
+        return True
     
 
     @classmethod
@@ -1134,8 +1157,10 @@ class Block:
                 apt.cleanTmpDir()
                 return None
             
-            #create new cache directory
-            block_cache_path = self.getWorkspace().getCachePath()+self.L()+'/'+self.N()+'/'
+            #create new cache directory location
+            rail = self.M() if(self.M() != '') else '_'
+            block_cache_path = self.getWorkspace().getCachePath()+rail+'/'+self.L()+'/'+self.N()+'/'
+
             os.makedirs(block_cache_path, exist_ok=True)
 
             #clone git repository to new cache directory
@@ -1293,22 +1318,34 @@ class Block:
 
         #get the map for what versions exist in cache for this block
         installations = instl.getInstalls()
+        uninstallations = Map()
         #scale down to only version
         if(ver != None):
-            if(ver in installations.keys()):
-                tmp = installations[ver]
-                installations = Map()
-                installations[ver] = tmp
-            else:
+            parts = ver.split('.')
+            for v in installations.keys():
+                v_parts = v.split('.')
+                skip = False
+                for i in range(len(parts)):
+                    #skip if did not specify enough or parts do not equal
+                    if((i >= len(v_parts) and i < len(parts)) or v_parts[i] != parts[i]):
+                        skip = True
+                        break
+                if(skip):
+                    continue
+                print(v)
+                uninstallations[v] = installations[v]
+                pass
+            #check if any versions were captured in algorithm
+            if(len(uninstallations) == 0):
                 log.error("Version "+ver+" may not exist or be installed to the cache!")
                 return False
         #includes latest
         else:
-            installations['latest'] = instl
+            uninstallations['latest'] = instl
 
         #display helpful information to user about what installations will be deleted
         print("From "+self.getFull()+" would remove: \n\t" + \
-            apt.listToStr(list(installations.keys()),'\n\t'))
+            apt.listToStr(list(uninstallations.keys()),'\n\t'))
 
         #prompt to verify action
         yes = apt.confirmation('Proceed to uninstall?',warning=False)
@@ -1317,16 +1354,17 @@ class Block:
             return False
 
         #iterate through every installation to uninstall
-        for i in installations.values():
+        for i in uninstallations.values():
+            if(i == instl):
+                continue
             print("Uninstalled "+i.getFull(inc_ver=True))
-            #delete from cache
+            #delete specific version from cache
             i.delete()
+            pass
+
         #remove this block's cache path name if uninstalling the main cache block
-        if(instl in installations.values()):
-            shutil.rmtree(self.getWorkspace().getCachePath()+instl.L()+'/'+instl.N()+'/', onerror=apt.rmReadOnly)
-        #remove this block's cache path library if empty
-        if(len(os.listdir(self.getWorkspace().getCachePath()+instl.L()+'/')) == 0):
-            shutil.rmtree(self.getWorkspace().getCachePath()+instl.L()+'/', onerror=apt.rmReadOnly)
+        if(instl in uninstallations.values()):
+            instl.delete(squeeze=3)
 
         return True
     

@@ -156,13 +156,13 @@ class legoHDL:
             return None
 
     
-    def getVerNum(self):
+    def getVerNum(self, places=[1,3]):
         '''
         Get the version from the version flag (if one was passed). Searches 
         flags for a valid version. Returns None if not found. 
         
         Parameters:
-            None
+            places ([int]): the different places to test against
         Returns:
             _ver (str): valid version format (v0.0.0)
         '''
@@ -172,7 +172,7 @@ class legoHDL:
         self._ver = None
         #search through all flags
         for f in self._flags:
-            if(Block.validVer(f, maj_place=False) or Block.validVer(f, maj_place=True)):
+            if(Block.validVer(f, places=places)):
                 self._ver = Block.stdVer(f)
                 break
 
@@ -699,7 +699,7 @@ scripts)?", warning=False)
             pass
         
         #install specific version if specifed
-        if(self.getVerNum() != None):
+        if(self.getVerNum(places=[3]) != None):
             instl.install(ver=self.getVerNum())
 
         #recursively install each requirement :todo:
@@ -721,7 +721,7 @@ scripts)?", warning=False)
         if(block == None):
             exit(log.error("Could not identify a block with "+self.getItem()))
 
-        success = block.uninstall(self.getVerNum())
+        success = block.uninstall(self.getVerNum(places=[1,2,3]))
 
         if(success):
             log.info("Success")
@@ -906,8 +906,8 @@ scripts)?", warning=False)
 
         #use the downloaded block object
         block = block.getLvlBlock(Block.Level.DNLD)
-        #delete from downloaded space
-        block.delete()
+        #delete from downloaded space (and its library folder if empty)
+        block.delete(squeeze=1)
         pass
 
 
