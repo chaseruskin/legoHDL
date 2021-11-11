@@ -162,7 +162,7 @@ NAME:
         get - Print the compatible code for the ports list of a specified entity
 
 SYNOPSIS:
-        legohdl get [<block>:]<entity> [-comp[=<lang>] | -inst[=<lang>]] [-arch] 
+        legohdl get [<block>:]<entity> [-comp[=<lang>] | -inst[=<lang>]] [-arch]
                 [-about] [-edges] [-D | -I]
 
 DESCRIPTION:
@@ -276,11 +276,11 @@ DESCRIPTION:
 
 OPTIONS:
         <entity>
-                The design unit to request as top-level. All relevant HDL files 
+                The design unit to request as top-level. All relevant HDL files
                 will stem from this entity's file.
         
         -tb=<tb>
-                Explicitly request what top-level simulation file to include in 
+                Explicitly request what top-level simulation file to include in
                 the blueprint.
                 
         -ignore-tb
@@ -313,7 +313,7 @@ OPTIONS:
                 execute the command as if it was called through the terminal.
 
         <script-args...>
-                Any additonal arguments to pass directly to the called command. 
+                Any additonal arguments to pass directly to the called command.
                 All arguments after <script-alias> will be passed to the 
                 executed command.
 
