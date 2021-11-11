@@ -740,7 +740,7 @@ class Block:
                 del self.getMeta()[key]
                 pass
         
-        self.save(force=True)
+        self.save()
 
         #ensure all required fields from 'block' section exist
         for key in Block.REQ_FIELDS:
