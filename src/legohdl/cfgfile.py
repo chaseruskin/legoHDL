@@ -302,7 +302,6 @@ class CfgFile:
                         #write over to new line on overflow (exceed 80 chars)
                         cursor = 0
                         first_word = True
-                        exceeded = False
                         words = mp.split()
                         for w in words:
                             if(first_word):
@@ -310,7 +309,6 @@ class CfgFile:
                             cursor += len(w+' ')
                             #evaluate before writing
                             if(cursor+l_len >= 80):
-                                exceeded = True
                                 datafile.write('\n')
                                 datafile.write(' '*l_len)
                                 cursor = 0
@@ -321,8 +319,7 @@ class CfgFile:
 
                         if(cursor != 0 or len(mp) == 0):
                             datafile.write('\n')
-                        if(exceeded):
-                            datafile.write('\n')
+                            pass
                     #write the value as-is
                     else:
                         datafile.write(mp+'\n')
