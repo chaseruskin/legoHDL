@@ -522,29 +522,6 @@ class Unit:
         return self.Hierarchy.getNeighbors(self, upstream)
 
 
-    @classmethod
-    @DeprecationWarning
-    def printList(cls, M='', L='', N='', show_all_versions=False):
-        '''
-        Prints formatted list for entities.
-
-        Parameters:
-            show_all_versions (bool): print every available entity even with appended version
-        Returns:
-            None
-        '''
-        # :todo: add -filter to allow for user to prefer what they want to see about each entity?
-        print('{:<14}'.format("Library"),'{:<14}'.format("Unit"),'{:<8}'.format("Type"),'{:<14}'.format("Block"),'{:<10}'.format("Language"))
-        print("-"*14+" "+"-"*14+" "+"-"*8+" "+"-"*14+" "+"-"*10+" ")
-        for m in cls.Jar.values():
-            for l in m.values():
-                for n in l.values():
-                    for e in n.values():
-                        print('{:<14}'.format(e.L()),'{:<14}'.format(e.E()),'{:<8}'.format(e._dsgn.name),'{:<14}'.format(e.N()),'{:<10}'.format(e.getLang().name))
-            pass
-        pass
-
-
     def __repr__(self):
         return f'''{self.getTitle()}'''
 
@@ -566,10 +543,13 @@ class Unit:
         conf? {self.getConfig()}
         reqs: {reqs}
         '''
+
+
     pass
 
 
 class Signal:
+
 
     def __init__(self, name, lang, dtype):
         '''
@@ -695,6 +675,7 @@ class Signal:
     
     def getDatatype(self):
         return self._dtype
+
 
     pass
 
