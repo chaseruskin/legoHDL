@@ -418,41 +418,6 @@ class Apparatus:
         with open(cls.HIDDEN+cls.SETTINGS_FILE, "w") as file:
             cfg.save(cls.SETTINGS, file, cls.getComments())
         pass
-
-
-    #return the block file metadata from a specific version tag already includes 'v'
-    #if returned none then it is an invalid legohdl release point
-    @classmethod
-    #:todo: clean up and refactor...move elsewhere?
-    def getBlockFile(cls, repo, tag, path="./", in_branch=True):
-        #checkout repo to the version tag and dump cfg file
-        repo.git('checkout',tag+cls.TAG_ID)
-        #find Block.cfg
-        if(os.path.isfile(path+cls.MARKER) == False):
-            #return None if Block.cfg DNE at this tag
-            log.warning("Version "+tag+" does not contain a Block.cfg file. Invalid version.")
-            meta = None
-        #Block.cfg exists so read its contents
-        else:
-            log.info("Identified valid version "+tag)
-            with open(path+cls.MARKER, 'r') as f:
-                meta = cfg.load(f, ignore_depth=True)
-                if('block' not in meta.keys()):
-                    log.error("Invalid "+cls.MARKER+" file; no 'block' section.")
-                    return None
-
-        #revert back to latest release
-        if(in_branch == True):
-            #in a branch so switch back
-            repo.git('switch','-')
-        #in a single branch (cache) so checkout back
-        else:
-            repo.git('checkout','-')
-        #perform additional safety measure that this tag matches the 'version' found in meta
-        if(meta['block']['version'] != tag[1:]):
-            log.error("Block.cfg file version does not match for: "+tag+". Invalid version.")
-            meta = None
-        return meta
     
 
     @classmethod
