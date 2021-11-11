@@ -52,7 +52,7 @@ to the [documentation](https://hdl.notion.site/legoHDL-f798525eee2f4378bcf5e970a
 
 ```
 USAGE:             
-        legohdl <command> [argument] [flags/variables]            
+        legohdl <command> [argument] [flags]            
 
 COMMANDS:
 
