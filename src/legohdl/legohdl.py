@@ -1044,7 +1044,9 @@ scripts)?", warning=False)
         block = Block.getCurrent()
 
         block.release(self.getItem(), msg=self.getVar("msg"), \
-            dry_run=self.hasFlag('dry-run'))
+            dry_run=self.hasFlag('dry-run'), \
+            only_meta=self.hasFlag('strict'), \
+            no_install=self.hasFlag('no-install'))
         pass
 
 

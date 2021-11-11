@@ -323,7 +323,8 @@ NAME:
         release - Set a newer version for the current block
 
 SYNOPSIS:
-        legohdl release <version> [-msg=<msg>] [-strict] [-dry-run]
+        legohdl release <version> [-msg=<msg>] [-strict] [-dry-run] 
+                [-no-install]
 
 DESCRIPTION:
         :todo:
@@ -347,6 +348,9 @@ OPTIONS:
         -dry-run
                 Perform the complete release process as-if the block was to be
                 released, but leaves the block unmodified and unreleased.
+
+        -no-install
+                Will not automatically install the latest version to the cache.
 
 
 * del

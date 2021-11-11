@@ -271,7 +271,7 @@ class Block:
 
         #remove from inventory
         if(self.getLvl() < len(lvls)):
-            lvls[self.getLvl()] = None
+            Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] = None
 
         #display message to user indicating deletion was successful
         if(self.getLvl(to_int=False) == Block.Level.DNLD):
@@ -389,7 +389,7 @@ class Block:
         return
 
 
-    def release(self, next_ver, msg=None, dry_run=False, only_meta=False):
+    def release(self, next_ver, msg=None, dry_run=False, only_meta=False, no_install=False):
         '''
         Releases a new version for a block to be utilized in other designs.
 
@@ -401,6 +401,7 @@ class Block:
             msg (str): the message to go along with the git commit
             dry_run (bool): determine if to fake the release to see if things would go smoothly
             only_meta (bool): determine if to add/commit only metadata file or all unsaved changes
+            no_install (bool): determine if to avoid automically installing new release to cache
         Returns:
             None
         '''
@@ -497,6 +498,12 @@ class Block:
 
         #synch changes with remote repository
         self._repo.push()
+
+        #7. install latest version to the cache
+        if(no_install == False):
+            #reset inventory
+            
+            self.install()
 
         #no market to publish to then release algorithm is complete
         if(len(self.getMeta('market')) == 0):
@@ -1391,6 +1398,10 @@ class Block:
             if(tmp_block.isCorrupt(latest_ver)):
                 apt.cleanTmpDir()
                 return None
+
+            #delete old installation if exists
+            if(self.getLvlBlock(Block.Level.INSTL) != None):
+                self.getLvlBlock(Block.Level.INSTL).delete()
             
             #create new cache directory location
             rail = self.M() if(self.M() != '') else '_'
