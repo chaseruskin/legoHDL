@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/08/2021
+; Modified: 11/10/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -13,11 +13,12 @@
 ;   title delimiter = '.' - separates a title into subsections
 ;   explicit version = 'v1.0.0' or 'v1_0_0'
 ;   block = title in M.L.N form
-;   Throughout the document, word entity is used. This is synonymous with the Verilog
-;       keyword module. any reference to entity also means module. Using the word
-;       entity may be replaced with a better term like: unit, part, chip 
+;   Throughout the document, word entity/unit is used. This is synonymous with 
+;   the Verilog keyword module. any reference to entity also means module. Using
+;   the word entity may be replaced with a better term like: unit, part, chip.
 
 ; --- DEVELOPMENT COMMANDS ---
+
 
 * new
 NAME:
@@ -149,16 +150,14 @@ OPTIONS:
             <mode> determines how to open the settings. Accepted values are gui and file. 
             When omitted, the default is to open the settings in gui mode.
 
-
-; other names in contention: checkout, check, scope, probe, connect, grab, explore, 
-;                       investigate, view, utilize, use, get, fetch                  
+               
 * get
 NAME:
         get - Print the compatible code for the ports list of a specified entity
 
 SYNOPSIS:
         legohdl get [<block>:]<entity> [-comp[=<lang>] | -inst[=<lang>]] [-arch] 
-                [-about] [-edges] [-dnld | -instl]
+                [-about] [-edges] [-D | -I]
 
 DESCRIPTION:
         When trying to access current block-level entities, the <block>
@@ -213,11 +212,11 @@ OPTIONS:
                 that integrate this unit into their design. Gets the edges from
                 the hierarchical graph.
 
-        -dnld
+        -D
                 Search the downloaded blocks to get this entity, regardless of
                 the status of 'multi-develop'.
 
-        -instl
+        -I
                 Search the installed blocks to get this entity, regardless of 
                 the status of 'multi-develop'.
 
@@ -251,8 +250,6 @@ OPTIONS:
                 Do not include any testbench unit in the dependency tree.
 
 
-; other names in contention: assemble, collect, gather, compose, compile, put,
-;                               fetch,
 * export
 NAME:
         export - Generate a blueprint file or VHDL package file
@@ -289,6 +286,7 @@ OPTIONS:
         -all
                 Add all block-level source files and their dependencies.
 
+
 * build
 NAME:
         build - Execute a custom backend script/tool command
@@ -309,25 +307,12 @@ OPTIONS:
                 arguments after <script-alias> will be passed to the executed command.
 
 
-; RUN WILL BE REMOVED.
-* run 
-NAME:
-
-SYNOPSIS:
-
-DESCRIPTION:
-
-OPTIONS:
-
-
-; notes: -soft may be removed because even if a version doesn't get integrated,
-;       the tag will still live on and eventually get picked up by legohdl.
 * release
 NAME:
         release - Set a newer version for the current block
 
 SYNOPSIS:
-        legohdl release <version> [-msg=<msg>] [-strict] [-soft] [-dry-run]
+        legohdl release <version> [-msg=<msg>] [-strict] [-dry-run]
 
 DESCRIPTION:
         :todo:
@@ -372,6 +357,7 @@ OPTIONS:
 
 
 ; --- MANAGEMENT COMMANDS ---
+
 
 * list
 NAME:
