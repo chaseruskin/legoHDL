@@ -679,6 +679,24 @@ class Apparatus:
             exit(log.error("Failed to remove path due to being open in another process."))
     pass
 
+
+    @classmethod
+    def computeLongestWord(cls, words):
+        '''
+        Computes the longest word length from a list of words. Returns -1 if
+        no words are in the list.
+
+        Parameters:
+            words ([str]): list of words to compare
+        Returns:
+            farthest (int): length of longest word in the list
+        '''
+        farthest = -1
+        for s in words:
+            if(len(s) > farthest):
+                farthest = len(s)
+        return farthest
+
     
     @classmethod
     def getComments(cls):

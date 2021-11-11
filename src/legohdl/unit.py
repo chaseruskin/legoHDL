@@ -936,23 +936,6 @@ class Interface:
         return m_list
 
 
-    def computeLongestWord(self, words):
-        '''
-        Computes the longest word length from a list of words. Returns -1 if
-        no words are in the list.
-
-        Parameters:
-            words ([str]): list of words to compare
-        Returns:
-            farthest (int): length of longest word in the list
-        '''
-        farthest = -1
-        for s in words:
-            if(len(s) > farthest):
-                farthest = len(s)
-        return farthest
-
-
     def writeConnections(self, form=None, align=True):
         '''
         Write the necessary constants (from generics) and signals (from ports)
@@ -976,7 +959,7 @@ class Interface:
                 return connect_txt
         
         #determine farthest reach constant name
-        farthest = self.computeLongestWord(self.getMappingNames(self.getGenerics()))
+        farthest = apt.computeLongestWord(self.getMappingNames(self.getGenerics()))
                 
         #write constants
         for g in self.getGenerics().values():
@@ -989,7 +972,7 @@ class Interface:
             connect_txt = connect_txt + '\n'
 
         #determine farthest reach signal name
-        farthest = self.computeLongestWord(self.getMappingNames(self.getPorts()))
+        farthest = apt.computeLongestWord(self.getMappingNames(self.getPorts()))
         
         #write signals
         for p in self.getPorts().values():
@@ -1042,7 +1025,7 @@ class Interface:
                 mapping_txt = mapping_txt + "generic map(\n"
 
                 gens = self.getMappingNames(self.getGenerics())
-                farthest = self.computeLongestWord(self.getMappingNames(self.getGenerics()))
+                farthest = apt.computeLongestWord(self.getMappingNames(self.getGenerics()))
                 #iterate through every generic
                 for i in range(len(gens)):
                     if(align):
@@ -1071,7 +1054,7 @@ class Interface:
                 mapping_txt = mapping_txt + "port map(\n"
 
                 ports = self.getMappingNames(self.getPorts())
-                farthest = self.computeLongestWord(self.getMappingNames(self.getPorts()))
+                farthest = apt.computeLongestWord(self.getMappingNames(self.getPorts()))
                 #iterate through every port
                 for i in range(len(ports)):
                     if(align):
@@ -1101,7 +1084,7 @@ class Interface:
             #write out parameter section
             params = self.getMappingNames(self.getGenerics())
             if(len(params)):
-                farthest = self.computeLongestWord(params)
+                farthest = apt.computeLongestWord(params)
                 mapping_txt = mapping_txt + ' #(\n'
                 for p in params:
                     if(align):
@@ -1124,7 +1107,7 @@ class Interface:
             ports = self.getMappingNames(self.getPorts())
             if(len(ports)):
                 mapping_txt = mapping_txt + ' (\n'
-                farthest = self.computeLongestWord(ports)
+                farthest = apt.computeLongestWord(ports)
                 #iterate through every port
                 for p in ports:
                     if(align):
@@ -1177,7 +1160,7 @@ class Interface:
             #write generics
             gens = list(self.getGenerics().values())
             if(len(gens)):
-                farthest = self.computeLongestWord(self.getMappingNames(self.getGenerics()))
+                farthest = apt.computeLongestWord(self.getMappingNames(self.getGenerics()))
                 comp_txt  = comp_txt + (tabs*T)+'generic(' + '\n'
                 #write every generic
                 for gen in gens:
@@ -1194,7 +1177,7 @@ class Interface:
             #write ports
             ports = list(self.getPorts().values())
             if(len(ports)):
-                farthest = self.computeLongestWord(self.getMappingNames(self.getPorts()))
+                farthest = apt.computeLongestWord(self.getMappingNames(self.getPorts()))
                 comp_txt = comp_txt + (tabs*T)+'port(' + '\n'
                 #write every port
                 for port in ports:
@@ -1245,7 +1228,7 @@ class Interface:
                 for p in ports:
                     ports_dt += [p.castDatatype(form, keep_net=True)]
                 #compute longest datatype
-                farthest = self.computeLongestWord(ports_dt)
+                farthest = apt.computeLongestWord(ports_dt)
                 #add-in every port
                 for port in ports:
                     if(align):

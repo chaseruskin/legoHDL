@@ -1037,6 +1037,7 @@ scripts)?", warning=False)
             if(valid_editor and gui_mode == False):
                 log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
                 apt.execute(apt.getEditor(), apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))
+                return
             elif(gui_mode == True):
                 return
             pass

@@ -224,7 +224,7 @@ class CfgFile:
             pass
         
 
-        def write_dictionary(mp, lvl=0, l_len=0):
+        def write_dictionary(mp, lvl=0, l_len=0, scope=[]):
             nonlocal another_header
             #determine proper indentation
             indent = cls.TAB*lvl
@@ -239,6 +239,7 @@ class CfgFile:
                         write_comment(comments[k], indent, isHeader)
                     #write a header
                     if(isHeader):
+                        scope += [k.lower()]
                         #write a separating new-line
                         if(another_header and space_headers):
                             datafile.write('\n')
@@ -246,11 +247,29 @@ class CfgFile:
                         another_header = True
                     #write the beginning of an assignment
                     else:
-                        var_assign = indent+k+' '+cls.VAR+' '
+                        #print('data:',data)
+                        #print()
+                        #print('scope:',scope)
+                        #print()
+                        #get all field names for this current scope
+                        fields = cls.getAllFields(data, scope=scope)
+                        #print(fields)
+                        #dist = apt.computeLongestWord()
+                        #compute the longest distance length word
+                        dist = len(fields[0])
+                        for f in fields[1:]:
+                            if(len(f) > dist):
+                                dist = len(f)
+                        #print(dist)
+                        #provide nice spacing and aligning of VAR ('=')
+                        var_assign = indent+k+((dist-len(k)+1)*' ')+cls.VAR+' '
                         l_len = len(var_assign)
                         datafile.write(var_assign)
                     #recursively proceed to next level
-                    write_dictionary(mp[k], lvl+1, l_len)
+                    write_dictionary(mp[k], lvl+1, l_len, scope)
+                    #pop off value that was recursively passed to the method
+                    if(isHeader):
+                        scope.pop()
             #write a value (rhs of assignment)
             else:
                 #if its a list, use brackets
@@ -373,28 +392,32 @@ class CfgFile:
 
 
     @classmethod
-    def getAllFields(cls, data):
+    def getAllFields(cls, data, scope=[]):
         '''
         Returns a list of all field names found within the dictionary, regardless
         of scope.
 
+        If 'scope' is passed, it will look for down into that header trail's fields.
+
         Parameters:
             data (dict): python dictionary object
+            scope ([str]): a list of headers to scope down-to for filtering fields (lower-case)
         Returns:
             ([str]): list of all field names (keys, even within scopes)
         '''
 
 
-        def fieldSearch(mapp, fields=[]):
+        def fieldSearch(mapp, fields=[], scope=[]):
             for k in mapp.keys():
                 if(isinstance(mapp[k], dict)):
-                    fields = fieldSearch(mapp[k],fields)
+                    if((len(scope) == 0 or k.lower() in scope)):
+                        fields = fieldSearch(mapp=mapp[k],fields=fields,scope=scope)
                 else:
                     fields += [k]
             return fields
 
 
-        return fieldSearch(data)
+        return fieldSearch(data, scope=scope)
 
 
     pass
