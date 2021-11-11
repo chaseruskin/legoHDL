@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/10/2021
+; Modified: 11/11/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -31,14 +31,16 @@ SYNOPSIS:
 DESCRIPTION:
         Create a new HDL project recognized by legoHDL as a "block". The block
         will be created under a new folder at the workspace's local path such
-        as <workspace-path>/<block-library>/<block-name>. A git repository will be automatically
-        created, and a bare git remote repository URL can be passed for
-        automatic configuration. If a non-bare remote repository is passed, the
-        block will not be created, but can be initialized (see 'init' command).
+        as <workspace-path>/<block-library>/<block-name>. A git repository will 
+        be automatically created, and a bare git remote repository URL can be 
+        passed for automatic configuration. If a non-bare remote repository is 
+        passed, the block will not be created, but can be initialized (see 
+        'init' command).
 
-        When copying in the template, files hidden within a hidden directory will
-        not be copied. The files a designer would place inside a hidden directory 
-        may be extra files that could be initialized later on a per-block basis.
+        When copying in the template, files hidden within a hidden directory 
+        will not be copied. The files a designer would place inside a hidden 
+        directory may be extra files that could be initialized later on a 
+        per-block basis.
         
         If trying to create a new file and that path already exists, the
         existing file will not be overwritten unless -force is used.
@@ -46,8 +48,8 @@ DESCRIPTION:
 
 OPTIONS:
         <block>
-            The project's title. A library and a name must be included, and optionally
-            a market can be prepended to the title.
+            The project's title. A library and a name must be included, and 
+            optionally a market can be prepended to the title.
 
         -open
             Upon creating the block, open it in the configured text-editor.
@@ -64,30 +66,32 @@ OPTIONS:
                 The filepath to intialize a new file.
 
         -file[=<template-file>]
-                Initialize a new file within the current block. Specifying <template-file>
-                will copy the template file to the desired directory with placeholders
-                correctly replaced. Omitting <template-file> will create a blank file.
+                Initialize a new file within the current block. Specifying 
+                <template-file> will copy the template file to the desired
+                directory with placeholders correctly replaced. Omitting 
+                <template-file> will create a blank file.
 
         -force
-                Overwrite the filepath even if it already exists when initializing a file.
+                Overwrite the filepath even if it already exists when 
+                initializing a file.
 
 
 * init
 NAME:
-        init - Initialize a legoHDL block (project) from existing code and block metadata.
+        init - Initialize a legoHDL block from existing code and block metadata.
 
 SYNOPSIS:
-        legohdl init <block> [-remote=<url>] [-market=<mkrt>] [-summary=<summary>]
-
+        legohdl init <block> [-remote=<url>] [-market=<mkrt>] 
+                [-summary=<summary>]
 
 DESCRIPTION:
-        When the current directory or provided remote repository already is a valid legoHDL block,
-        the <block> is ignored.
+        When the current directory or provided remote repository already is a 
+        valid legoHDL block, the <block> is ignored.
 
         When a remote repository is given and it already is a valid block (i.e. 
-        the root directory contains a Block.cfg file), the <block> will be ignored 
-        and the actual title will be used. This becomes an equivalent to using the 
-        'download' command.
+        the root directory contains a Block.cfg file), the <block> will be 
+        ignored and the actual title will be used. This becomes an equivalent to
+        using the 'download' command.
 
 OPTIONS:
         <block>
@@ -97,17 +101,17 @@ OPTIONS:
                 :ref:
 
         -market=<mrkt>
-                Set the block's market. <market> must be a valid market available
-                in the current workspace.
+                Set the block's market. <market> must be a valid market 
+                available in the current workspace.
 
         -summary=<summary>
-                Fill in the summary for the block's metadata. <summary> is a string
-                that describes the current block.
+                Fill in the summary for the block's metadata. <summary> is a 
+                string that describes the current block.
 
 
 * open
 NAME:
-        open - Use the configured text-editor to open a variety of legoHDL-related things
+        open - Use a text-editor to open a variety of legoHDL-related things
 
 SYNOPSIS:
         legohdl open <block>
@@ -123,32 +127,34 @@ OPTIONS:
                 :ref:
 
         <script-alias>
-            The alias for the saved custom script within legoHDL. It is a user-defined
-            key in settings under "scripts". If the alias's value is a command that 
-            references a real existing file, that file will be opened.
-
-        -script
-            The flag to indicate a script is trying to be opened. If no <script-alias>
-            value is given with this flag, the built-in scripts folder will be
+            The alias for the saved custom script within legoHDL. It is a 
+            user-defined key in settings under "scripts". If the alias's value 
+            is a command that references a real existing file, that file will be
             opened.
 
+        -script
+            The flag to indicate a script is trying to be opened. If no 
+            <script-alias> value is given with this flag, the built-in scripts 
+            folder will be opened.
+
         <profile-name>
-            The profile configuration name stored within legoHDL settings. When valid,
-            that profile directory will open.
+            The profile configuration name stored within legoHDL settings. When 
+            valid, that profile directory will open.
 
         -profile
             The flag to indicate a profile is trying to be opened.
 
         -template
             The flag to indicate the template is trying to be opened. If the
-            configured template value in settings is blank, the built-in template
-            folder will be opened.
+            configured template value in settings is blank, the built-in 
+            template folder will be opened.
         
         -settings[=<mode>]
             The flag to indicate the settings is trying to be opened.
 
-            <mode> determines how to open the settings. Accepted values are gui and file. 
-            When omitted, the default is to open the settings in gui mode.
+            <mode> determines how to open the settings. Accepted values are gui 
+            and file. When omitted, the default is to open the settings in gui 
+            mode.
 
                
 * get
@@ -164,13 +170,15 @@ DESCRIPTION:
         can be omitted (a form of shortcutting). To reference a entity,
         <market>.<library>.<name>(<version>):<entity>.
 
-        By default, it will print the 'about' section and the component declaration for
-        VHDL entities or the module interface for Verilog modules.
+        By default, it will print the 'about' section and the component 
+        declaration forVHDL entities or the module interface for Verilog 
+        modules.
 
-        If -comp is present when -inst is also present and the language outputted is
-        VHDL, the returned VHDL instantiation code will be a component instantiation.
-        If -comp is omitted in this scenario, the returned VHDL instantiation code
-        will be a direct entity instantiation.
+        If -comp is present when -inst is also present and the language 
+        outputted is VHDL, the returned VHDL instantiation code will be a 
+        component instantiation. If -comp is omitted in this scenario, 
+        the returned VHDL instantiation code will be a direct entity 
+        instantiation.
 
 OPTIONS:
         <block>
@@ -181,21 +189,22 @@ OPTIONS:
                 The design unit name.
 
         -comp[=<lang>]
-                Print the component declaration. For Verilog language, the module 
-                interface is printed instead of a component declaration.
+                Print the component declaration. For Verilog language, the 
+                module interface is printed instead of a component declaration.
 
-                <lang> specifies what HDL language to use to print the formatted code. 
-                Accepted values are vlog and vhdl. Omitting <lang> prints the code in 
-                the entity's original language.
+                <lang> specifies what HDL language to use to print the formatted
+                code. Accepted values are vlog and vhdl. Omitting <lang> prints 
+                the code in the entity's original language.
 
         -inst[=<lang>]
-                Print the direct entity instantiation (VHDL-93 feature) or component
-                instantiation. This includes relevant constants for each generic, 
-                relevant signals for each port, and the instantiation code. 
+                Print the direct entity instantiation (VHDL-93 feature) or 
+                component instantiation. This includes relevant constants for 
+                each generic, relevant signals for each port, and the 
+                instantiation code. 
                 
-                <lang> specifies what HDL language to use to print the formatted code. 
-                Accepted values are vlog and vhdl. Omitting <lang> prints the code in 
-                the entity's original language.
+                <lang> specifies what HDL language to use to print the formatted
+                code. Accepted values are vlog and vhdl. Omitting <lang> prints 
+                the code in the entity's original language.
 
         -arch
                 List the available architectures. If the entity is a Verilog
@@ -204,8 +213,7 @@ OPTIONS:
         -about
                 Print the comment header block found at the beginning of this
                 entity's file (if exists). Helpful to read more information
-                about an entity and how it behaves. Also prints various statistics
-                regarding the entity.
+                about an entity and how it behaves.
         
         -edges
                 Print the units are required by this unit and print the units 
@@ -233,18 +241,19 @@ DESCRIPTION:
         command is provided as a guide to quickly help the designer see how the
         design unfolds.
 
-        When no <entity> is given, the top-level will be auto-detected and the user
-        will be prompted to select one if multiple exist. When -ignore-tb and -tb=<tb>
-        are absent, the testbench for the top-level entity will be auto-detected,
-        if one exists. The user will be prompted to select one if multiple exist.
+        When no <entity> is given, the top-level will be auto-detected and the
+        user will be prompted to select one if multiple exist. When -ignore-tb 
+        and -tb=<tb> are absent, the testbench for the top-level entity will be 
+        auto-detected, if one exists. The user will be prompted to select one if
+         multiple exist.
 
 OPTIONS:
         <entity>
                 The design unit to request as top-level.
 
         -tb=<tb>
-                The relevant testbench file to explicitly include in the dependency
-                tree. Has higher precedence of -ignore-tb.
+                The relevant testbench file to explicitly include in the 
+                dependency tree. Has higher precedence of -ignore-tb.
         
         -ignore-tb
                 Do not include any testbench unit in the dependency tree.
@@ -267,18 +276,19 @@ DESCRIPTION:
 
 OPTIONS:
         <entity>
-                The design unit to request as top-level. All relevant HDL files will stem
-                from this entity's file.
+                The design unit to request as top-level. All relevant HDL files 
+                will stem from this entity's file.
         
         -tb=<tb>
-                Explicitly request what top-level simulation file to include in the blueprint.
+                Explicitly request what top-level simulation file to include in 
+                the blueprint.
                 
         -ignore-tb
                 Do not include a testbench file in the blueprint.
 
         -quiet
-                Do not print intermediate information while the blueprint file is being
-                created.
+                Do not print intermediate information while the blueprint file 
+                is being created.
 
         -no-clean
                 Do not delete the build/ directory when writing the blueprint.
@@ -299,12 +309,13 @@ DESCRIPTION:
 
 OPTIONS:
         <script-alias>
-                The alias for the saved custom script within legoHDL. It will execute the
-                command as if it was called through the terminal.
+                The alias for the saved custom script within legoHDL. It will 
+                execute the command as if it was called through the terminal.
 
         <script-args...>
-                Any additonal arguments to pass directly to the called command. All
-                arguments after <script-alias> will be passed to the executed command.
+                Any additonal arguments to pass directly to the called command. 
+                All arguments after <script-alias> will be passed to the 
+                executed command.
 
 
 * release
@@ -323,20 +334,15 @@ OPTIONS:
                 major, minor, patch, or an explicit version.
 
         -msg=<msg>
-                The message to commit with. The value for <msg> is a string and if 
-                the string includes spaces then quotes must encapsulate <msg>. 
-                The default message is: 
+                The message to commit with. The value for <msg> is a string and
+                if the string includes spaces then quotes must encapsulate 
+                <msg>. The default message is: "Releases legohdl version
+                <version>".
 
         -strict
                 Only adds and commits the modified changelog (if exists) and the
                 Block.cfg file. All other uncommitted changes will not be in
                 the following release.
-
-        -soft
-                When uploading the new version to a market, -soft will not 
-                commit to the market's master branch but rather create a separate
-                branch just for this release with the name <library>.<block>-<version>.
-                Helpful for when a block should undergo code review.
         
         -dry-run
                 Perform the complete release process as-if the block was to be
@@ -365,16 +371,18 @@ NAME:
 
 SYNOPSIS:
         legohdl list [<search>] [-entity] [-alpha] [-D] [-I] [-A]
-        legohdl list [-script | -label | -market | -workspace | -profile | -template]
+        legohdl list [-script | -label | -market | -workspace | -profile | 
+                -template]
 
 DESCRIPTION:
-        :todo:
+        When passing a value for <search>, each subsection of a block's title 
+        can be omitted. With each additionally provided title delimiter, the 
+        values shift left to the next subsection. See EXAMPLES for more 
+        information.
 
 OPTIONS:
         <search>
-                Optional field to narrow the given list by. Each subsection of a 
-                block's title can be omitted. With each additionally provided title delimiter,
-                the values shift left to the next subsection. See EXAMPLES for more information.
+                Optional field to narrow the given list by. 
 
         -entity
                 Instead of listing blocks, list the entities.
@@ -399,38 +407,38 @@ OPTIONS:
                 and global.
         
         -market
-                Return the list of markets. Fields a are market, remote repository,
-                block count, and active.
+                Return the list of markets. Fields a are market, remote 
+                repository, block count, and active.
         
         -workspace
-                Return the list of workspaces. Fields are workspace, active, path,
-                and markets.
+                Return the list of workspaces. Fields are workspace, active, 
+                path, and markets.
 
         -profile
-                Return the list of profiles. Fields are profile, last import, legohdl.cfg,
-                template/, and scripts/.
+                Return the list of profiles. Fields are profile, last import, 
+                legohdl.cfg, template/, and scripts/.
 
         -template
-                Return the list of all availble files from the current template. These
-                files can be referenced exactly as listed when initializing a new file
-                with the 'init' command.
+                Return the list of all availble files from the current template.
+                These files can be referenced exactly as listed when 
+                initializing a new file with the 'init' command.
 
 EXAMPLES:
         legohdl list lab0
-                Since a market is omitted and a library is omitted, all block's starting with "lab0"
-                in their name are returned.
+                Since a market is omitted and a library is omitted, all block's 
+                starting with "lab0" in their name are returned.
 
         legohdl list eel4712c.  
-                Since a market is omitted and a name is omitted, all block's starting with "eel4712c"
-                in their library are returned.
+                Since a market is omitted and a name is omitted, all block's 
+                starting with "eel4712c" in their library are returned.
 
         legohdl list uf-ece..
-                Since a library is omitted and a name is omitted, all block's starting with "uf-ece"
-                in their market are returned.
+                Since a library is omitted and a name is omitted, all block's 
+                starting with "uf-ece" in their market are returned.
 
         legohdl list ..:mux_2x1 -entity
-                All M.L.N subsections are blank, so the entire database is searched to see if
-                an entity exists with the name mux_2x1.
+                All M.L.N subsections are blank, so the entire database is 
+                searched to see if an entity exists with the name mux_2x1.
 
 
 * refresh
@@ -446,7 +454,8 @@ DESCRIPTION:
 
         If no arguments are given, by default all markets available to the
         current workspace will try to refresh. If -all is given, every possible
-        market, even outside workspace availability, will sync with its remote (if exists).
+        market, even outside workspace availability, will sync with its remote 
+        (if exists).
 
 OPTIONS:
         <market>
@@ -478,12 +487,12 @@ SYNOPSIS:
 DESCRIPTION:
         Removes installed block versions from the workspace cache. 
         
-        If -<version> is omitted, then ALL versions for the specified block will be 
-        removed. Specifying -<version> will only remove it and no others, given it 
-        is installed. 
+        If -<version> is omitted, then ALL versions for the specified block will
+        be removed. Specifying -<version> will only remove it and no others, 
+        given it is installed. 
         
-        Can also remove by major version values by passing only the MAJOR number
-        to -<version>.
+        Can also remove groups of versions by passing a partial version to
+        -<version>.
 
 OPTIONS:
         <block>
@@ -537,8 +546,9 @@ SYNOPSIS:
 DESCRIPTION:
         By default, will print the metadata about the given block. 
         
-        If -version is applied, it will list all the available versions for installation,
-        and hightlight which versions are installed under the workspace cache.
+        If -version is applied, it will list all the available versions for 
+        installation, and hightlight which versions are installed under the 
+        workspace cache.
 
 OPTIONS:
         <block>
@@ -563,10 +573,13 @@ NAME:
 
 SYNOPSIS:
         legohdl config <profile-name> [-ask]
-        legohdl config [-market=<mrkt>[:<url>] [-link | -unlink]] [-active-workspace=<ws>] [-author=<name>] 
-                [-editor=<cmd>] [-template=<dir>] [-multi-develop=<bool>] [-overlap-global=<bool>]
-                [-refresh-rate=<rt>] [-profile=<profile-name>] [-script=<alias>:<cmd>] 
-                [-label=<label>:<extensions> [-global]] [-workspace=<ws>:<path>]
+        legohdl config [-label=<label>:<extensions> [-global]] [-editor=<cmd>]  
+                [-active-workspace=<ws>] [-author=<name>] [-template=<dir>] 
+                [-multi-develop=<bool>] [-overlap-global=<bool>]
+                [-refresh-rate=<rt>] [-profile=<profile-name>] 
+                [-script=<alias>:<cmd>] [-workspace=<ws>:<path>] 
+                [-market=<mrkt>[:<url>] [-link | -unlink]]
+                
 
 DESCRIPTION:
         :todo:
@@ -576,8 +589,8 @@ OPTIONS:
                 An existing profile to import settings from.
         
         -ask
-                Prompts the user before each import step (settings, template, scripts)
-                if the following should be imported and overloaded.
+                Prompts the user before each import step (settings, template, 
+                scripts) if the following should be imported and overloaded.
 
         :todo:
 
