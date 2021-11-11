@@ -681,6 +681,46 @@ class Apparatus:
 
 
     @classmethod
+    def listToGrid(cls, items, cols=3, limit=80, min_space=1, offset=''):
+        '''
+        Iterate over a list to generate a string of evenly spaced items in
+        grid-like format.
+
+        If cols is -1, then the algorithm will auto-fit the grid to ensure at
+        least 1 space exists between each item.
+
+        'offset' is taken into account when computing the spacing.
+
+        Parameters:
+            items ([str]): list of string values to format
+            cols (int): number of columns
+            limit (int): max number of characters to evenly divide columns into.
+            min_space (int): minimum space allowed between items in a row
+            offset (str): how to start each row
+        Returns:
+            grid (str): a grid-like multi-line string to be printed
+        '''
+        grid = offset
+        if(cols == -1):
+            longest = cls.computeLongestWord(items) 
+            spacer = longest+min_space
+            cols = int(limit/(spacer+len(offset)))
+        else:
+            #compute the markers
+            spacer = int(limit/cols)-len(offset)
+        print(spacer)
+
+        count = 0
+        for it in items:
+            diff = spacer - len(it)
+            grid = grid + it + diff*' '
+            count += 1
+            if(count % cols == 0 and it != items[-1]):
+                grid = grid + '\n' + offset
+        return grid
+
+
+    @classmethod
     def computeLongestWord(cls, words):
         '''
         Computes the longest word length from a list of words. Returns -1 if

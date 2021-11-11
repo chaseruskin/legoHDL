@@ -1536,6 +1536,7 @@ class Block:
             print("Uninstalled "+i.getFull(inc_ver=True))
             #delete specific version from cache
             i.delete()
+            #:todo: make sure to see if a partial version needs updating (either removed or different version holds it)
             pass
 
         #remove this block's cache path name if uninstalling the main cache block
@@ -2189,12 +2190,14 @@ class Block:
                     vlog_units += [u.E()]
 
             if(len(vhdl_units) > 0):
-                txt = '\nVHDL units:\n\t'+apt.listToStr(vhdl_units,'\n\t')
-                info_txt = info_txt + txt
+                txt = '\nVHDL units:\n'
+                info_txt = info_txt + txt + apt.listToGrid(vhdl_units, cols=-1, \
+                    limit=80, min_space=4, offset='\t')
+                
             if(len(vlog_units) > 0):
-                txt = '\nVERILOG units:\n\t'+apt.listToStr(vlog_units,'\n\t')
-                info_txt = info_txt + txt
-
+                txt = '\nVERILOG units:\n'
+                info_txt = info_txt + txt + apt.listToGrid(vlog_units, cols=-1, \
+                    limit=80, min_space=4, offset='\t')
         #read the list of versions implemented and obtainable
         if(versions):
             info_txt = ''
