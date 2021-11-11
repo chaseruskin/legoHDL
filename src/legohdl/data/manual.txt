@@ -540,7 +540,7 @@ NAME:
         info - Read detailed information about a block
 
 SYNOPSIS:
-        legohdl info <block> [-stats] [-vers]
+        legohdl info <block> [-D | -I | -<version>] [-stats] [-vers]
         legohdl info <profile> -profile
 
 DESCRIPTION:
@@ -553,6 +553,18 @@ DESCRIPTION:
 OPTIONS:
         <block>
                 :ref:
+
+        -D
+                Return data from block at the download level, regardless of
+                the status of 'multi-develop'.
+
+        -I
+                Return data from latest block at the installation level,
+                regardless of the status of 'multi-develop'.
+
+        -<version>
+                Return data from the block with specified version/partial
+                version.
         
         -stats
                 Get relevant stats about the block such as units created.

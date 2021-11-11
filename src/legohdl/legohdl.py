@@ -762,6 +762,37 @@ scripts)?", warning=False)
             print()
             return
 
+        #check which block to use
+        title = block.getFull()
+        #wishing to pull in information on the downloaded block
+        if(self.hasFlag('d')):
+            block = block.getLvlBlock(Block.Level.DNLD)
+            #no download to read from
+            if(block == None):
+                log.error("Block "+title+" is not downloaded to the workspace path!")
+                return
+            pass
+        #wishing to pull in information on the installed block
+        elif(self.hasFlag('i') or self.getVerNum(places=[1,3]) != None):
+            block = block.getLvlBlock(Block.Level.INSTL)
+            #no installation to read from
+            if(block == None):
+                log.error("Block "+title+" is not installed to the cache!")
+                return
+
+            #check if needed a specific version to get info about
+            if(self.getVerNum() != None):
+                ver = Block.stdVer(self.getVerNum(), add_v=True)
+                #try to find block object associated with speciifc version
+                if(ver in block.getInstalls().keys()):
+                    block = block.getInstalls()[ver]
+                #could not identify specific version
+                else:
+                    log.error("Version "+ver+" may not exist or be installed to the cache!")
+                    return
+                pass
+            pass
+
         print(block.readInfo(self.hasFlag('stats'), \
             self.hasFlag('vers')))
         pass

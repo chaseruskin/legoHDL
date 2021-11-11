@@ -165,10 +165,11 @@ class Block:
             else:
                 Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] = self
 
-        #update graph
-        Block.Hierarchy.addVertex(self.getFull(inc_ver=True))
-        for d in self.getMeta('requires'):
-            Block.Hierarchy.addEdge(self.getFull(inc_ver=True), d)
+        if(self.getMeta('requires') != None):
+            #update graph
+            Block.Hierarchy.addVertex(self.getFull(inc_ver=True))
+            for d in self.getMeta('requires'):
+                Block.Hierarchy.addEdge(self.getFull(inc_ver=True), d)
 
         return True
 
@@ -619,11 +620,21 @@ class Block:
 
 
     @classmethod
-    def stdVer(cls, ver):
+    def stdVer(cls, ver, add_v=False):
         '''
         Standardize the version argument by swapping _ with .
+
+        Parameters:
+            ver (str): word to perform replace on
+            add_v (bool): determine if to add 'v' if DNE
+        Returns:
+            (str): properly standardized version
         '''
-        return ver.replace("_",".")
+        ver = ver.replace('_','.')
+        #optionally add 'v' to beginning
+        if(add_v and len(ver) and ver[0] != 'v'):
+            ver = 'v' + ver
+        return ver
 
 
     @classmethod
