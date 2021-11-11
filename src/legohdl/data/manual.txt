@@ -370,7 +370,7 @@ NAME:
         list - View a variety of legoHDL-related things
 
 SYNOPSIS:
-        legohdl list [<search>] [-entity] [-alpha] [-D] [-I] [-A]
+        legohdl list [<search>] [[-unit [-all]] | [-D] [-I] [-A]] [-alpha]
         legohdl list [-script | -label | -market | -workspace | -profile | 
                 -template]
 
@@ -384,7 +384,7 @@ OPTIONS:
         <search>
                 Optional field to narrow the given list by. 
 
-        -entity
+        -unit
                 Instead of listing blocks, list the entities.
 
         -alpha
@@ -398,6 +398,10 @@ OPTIONS:
 
         -A
                 Filter only available blocks or entities from markets.
+
+        -all
+                Display all units, regardless if they are usable or not
+                according to what 'multi-develop' is set to.
         
         -script
                 Return the list of scripts. Fields are alias and command.

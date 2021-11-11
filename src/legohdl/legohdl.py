@@ -1019,8 +1019,10 @@ scripts)?", warning=False)
             Profile.printList()
         elif(self.hasFlag("template")):
             apt.getTemplateFiles()
-        elif(self.hasFlag('entity')):
-            self.WS().listUnits()
+        elif(self.hasFlag('unit')):
+            self.WS().listUnits(title=self.getItem(), \
+                alpha=self.hasFlag('alpha'), \
+                usable=(not self.hasFlag('all')))
             #categorize by hidden files (skipped)
             #and visible files (files that are copied in on using template)
         else:

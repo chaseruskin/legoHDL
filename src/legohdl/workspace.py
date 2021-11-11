@@ -486,8 +486,8 @@ class Workspace:
         M,L,N,_ = Block.snapTitle(title, inc_ent=False)
 
         #get all blocks from inventory
-        print('{:<12}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<8}'.format("Version"),'{:<16}'.format("Market"))
-        print("-"*12+" "+"-"*20+" "+"-"*8+" "+"-"*8+" "+"-"*16)
+        print('{:<16}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<10}'.format("Version"),'{:<16}'.format("Market"))
+        print("-"*16+" "+"-"*20+" "+"-"*8+" "+"-"*10+" "+"-"*16)
         #iterate through every market
         for mrkt_k,mrkts in Block.Inventory.items():
             if(mrkt_k.startswith(M.lower()) == False):
@@ -531,33 +531,68 @@ class Workspace:
                     #leave version empty if its been unreleased
                     v = '' if(bk.getVersion() == '0.0.0') else bk.getVersion()
                     #format the data to print to the console
-                    print('{:<12}'.format(bk.L()),'{:<20}'.format(bk.N()),'{:<8}'.format(sts),'{:<8}'.format(v),'{:<16}'.format(bk.M()))
+                    print('{:<16}'.format(bk.L()),'{:<20}'.format(bk.N()),'{:<8}'.format(sts),'{:<10}'.format(v),'{:<16}'.format(bk.M()))
                     pass
         pass
 
 
-    def listUnits(self):
+    def listUnits(self, title, alpha=False, usable=False):
         '''
-        Print a formatted table of all the available entities.
+        Print a formatted table of all the design units.
 
         Parameters:
-            None
+            title (str): block title to be broken into parts for searching
+            alpha (bool): determine if to alphabetize the block list order
+            usable (bool): determine if to display units that can be used
         Returns:
             None
         '''
-        # [!] load the necessary blocks
-        blocks = self.loadBlocks()
-        
-        #collect all units
-        units = []
-        for bk in blocks:
-            units += bk.loadHDL(returnnames=False).values()
-        #print(units)
-        print('{:<14}'.format("Library"),'{:<14}'.format("Unit"),'{:<8}'.format("Type"),'{:<14}'.format("Block"),'{:<10}'.format("Language"))
-        print("-"*14+" "+"-"*14+" "+"-"*8+" "+"-"*14+" "+"-"*10+" ")
-        for u in units:
-            print('{:<14}'.format(u.L()),'{:<14}'.format(u.E()),'{:<8}'.format(u._dsgn.name),'{:<14}'.format(u.N()),'{:<10}'.format(u.getLang().name))
+        #[!] load blocks into inventory
+        visible = self.loadBlocks()
 
+        M,L,N,V,E = Block.snapTitle(title, inc_ent=True)
+        print(M,L,N,V,E)
+        print('{:<39}'.format("Block"),'{:<22}'.format("Unit"),'{:<7}'.format("Usable"),'{:<9}'.format("Type"))
+        print("-"*39+" "+"-"*22+" "+"-"*7+" "+"-"*9)
+        for bk in Block.getAllBlocks():
+            #for lvl in Block.Inventory[bk.M()][bk.L()][bk.N()]:
+            block_title = bk.getFull(inc_ver=False)
+            if(bk.M().lower().startswith(M.lower()) == False):
+                continue
+            if(bk.L().lower().startswith(L.lower()) == False):
+                continue
+            if(bk.N().lower().startswith(N.lower()) == False):
+                continue
+            #collect all units
+            if(apt.getMultiDevelop() == False):
+                if(bk.getLvlBlock(Block.Level.INSTL) != None):
+                    bk = bk.getLvlBlock(Block.Level.INSTL)
+                #skip this block if only displaying usable units and multi-develop off
+                elif(usable):
+                    continue
+            
+            units = bk.loadHDL(returnnames=False).values()
+
+            #print each unit and its data
+            printed = False
+            for u in units:
+                if(len(E) and u.E().lower().startswith(E.lower()) == False):
+                    continue
+                #format if unit is visible/usable
+                vis = '-'
+                if(bk in visible):
+                    vis = 'yes'
+                #format design unit name according to its natural language
+                dsgn = u.getDesign().name.lower()
+                if(u.getLang() == u.Language.VERILOG and dsgn == 'entity'):
+                    dsgn = 'module'
+                print('{:<39}'.format(block_title),'{:<22}'.format(u.E()),'{:<7}'.format(vis),'{:<9}'.format(dsgn))
+                block_title = ''
+                printed = True
+                pass
+            if(printed and bk != Block.getAllBlocks()[-1]):
+                print()
+                pass
 
     @classmethod
     def tidy(cls):
