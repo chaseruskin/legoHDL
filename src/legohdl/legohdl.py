@@ -744,13 +744,6 @@ scripts)?", warning=False)
     
     def _info(self):
         '''Run the 'info' command.'''
-
-        #get the block object from all possible blocks
-        block = self.WS().shortcut(self.getItem(raw=True), visibility=False)
-
-        #make sure the user passed in a value for the item
-        if(block == None):
-            exit(log.error("Could not find a block as "+self.getItem(raw=True)))
         
         if(self.hasFlag('profile')):
             #make sure the requested profile exists to be read
@@ -758,9 +751,15 @@ scripts)?", warning=False)
                 log.error("Profile "+self.getItem()+" does not exist!")
                 return
             #print the profile's information
-            print(Profile.Jar[self.getItem()].readAbout())
-            print()
+            print('\n'+Profile.Jar[self.getItem()].readAbout()+'\n')
             return
+
+        #get the block object from all possible blocks
+        block = self.WS().shortcut(self.getItem(raw=True), visibility=False)
+
+        #make sure the user passed in a value for the item
+        if(block == None):
+            exit(log.error("Could not find a block as "+self.getItem(raw=True)))
 
         #check which block to use
         title = block.getFull()
