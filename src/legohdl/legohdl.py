@@ -1171,7 +1171,7 @@ scripts)?", warning=False)
         formatHelp("update","update an installed block to be its latest version")
         formatHelp("info","read further detail about a block")
         formatHelp("config","modify legohdl settings")
-        print("\nType \'legohdl help <command>\' to read more on entered command.")
+        print("\nType \'legohdl help <command>\' to read about the entered command.")
         pass
 
 
@@ -1276,7 +1276,7 @@ scripts)?", warning=False)
         flags: {self._flags}
         vars: {self._vars}
         '''
-        
+
 
     pass
 
