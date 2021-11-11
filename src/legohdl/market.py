@@ -45,6 +45,8 @@ class Market:
             #are we trying to create one from an existing remote?
             if(url != None):
                 success = self.loadFromURL(url)
+            else:
+                success = False
             #proceed here if not using an existing remote
             if(success == False):
                 #check again if the path exists if a new name was set in loading from URL
@@ -61,7 +63,7 @@ class Market:
 
         #are we trying to attach a blank remote?
         if(success == False):
-            if(Git.isBlankRepo(url)):
+            if(url != None and Git.isBlankRepo(url)):
                 self._repo.setRemoteURL(url)
             #if did not exist then must add and push new commits    
             self._repo.add(self.getName()+self.EXT)

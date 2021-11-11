@@ -708,7 +708,7 @@ class Apparatus:
         else:
             #compute the markers
             spacer = int(limit/cols)-len(offset)
-        print(spacer)
+        #print(spacer)
 
         count = 0
         for it in items:

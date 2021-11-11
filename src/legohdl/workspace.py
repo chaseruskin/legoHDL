@@ -10,7 +10,6 @@ import os, shutil, glob
 import logging as log
 from datetime import datetime
 
-from legohdl.language import Language
 from .market import Market
 from .apparatus import Apparatus as apt
 from .map import Map

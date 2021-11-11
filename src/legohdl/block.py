@@ -7,22 +7,19 @@
 #   root folder.
 
 import os, shutil, stat, glob
-from platform import version
-from posixpath import split
+import logging as log
 from datetime import date
+from enum import Enum
 
+from .apparatus import Apparatus as apt
+from .cfgfile import CfgFile as cfg
+from .git import Git
+from .map import Map
 from .graph import Graph
 from .vhdl import Vhdl
 from .verilog import Verilog
-import logging as log
-from .market import Market
-from enum import Enum
-from .cfgfile import CfgFile as cfg
-from .apparatus import Apparatus as apt
 from .unit import Unit
-from .language import Language
-from .git import Git
-from .map import Map
+
 
 
 #a Block is a package/module that is signified by having the marker file
@@ -47,8 +44,15 @@ class Block:
                 'bench' : cfg.NULL,
                 'remote' : cfg.NULL,
                 'market' : cfg.NULL,
-                'derives' : []}
+                'requires' : []}
             }
+
+    #all possible metadata that may go under [block]
+    FIELDS = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', \
+        'remote', 'market', 'requires', 'versions']
+
+    #metadata that must be written in [block] else the block is seen as corrupted
+    REQ_FIELDS = ['name', 'library', 'version', 'market', 'requires']
 
     #class attribute that is a block object found on current path
     _Current = None
@@ -104,6 +108,7 @@ class Block:
             #are the two paths equal to each other? then this is the current block
             if(apt.isEqualPath(self.getPath(), os.getcwd())):
                 self.setCurrent(self)
+                
             #load from metadata
             self.loadMeta()
             
@@ -136,7 +141,7 @@ class Block:
         '''
         Adds the self block object to the class container at the correct level.
 
-        Blocks of level VER are skipped when trying to add to the Inventory.
+        Blocks of level VER or TMP are skipped when trying to add to the Inventory.
 
         Parameters:
             None
@@ -162,7 +167,7 @@ class Block:
 
         #update graph
         Block.Hierarchy.addVertex(self.getFull(inc_ver=True))
-        for d in self.getMeta('derives'):
+        for d in self.getMeta('requires'):
             Block.Hierarchy.addEdge(self.getFull(inc_ver=True), d)
 
         return True
@@ -262,6 +267,11 @@ class Block:
             return
         #delete the directory
         shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
+
+        #remove from inventory
+        if(self.getLvl() < len(lvls)):
+            lvls[self.getLvl()] = None
+
         #display message to user indicating deletion was successful
         if(self.getLvl(to_int=False) == Block.Level.DNLD):
             log.info("Deleted block "+self.getFull()+" from downloads.")
@@ -418,7 +428,7 @@ class Block:
         p_maj,p_min,p_fix = Block.sepVer(highest_ver)
 
         #make sure the metadata is not corrupted
-        if(self.isCorrupt(highest_ver)):
+        if(self.isCorrupt(highest_ver, disp_err='released')):
             return
 
         #2. compute next version number
@@ -461,7 +471,7 @@ class Block:
         self._tags += [next_ver]
 
         self.setMeta('version', next_ver[1:])
-        self.updateDerivatives()
+        self.updateRequires()
         self.save(force=True)
 
         #4. Make a new git commit
@@ -584,11 +594,14 @@ class Block:
             return self._tags
         if(hasattr(self, '_repo') == False):
             return []
+
         all_tags,_ = self._repo.git('tag','-l')
+
         #print(all_tags)
         #split into list
         all_tags = all_tags.split("\n")
         self._tags = []
+
         #only add any tags identified by legohdl
         for t in all_tags:
             if(t.endswith(apt.TAG_ID)):
@@ -597,7 +610,8 @@ class Block:
                 #ensure it is valid version format
                 if(self.validVer(t)):
                     self._tags.append(t)
-        #print(tags)
+
+        #print(self._tags)
         #return all tags
         return self._tags
 
@@ -715,21 +729,33 @@ class Block:
         if(hasattr(self, "_is_secure")):
             return
 
-        #ensure all pieces are there
-        for key in self.LAYOUT['block'].keys():
-            if(key not in self.getMeta().keys()):
-                #will force to save the changed file
+        #remove any invalid fields from 'block' section
+        fields = list(self.getMeta().keys())
+        for key in fields:
+            if(key not in Block.FIELDS):
+                #will force to write to save the changed file
                 self._meta_backup = self.getMeta().copy()
-                self.setMeta(key, '')
+                del self.getMeta()[key]
+                pass
+        
+        self.save(force=True)
+
+        #ensure all required fields from 'block' section exist
+        for key in Block.REQ_FIELDS:
+            if(key not in self.getMeta().keys()):
+                #will force to write to save the changed file
+                self._meta_backup = self.getMeta().copy()
+                self.setMeta(key, cfg.NULL)
+
 
         #remember what the metadata looked like initially to compare for determining
         #  if needing to write file for saving
         if(hasattr(self, "_meta_backup") == False):
             self._meta_backup = self.getMeta().copy()
 
-        #ensure derives is a proper list format
-        if(self.getMeta('derives') == cfg.NULL):
-            self.setMeta('derives',list())
+        #ensure requires is a proper list format
+        if(self.getMeta('requires') == cfg.NULL):
+            self.setMeta('requires',list())
 
         if(hasattr(self, "_repo")):
             #grab highest available version
@@ -1062,6 +1088,8 @@ class Block:
 
         #if not previously already valid, add and commit all changes
         if(already_valid == False):
+            if(hasattr(self, "_repo") == False):
+                self._repo = Git(self.getPath())
             self._repo.add('.')
             self._repo.commit('Initializes legohdl block')
             self._repo.push()
@@ -1154,6 +1182,9 @@ class Block:
         Returns the value stored in the block metadata, else retuns None if
         DNE.
 
+        Returns an empty string if a non-required block field is requested and
+        does not exist for the metadata.
+
         Parameters:
             key (str): the case-sensitive key to the cfg dictionary
             all (bool): return entire dictionary
@@ -1170,6 +1201,8 @@ class Block:
         #check if the key is valid
         elif(sect in self._meta.keys() and key in self._meta[sect].keys()):
             return self._meta[sect][key]
+        elif(sect == 'block' and key.lower() not in Block.REQ_FIELDS):
+            return ''
         else:
             return None
 
@@ -1223,14 +1256,16 @@ class Block:
         pass
 
 
-    def isCorrupt(self, ver, disp_err=True):
+    def isCorrupt(self, ver, disp_err='installed'):
         '''
         Determines if the given block's requested version/state is corrupted
         or can be used.
+
+        If disp_err is an empty str, it will not print an errory message.
         
         Parameters:
             ver (str): version under test in proper format (v0.0.0)
-            disp_err (bool): determine if to print an error statement on finding corruption
+            disp_err (str): the requested command that cannot be fulfilled
         Returns:
             corrupt (bool): if the metadata is invalid for a release point
         '''
@@ -1238,13 +1273,24 @@ class Block:
 
         if(self.isValid() == False):
             corrupt = True
+        else:
+            #check all required fields are in metadata
+            for f in Block.REQ_FIELDS:
+                if(self.getMeta(f) == None):
+                    corrupt = True
+                    break
+                elif((f == 'name' or f == 'library') and self.getMeta(f) == ''):
+                    log.error("Cannot have empty "+f+" field!")
+                    corrupt = True
+                    break
+                pass
 
         #ensure the latest tag matches the version found in metadata (valid release)
         if(not corrupt and ver[1:] != self.getVersion()):
             corrupt = True
 
-        if(disp_err and corrupt):
-            log.error("This block's version "+ver+" is corrupted and cannot be installed.")
+        if(len(disp_err) and corrupt):
+            log.error("This block's version "+ver+" is corrupted and cannot be "+disp_err+".")
 
         return corrupt
 
@@ -1258,7 +1304,7 @@ class Block:
         Returns:
             None
         '''
-        for title in self.getMeta('derives'):
+        for title in self.getMeta('requires'):
             #skip blocks already identified for installation
             if(title.lower() in tracking):
                 continue
@@ -1608,20 +1654,21 @@ class Block:
         pass
 
 
-    def updateDerivatives(self):
+    def updateRequires(self, quiet=False):
         '''
-        Updates the metadata section 'derives' for required blocks needed by
+        Updates the metadata section 'requires' for required blocks needed by
         the current block.
 
         Only lists the 1st level direct block requirements. These are the neighbors
         in a block graph for this block's vertex.
 
         Parameters:
-            None
+            quiet (bool): determine if to display messages to the user
         Returns:
             None
         '''
-        log.info("Updating block's dependencies...")
+        if(not quiet):
+            log.info("Updating block's requirements...")
         #get every unit from this block
         units = self.getUnits(top=None)
 
@@ -1639,9 +1686,9 @@ class Block:
         #store block titles in a map to compare without case sense
         block_titles = Map()
 
-        block_derives = Map()
-        for bd in self.getMeta('derives'):
-            block_derives[bd] = bd
+        block_requires = Map()
+        for bd in self.getMeta('requires'):
+            block_requires[bd] = bd
 
         #iterate through every block requirement to add its title
         for b in block_reqs:
@@ -1654,27 +1701,28 @@ class Block:
         update = False
         
         #update if the length of the dependencies has changed
-        if(len(block_derives) != len(block_titles)):
+        if(len(block_requires) != len(block_titles)):
             update = True
 
         #iterate through every already-listed block derivative
-        for b in block_derives.keys():
+        for b in block_requires.keys():
             if(b not in block_titles.keys()):
                 update = True
                 break
 
         #iterate through every found block requirement
         for b in block_titles.keys():
-            if(b not in block_derives.keys()):
+            if(b not in block_requires.keys()):
                 update = True
                 break
 
         if(update):
-            log.info("Saving new dependencies to metadata...")
-            self.setMeta('derives', list(block_titles.values()))
+            if(not quiet):
+                log.info("Saving new requirements to metadata...")
+            self.setMeta('requires', list(block_titles.values()))
             self.save()
-        else:
-            log.info("No change in dependencies found.")
+        elif(not quiet):
+            log.info("No change in requirements found.")
         pass
 
 
@@ -2170,6 +2218,7 @@ class Block:
         '''
         #make sure the metadata is properly formatted
         self.secureMeta()
+
         #read the metadata by default
         info_txt = '--- METADATA ---\n'
         with open(self.getMetaFile(), 'r') as file:
@@ -2179,8 +2228,17 @@ class Block:
         #read relevant stats
         if(stats):
             info_txt = info_txt + '\n--- STATS ---'
-            info_txt = info_txt + '\nIntegrated into:\n'
-            info_txt = info_txt + '\t'+apt.listToStr(Block.Hierarchy.getNeighbors(self.getFull(inc_ver=True), upstream=True),'\n\t')
+           
+            #read location
+            info_txt = info_txt + '\nLocation: '+self.getPath()+'\n'
+            
+            #read what blocks require this block
+            info_txt = info_txt + '\nRequired by:\n'
+            info_txt = info_txt + apt.listToGrid(Block.Hierarchy.getNeighbors(self.getFull(inc_ver=True), upstream=True), \
+                cols=-1, limit=80, min_space=4, offset='\t')
+            info_txt = info_txt + '\n'
+
+            #read the units found in this block
             vhdl_units = []
             vlog_units = []
             for u in self.loadHDL().values():
@@ -2198,6 +2256,8 @@ class Block:
                 txt = '\nVERILOG units:\n'
                 info_txt = info_txt + txt + apt.listToGrid(vlog_units, cols=-1, \
                     limit=80, min_space=4, offset='\t')
+            pass
+
         #read the list of versions implemented and obtainable
         if(versions):
             info_txt = ''
@@ -2243,6 +2303,9 @@ class Block:
                 pass
                 #add new line for next version to be formatted
                 info_txt = info_txt + '\n'
+                pass
+            pass
+
         return info_txt
 
 

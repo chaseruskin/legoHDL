@@ -99,7 +99,7 @@ class legoHDL:
         else:
             self.WS().autoRefresh(rate=apt.getRefreshRate())
 
-        print(self)
+        #print(self)
 
         if('debug' == self._command):
             test()
@@ -474,7 +474,7 @@ scripts)?", warning=False)
         log.info("Blueprint found at: "+blueprint_path)
 
         #update block's dependencies
-        block.updateDerivatives()
+        block.updateRequires(quiet=True)
         pass
 
 
@@ -709,14 +709,16 @@ scripts)?", warning=False)
         ver_num = self.getVerNum(places=[3])
 
         #install latest/controller for this block
-        if(instl == None):
+        if(instl == None or Block.cmpVer(instl.V(), block.V()) != instl.V()):
+            if(instl != None):
+                instl.delete()
             instl = block.install()
             pass
         elif(ver_num == None):
             log.info("The latest version for "+instl.getFull()+" is already installed.")
         
         #install specific version if specifed
-        if(ver_num != None):
+        if(instl != None and ver_num != None):
             instl.install(ver=self.getVerNum())
 
         pass
@@ -1379,7 +1381,7 @@ if __name__ == "__main__":
         top_dog,_,_ = block.identifyTopDog(None)
         #update block requirements
         _,block_order = self._graph(block, top_dog)
-        block.updateDerivatives()
+        block.updateRequires()
         block.release(msg, ver, options)
         #don't look to market when updating if the block does not link to market anymore
         bypassMrkt = (block.getMeta('market') not in apt.getMarkets())
@@ -1940,7 +1942,7 @@ If it is deleted and uninstalled, it may be unrecoverable. PERMANENTLY REMOVE '+
             
         output.close()
         #update the derives section to give details into what blocks are required for this one
-        block.updateDerivatives(block_order)
+        block.updateRequires(block_order)
 
         log.info("Blueprint located at: "+blueprint_filepath)
         log.info("success")
