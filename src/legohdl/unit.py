@@ -309,17 +309,17 @@ class Unit:
         Returns:
             (str): dependency text to print to console
         '''
-        term = 'Dependencies'
+        term = 'requires'
         if(upstream == True):
-            term = 'Integrations'
+            term = 'required by'
         if(len(self.getReqs(upstream))):
-            txt = term+' for '+self.getTitle()+":"+'\n'
+            txt = self.getTitle()+" "+term+":"+'\n'
             for req in self.getReqs(upstream):
                 txt = txt+'\t'+req.getTitle()+'\n'
         elif(upstream == False):
-            txt = "No dependencies are instantiated within "+self.getTitle()+"!"+'\n'
+            txt = "No units are instantiated within "+self.getTitle()+"!"+'\n'
         elif(upstream == True):
-            txt = "No integrations found for "+self.getTitle()+"!"+'\n'
+            txt = "No units use "+self.getTitle()+"!"+'\n'
         return txt
 
 
@@ -983,7 +983,7 @@ class Interface:
         if(lang == None):
             lang = self._default_form
 
-        mapping_txt = ''
+        mapping_txt = 'Empty interface!\n'
         #default number of spaces when not aligning
         spaces = 0 
         #do not write anything if no interface!

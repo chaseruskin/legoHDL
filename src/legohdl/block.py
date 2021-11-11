@@ -2181,10 +2181,12 @@ class Block:
         print(ent.readAbout())
         #print dependencies
         if(edges):
+            print("--- EDGES ---")
             print(ent.readReqs())
             print(ent.readReqs(upstream=True))
         #print list of architectures
         if(list_arch):
+            print('--- ARCHITECTURES ---')
             print(ent.readArchitectures())
         if(comp):
             print(ent.getInterface().writeDeclaration(form=lang))
