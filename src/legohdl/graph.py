@@ -29,6 +29,23 @@ class Graph:
         self._adj_list = Map()
         self._rev_adj_list = Map()
         pass
+
+
+    def addVertex(self, u):
+        '''
+        Adds the unit to the graph's adjacency list if DNE.
+
+        Parameters:
+            u (Unit): unit object to add to adjacency list structure
+        Returns:
+            None
+        '''
+        if(u not in self._adj_list.keys()):
+            self._adj_list[u] = []
+        #store up-stream variation
+        if(u not in self._rev_adj_list.keys()):
+            self._rev_adj_list[u] = []
+        pass
     
 
     def addEdge(self, integral, derivative):
@@ -50,23 +67,6 @@ class Graph:
         #store up-stream variation
         if(integral not in self._rev_adj_list[derivative]):
             self._rev_adj_list[derivative].append(integral)
-        pass
-
-
-    def addVertex(self, u):
-        '''
-        Adds the unit to the graph's adjacency list if DNE.
-
-        Parameters:
-            u (Unit): unit object to add to adjacency list structure
-        Returns:
-            None
-        '''
-        if(u not in self._adj_list.keys()):
-            self._adj_list[u] = []
-        #store up-stream variation
-        if(u not in self._rev_adj_list.keys()):
-            self._rev_adj_list[u] = []
         pass
 
 
@@ -103,26 +103,6 @@ class Graph:
         if(integral in self._adj_list[derivative]):
             self._adj_list[derivative].remove(integral)
         pass
-
-
-    def getNeighbors(self, vertex, upstream=False):
-        '''
-        Returns the list of vertices connected to the `vertex` Unit object.
-
-        Parameters:
-            vertex (Unit): a vertex within the graph
-        Returns:
-            _adj_list[vertex] ([Unit]): list of vertices connected to `vertex`
-        '''
-        adj = self._adj_list
-        #print upstream variation
-        if(upstream == True):
-            adj = self._rev_adj_list
-
-        if(vertex in adj.keys()):
-            return list(adj[vertex])
-        else:
-            return []
 
 
     def topologicalSort(self):
@@ -210,9 +190,8 @@ class Graph:
         #start with top level
         if(top not in self._adj_list.keys()):
             exit(log.error('Entity '+top.E()+' may be missing an architecture.'))
+        #only display units
         if(not top.isPkg()):
-            #uncomment this next line to print market along with entity
-            #print(leaf,self._unit_bank[top].getMarket()+'.'+top)
             temp_leaf = leaf
             #skip first bar because everything is under top-level entity
             if(not first):
@@ -249,6 +228,26 @@ class Graph:
             #recursive call
             self.output(sub_entity, next_leaf)
         pass
+
+
+    def getNeighbors(self, vertex, upstream=False):
+        '''
+        Returns the list of vertices connected to the `vertex` Unit object.
+
+        Parameters:
+            vertex (Unit): a vertex within the graph
+        Returns:
+            _adj_list[vertex] ([Unit]): list of vertices connected to `vertex`
+        '''
+        adj = self._adj_list
+        #print upstream variation
+        if(upstream == True):
+            adj = self._rev_adj_list
+
+        if(vertex in adj.keys()):
+            return list(adj[vertex])
+        #return empty if not found as vertex
+        return []
 
 
     def getVertices(self):
