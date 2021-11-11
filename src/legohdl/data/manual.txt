@@ -396,7 +396,7 @@ OPTIONS:
 
         -label
                 Return the list of labels. Fields are label, extensions,
-                and recursive.
+                and global.
         
         -market
                 Return the list of markets. Fields a are market, remote repository,
@@ -564,7 +564,7 @@ NAME:
 SYNOPSIS:
         legohdl config <profile-name> [-ask]
         legohdl config [-market=<mrkt>[:<url>] [-link | -unlink]] [-active-workspace=<ws>] [-author=<name>] 
-                [-editor=<cmd>] [-template=<dir>] [-multi-develop=<bool>] [-overlap-recursive=<bool>]
+                [-editor=<cmd>] [-template=<dir>] [-multi-develop=<bool>] [-overlap-global=<bool>]
                 [-refresh-rate=<rt>] [-profile=<profile-name>] [-script=<alias>:<cmd>] 
                 [-label=<label>:<extensions> [-global]] [-workspace=<ws>:<path>]
 
