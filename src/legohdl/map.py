@@ -11,6 +11,7 @@ from collections.abc import MutableMapping
 
 class Map(MutableMapping):
 
+
     def __init__(self, *args, **kwargs):
         self._inventory = dict()
         self.update(dict(*args, **kwargs))

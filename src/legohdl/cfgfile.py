@@ -1,13 +1,13 @@
-################################################################################
-#   Project: legohdl
-#   Script: cfgfile.py
-#   Author: Chase Ruskin
-#   Description:
-#       This script handles reading/writing the custom configuration files used
+# Project: legohdl
+# Script: cfgfile.py
+# Author: Chase Ruskin
+# Description:
+#   This script handles reading/writing the custom configuration files used
 #   for settings and blocks.
-################################################################################
 
 import logging as log
+#from .map import Map
+
 
 class CfgFile:
 
@@ -23,22 +23,32 @@ class CfgFile:
 
     NEAT = True
 
+
     @classmethod
     def load(cls, datafile, ignore_depth=False):
         '''
-        Return the python dictionary of all key/value pairs.
+        Load the items from cfg file into a dictionary.
 
-        Parameters
-        ---
-        datafile : a python file object
-        ignore_depth : all headers are seen at first level and each variable
-                       is assigned to previous header
+        Parameters:
+            datafile (file): a python file object written in cfg
+            ignore_depth (bool): all headers are seen at first level and each variable 
+            is assigned to previous header
+        Returns:
+            (dict): multi-level dictionary of items from cfg file
         '''
-        map = dict()
+
 
         def tunnel(mp, key, scope_stack, data=None):
             '''
-            Tracks through a dictionary to get to correct scope level.
+            Recursively tracks through a dictionary to get to correct scope level.
+
+            Parameters:
+                mp (dict): the dictionary to add key/val pair to
+                key (str): new key to be added within correct scope
+                scope_stack ([str]): list of existing keys to traverse
+                data (*): any value; if None then a {} will be added as value
+            Returns:
+                mp (dict): the dictionary with new key/val pair
             '''
             if(len(scope_stack)):
                 nxt = scope_stack[0]
@@ -52,10 +62,18 @@ class CfgFile:
                     mp[key] = {}
             return mp
 
+
         def collectList(cnt, val, tmp):
             '''
             Parse through an assigned list. Returns the bracket count and
             running list variable.
+
+            Parameters:
+                val (str):
+                tmp (str):
+            Returns:
+                cnt (int):
+                tmp (str):
             '''
             cnt += val.count(cls.LIST[0]) - val.count(cls.LIST[1])
             val = val.replace(cls.LIST[0],'').replace(cls.LIST[1],'')
@@ -64,6 +82,9 @@ class CfgFile:
                 if(len(i)):
                     tmp += [i]
             return cnt, tmp
+
+        #dictionary to fill and return as end result
+        mapp = dict()
 
         scope = [] # stores levels of scope keys for map dictionary
         tmp = [] # temporary list used to store an assigned list
@@ -111,12 +132,11 @@ class CfgFile:
                     lvl = 0
                 
                 key = line.strip()[1:len(line.strip())-1]
-                
                 #pop off scopes
                 scope = scope[0:lvl]
                     
                 #create new dictionary spot scoped to specific location
-                map = tunnel(map, key, scope)
+                mapp = tunnel(mapp, key, scope)
                 #append to scope
                 scope.append(key)
                 continue
@@ -148,7 +168,7 @@ class CfgFile:
                     #print(value)
                     last_var['key'] = key
                     last_var['val'] = value
-                    map = tunnel(map, key, scope, value)
+                    mapp = tunnel(mapp, key, scope, value)
                     
             elif(bracket_cnt):
                 #strip excessive whitespae and quotes
@@ -160,7 +180,7 @@ class CfgFile:
                 #finalize into dictionary
                 if(bracket_cnt == 0):
                     value = tmp
-                    map = tunnel(map, key, scope, value)
+                    mapp = tunnel(mapp, key, scope, value)
             #evaluate if no '=' sign is on this line and not a header line
             elif(last_var['key'] != None):
                 #extended line string
@@ -169,24 +189,31 @@ class CfgFile:
                     in_quote = in_quote ^ (ext_value.count(cls.QUOTES[0]) + ext_value.count(cls.QUOTES[1])) % 2 == 1
                     #automatically insert space between the different lines
                     last_var['val'] = last_var['val'] + ' ' +ext_value
-                    map = tunnel(map, last_var['key'], scope, last_var['val'])
+                    mapp = tunnel(mapp, last_var['key'], scope, last_var['val'])
             else:
                 exit(log.error("Syntax: Line "+str(line_cnt)))
 
-        return map
+        return mapp
+
 
     @classmethod
     def save(cls, data, datafile, comments=dict(), ignore_depth=False, space_headers=False):
         '''
-        Write python dictionary to data file.
+        Write dictionary to data file in cfg format.
 
         Parameters:
-        ---
-        data : a python dictionary object
-        datafile : a python file object
-        comments : a dictionary of strings where the keys are headers where
-                   the comments will be placed before that header/assignment
+            data (dict): a multi-level python dictionary object
+            datafile (file): a python file object to be written in cfg format
+            comments (dict): a dictionary of strings where the keys are headers where 
+            the comments will be placed before that header/assignment
+            ignore_depth (bool): ignores tabs and assumes each variable is one level within headers
+            space_headers (bool): determine if to write newlines for subsequent headers
+        Returns:
+            (bool): true if save was successful
         '''
+        another_header = False
+
+
         def write_comment(c_str, spacing, isHeader):
             # add proper indentation for the said comment
             if((c_str[0] == cls.HEADER and isHeader) or 
@@ -194,9 +221,10 @@ class CfgFile:
                 lines = c_str[1].split('\n')
                 for l in lines:
                     datafile.write(spacing+l+"\n")
+            pass
+        
 
-        another_header = False
-        def write_dictionary(mp, lvl=0, l_len=0):
+        def write_dictionary(mp, lvl=0, l_len=0, scope=[]):
             nonlocal another_header
             #determine proper indentation
             indent = cls.TAB*lvl
@@ -211,6 +239,7 @@ class CfgFile:
                         write_comment(comments[k], indent, isHeader)
                     #write a header
                     if(isHeader):
+                        scope += [k.lower()]
                         #write a separating new-line
                         if(another_header and space_headers):
                             datafile.write('\n')
@@ -218,11 +247,29 @@ class CfgFile:
                         another_header = True
                     #write the beginning of an assignment
                     else:
-                        var_assign = indent+k+' '+cls.VAR+' '
+                        #print('data:',data)
+                        #print()
+                        #print('scope:',scope)
+                        #print()
+                        #get all field names for this current scope
+                        fields = cls.getAllFields(data, scope=scope)
+                        #print(fields)
+                        #dist = apt.computeLongestWord()
+                        #compute the longest distance length word
+                        dist = len(fields[0])
+                        for f in fields[1:]:
+                            if(len(f) > dist):
+                                dist = len(f)
+                        #print(dist)
+                        #provide nice spacing and aligning of VAR ('=')
+                        var_assign = indent+k+((dist-len(k)+1)*' ')+cls.VAR+' '
                         l_len = len(var_assign)
                         datafile.write(var_assign)
                     #recursively proceed to next level
-                    write_dictionary(mp[k], lvl+1, l_len)
+                    write_dictionary(mp[k], lvl+1, l_len, scope)
+                    #pop off value that was recursively passed to the method
+                    if(isHeader):
+                        scope.pop()
             #write a value (rhs of assignment)
             else:
                 #if its a list, use brackets
@@ -255,7 +302,6 @@ class CfgFile:
                         #write over to new line on overflow (exceed 80 chars)
                         cursor = 0
                         first_word = True
-                        exceeded = False
                         words = mp.split()
                         for w in words:
                             if(first_word):
@@ -263,7 +309,6 @@ class CfgFile:
                             cursor += len(w+' ')
                             #evaluate before writing
                             if(cursor+l_len >= 80):
-                                exceeded = True
                                 datafile.write('\n')
                                 datafile.write(' '*l_len)
                                 cursor = 0
@@ -274,20 +319,29 @@ class CfgFile:
 
                         if(cursor != 0 or len(mp) == 0):
                             datafile.write('\n')
-                        if(exceeded):
-                            datafile.write('\n')
+                            pass
                     #write the value as-is
                     else:
                         datafile.write(mp+'\n')
-        
+            pass
+
         #recursively call method to write all dictionary key/values
         write_dictionary(data)
         return True
+
 
     @classmethod
     def castBool(cls, str_val):
         '''
         Return boolean converted from string data type.
+
+        Parameters:
+            str_val (str): string to cast to boolean
+        Returns:
+            (bool): str_val determined as a boolean type
+
+        Accepted true cases are: 'true', '1', 'yes', 'on', 'enable'. All others
+        will return false.
         '''
         if(isinstance(str_val, bool)):
             return str_val
@@ -295,20 +349,32 @@ class CfgFile:
         return (str_val == 'true' or str_val == '1' or 
                 str_val == 'yes' or str_val == 'on' or str_val == 'enable')
     
+
     @classmethod
     def castNone(cls, str_blank):
         '''
         Return if string is of type None (empty ''), else return string.
+
+        Parameters:
+            str_blank (str):
+        Returns
+            None if `str_blank` == '' else returns `str_blank` unmodified
         '''
         if(str_blank == cls.NULL):
             return None
         else:
             return str_blank
-            
+
+
     @classmethod
     def castInt(cls, str_int):
         '''
         Return integer if string is an integer, else return 0.
+
+        Parameters:
+            str_int (str):
+        Returns
+            (int):
         '''
         if(isinstance(str_int, int)):
             return str_int
@@ -321,24 +387,34 @@ class CfgFile:
         else:
             return 0
 
-    @classmethod
-    def getAllFields(cls, data):
-        '''
-        Return a list of all field names found within the python dictionary
-        object.
 
-        Parameters
-        ---
-        data : python dictionary object
+    @classmethod
+    def getAllFields(cls, data, scope=[]):
         '''
-        def fieldSearch(map, fields=[]):
-            for k in map.keys():
-                if(isinstance(map[k], dict)):
-                    fields = fieldSearch(map[k],fields)
+        Returns a list of all field names found within the dictionary, regardless
+        of scope.
+
+        If 'scope' is passed, it will look for down into that header trail's fields.
+
+        Parameters:
+            data (dict): python dictionary object
+            scope ([str]): a list of headers to scope down-to for filtering fields (lower-case)
+        Returns:
+            ([str]): list of all field names (keys, even within scopes)
+        '''
+
+
+        def fieldSearch(mapp, fields=[], scope=[]):
+            for k in mapp.keys():
+                if(isinstance(mapp[k], dict)):
+                    if((len(scope) == 0 or k.lower() in scope)):
+                        fields = fieldSearch(mapp=mapp[k],fields=fields,scope=scope)
                 else:
                     fields += [k]
             return fields
 
-        return fieldSearch(data)
+
+        return fieldSearch(data, scope=scope)
+
 
     pass

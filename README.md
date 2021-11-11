@@ -12,7 +12,7 @@ Inspired by the modular and fun building approach of LEGO® bricks, legoHDL brin
 
 Supports Linux, macOS, and Windows.
 
-Supports VHDL and Verilog/SystemVerilog with mixed language support.
+Supports VHDL and Verilog with mixed language support.
 
 <br />
 
@@ -45,40 +45,38 @@ Once the roadmap is complete for v1.0.0, users will be able to install legoHDL d
 
 4. Enter other prompted information such as your name, text-editor, and workspace path.
 
-5. Ready to build! Create a block from the imported default template and automatically open it in the configured text-editor: `legohdl new Demo.MyBlock -open`. Refer
+5. Ready to design! Create a block from the imported default template and automatically open it in the configured text-editor: `legohdl new MyLib.MyBlock -open`. Refer
 to the [documentation](https://hdl.notion.site/legoHDL-f798525eee2f4378bcf5e970ae6373cf) for more details.
 
 ### Commands
 
 ```
 USAGE:             
-        legohdl <command> [argument] [flags]            
+        legohdl <command> [argument] [flags/variables]            
 
 COMMANDS:
 
 Development
-   new          create a templated empty block into workspace
-   init         initialize the current folder into a valid block format
-   open         opens the downloaded block with the configured text-editor
-   port         print ports list of specified entity
-   graph        visualize dependency graph for reference
-   export       generate a blueprint file from labels
+   new          create a new legohdl block (project)
+   init         initialize existing code into a legohdl block
+   open         open a block with the configured text-editor
+   get          print instantiation code for an HDL entity
+   graph        visualize HDL dependency graph
+   export       generate a blueprint file
    build        execute a custom configured script
-   run          export and build in a single step
-   release      release a new version of the current block
-   del          deletes a configured setting or a block from local workspace
+   release      set a newer version for the current block
+   del          delete a block from the local workspace path
 
 Management
    list         print list of all blocks available
    refresh      sync local markets with their remotes
-   install      grab block from its market for dependency use
-   uninstall    remove block from cache
-   download     grab block from its market for development
-   update       update installed block to be to the latest version
-   show         read further detail about a specified block
-   config       set package manager settings
-   profile      import configurations for scripts, settings, and template
+   install      bring a block to the cache for dependency use
+   uninstall    remove a block from the cache
+   download     bring a block to the workspace path for development
+   update       update an installed block to be its latest version
+   show         read further detail about a block
+   config       modify legohdl settings
 
-Type 'legohdl help <command>' to read more on entered command.
+Type 'legohdl help <command>' to read about the entered command.
 
 ```

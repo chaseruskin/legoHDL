@@ -2,17 +2,20 @@
 # Script: script.py
 # Author: Chase Ruskin
 # Description:
-#   The Script class. A script object can be used to execute a command through
+#   The Script class. A Script object can be used to execute a command through
 #   legohdl, very similiar to how aliases function within the command-line.
 
 import os
+import logging as log
+from .apparatus import Apparatus as apt
 from .map import Map
+
 
 class Script:
 
     #store all scripts in class variable
     Jar = Map()
-
+    
 
     def __init__(self, alias, cmd_call):
         '''
@@ -25,6 +28,7 @@ class Script:
         Returns:
             None
         '''
+        self._alias = alias
         valid_cmd = self.setCommand(cmd_call)
         #only adds to Jar if a valid command is given (not empty)
         if(valid_cmd):
@@ -35,6 +39,7 @@ class Script:
     def hasPath(self):
         '''
         Returns true if the script object does have a path within its command.
+        Also is used to determine if the script is 'openable'.
         
         Parameters:
             None
@@ -54,16 +59,20 @@ class Script:
         Returns:
             (bool): if successfully added to Jar (key name not taken)
         '''
-        if(a.lower() in self.Jar.keys()):
-            print('Could not set name (already exists).')
+        if(a == '' or a == None):
+            log.error("Script alias cannot be empty.")
             return False
+        if(a.lower() in self.Jar.keys()):
+            log.error('Could not set script alias to '+a+' due to name conflict.')
+            return False
+
         #remove old key if it exists
-        if(hasattr(self, '_alias')):
-            del self.Jar[self.getName()]
+        if(hasattr(self, '_alias') and self.getAlias().lower() in self.Jar.keys()):
+            del self.Jar[self.getAlias()]
         #set the alias name and add it to the jar
         self._alias = a
         #add this script to the dictionary
-        self.Jar[self.getName()] = self
+        self.Jar[self.getAlias()] = self
         return True
 
 
@@ -78,6 +87,7 @@ class Script:
         '''
         #do not change command if it is blank
         if(len(c.strip()) == 0):
+            log.error("Script "+self.getAlias()+" cannot have an empty command.")
             return False
 
         self._cmd = c
@@ -98,7 +108,25 @@ class Script:
         return True
 
 
-    def getName(self):
+    @classmethod
+    def printList(cls):
+        '''
+        Prints formatted list for scripts with alias and the commands.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        print('{:<15}'.format("Alias"),'{:<12}'.format("Command"))
+        print("-"*15+" "+"-"*64)
+        for scpt in cls.Jar.values():
+            print('{:<15}'.format(scpt.getAlias()),'{:<12}'.format(scpt.getCommand()))
+            pass
+        pass
+
+
+    def getAlias(self):
         '''
         Returns the script's name.
         
@@ -108,6 +136,33 @@ class Script:
             self._alias (str): the name for this command call   
         '''
         return self._alias
+
+
+    def execute(self, args=[]):
+        '''
+        Execute the script's command.
+
+        Parameters:
+            args ([str]): list of additional arguments to go along with the command
+        Returns:
+            None
+        '''
+        cmd = [self.getCommand()] + args
+        apt.execute(*cmd,quiet=False)
+        pass
+
+
+    def getExe(self):
+        '''Returns the _prog (str) that is used to run the command.'''
+        return self._prog
+
+
+    def getPath(self):
+        '''Returns the _path (str) that is in the command, or None if DNE.'''
+        if(self.hasPath()):
+            return self._path
+        else:
+            return None
 
 
     def getCommand(self):
@@ -122,25 +177,43 @@ class Script:
         return self._cmd
 
 
-    def __str__(self):
+    @classmethod
+    def load(cls):
+        '''Load scripts from settings.'''
+        
+        scpts = apt.SETTINGS['script']
+        for alias,cmd in scpts.items():
+            Script(alias, cmd)
+        pass
+
+
+    @classmethod
+    def save(cls):
         '''
-        Represent the object and its variables as a string.
+        Serializes the Script objects and saves them to the settings dictionary.
 
         Parameters:
             None
         Returns:
-            self._cmd (str): the entire command for this script
+            None
         '''
-        path = ''
-        if(self.hasPath()):
-            path = self._path
-        txt = f'''
-        hash: {self.__hash__}
-        alias: {self._alias}
-        cmd: {self._cmd}
-        program: {self._prog}
-        path: {path}
+        serialized = {}
+        #serialize the Workspace objects into dictionary format for settings
+        for scpt in cls.Jar.values():
+            serialized[scpt.getAlias()] = scpt.getCommand()
+        #update settings dictionary
+        apt.SETTINGS['script'] = serialized
+        apt.save()
+        pass
+
+
+    def __str__(self):
+        return f'''
+        ID: {hex(id(self))}
+        alias: {self.getAlias()}
+        cmd: {self.getCommand()}
+        program: {self.getExe()}
+        path: {self.getPath()}
         '''
-        return txt
 
     pass

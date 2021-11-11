@@ -18,15 +18,13 @@ setuptools.setup(
     classifiers=[
         "",
     ],
-    install_requires=[
-        "git-Python",
-    ],
+    install_requires=[],
     entry_points='''
             [console_scripts]
-            legohdl=legohdl.manager:main
+            legohdl=legohdl.legohdl:main
         ''',
     package_dir={"": "src"},
-    package_data={"": ['data/icon.gif']},
+    package_data={"": ['data/icon.gif', 'data/hello.py', 'data/manual.txt']},
     packages=setuptools.find_packages(where="src"),
     include_package_data=True,
     python_requires=">=3.5",
