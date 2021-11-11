@@ -306,8 +306,8 @@ class Market:
             if(mrkt_name.lower() not in cls.Jar.keys()):
                 log.info("Removing stale market "+mrkt_name+"...")
                 mrkt_dir = f.replace(os.path.basename(f),'')
-                # :todo: uncomment next line to take effect
-                #shutil.rmtree(mrkt_dir, onerror=apt.rmReadOnly)
+                # delete the market directory
+                shutil.rmtree(mrkt_dir, onerror=apt.rmReadOnly)
             pass
 
         pass
