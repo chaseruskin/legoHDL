@@ -755,11 +755,11 @@ scripts)?", warning=False)
             return
 
         #get the block object from all possible blocks
-        block = self.WS().shortcut(self.getItem(raw=True), visibility=False)
+        block = self.WS().shortcut(self.getItem(), visibility=False)
 
         #make sure the user passed in a value for the item
         if(block == None):
-            exit(log.error("Could not find a block as "+self.getItem(raw=True)))
+            exit(log.error("Could not find a block as "+self.getItem()))
 
         #check which block to use
         title = block.getFull()

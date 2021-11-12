@@ -519,7 +519,7 @@ NAME:
         download - Bring a block to the local workspace for development
 
 SYNOPSIS:
-        legohdl download <block> [-open]
+        legohdl download (<block> | (<url> [-fork])) [-open]
 
 DESCRIPTION:
 

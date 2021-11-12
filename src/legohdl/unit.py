@@ -1034,7 +1034,7 @@ class Interface:
             #ports to map
             if(len(self.getPorts())):
                 #add new line if generics were written
-                if(len(self.getGenerics()) and maps_on_newline):
+                if(len(self.getGenerics()) and hang_end == False):
                     mapping_txt = mapping_txt + "\n"
 
                 mapping_txt = mapping_txt + "port map(\n"
