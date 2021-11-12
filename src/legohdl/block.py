@@ -2037,21 +2037,23 @@ class Block:
             elif(top_dog != None):
                 top_dsgn = top_dog
                 #auto-detect the testbench
-                top_tb = self.identifyBench(top_dsgn.E())
-                #set top_dog as the testbench if found one and allowed to be included
-                if(top_tb != None and inc_tb):
-                    top_dog = top_tb
-
+                if(inc_tb):
+                    top_tb = self.identifyBench(top_dsgn.E())
+                    #set top_dog as the testbench if found one and allowed to be included
+                    if(top_tb != None):
+                        top_dog = top_tb
+                    pass
             #reset graph
             Unit.resetHierarchy()
             return top_dog,top_dsgn,top_tb
+        #could not find requested unit
         elif(top != None and top != ''):
             exit(log.error("Entity "+top+" does not exist within this block."))
 
         #auto-detect the top level design
         top_dsgn = self.identifyTop()
         
-        if(top_dsgn != None):
+        if(top_dsgn != None and inc_tb):
             #auto-detect the top level's testbench
             top_tb = self.identifyBench(top_dsgn.E())
 
