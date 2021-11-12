@@ -684,12 +684,19 @@ scripts)?", warning=False)
 
         #get the entity name
         _,_,_,_,ent = Block.snapTitle(self.getItem(), inc_ent=True)
+
+        #get what language was defined by the command-line ('inst' has high precedence
+        #than 'comp')
+        lang = self.getVar('inst')
+        if(lang == None):
+            lang = self.getVar('comp')
+
         #print the relevant information for the requested unit
         block.get(entity=ent, about=self.hasFlag('about'), \
                         list_arch=self.hasFlag('arch'), \
                         inst=self.hasFlag('inst'), \
                         comp=self.hasFlag('comp'), \
-                        lang=self.getVar('inst'), \
+                        lang=lang, \
                         edges=self.hasFlag('edges')
                     )
         pass

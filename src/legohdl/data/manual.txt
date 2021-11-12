@@ -175,7 +175,7 @@ DESCRIPTION:
         <market>.<library>.<name>(<version>):<entity>.
 
         By default, it will print the 'about' section and the component 
-        declaration forVHDL entities or the module interface for Verilog 
+        declaration for VHDL entities or the module interface for Verilog 
         modules.
 
         If -comp is present when -inst is also present and the language 
@@ -183,6 +183,9 @@ DESCRIPTION:
         component instantiation. If -comp is omitted in this scenario, 
         the returned VHDL instantiation code will be a direct entity 
         instantiation.
+
+        The <lang> assignment from -inst has higher precedence of the <lang>
+        assignemnt from -comp when both are present.
 
 OPTIONS:
         <block>
