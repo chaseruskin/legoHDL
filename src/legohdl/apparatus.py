@@ -72,7 +72,7 @@ class Apparatus:
                     'alignment' : cfg.NULL,
                     'newline-maps' : cfg.NULL,
                     'default-language' : cfg.NULL,
-                    'default-name' : cfg.NULL
+                    'instance-name' : cfg.NULL
                 },
                 'metadata' : {}
             }
@@ -652,6 +652,24 @@ class Apparatus:
 
 
     @classmethod
+    def getField(cls, scope, dtype=str):
+        '''Returns the value from the settings data structure passed in from
+        the scope ([str]) headers/fields.'''
+        #traverse down the dictionary
+        field = cls.SETTINGS
+        for i in scope:
+            field = field[i]
+        #case to specified datatype
+        if(dtype == bool):
+            return cfg.castBool(field)
+        elif(dtype == int):
+            return cfg.castInt(field)
+        elif(dtype == None):
+            return cfg.castNone(field)
+        return field
+
+
+    @classmethod
     def setEditor(cls, editor):
         '''Sets the editor to the settings data-structure.'''
         cls.SETTINGS['general']['editor'] = editor
@@ -934,7 +952,7 @@ class Apparatus:
 ; value:
 ;   vhdl, verilog, or auto'''),
 
-    'hdl-styling|default-name' : (cfg.VAR,\
+    'hdl-styling|instance-name' : (cfg.VAR,\
 '''
 ; description:
 ;   Determine the default instantiation name given to a unit being used.

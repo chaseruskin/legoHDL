@@ -2199,6 +2199,12 @@ class Block:
         #grab the desired entity from the Map
         ent = units[entity]
 
+        hang_end = apt.getField(['HDL-styling', 'hanging-end'], bool)
+        auto_fit = apt.getField(['HDL-styling', 'auto-fit'], bool)
+        alignment = apt.getField(['HDL-styling', 'alignment'], int)
+        maps_on_newline = apt.getField(['HDL-styling', 'newline-maps'], int)
+        inst_name = apt.getField(['HDL-styling', 'instance-name'], None)
+
         #print comment header (about)
         print(ent.readAbout())
         #print dependencies
@@ -2211,10 +2217,12 @@ class Block:
             print('--- ARCHITECTURES ---')
             print(ent.readArchitectures())
         if(comp):
-            print(ent.getInterface().writeDeclaration(form=lang))
+            print(ent.getInterface().writeDeclaration(form=lang, \
+                align=auto_fit, \
+                hang_end=hang_end))
             print()
         if(inst):
-            print(ent.getInterface().writeConnections(form=lang))
+            print(ent.getInterface().writeConnections(form=lang, align=auto_fit))
             lib = None
             #determine the entity's library name
             if(comp == False):
@@ -2225,7 +2233,13 @@ class Block:
                     if(ent in (Block.getCurrent().loadHDL().values())):
                         lib = 'work'
 
-            print(ent.getInterface().writeInstance(lang=lang, entity_lib=lib))
+            print(ent.getInterface().writeInstance(lang=lang, \
+                entity_lib=lib, \
+                inst_name=inst_name, \
+                fit=auto_fit, \
+                hang_end=hang_end, \
+                maps_on_newline=maps_on_newline, \
+                alignment=alignment))
 
         return True
 

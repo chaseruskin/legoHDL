@@ -568,7 +568,7 @@ class Signal:
         pass
 
 
-    def writeMapping(self, lang, spaces=0):
+    def writeMapping(self, lang, spaces=0, fit=False):
         '''
         Create the compatible code for mapping a given signal.
 
@@ -578,7 +578,7 @@ class Signal:
         Returns:
             m_txt (str): compatible line of code to be printed
         '''
-        r_space = 1 if(spaces > 0) else 0
+        r_space = 1 if(fit) else spaces
 
         if(lang == Unit.Language.VHDL):
             m_txt = "    "+self.getName()+(spaces*' ')+"=>"+(r_space*' ')+self.getName()
@@ -794,14 +794,14 @@ class Port(Signal):
         pass
 
 
-    def writeDeclaration(self, lang, spaces=1):
+    def writeDeclaration(self, lang, spaces=1, fit=True):
         if(lang == Unit.Language.VHDL):
-            dec_txt = self.getName() + (spaces*' ') + ': ' + self.castRoute(lang)+' '
+            dec_txt = self.getName() + (spaces*' ') + ': ' + self.castRoute(lang, even=fit)+' '
             remaining = self.castDatatype(lang)
             dec_txt = dec_txt + remaining + ';'
         elif(lang == Unit.Language.VERILOG):
             dt = self.castDatatype(lang, keep_net=True)
-            dec_txt = self.castRoute(lang) + ' ' + dt
+            dec_txt = self.castRoute(lang, even=fit) + ' ' + dt
 
             dec_txt = dec_txt + (spaces*' ') + self.getName()+';'
         return dec_txt
@@ -964,7 +964,8 @@ class Interface:
         return connect_txt
     
 
-    def writeInstance(self, lang=None, entity_lib=None, inst_name='uX', align=True, hang_end=True, maps_on_newline=False):
+    def writeInstance(self, lang=None, entity_lib=None, inst_name='uX', fit=True, \
+        hang_end=True, maps_on_newline=False, alignment=1):
         '''
         Write the correct compatible code for an instantiation of the given
         entity.
@@ -973,19 +974,23 @@ class Interface:
             lang (Unit.Language): VHDL or VERILOG compatible code style
             entity_lib (str): if VHDL and not None, use entity instantiation 
             inst_name (str): the name to give the instance
-            align (bool): determine if names should be all equally spaced
+            fit (bool): determine if names should be all equally spaced
             hand_end (bool): true if ) deserves its own line
             maps_on_newline (bool): determine if start of a mapping deserves a newline
+            alignment (int): determine number of additional spaces
         Returns:
             mapping_txt (str): the compatible code to be printed
         '''
         #default selection is to write in original coding language
         if(lang == None):
             lang = self._default_form
+        #default name if none given
+        if(inst_name == None):
+            inst_name = 'uX'
 
         mapping_txt = 'Empty interface!\n'
         #default number of spaces when not aligning
-        spaces = 0 
+        spaces = alignment
         #do not write anything if no interface!
         if(len(self.getGenerics()) == 0 and len(self.getPorts()) == 0):
                 return mapping_txt
@@ -1009,9 +1014,9 @@ class Interface:
                 farthest = apt.computeLongestWord(self.getMappingNames(self.getGenerics()))
                 #iterate through every generic
                 for i in range(len(gens)):
-                    if(align):
-                        spaces = farthest - len(gens[i]) + 1
-                    line =  self._generics[gens[i]].writeMapping(lang, spaces)
+                    if(fit):
+                        spaces = farthest - len(gens[i]) + alignment
+                    line =  self._generics[gens[i]].writeMapping(lang, spaces, fit)
                     #add a comma if not on last generic
                     if(i != len(gens)-1):
                         line = line + ","
@@ -1038,9 +1043,9 @@ class Interface:
                 farthest = apt.computeLongestWord(self.getMappingNames(self.getPorts()))
                 #iterate through every port
                 for i in range(len(ports)):
-                    if(align):
-                        spaces = farthest - len(ports[i]) + 1
-                    line = self._ports[ports[i]].writeMapping(lang, spaces)
+                    if(fit):
+                        spaces = farthest - len(ports[i]) + alignment
+                    line = self._ports[ports[i]].writeMapping(lang, spaces, fit)
                     #add a comma if not on the last port
                     if(i != len(ports)-1):
                         line = line + ","
@@ -1068,9 +1073,9 @@ class Interface:
                 farthest = apt.computeLongestWord(params)
                 mapping_txt = mapping_txt + ' #(\n'
                 for p in params:
-                    if(align):
-                        spaces = farthest - len(p) + 1
-                    mapping_txt = mapping_txt + self.getGenerics()[p].writeMapping(lang, spaces)
+                    if(fit):
+                        spaces = farthest - len(p) + alignment
+                    mapping_txt = mapping_txt + self.getGenerics()[p].writeMapping(lang, spaces, fit)
                     #don't add ',\n' if on last generic
                     if(p == params[-1]): 
                         if(hang_end == True):
@@ -1091,9 +1096,9 @@ class Interface:
                 farthest = apt.computeLongestWord(ports)
                 #iterate through every port
                 for p in ports:
-                    if(align):
-                        spaces = farthest - len(p) + 1
-                    mapping_txt = mapping_txt + self.getPorts()[p].writeMapping(lang, spaces)
+                    if(fit):
+                        spaces = farthest - len(p) + alignment
+                    mapping_txt = mapping_txt + self.getPorts()[p].writeMapping(lang, spaces, fit)
 
                     #don't add ,\n if on last port
                     if(p == ports[-1]):
@@ -1122,6 +1127,7 @@ class Interface:
             form (Unit.Language): VHDL or VERILOG compatible code style
             align (bool): determine if identifiers should be all equally spaced
             hand_end (bool): true if ) deserves its own line
+            tabs (int): number of tabs to begin on (used for auto-packaging)
         Returns:
             comp_txt (str): the compatible code to be printed
         '''
@@ -1164,7 +1170,7 @@ class Interface:
                 for port in ports:
                     if(align):
                         spaces = farthest - len(port.getName()) + 1
-                    comp_line = port.writeDeclaration(form, spaces)
+                    comp_line = port.writeDeclaration(form, spaces, align)
                     comp_txt = comp_txt + ((tabs+1)*T)+comp_line[:len(comp_line)-1] #trim off ';'
                     if(port != ports[-1]):
                         comp_txt = comp_txt + ';\n'
@@ -1214,7 +1220,7 @@ class Interface:
                 for port in ports:
                     if(align):
                         spaces = farthest - len(port.castDatatype(form, keep_net=True)) + 1
-                    port_dec = ((tabs+1)*T)+port.writeDeclaration(form, spaces=spaces)
+                    port_dec = ((tabs+1)*T)+port.writeDeclaration(form, spaces, align)
                     #chop off semicolon
                     port_dec = port_dec[:len(port_dec)-1]
                     if(port == ports[-1]):
