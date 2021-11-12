@@ -2304,11 +2304,15 @@ class Block:
         if(edges):
             print("--- EDGES ---")
             print(ent.readReqs())
+            print()
             print(ent.readReqs(upstream=True))
+            print()
         #print list of architectures
         if(list_arch):
             print('--- ARCHITECTURES ---')
             print(ent.readArchitectures())
+        if(comp or inst):
+            print('--- CODE ---')
         if(comp):
             print(ent.getInterface().writeDeclaration(form=lang, \
                 align=auto_fit, \

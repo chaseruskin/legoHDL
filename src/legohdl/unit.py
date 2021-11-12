@@ -309,17 +309,15 @@ class Unit:
         Returns:
             (str): dependency text to print to console
         '''
-        term = 'requires'
+        txt = 'Instantiates:\n'
         if(upstream == True):
-            term = 'required by'
+            txt = 'Instantiated within:\n'
+        #check if any edges exist
         if(len(self.getReqs(upstream))):
-            txt = self.getTitle()+" "+term+":"+'\n'
-            for req in self.getReqs(upstream):
-                txt = txt+'\t'+req.getTitle()+'\n'
-        elif(upstream == False):
-            txt = "No units are instantiated within "+self.getTitle()+"!"+'\n'
-        elif(upstream == True):
-            txt = "No units use "+self.getTitle()+"!"+'\n'
+            #iterate through the neighbors/edges of the graph
+            txt = txt + apt.listToGrid(self.getReqs(upstream, returnnames=True), min_space=4, offset='\t')
+        else:
+            txt = txt+'\tN/A'
         return txt
 
 
@@ -510,16 +508,24 @@ class Unit:
         pass
     
 
-    def getReqs(self, upstream=False):
+    def getReqs(self, upstream=False, returnnames=False):
         '''
         Returns a list of Unit objects directly required for this unit.
 
         Parameters:
             upstream (bool): determine if to return units that use this design
+            returnnames (bool): determine if to return the string names for each unit
         Returns:
-            ([Unit]): list of required Units
+            ([Unit]) or ([str]): list of required Units (or names)
         '''
-        return self.Hierarchy.getNeighbors(self, upstream)
+        edges = self.Hierarchy.getNeighbors(self, upstream)
+        reqs = []
+        if(returnnames):
+            for e in edges:
+                reqs += [e.getTitle()]
+        else:
+            reqs = edges
+        return reqs
 
 
     def __repr__(self):

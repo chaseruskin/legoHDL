@@ -771,6 +771,9 @@ class Apparatus:
         Returns:
             grid (str): a grid-like multi-line string to be printed
         '''
+        #replace all tabs with 4 spaces
+        offset = offset.replace('\t',' '*4)
+        
         grid = offset
         if(cols == -1):
             longest = cls.computeLongestWord(items) 
