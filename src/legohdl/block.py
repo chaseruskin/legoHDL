@@ -1483,6 +1483,8 @@ class Block:
             #install requirements for this block
             instl_block.installReqs()
 
+            log.info("Success.")
+
             #return the installed block for potential future use
             return instl_block
 
@@ -1522,6 +1524,8 @@ class Block:
 
         #install requirements for this block
         b.installReqs()
+
+        log.info("Success.")
         
         return b
 

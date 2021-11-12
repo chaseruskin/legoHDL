@@ -383,7 +383,8 @@ scripts)?", warning=False)
         if(self.hasFlag('pack')):
             #reads lists 'omit' and 'inc' from command-line
             self.autoPackage(omit=apt.strToList(self.getVar('omit')), \
-                inc=apt.strToList(self.getVar('inc')))
+                inc=apt.strToList(self.getVar('inc')), \
+                filepath=self.getVar('pack'))
             return
 
         #capture the passed-in entity name
@@ -478,14 +479,18 @@ scripts)?", warning=False)
         pass
 
 
-    def autoPackage(self, omit=[], inc=[]):
+    def autoPackage(self, filepath=None, omit=[], inc=[]):
         '''
         Auto-generate a VHDL package file for design units within the current block.
 
         By default, all available entities within the project are to be written
         as components in the VHDL package.
+
+        If 'filepath' is None, then the default is the <project>_pkg.vhd at the
+        block's root.
         
         Parameters:
+            filepath (str): the optional relative filepath + filename
             omit ([str]): list of entity names to not include in package file
             inc ([str]): list of entity names to explicitly include in package file.
         Returns:
@@ -493,8 +498,15 @@ scripts)?", warning=False)
         '''
         #get the current working block
         block = Block.getCurrent()
-
+        #set the default package name
         pkg_name = (block.N()+"_pkg").replace('-','_')
+        pkg_ext = '.vhd'
+        extra_path = ''
+
+        #override the default package name, file path, and extension
+        if(filepath != None):
+            extra_path,file_name = os.path.split(filepath)
+            pkg_name,pkg_ext = os.path.splitext(file_name)
 
         #list of units to wrap in package file
         comp_names = []
@@ -528,6 +540,7 @@ scripts)?", warning=False)
             ['-- Package: TEMPLATE'] + \
             ['-- Description:'] + \
             ['--  Auto-generated package file by legoHDL. Components declared:'] + \
+            ['--'] + \
             [apt.listToGrid(comp_names, min_space=4, offset='--  ')] + \
             ['-'*80] + \
             [' ']
@@ -581,7 +594,12 @@ scripts)?", warning=False)
         pkg_data += ['end package;']
 
         #create package file
-        pkg_path = block.getPath()+pkg_name+'.vhd'
+        pkg_path = apt.fs(block.getPath()+extra_path)
+        #make sure directories exist
+        os.makedirs(pkg_path, exist_ok=True)
+        #add filename to the path
+        pkg_path = pkg_path + pkg_name + pkg_ext
+        #open the file to write the data
         pkg_file = open(pkg_path, 'w')
 
         #dump contents into package file
