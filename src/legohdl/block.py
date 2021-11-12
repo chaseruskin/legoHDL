@@ -1418,6 +1418,10 @@ class Block:
         'latest'/main cache block. If the block has INSTL status, it will install 
         the version according to the 'ver' parameter. Returns None if failed.
 
+        If the block's latest is asking to be installed and it is behind (already
+        installed), this method will act as an update to get the latest version 
+        up-to-date.
+
         Parameters:
             ver (str): a valid version format
         Returns:
@@ -1484,7 +1488,6 @@ class Block:
             instl_block.installReqs()
 
             log.info("Success.")
-
             #return the installed block for potential future use
             return instl_block
 
@@ -1526,7 +1529,6 @@ class Block:
         b.installReqs()
 
         log.info("Success.")
-        
         return b
 
 
