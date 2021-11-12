@@ -2265,7 +2265,12 @@ class Block:
         auto_fit = apt.getField(['HDL-styling', 'auto-fit'], bool)
         alignment = apt.getField(['HDL-styling', 'alignment'], int)
         maps_on_newline = apt.getField(['HDL-styling', 'newline-maps'], int)
-        inst_name = apt.getField(['HDL-styling', 'instance-name'], None)
+        inst_name = apt.getField(['HDL-styling', 'instance-name'])
+
+        #swap placeholders in inst name
+        for ph in self.getPlaceholders(ent.E()):
+            inst_name = inst_name.replace(ph[0],ph[1])
+            pass
 
         #print comment header (about)
         print(ent.readAbout())
