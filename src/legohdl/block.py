@@ -999,6 +999,9 @@ class Block:
 
         #push to remote repository
         self._repo.push()
+
+        #display to user where the block is located
+        log.info("Block "+self.getFull()+" found at: "+self.getPath())
         #operation was successful
         return True
 
