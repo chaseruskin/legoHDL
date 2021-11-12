@@ -456,7 +456,7 @@ settings that will be merged in when importing that profile. A profile directory
             for item in self._tk_vars[section][section]:
                 self._tb.insertRecord([item])
 
-        if(i >= 0):
+        if(i >= 0 and section in self.COMMENTS):
             self._comments.configure(text=self.COMMENTS[section])
             self._comments.grid(row=i, column=0, columnspan=10, padx=10, pady=2, sticky='w')
 

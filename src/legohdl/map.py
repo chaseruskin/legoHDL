@@ -10,7 +10,7 @@ from collections.abc import MutableMapping
 
 
 class Map(MutableMapping):
-
+    
 
     def __init__(self, *args, **kwargs):
         self._inventory = dict()
@@ -45,10 +45,6 @@ class Map(MutableMapping):
 
     def __len__(self):
         return len(self._inventory)
-
-
-    def __instancecheck__(self, instance):
-        return instance == dict or instance == Map
 
 
     def __str__(self):

@@ -725,6 +725,7 @@ class Workspace:
         '''Load all workspaces from settings.'''
 
         wspcs = apt.SETTINGS['workspace']
+        
         for ws in wspcs.keys():
             if('path' in wspcs[ws].keys() and 'market' in wspcs[ws].keys()):
                 Workspace(ws, wspcs[ws]['path'], wspcs[ws]['market'])

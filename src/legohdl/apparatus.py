@@ -48,7 +48,7 @@ class Apparatus:
 
     #all available options allowed to be edited within the legohdl.cfg
     #append all non-field options here (editable dictionaries)
-    OPTIONS = ['label', 'script', 'workspace', 'market']
+    OPTIONS = ['label', 'script', 'workspace', 'market', 'placeholders', 'metadata']
 
     LAYOUT = { 'general' : {
                     'active-workspace' : cfg.NULL, 
@@ -64,7 +64,17 @@ class Apparatus:
                     'global' : {}},
                 'script' : {},
                 'workspace' : {},
-                'market' : {}
+                'market' : {},
+                'placeholders' : {},
+                'HDL-styling' : {
+                    'hanging-end' : cfg.NULL,
+                    'auto-fit' : cfg.NULL,
+                    'alignment' : cfg.NULL,
+                    'newline-maps' : cfg.NULL,
+                    'default-language' : cfg.NULL,
+                    'default-name' : cfg.NULL
+                },
+                'metadata' : {}
             }
     
     #this is appended to the tag to make it unique for legoHDL
@@ -130,13 +140,36 @@ class Apparatus:
         cls.SETTINGS = cls.fullMerge(cls.SETTINGS, cls.LAYOUT)
 
         #ensure all pieces of settings are correct
+        cls.secureSettings()
+
+        #return if user was missing the legohdl hidden folder
+        return ask_for_setup
+
+
+    @classmethod
+    def secureSettings(cls):
+        '''
+        Ensure proper values are given to various settings.
+        
+        Parameters:
+            None
+        Returns:
+            None
+        '''
         cls.generateDefault(dict,"local","global",header="label")
-        cls.generateDefault(dict,"market","script","workspace",header=None)
+
+        cls.generateDefault(dict,"market","script","workspace","metadata","placeholders",header=None)
+
         cls.generateDefault(bool,"multi-develop","overlap-global",header="general")
         cls.generateDefault(int,"refresh-rate",header="general")
         cls.generateDefault(list,"profiles",header="general")
-        #return if user was missing the legohdl hidden folder
-        return ask_for_setup
+
+        cls.generateDefault(bool,"hanging-end","newline-maps","auto-fit",header="HDL-styling")
+        cls.generateDefault(int,"alignment",header="HDL-styling")
+
+
+        
+        pass
 
 
     @classmethod
@@ -172,11 +205,7 @@ class Apparatus:
     @classmethod
     def load(cls):
         #ensure all pieces of settings are correct
-        cls.generateDefault(dict,"local","global",header="label")
-        cls.generateDefault(dict,"market","script","workspace",header=None,)
-        cls.generateDefault(bool,"multi-develop","overlap-global",header="general")
-        cls.generateDefault(int,"refresh-rate",header="general")
-        cls.generateDefault(list,"profiles",header="general")
+        cls.secureSettings()
 
         #constrain the refresh-rate
         cls.setRefreshRate(cls.getRefreshRate())
@@ -730,7 +759,7 @@ class Apparatus:
 ; description:
 ;   Various assignments related to the tool in general.'''),
 
-    'active-workspace' : (cfg.VAR,\
+    'general|active-workspace' : (cfg.VAR,\
 '''
 ; description:
 ;   What workspace listed under [workspace] currently being used.
@@ -738,21 +767,21 @@ class Apparatus:
 ; value: 
 ;   string'''),
 
-    'author' : (cfg.VAR,\
+    'general|author' : (cfg.VAR,\
 '''
 ; description:
 ;   Your name! (or code-name, code-names are cool too)
 ; value: 
 ;   string'''),
 
-    'editor' : (cfg.VAR,\
+    'general|editor' : (cfg.VAR,\
 '''
 ; description:
 ;   The command to call your preferred text editor.
 ; value: 
 ;   string'''),
 
-    'template' : (cfg.VAR,\
+    'general|template' : (cfg.VAR,\
 '''
 ; description:
 ;   The path of where to copy a template folder from when making a new 
@@ -760,14 +789,14 @@ class Apparatus:
 ; value: 
 ;   string'''),
 
-    'profiles' : (cfg.VAR,\
+    'general|profiles' : (cfg.VAR,\
 '''
 ; description:
 ;   A list of profiles to import settings, templates, and/or scripts.
 ; value: 
 ;   list of strings'''),
 
-    'multi-develop' : (cfg.VAR,\
+    'general|multi-develop' : (cfg.VAR,\
 '''
 ; description:
 ;   When enabled, it will reference blocks found in the workspace path over
@@ -777,7 +806,7 @@ class Apparatus:
 ; value: 
 ;   boolean (true or false)'''),
 
-    'refresh-rate' : (cfg.VAR,\
+    'general|refresh-rate' : (cfg.VAR,\
 '''
 ; description: 
 ;   How often to synchronize markets with their remote every day. set to 
@@ -787,7 +816,7 @@ class Apparatus:
 ; value:
 ;   integer (-1 to 1440)'''),
 
-    'overlap-global' : (cfg.VAR,\
+    'general|overlap-global' : (cfg.VAR,\
 '''
 ; description:
 ;   When enabled, on export the labels to be gathered can be the same file
@@ -805,14 +834,14 @@ class Apparatus:
 ;   blueprint file on export. Labels help bridge a custom workflow with the user's
 ;   backend tool.'''),
 
-    'local' : (cfg.HEADER,\
+    'label|local' : (cfg.HEADER,\
 '''
 ; description:
 ;   Find these files only throughout the current block.
 ; value:
 ;   assignments of string'''),
 
-    'global' : (cfg.HEADER,\
+    'label|global' : (cfg.HEADER,\
 '''
 ; description:
 ;   Find these files throughout all blocks used in the current design.
@@ -840,6 +869,78 @@ class Apparatus:
 ; value:
 ;   headers with 'path' assignment of string and 'market' assignment of list 
 ;   of strings'''),
+
+    'placeholders' : (cfg.HEADER,\
+'''
+; --- Placeholder settings ---
+; description:
+;   User-defined values to be replaced when referenced within '%' symbols for
+;   files created through legoHDL.
+; value:
+;   assignments of string'''),
+
+    'metadata' : (cfg.HEADER,\
+'''
+; --- Metadata settings ---
+; description:
+;   User-defined fields for Block.cfg files. These fields will be automatically
+;   copied into new Block.cfg files. Supports using placeholders for field values.
+; value:
+;   headers with variable amount of assignments of string'''),
+
+    'hdl-styling' : (cfg.HEADER,\
+'''
+; --- HDL-styling settings ---
+; description:
+;   Configure how to print compatible HDL instantiation code.'''),
+
+    'hdl-styling|hanging-end' : (cfg.VAR,\
+'''
+; description:
+;   Determine if the last ')' in instantiation code should deserve its own line.
+; value:
+;   boolean (true or false)'''),
+
+    'hdl-styling|auto-fit' : (cfg.VAR,\
+'''
+; description:
+;   Determine if the proceeding character/symbol after identifiers should all
+;   align together based on the longest identifier name. Used in conjunction with
+;   the 'aligment' setting.
+; value:
+;   boolean (true or false)'''),
+
+    'hdl-styling|alignment' : (cfg.VAR,\
+'''
+; description:
+;   Determine the number of spaces to proceed an identifier. Used in conjunction
+;   with the 'auto-fit' setting.
+; value:
+;   int (0 to 255)'''),
+
+    'hdl-styling|newline-maps' : (cfg.VAR,\
+'''
+; description:
+;   Determine if the indication code for a 'map' begins on a newline.
+; value:
+;   bool (true or false)'''),
+
+    'hdl-styling|default-language' : (cfg.VAR,\
+'''
+; description:
+;   Determine which HDL language to by default print compatible instantiation
+;   code. If auto, then the language the unit was originally written in is used
+;   by default.
+; value:
+;   vhdl, verilog, or auto'''),
+
+    'hdl-styling|default-name' : (cfg.VAR,\
+'''
+; description:
+;   Determine the default instantiation name given to a unit being used.
+;   Placeholders are supported.
+; value:
+;   assignment of string'''),
 
     'market' : (cfg.HEADER,\
 '''

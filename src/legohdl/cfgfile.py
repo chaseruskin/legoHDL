@@ -6,7 +6,6 @@
 #   for settings and blocks.
 
 import logging as log
-#from .map import Map
 
 
 class CfgFile:
@@ -204,7 +203,7 @@ class CfgFile:
         Parameters:
             data (dict): a multi-level python dictionary object
             datafile (file): a python file object to be written in cfg format
-            comments (dict): a dictionary of strings where the keys are headers where 
+            comments (dict): a dictionary of strings where the keys are headers with pipes for scopes and 
             the comments will be placed before that header/assignment
             ignore_depth (bool): ignores tabs and assumes each variable is one level within headers
             space_headers (bool): determine if to write newlines for subsequent headers
@@ -214,13 +213,25 @@ class CfgFile:
         another_header = False
 
 
-        def write_comment(c_str, spacing, isHeader):
-            # add proper indentation for the said comment
-            if((c_str[0] == cls.HEADER and isHeader) or 
-                (c_str[0] == cls.VAR and not isHeader)):
-                lines = c_str[1].split('\n')
-                for l in lines:
-                    datafile.write(spacing+l+"\n")
+        def write_comment(scoped_list, spacing, isHeader):
+            '''Write additional comments above a header or field.'''
+            #generate the key from the scoped list input
+            key = ''
+            for i in scoped_list:
+                key = key + i
+                if(i != scoped_list[-1]):
+                    key = key + '|'
+                pass
+            #find the key in the given comments dictionary
+            if(key.lower() in comments):
+                val = comments[key.lower()]
+                # add proper indentation for the said comment
+                if((val[0] == cls.HEADER and isHeader) or \
+                    (val[0] == cls.VAR and not isHeader)):
+                    lines = val[1].split('\n')
+                    for l in lines:
+                        datafile.write(spacing+l+"\n")
+                pass
             pass
         
 
@@ -235,8 +246,7 @@ class CfgFile:
                 for k in mp.keys():
                     isHeader = isinstance(mp[k], dict)
                     #write helpful comments if available
-                    if(k in comments.keys()):
-                        write_comment(comments[k], indent, isHeader)
+                    write_comment(scope+[k], indent, isHeader)
                     #write a header
                     if(isHeader):
                         scope += [k.lower()]
@@ -247,23 +257,20 @@ class CfgFile:
                         another_header = True
                     #write the beginning of an assignment
                     else:
-                        #print('data:',data)
-                        #print()
-                        #print('scope:',scope)
-                        #print()
                         #get all field names for this current scope
                         fields = cls.getAllFields(data, scope=scope)
-                        #print(fields)
-                        #dist = apt.computeLongestWord()
+
                         #compute the longest distance length word
                         dist = len(fields[0])
                         for f in fields[1:]:
                             if(len(f) > dist):
                                 dist = len(f)
-                        #print(dist)
+  
                         #provide nice spacing and aligning of VAR ('=')
                         var_assign = indent+k+((dist-len(k)+1)*' ')+cls.VAR+' '
+                        #pass the current line length to the next value
                         l_len = len(var_assign)
+
                         datafile.write(var_assign)
                     #recursively proceed to next level
                     write_dictionary(mp[k], lvl+1, l_len, scope)
@@ -293,8 +300,8 @@ class CfgFile:
                         datafile.write(cls.LIST+'\n')
                 #else, store value directly as is
                 else:
-                    if(mp == None):
-                        mp = ''
+                    #ensure mp is a string type to write
+                    mp = '' if(mp == None) else mp
                     mp = str(mp)
                     
                     #try to write the value in a 'nice' format
