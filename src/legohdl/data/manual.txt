@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/11/2021
+; Modified: 11/12/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -81,7 +81,7 @@ NAME:
         init - Initialize a legoHDL block from existing code and block metadata.
 
 SYNOPSIS:
-        legohdl init <block> [-remote=<url>] [-market=<mkrt>] 
+        legohdl init <block> [-remote=<url> [-fork]] [-market=<mkrt>] 
                 [-summary=<summary>]
 
 DESCRIPTION:
@@ -99,6 +99,10 @@ OPTIONS:
 
         -remote=<url>
                 :ref:
+
+        -fork
+                Do not link to the remote repository and try to push any changes
+                to the provided <url>.
 
         -market=<mrkt>
                 Set the block's market. <market> must be a valid market 

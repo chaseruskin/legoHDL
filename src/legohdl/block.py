@@ -1380,6 +1380,9 @@ class Block:
         Returns:
             None
         '''
+        if(len(tracking) == 0):
+            log.info("Collecting requirements...")
+
         for title in self.getMeta('requires'):
             #skip blocks already identified for installation
             if(title.lower() in tracking):
@@ -1392,7 +1395,7 @@ class Block:
             b = self.getWorkspace().shortcut(M+'.'+L+'.'+N, visibility=False)
             #check if the block was found in the current workspace
             if(b == None):
-                log.error("Unable to locate required block "+title+".")
+                log.error("Missing block requirement "+title+".")
                 continue
             #recursively install requirements
             b.installReqs(tracking)
@@ -1423,7 +1426,7 @@ class Block:
         #determine if looking to install main cache block
         if(self.getLvl(to_int=False) == Block.Level.DNLD or \
             self.getLvl(to_int=False) == Block.Level.AVAIL):
-            log.info("Installing block's latest version to cache...")
+            log.info("Installing latest version v"+self.getVersion()+" for "+self.getFull()+" to cache...")
 
             #if a remote is available clone to tmp directory
             rem = self.getMeta('remote')
@@ -1477,12 +1480,18 @@ class Block:
             #make files read-only
             instl_block.modWritePermissions(False)
 
+            #install requirements for this block
+            instl_block.installReqs()
+
             #return the installed block for potential future use
             return instl_block
 
         #make sure trying to install a specific 'side' version
         elif(self.getLvl(to_int=False) != Block.Level.INSTL):
             return None
+
+        #ensure version argument has a v prepended
+        ver = Block.stdVer(ver, add_v=True)
 
         #make sure the version is valid
         if(ver not in self.getTaggedVersions()):
@@ -1510,6 +1519,9 @@ class Block:
 
         #re-disable write permissions for installation block
         self.modWritePermissions(False)
+
+        #install requirements for this block
+        b.installReqs()
         
         return b
 
@@ -1622,6 +1634,9 @@ class Block:
         uninstallations = Map()
         #scale down to only version
         if(ver != None):
+            #ensure version is standardized
+            ver = Block.stdVer(ver, add_v=True)
+
             parts = ver.split('.')
             for v in installations.keys():
                 v_parts = v.split('.')
