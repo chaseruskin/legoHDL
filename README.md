@@ -50,6 +50,8 @@ to the [documentation](https://hdl.notion.site/legoHDL-f798525eee2f4378bcf5e970a
 
 ### Commands
 
+Refer to the [manual](https://github.com/c-rus/legoHDL/blob/master/src/legohdl/data/manual.txt) for documentation on every command and their relevant flags.
+
 ```
 USAGE:             
         legohdl <command> [argument] [flags]            
