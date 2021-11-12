@@ -455,7 +455,7 @@ scripts)?", warning=False)
         
         #clean the build directory
         log.info("Cleaning build folder...")
-        build_dir = block.getPath()+"build/"
+        build_dir = block.getPath()+apt.getBuildDirectory()
         if(os.path.isdir(build_dir)):
             shutil.rmtree(build_dir, onerror=apt.rmReadOnly)
         #create the build directory
@@ -528,7 +528,7 @@ scripts)?", warning=False)
             ['-- Package: TEMPLATE'] + \
             ['-- Description:'] + \
             ['--  Auto-generated package file by legoHDL. Components declared:'] + \
-            ['--  * '+apt.listToStr(comp_names, delim='\n--  * ')] + \
+            [apt.listToGrid(comp_names, min_space=4, offset='--  ')] + \
             ['-'*80] + \
             [' ']
 

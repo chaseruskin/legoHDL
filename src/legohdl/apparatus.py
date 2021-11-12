@@ -723,6 +723,12 @@ class Apparatus:
 
 
     @classmethod
+    def getBuildDirectory(cls):
+        '''Returns the build directory (str) relative to a block's cfg file.'''
+        return 'build/'
+
+
+    @classmethod
     def setEditor(cls, editor):
         '''Sets the editor to the settings data-structure.'''
         cls.SETTINGS['general']['editor'] = editor
@@ -746,7 +752,7 @@ class Apparatus:
 
 
     @classmethod
-    def listToGrid(cls, items, cols=3, limit=80, min_space=1, offset=''):
+    def listToGrid(cls, items, cols=-1, limit=80, min_space=1, offset=''):
         '''
         Iterate over a list to generate a string of evenly spaced items in
         grid-like format.
@@ -769,10 +775,10 @@ class Apparatus:
         if(cols == -1):
             longest = cls.computeLongestWord(items) 
             spacer = longest+min_space
-            cols = int(limit/(spacer+len(offset)))
+            cols = int((limit-len(offset))/(spacer))
         else:
             #compute the markers
-            spacer = int(limit/cols)-len(offset)
+            spacer = int((limit-len(offset))/cols)
         #print(spacer)
 
         count = 0
