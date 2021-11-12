@@ -659,12 +659,12 @@ scripts)?", warning=False)
 
         #make sure an entity is being requested
         if(self.getItem() == None):
-            exit(log.error("Pass an entity name to get."))
+            exit(log.error("Pass a unit name to get."))
 
         #verify a block under this name exists
         block = self.WS().shortcut(self.getItem(), req_entity=True, visibility=True)
         if(block == None):
-            exit(log.error("Could not identify a block for entity "+self.getItem()+'.'))
+            exit(log.error("Could not identify a block for unit "+self.getItem()+'.'))
 
         #remember title for error statement in case block becomes None
         title = block.getFull()
