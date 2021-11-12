@@ -1518,9 +1518,6 @@ class Block:
         #install the specific version
         b = self.installPartialVersion(ver, places=3)
 
-        #clear the jar to act on clean unit data structures for next install
-        Unit.resetJar()
-
         #try to update the sub-version associated with this specific version
         if(b != None):
             self.installPartialVersion(ver, places=1)
@@ -1546,6 +1543,9 @@ class Block:
         Returns:
             (Block): the specific version block installed
         '''
+        #clear the jar to act on clean unit data structures for next install
+        Unit.resetJar()
+
         parts = ver.split('.')
         sub_ver = apt.listToStr(parts[:places], delim='.')
         #print(sub_ver)
