@@ -44,7 +44,7 @@ class Block:
                 'bench' : cfg.NULL,
                 'remote' : cfg.NULL,
                 'market' : cfg.NULL,
-                'requires' : []}
+                'requires' : []},
             }
 
     #all possible metadata that may go under [block]
@@ -530,6 +530,37 @@ class Block:
         pass
 
 
+    def initMeta(self):
+        '''
+        Create basic metadata data structure. Fills in placeholders for all
+        fields outside of [block].
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+        #fill in placeholders for metadata
+        custom_meta = apt.getField(['metadata']).copy()
+        for header,fields in custom_meta.items():
+            for f,v in fields.items():
+                for ph in self.getPlaceholders(tmp_val=''):
+                    v = v.replace(ph[0],ph[1])
+                    pass
+                custom_meta[header][f] = v
+                pass
+            pass
+        #print(custom_meta)
+
+        #merge skeleton metadata and custom configured user-defined metadata
+        meta = apt.merge(self.LAYOUT,custom_meta)
+
+        #write new metadata file
+        with open(self.getPath()+apt.MARKER, 'w') as mdf:
+            cfg.save(meta, mdf, ignore_depth=True, space_headers=True)
+        pass
+
+
     def stripExcessMeta(self, varis=[]):
         '''
         Removes excess metadata from the block section.
@@ -757,8 +788,6 @@ class Block:
                 self._meta_backup = self.getMeta().copy()
                 del self.getMeta()[key]
                 pass
-        
-        self.save()
 
         #ensure all required fields from 'block' section exist
         for key in Block.REQ_FIELDS:
@@ -766,7 +795,8 @@ class Block:
                 #will force to write to save the changed file
                 self._meta_backup = self.getMeta().copy()
                 self.setMeta(key, cfg.NULL)
-
+ 
+        self.save()
 
         #remember what the metadata looked like initially to compare for determining
         #  if needing to write file for saving
@@ -792,7 +822,6 @@ class Block:
             m = self.getMeta('market')
             if(m.lower() not in self.getWorkspace().getMarkets(returnnames=True)):
                 log.warning("Market "+m+" from "+self.getFull()+" is not available in this workspace.")
-                #self.setMeta('market', '')
                 pass
             pass
 
@@ -926,8 +955,7 @@ class Block:
 
         #create the Block.cfg file if DNE
         if(self.isValid() == False):
-            with open(self.getPath()+apt.MARKER, 'w') as mdf:
-                cfg.save(self.LAYOUT, mdf, ignore_depth=True, space_headers=True)
+            self.initMeta()
 
         #load in empty meta
         self.loadMeta()
@@ -1065,8 +1093,7 @@ class Block:
 
             #create a Block.cfg file
             if(exists == False):
-                with open(self.getPath()+apt.MARKER, 'w') as mdf:
-                    cfg.save(self.LAYOUT, mdf, ignore_depth=True, space_headers=True)
+                self.initMeta()
 
             #load the new metadata
             self.loadMeta()
@@ -1133,14 +1160,8 @@ class Block:
         if(os.path.isfile(path) == False):
             log.error(path+" does not exist.")
             return False
-    
-        #determine the author
-        author = apt.getAuthor()
-        #determine the date
-        today = date.today().strftime("%B %d, %Y")
 
-        placeholders = [("TEMPLATE", template_val), ("%DATE%", today), \
-            ("%AUTHOR%", author), ("%BLOCK%", self.getFull())] + extra_placeholders
+        placeholders = self.getPlaceholders(template_val)
 
         #go through file and update with special placeholders
         fdata = []
@@ -1268,6 +1289,40 @@ class Block:
                     return f.readlines()
         else:
             return None
+
+
+    def getPlaceholders(self, tmp_val):
+        '''
+        Returns a dictionary of placeholders and their values.
+
+        Parameters:
+            tmp_val (str): value for "TEMPLATE" placeholder
+        Returns:
+            ([(str, str)]): placeholders and their respective values in tuples
+        '''
+        #determine the date
+        today = date.today().strftime("%B %d, %Y")
+
+        phs = [
+            ("TEMPLATE", tmp_val), \
+            ("%DATE%", today), \
+            ("%AUTHOR%",  apt.getAuthor())
+        ]
+
+        if(hasattr(self, "_meta")):
+            phs += [
+                ("%BLOCK%", self.getFull())
+            ]
+
+        #get placeholders from settings
+        custom_phs = apt.getField(['placeholders'])
+        for ph,val in custom_phs.items():
+            #ensure no '%' first exist
+            ph = ph.replace('%','')
+            #add to list of placeholders
+            phs += [('%'+ph.upper()+'%', val)]
+        #print(phs)
+        return phs
 
 
     def openInEditor(self):
@@ -2186,6 +2241,8 @@ class Block:
             log.error("Entity "+entity+" not found in block "+self.getFull()+"!")
             return False
 
+        def_lang = apt.getField(['HDL-styling', 'default-language']).lower()
+
         #determine the language for outputting compatible code
         if(lang != None):
             if(lang.lower() == 'vhdl'):
@@ -2193,6 +2250,11 @@ class Block:
             elif(lang.lower() == 'vlog'):
                 lang = Unit.Language.VERILOG
             pass
+        #see if a default language is set in settings
+        elif(def_lang == 'vhdl'):
+            lang = Unit.Language.VHDL
+        elif(def_lang == 'verilog'):
+            lang = Unit.Language.VERILOG
 
         #collect data about requested entity
         self.getUnits(top=units[entity])

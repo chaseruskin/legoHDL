@@ -167,8 +167,25 @@ class Apparatus:
         cls.generateDefault(bool,"hanging-end","newline-maps","auto-fit",header="HDL-styling")
         cls.generateDefault(int,"alignment",header="HDL-styling")
 
+        #validate that default-language is one of 3 options
+        def_lang = cls.getField(['HDL-styling', 'default-language']).lower()
+        if(def_lang != 'vhdl' and def_lang != 'verilog'):
+            cls.setField('auto', ['HDL-styling', 'default-language'])
+            pass
 
-        
+        #validate an instance name exists
+        if(cls.getField(['HDL-styling', 'instance-name'], None) == None):
+            cls.setField('uX', ['HDL-styling', 'instance-name'])
+            pass
+
+        #ensure the alignment setting is constrained between 0 and 80
+        align = cls.getField(['HDL-styling', 'alignment'], int)
+        if(align < 0):
+            align = 0
+        elif(align > 80):
+            align = 80
+        cls.setField(align, ['HDL-styling', 'alignment'])
+
         pass
 
 
@@ -653,8 +670,17 @@ class Apparatus:
 
     @classmethod
     def getField(cls, scope, dtype=str):
-        '''Returns the value from the settings data structure passed in from
-        the scope ([str]) headers/fields.'''
+        '''
+        Returns the value from the settings data structure passed in from
+        the scope ([str]) headers/fields (case-sensitive).
+
+        Parameters:
+            scope ([str]): list of keys to traverse
+            dtype (type): what datatype to cast from str to
+        Returns:
+            (bool | int | str | None): the value at the scoped field
+        
+        '''
         #traverse down the dictionary
         field = cls.SETTINGS
         for i in scope:
@@ -667,6 +693,33 @@ class Apparatus:
         elif(dtype == None):
             return cfg.castNone(field)
         return field
+
+
+    @classmethod
+    def setField(cls, val, scope, data=None):
+        '''
+        Sets the value for a generic field in the settings dictionary.
+        
+        Parameters:
+            val (str): the value to store
+            scope ([str]): the list of keys to traverse
+            data (None): leave None so for recursion to use cls.SETTINGS
+        Returns:
+            None
+        '''
+        #before entering recursion set the data to traverse
+        if(data == None):
+            data = cls.SETTINGS
+        
+        #traverse down the dictionary
+        if(len(scope) > 1):
+            cls.setField(val, scope[1:], data[scope[0]])
+        else:
+            #ensure the value is type string
+            val = '' if(val == None) else str(val)
+            #set the value here
+            data[scope[0]] = val
+        pass
 
 
     @classmethod
@@ -934,7 +987,7 @@ class Apparatus:
 ;   Determine the number of spaces to proceed an identifier. Used in conjunction
 ;   with the 'auto-fit' setting.
 ; value:
-;   int (0 to 255)'''),
+;   int (0 to 80)'''),
 
     'hdl-styling|newline-maps' : (cfg.VAR,\
 '''
