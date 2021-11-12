@@ -586,7 +586,10 @@ scripts)?", warning=False)
                     libs += [lib.lower()]
 
             #add component declaration
-            pkg_data += [dsgn.getInterface().writeDeclaration(form=Unit.Language.VHDL, tabs=1)]
+            pkg_data += [dsgn.getInterface().writeDeclaration(form=Unit.Language.VHDL, \
+                align=apt.getField(['HDL-styling', 'auto-fit'], bool), \
+                hang_end=apt.getField(['HDL-styling', 'hanging-end'], bool), \
+                tabs=1)]
             #add newline
             pkg_data += [' ']
             pass

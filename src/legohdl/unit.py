@@ -1160,7 +1160,7 @@ class Interface:
                     elif(hang_end):
                          comp_txt = comp_txt + '\n'
                 #add final generic closing token
-                comp_txt = comp_txt + (tabs*T)+');\n'
+                comp_txt = comp_txt + (tabs*T*int(hang_end))+');\n'
             #write ports
             ports = list(self.getPorts().values())
             if(len(ports)):
@@ -1177,7 +1177,7 @@ class Interface:
                     elif(hang_end):
                         comp_txt = comp_txt + '\n'
                 #add final port closing token
-                comp_txt = comp_txt + (tabs*T)+');\n'
+                comp_txt = comp_txt + (tabs*T*int(hang_end))+');\n'
             #add final closing segment
             comp_txt = comp_txt + (tabs*T)+'end component;'
             pass
