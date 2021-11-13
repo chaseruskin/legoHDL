@@ -328,7 +328,7 @@ class Verilog(Language):
             mode = 'inout'
             tokens.remove('inout')
 
-        print('mode',mode)
+        #print('mode',mode)
 
         #find if default value is added
         i = len(tokens)
@@ -337,7 +337,7 @@ class Verilog(Language):
 
         #capture the initial value
         value = tokens[i+1:]
-        print('value',value)
+        #print('value',value)
         
         #remove initial value from tokens
         tokens = tokens[:i]
@@ -351,7 +351,7 @@ class Verilog(Language):
         identifiers = tokens[j-1:]
         #remove all commas
         identifiers = list(filter(lambda a: a != ',', identifiers))
-        print('ids',identifiers)
+        #print('ids',identifiers)
 
         #remove identifiers from tokens
         tokens = tokens[:j-1]
@@ -364,7 +364,7 @@ class Verilog(Language):
         if(is_port and dtype[0] == '['):
             dtype = ['wire'] + dtype
 
-        print('dtype',dtype)
+        #print('dtype',dtype)
 
         #determine bounds for vector connections
         pivot = -1

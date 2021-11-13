@@ -261,27 +261,25 @@ class Vhdl(Language):
 
         #find ':' to split the declaration
         i = tokens.index(':')
-        mode = tokens[i+1]
-
         #capture direction mode
-        if(is_port):
-            print('mode',mode)
+        mode = tokens[i+1]
+        #print('mode',mode)
         #capture identifiers
         identifiers = tokens[:i]
         #remove all commas
         identifiers = list(filter(lambda a: a != ',', identifiers))
-        print('ids',identifiers)
+        #print('ids',identifiers)
         #see if a assigment token exists
         j = len(tokens)
         if(tokens.count(':=')):
             j = tokens.index(':=')
         #capture the datatype (skip 'mode' also if port)
         dtype = tokens[i+1+int(is_port):j]
-        print('dtype',dtype)
+        #print('dtype',dtype)
 
         #capture the intial value
         value = tokens[j+1:]
-        print('value',value)
+        #print('value',value)
 
         #determine lower and upper range bounds
         pivot = -1
@@ -291,7 +289,7 @@ class Vhdl(Language):
                 break
         bounds = self.getBounds(dtype,pivot, ('(',')'))
 
-        print("BOUNDS:",bounds)
+        #print("BOUNDS:",bounds)
         #assign signals
         for c in identifiers:
             #pass to interface object
@@ -323,7 +321,7 @@ class Vhdl(Language):
             if(cseg[0].lower() == 'end'):
                 #exit()
                 return
-            print(cseg)
+            #print(cseg)
             #enter generics or ports
             if(cseg[0].lower() == 'generic' or cseg[0].lower() == 'port'):
                 in_generics = (cseg[0].lower() == 'generic')
@@ -339,12 +337,13 @@ class Vhdl(Language):
             if(pb_cnt == 0):
                 cseg = cseg[:len(cseg)-1]
 
-            print(cseg)
+            #print(cseg)
 
             if(len(cseg) and in_ports or in_generics):
-                print(pb_cnt)
-                print(cseg)
+                #print(pb_cnt)
+                #print(cseg)
                 self._collectConnections(u, cseg, in_ports)
+                pass
         pass
 
 
