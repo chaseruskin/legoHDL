@@ -314,7 +314,7 @@ class Vhdl(Language):
             if(cseg[0].lower() == 'end'):
                 #exit()
                 return
-
+            print(cseg)
             #enter generics or ports
             if(cseg[0].lower() == 'generic' or cseg[0].lower() == 'port'):
                 in_generics = (cseg[0].lower() == 'generic')
@@ -330,7 +330,9 @@ class Vhdl(Language):
             if(pb_cnt == 0):
                 cseg = cseg[:len(cseg)-1]
 
-            if(in_ports or in_generics):
+            print(cseg)
+
+            if(len(cseg) and in_ports or in_generics):
                 print(pb_cnt)
                 print(cseg)
                 self._collectConnections(u, cseg, in_ports)

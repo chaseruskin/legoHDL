@@ -170,7 +170,6 @@ class Verilog(Language):
         Returns:
             None
         '''
-
         #store generic identifiers
         g_ids = []
         #store port identifiers
@@ -183,9 +182,6 @@ class Verilog(Language):
             #print(cseg)
             #check for exit case - finding 'endmodule'
             if(cseg[0] == 'endmodule'):
-                #print(u.getInterface())
-                #if(u.E() == 'johnson_ctr'):
-                    #exit()
                 return
             #get the list of generics and ports from module declaration statement
             if(cseg[0] == 'module'):
@@ -205,55 +201,30 @@ class Verilog(Language):
                 pass
             #check module declaration statement for port declaration data
             if(cseg[0] == 'module'):
-                seg_i = 0
-                dtype = []
-                l = ''
-                r = ''
-                route = None
-                entry_route = False
-                route_keywords = ['input', 'output', 'inout']
-                for c in cseg:
-                    #track what route is last declared
-                    if(c in route_keywords):
-                        route = c
-                        entry_route = True
-                        #print("ROUTE",route)
-                        dtype = []
-                        l = ''
-                        r = ''
-                    #try to capture a datatype specified between route and identifier
-                    elif(entry_route and c not in p_ids):
-                        dtype += [c]
-                        if(c == ':'):
-                            l,r = self.getBounds(cseg, seg_i, ('[',']'))
-                    elif(route != None and c in p_ids):
-                        entry_route = False
-                        #implicitly set port datatype as wire
-                        if(dtype == []):
-                            dtype = ['wire']
-                        u.getInterface().addPort(c, route, dtype, (l,r))
-                    pass
-                    seg_i += 1
+                modes = ['input', 'output', 'inout', 'parameter']
 
-                #only use segment about generics
-                gseg = cseg[g_index:g_index+g_end]
-                #iterate through all generics
-                for gen in g_ids:
-                    #print(gseg)
-                    val = []
-                    i_center = gseg.index(gen)
-                    tmpseg = gseg[i_center:]
-                    if(tmpseg.count('=')):
-                        tmpseg = tmpseg[tmpseg.index('=')+1:]
-                        i_end = len(tmpseg) #ignore final ')' if comes to that
-                        #find comma
-                        if(tmpseg.count(',')):
-                            i_end = tmpseg.index(',') 
-                        #between is the pieces for the value
-                        val = tmpseg[:i_end]
-                        #print("gen:",gen,val)
-                    u.getInterface().addGeneric(gen, [], val)
-
+                #break up code into smaller statements beginning with modes
+                tmp_cseg = []
+                running = False
+                #print("TOTAL:",cseg)
+                for i in range(len(cseg)):
+                    is_port = i >= (g_index+g_end+1)
+                    c = cseg[i]
+                    #check for an indicator
+                    if(c in modes or c == cseg[-1]):
+                        running = True
+                        #decode temporary statement list 
+                        if(len(tmp_cseg) and tmp_cseg[0] in modes):
+                            #print(is_port)
+                            #print("CSEG:",tmp_cseg)
+                            self._collectConnections(u, tmp_cseg, is_port)
+                        #reset tmp_cseg
+                        tmp_cseg = []
+                        pass
+                    #add token to the temporary statement list
+                    if(running):
+                        tmp_cseg += [c]
+                #exit()
                 pass
             #found an input declaration
             elif(cseg[0] == 'input'):
@@ -323,6 +294,84 @@ class Verilog(Language):
             cseg = cseg[i:]  
 
         return dec_end-1, ids
+
+    
+    def _collectConnections(self, module, tokens, is_port=True):
+        '''
+        Analyze VERILOG code to gather data on ports and parameters.
+
+        Parameters:
+            module (Unit): the unit object who has this interface
+            tokens ([str]): list of code tokens from a single statement
+            is_port (bool): determine if to check for a mode value (direction)
+        Returns:
+            None
+        '''
+        #ports by default are type wire
+        dtype = ['wire']
+        #default datatype is type integer for generics
+        if(not is_port):
+            dtype = ['integer']
+            #remove unnecessary 'parameter' keyword
+            if(tokens[0] == 'parameter'):
+                tokens = tokens[1:]
+
+        #capture mode and remove it from tokens
+        mode = None
+        if(tokens.count('input')):
+            mode = 'input'
+            tokens.remove('input')
+        elif(tokens.count('output')):
+            mode = 'output'
+            tokens.remove('output')
+        elif(tokens.count('inout')):
+            mode = 'inout'
+            tokens.remove('inout')
+
+        print('mode',mode)
+
+        #find if default value is added
+        i = len(tokens)
+        if(tokens.count('=')):
+            i = tokens.index('=')
+
+        #capture the initial value
+        value = tokens[i+1:]
+        print('value',value)
+        
+        #remove initial value from tokens
+        tokens = tokens[:i]
+
+        #try to find first comma
+        j = len(tokens)
+        if(tokens.count(',')):
+            j = tokens.index(',')
+        
+        #capture identifiers
+        identifiers = tokens[j-1:]
+        #remove all commas
+        identifiers = list(filter(lambda a: a != ',', identifiers))
+        print('ids',identifiers)
+
+        #remove identifiers from tokens
+        tokens = tokens[:j-1]
+        
+        #assign remaining pieces to datatype (if any)
+        if(len(tokens)):
+            dtype = tokens
+        
+        #by default ensure the datatype is of at least type wire
+        if(is_port and dtype[0] == '['):
+            dtype = ['wire'] + dtype
+
+        print('dtype',dtype)
+
+        #add connections to module's interface
+        for c in identifiers:
+            module.getInterface().addConnection(c, mode, dtype, value, is_port)
+            pass
+
+        pass
 
 
     def getComponents(self, pkg_str):
@@ -425,38 +474,6 @@ class Verilog(Language):
         #print(g_list)
         #print(p_list)
         return p_list, g_list
-
-
-    def collectGenerics(self, unit, words):
-        '''
-        From a subset of the code stream, parse through and create HDL Generic
-        objects. Modifies unit's _interface attribute.
-
-        Parameters:
-            unit (Unit): the unit who's interface the generics belong to
-            words ([str]): the subset of code stream
-        Returns:
-            None
-        '''
-        #add additional comma to end to make iteration easier
-        #pivot on '='
-        while words.count('='):
-            sep = words.index('=')
-            param_name = words[sep-1]
-            value = words[sep+1]
-
-            flavor = ['integer']
-
-            #anything between name and 'parameter' keyword? -> thats the type
-            
-            # :todo: allow for searching rest of document for these parameters and ports and
-            #filling in the data as the file gets read down the road in 'decipher'
-
-            unit.getInterface().addGeneric(param_name, flavor, value)
-
-            #step through the remaining words
-            words = words[sep+1:]
-        pass
 
 
     pass

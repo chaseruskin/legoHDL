@@ -727,7 +727,7 @@ class Generic(Signal):
             c_txt = c_txt + self.castDatatype(lang)
             #give default value (if exists)
             if(len(self.getValue())):
-                c_txt = c_txt + ' := ' + self.getValue()
+                c_txt = c_txt + ' := ' + apt.listToStr(self.getValue(),'')
             #add final ';'
             c_txt = c_txt + ';'
             pass
@@ -747,7 +747,7 @@ class Generic(Signal):
             c_txt = c_txt + (spaces*' ') + self.getName()
             #give default value (if exists)
             if(len(self.getValue())):
-                c_txt = c_txt + ' = ' + self.getValue()
+                c_txt = c_txt + ' = ' + apt.listToStr(self.getValue(),'')
             #add final ';'
             c_txt = c_txt + ';'
             pass
@@ -813,13 +813,18 @@ class Port(Signal):
     def writeDeclaration(self, lang, spaces=1, fit=True):
         if(lang == Unit.Language.VHDL):
             dec_txt = self.getName() + (spaces*' ') + ': ' + self.castRoute(lang, even=fit)+' '
-            remaining = self.castDatatype(lang)
-            dec_txt = dec_txt + remaining + ';'
+            dec_txt = dec_txt + self.castDatatype(lang)
+            #add initial value if present
+            if(len(self.getValue())):
+                dec_txt = dec_txt + ' := ' + apt.listToStr(self.getValue(),'')
+            dec_txt = dec_txt + ';'
+            pass
         elif(lang == Unit.Language.VERILOG):
             dt = self.castDatatype(lang, keep_net=True)
             dec_txt = self.castRoute(lang, even=fit) + ' ' + dt
 
             dec_txt = dec_txt + (spaces*' ') + self.getName()+';'
+        
         return dec_txt
 
 
@@ -887,19 +892,15 @@ class Port(Signal):
 class Interface:
     'An interface has generics and port signals. An entity will have an interface.'
 
+
     def __init__(self, name, library, def_lang):
         self._name = name
         self._library = library
+        self._default_lang = def_lang
+
         # :todo: use map or dictionary? map will make ports of same name incompatible using verilog
         self._ports = Map()
         self._generics = Map()
-        self._default_lang = def_lang
-        pass
-
-
-    def addPort(self, name, way, dtype, width=('','')):
-        #print("Port:",name,"going",way,"of type",dtype)
-        self._ports[name] = Port(name, self._default_lang, way, dtype, bus_width=width)
         pass
 
 
@@ -920,12 +921,6 @@ class Interface:
             self._ports[name] = Port(self._default_lang, name, mode, dtype, value)
         else:
             self._generics[name] = Generic(self._default_lang, name, dtype, value)
-        pass
-
-
-    def addGeneric(self, name, dtype, value):
-        #print("Generic:",name,"of type",dtype,"has value",value)
-        self._generics[name] = Generic(name, self._default_lang, dtype, value)
         pass
 
 
