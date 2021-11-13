@@ -85,7 +85,7 @@ class Unit:
         self._config = None
 
         #create an empty interface
-        self._interface = Interface(name=self.E(), library=self.L(), default_form=self.getLang())
+        self._interface = Interface(name=self.E(), library=self.L(), def_lang=self.getLang())
 
         # :note: printing component declarations needs to be done, as well as allowing package's to 
         # print their information like a component can
@@ -557,20 +557,22 @@ class Unit:
 class Signal:
 
 
-    def __init__(self, name, lang, dtype):
+    def __init__(self, lang, name, dtype, value):
         '''
         Construct a Signal object.
 
         Parameters:
-            name (str): port identifier
             lang (Unit.Language): natural coding language
+            name (str): port identifier
             dtype ([str]): list of tokens that make up the datatype
+            value ([str]): list of tokens that make up the initial value
         Returns:
             None
         '''
-        self._name = name
         self._lang = lang
+        self._name = name
         self._dtype = dtype
+        self._value = value
         pass
 
 
@@ -672,15 +674,23 @@ class Signal:
 
 
     def getName(self):
+        '''Returns the identifier (str).'''
         return self._name
 
     
     def getLang(self):
+        '''Returns the original coding language (Unit.Language).'''
         return self._lang
 
     
     def getDatatype(self):
+        '''Returns the list of tokens that make up the datatype ([str]).'''
         return self._dtype
+
+
+    def getValue(self):
+        '''Returns the list of tokens that make up the initial value ([str]).'''
+        return self._value
 
 
     pass
@@ -689,9 +699,8 @@ class Signal:
 class Generic(Signal):
 
 
-    def __init__(self, name, lang, dtype, value=[]):
-        super().__init__(name, lang, dtype)
-        self._value = value
+    def __init__(self, lang, name, dtype, value):
+        super().__init__(lang, name, dtype, value)
         pass
         
 
@@ -746,11 +755,6 @@ class Generic(Signal):
         return c_txt
 
 
-    def getValue(self):
-        '''Converts _value ([str]) to (str) with no spaces.'''
-        return apt.listToStr(self._value,'')
-
-
     def __repr__(self):
         return f'''\n{self.getName()} * {self._dtype} = {self._value}'''
 
@@ -763,40 +767,46 @@ class Port(Signal):
     class Route(Enum):
         IN = 1,
         OUT = 2,
-        INOUT = 3
+        INOUT = 3,
+        BUFFER = 4,
+        LINKAGE = 5,
+        OTHER = -1
         pass
 
 
-    def __init__(self, name, lang, way, dtype, value='', bus_width=('','')):
+    def __init__(self, lang, name, mode, dtype, value, bus_width=('','')):
         '''
         Construct a port object.
 
         Parameters:
-            name (str): port identifier
             lang (Unit.Language): natural coding language
-            way (str): direction
+            name (str): port identifier
+            mode (str): direction
             dtype ([str]): list of tokens that make up the datatype
-            value (str): initial value
+            value ([str]): initial value
             bus_width ((str, str)): the lower and upper (exclusive) ends of a bus
         Returns:
             None
         '''
-        super().__init__(name, lang, dtype)
-        
+        super().__init__(lang, name, dtype, value)
+
+        #store the port's direction word
+        self._mode = mode
+
+        #store the port's direction data (works for both verilog and vhdl)
+        mode = mode.lower()
+        if(mode == 'inout'):
+            self._route = self.Route.INOUT
+        elif(mode.startswith('in')):
+            self._route = self.Route.IN
+        elif(mode.startswith('out')):
+            self._route = self.Route.OUT
+        else:
+            self._route = self.Route.OTHER
+
+        #store the port's bit width
         if(bus_width != ('','')):
             self._bus_width = bus_width
-
-        #store the port's direction data
-        way = way.lower()
-        if(way == 'inout'):
-            self._route = self.Route.INOUT
-        elif(way.startswith('in')):
-            self._route = self.Route.IN
-        elif(way.startswith('out')):
-            self._route = self.Route.OUT
-
-        #store an initial value (optional)
-        self._value = value
         pass
 
 
@@ -846,7 +856,13 @@ class Port(Signal):
 
 
     def getRoute(self):
+        '''Returns the port's route (Port.Route).'''
         return self._route
+
+
+    def getMode(self):
+        '''Returns the port's mode (str).'''
+        return self._mode
 
 
     def castRoute(self, lang, even=True):
@@ -871,25 +887,45 @@ class Port(Signal):
 class Interface:
     'An interface has generics and port signals. An entity will have an interface.'
 
-    def __init__(self, name, library, default_form):
+    def __init__(self, name, library, def_lang):
         self._name = name
         self._library = library
         # :todo: use map or dictionary? map will make ports of same name incompatible using verilog
         self._ports = Map()
         self._generics = Map()
-        self._default_form = default_form
+        self._default_lang = def_lang
         pass
 
 
     def addPort(self, name, way, dtype, width=('','')):
         #print("Port:",name,"going",way,"of type",dtype)
-        self._ports[name] = Port(name, self._default_form, way, dtype, bus_width=width)
+        self._ports[name] = Port(name, self._default_lang, way, dtype, bus_width=width)
+        pass
+
+
+    def addConnection(self, name, mode, dtype, value, isPort):
+        '''
+        Adds an interface connection.
+
+        Parameters:
+            name (str): signal identifier
+            mode (str): port direction (ignored if isPort is False)
+            dtype ([str]): tokens for connection's datatype
+            value ([str]): tokens for connection's initial value
+            isPort (bool): determine if to store as port or generic
+        Returns:
+            None
+        '''
+        if(isPort):
+            self._ports[name] = Port(self._default_lang, name, mode, dtype, value)
+        else:
+            self._generics[name] = Generic(self._default_lang, name, dtype, value)
         pass
 
 
     def addGeneric(self, name, dtype, value):
         #print("Generic:",name,"of type",dtype,"has value",value)
-        self._generics[name] = Generic(name, self._default_form, dtype, value)
+        self._generics[name] = Generic(name, self._default_lang, dtype, value)
         pass
 
 
@@ -936,7 +972,7 @@ class Interface:
         '''
         #default selection is to write in original coding language
         if(form == None):
-            form = self._default_form
+            form = self._default_lang
 
         connect_txt = ''
         #default number of spaces when not aligning
@@ -989,7 +1025,7 @@ class Interface:
         '''
         #default selection is to write in original coding language
         if(lang == None):
-            lang = self._default_form
+            lang = self._default_lang
         #default name if none given
         if(inst_name == None):
             inst_name = 'uX'
@@ -1139,7 +1175,7 @@ class Interface:
         '''
         #default selection is to write in original coding language
         if(form == None):
-            form = self._default_form
+            form = self._default_lang
 
         #define tab character to be 4 spaces
         T = ' '*4 

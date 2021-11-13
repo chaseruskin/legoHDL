@@ -243,6 +243,54 @@ class Vhdl(Language):
         pass
 
 
+    def _collectConnections(self, entity, tokens, is_port=True):
+        '''
+        Analyze VHDL code to gather data on ports and generics.
+
+        Parameters:
+            entity (Unit): the unit object who has this interface
+            tokens ([str]): list of code tokens from a single statement
+            is_port (bool): determine if to check for a mode value (direction)
+        Returns:
+            None
+        '''
+        #remove keyword if first item in tokens is signal or generic
+        if((is_port and tokens[0].lower() == 'signal') or \
+            (not is_port and tokens[0].lower() == 'constant')):
+            tokens = tokens[1:]
+
+        #find ':' to split the declaration
+        i = tokens.index(':')
+        mode = tokens[i+1]
+
+        #capture direction mode
+        if(is_port):
+            print('mode',mode)
+        #capture identifiers
+        identifiers = tokens[:i]
+        #remove all commas
+        identifiers = list(filter(lambda a: a != ',', identifiers))
+        print('ids',identifiers)
+        #see if a assigment token exists
+        j = len(tokens)
+        if(tokens.count(':=')):
+            j = tokens.index(':=')
+        #capture the datatype (skip 'mode' also if port)
+        dtype = tokens[i+1+int(is_port):j]
+        print('dtype',dtype)
+
+        #capture the intial value
+        value = tokens[j+1:]
+        print('value',value)
+
+        #assign signals
+        for c in identifiers:
+            #pass to interface object
+            entity.getInterface().addConnection(c, mode, dtype, value, is_port)
+            pass
+        pass
+
+
     def getInterface(self, u, csegs):
         '''
         Decipher and collect data on a unit's interface (entity code).
@@ -258,81 +306,34 @@ class Vhdl(Language):
         '''
         in_generics = False
         in_ports = False
-        identifiers = []
+        pb_cnt = 0
 
+        #iterate through code statements
         for cseg in csegs:
-            entry = False
             #exit upon finding 'end'
             if(cseg[0].lower() == 'end'):
+                #exit()
                 return
 
             #enter generics or ports
             if(cseg[0].lower() == 'generic' or cseg[0].lower() == 'port'):
                 in_generics = (cseg[0].lower() == 'generic')
                 in_ports = (cseg[0].lower() == 'port')
-                entry = True
-
+                #skip keyword and opening '('
+                cseg = cseg[2:]
+                pb_cnt = 1
+            
             #count up number of ( and ) tokens
-            pb_cnt = cseg.count('(') - cseg.count(')')
-            p_i = -1
-            #skip initial opening parenthesis bracket
-            if(entry):
-                p_i = cseg.index('(')
-            #print(cseg)
-            #make sure an idenifier is in this statement
-            if(cseg.count(':') == 0):
-                continue
-            c_i = cseg.index(':')
+            pb_cnt += cseg.count('(') - cseg.count(')')
 
-            #get the port names
-            identifiers = cseg[p_i+1:c_i]
-            #print("IDS:",identifiers)
-            #adjust pb_cnt if generics/ports are on one statement
-            if(entry and pb_cnt == 0):
-                pb_cnt = -1
-            end = len(cseg)+pb_cnt
+            #trim off trailing ')' if at end of declarations
+            if(pb_cnt == 0):
+                cseg = cseg[:len(cseg)-1]
 
-            if(in_ports):
-                #get the port direction
-                route = cseg[c_i+1]
-                #print("ROUTE:",route)
-                #get the port data type
-                dtype = cseg[c_i+2:end]
-                #print("DATA TYPE:",dtype)
-                l = ''
-                r = ''
-                tokens = ('(',')')
-                for i in range(len(dtype)):
-                    #switch tokens if specifying 'range'
-                    if(dtype[i].lower() == 'range'):
-                        tokens = (dtype[i], ':=')
-                    if(dtype[i].lower() == 'to' or dtype[i].lower() == 'downto'):
-                        l,r = self.getBounds(dtype, i, tokens=tokens)
-
-                for port in identifiers:
-                    if(port != ','):
-                        u.getInterface().addPort(port, route, dtype, (l,r))
-                pass
-            elif(in_generics):
-                #find if an initial value is being set
-                val = []
-                v_i = end
-                if(cseg.count(':=')):
-                    v_i = cseg.index(':=')
-                    #get the generic value
-                    val = cseg[v_i+1:end]
-                    #print("VALUE:",val)
-                #get the generic data type
-                dtype = cseg[c_i+1:v_i]
-
-                # :todo: get width/range of generic (similiar to that of port)
-                
-                for gen in identifiers:
-                    if(gen != ','):
-                        u.getInterface().addGeneric(gen, dtype, val)
-            #print(cseg)
-            pass
-        #print(u.getInterface())
+            if(in_ports or in_generics):
+                print(pb_cnt)
+                print(cseg)
+                self._collectConnections(u, cseg, in_ports)
         pass
 
 
