@@ -575,14 +575,58 @@ class Signal:
         self._value = value
         pass
 
+    def writeConnection(self, lang, spaces=1, end=';'):
+        '''
+        Create compatible code for signal/wire declarations. Includes ';' at the
+        end.
 
-    def writeMapping(self, lang, spaces=0, fit=False):
+        Parameters:
+            lang (Unit.Language): VHDL or VERILOG coding format
+            spaces (int): number of spaces between identifier and keyword/token
+            end (str): final character
+        Returns:
+            c_txt (str): compatible line of code to be printed
+        '''
+        c_txt = ''
+        #write VHDL-style code
+        if(lang == Unit.Language.VHDL):
+            #write connection type
+            if(isinstance(self, Generic)):
+                c_txt = 'constant '
+            else:
+                c_txt = 'signal '
+            #append identifier
+            c_txt = c_txt + self.getName()+(spaces*' ')+': '
+            #append datatype
+            c_txt = c_txt + self.castDatatype(lang)
+            #append initial value
+            if(len(self.getValue())):
+                c_txt = c_txt + ' := ' + self.getValue()
+            pass
+        #write VERILOG-style code
+        elif(lang == Unit.Language.VERILOG):
+            if(isinstance(self, Generic)):
+                c_txt = 'parameter '
+            #write the datatype
+            c_txt = self.castDatatype(lang, keep_net=False) 
+            #append the name
+            c_txt = c_txt + " " + self.getName()
+            #append the initial value
+            if(len(self.getValue())):
+                c_txt = c_txt + ' = ' + self.getValue()
+            pass
+        #add finishing ';' 
+        return c_txt + ';'
+
+
+    def writeMapping(self, lang, spaces=0, fit=False, end=','):
         '''
         Create the compatible code for mapping a given signal.
 
         Parameters:
             lang (Unit.Language): VHDL or VERILOG coding format
             spaces (int): number of spaces required between name and '=>'
+            end (str): final character
         Returns:
             m_txt (str): compatible line of code to be printed
         '''
@@ -592,7 +636,8 @@ class Signal:
             m_txt = "    "+self.getName()+(spaces*' ')+"=>"+(r_space*' ')+self.getName()
         elif(lang == Unit.Language.VERILOG):
             m_txt = "    ."+self.getName()+(spaces*' ')+"("+self.getName()+")"
-        return m_txt
+
+        return m_txt+end
 
 
     def castDatatype(self, lang, keep_net=False):
@@ -654,8 +699,11 @@ class Signal:
                     break
             if(hasattr(self, "_bus_width")):
                 dtype = "["+self._bus_width[a]+":"+self._bus_width[b]+"]"
+                
             #skip forcing wire declaration if keep_net is True
-            if(keep_net == True):
+            if(isinstance(self, Generic)):
+                dtype = ('parameter '+dtype).strip()
+            elif(keep_net == True):
                 pass
             #add wire declaration
             elif(len(dtype)):
@@ -682,8 +730,8 @@ class Signal:
 
 
     def getValue(self):
-        '''Returns the list of tokens that make up the initial value ([str]).'''
-        return self._value
+        '''Returns the list of tokens that make up the initial value (str).'''
+        return apt.listToStr(self._value,delim='')
 
 
     pass
@@ -697,55 +745,23 @@ class Generic(Signal):
         pass
         
 
-    def writeConstant(self, lang, spaces=1, inc_const=True):
+    def writeDeclaration(self, lang, spaces=1):
         '''
         Create the compatible code for declaring a constant from the given generic.
 
         Parameters:
             lang (Unit.Language): VHDL or VERILOG compatible code
             spaces (int): number of spaces required between name and ':'
-            inc_const (bool): determine if to include keyword 'constant' for VHDL
         Returns:
             c_txt (str): compatible line of code to be printed
         '''
-        c_txt = ''
-        #write VHDL-style code
+        #omit the keyword 'constant'
+        d_txt = self.writeConnection(lang, spaces)
+
         if(lang == Unit.Language.VHDL):
-            #write beginning of constant declaration
-            if(inc_const):
-                c_txt = 'constant '
-            #add identifier and correct amount of spaces
-            c_txt = c_txt + self.getName() + (spaces*' ') + ': '
-            #add data type
-            c_txt = c_txt + self.castDatatype(lang)
-            #give default value (if exists)
-            if(len(self.getValue())):
-                c_txt = c_txt + ' := ' + apt.listToStr(self.getValue(),'')
-            #add final ';'
-            c_txt = c_txt + ';'
-            pass
-        #write VERILOG-style code
-        elif(lang == Unit.Language.VERILOG):
-            dt = self.castDatatype(lang, keep_net=True)
-            #print(dt)
-            if(inc_const):
-                c_txt = 'localparam'
-            else:
-                c_txt = 'parameter'
-            #add-in datatype declaration (prepended with space)
-            if(len(dt)):
-                c_txt = c_txt+' '+dt
+            d_txt = d_txt[len('constant '):]
 
-            #add correct amount of spaces and then identifier
-            c_txt = c_txt + (spaces*' ') + self.getName()
-            #give default value (if exists)
-            if(len(self.getValue())):
-                c_txt = c_txt + ' = ' + apt.listToStr(self.getValue(),'')
-            #add final ';'
-            c_txt = c_txt + ';'
-            pass
-
-        return c_txt
+        return d_txt  
 
 
     def __repr__(self):
@@ -805,52 +821,27 @@ class Port(Signal):
 
     def writeDeclaration(self, lang, spaces=1, fit=True):
         if(lang == Unit.Language.VHDL):
-            dec_txt = self.getName() + (spaces*' ') + ': ' + self.castRoute(lang, even=fit)+' '
-            dec_txt = dec_txt + self.castDatatype(lang)
-            #add initial value if present
-            if(len(self.getValue())):
-                dec_txt = dec_txt + ' := ' + apt.listToStr(self.getValue(),'')
-            dec_txt = dec_txt + ';'
-            pass
-        elif(lang == Unit.Language.VERILOG):
-            dt = self.castDatatype(lang, keep_net=True)
-            dec_txt = self.castRoute(lang, even=fit) + ' ' + dt
-
-            dec_txt = dec_txt + (spaces*' ') + self.getName()+';'
-        
-        return dec_txt
-
-
-    def writeSignal(self, lang, spaces=1):
-        '''
-        Create the compatible code for declaring a signal from the given port.
-
-        Parameters:
-            lang (Unit.Language): VHDL or VERILOG compatible code
-            spaces (int): number of spaces required between name and ':'
-        Returns:
-            s_txt (str): compatible line of code to be printed
-        '''
-        s_txt = ''
-        #write VHDL-style code
-        if(lang == Unit.Language.VHDL):
-            #write beginning of signal declaration
-            s_txt = 'signal '+self._name+(spaces*' ')+': '
-            remaining = self.castDatatype(lang)
-            s_txt = s_txt + remaining + ';'
+            d_txt = self.writeConnection(lang, spaces)
+            #add-in the mode
+            i = d_txt.find(':')
+            d_txt = d_txt[:i+1] + ' ' + self.castRoute(lang, even=fit) + d_txt[i+1:]
             pass
         #write VERILOG-style code
         elif(lang == Unit.Language.VERILOG):
-            s_txt = self.castDatatype(lang, keep_net=False)
-            if(len(s_txt)):
-                s_txt = s_txt + " "
-
-            s_txt = s_txt + self.getName()
-            #add finishing ';'
-            s_txt = s_txt + ';'
-            pass
+            #add-in the mode to the beginning
+            d_txt = self.castRoute(lang, even=fit)
+            #write the datatype
+            d_txt = d_txt + ' ' + self.castDatatype(lang, keep_net=True) 
+            #append the name
+            d_txt = d_txt + ' ' + self.getName()
+            #append the initial value
+            if(len(self.getValue())):
+                d_txt = d_txt + ' = ' + self.getValue()
             
-        return s_txt
+            d_txt + d_txt + ','
+            pass
+        
+        return d_txt
 
 
     def getRoute(self):
@@ -915,6 +906,7 @@ class Interface:
             self._ports[name] = Port(self._default_lang, name, mode, dtype, value, bus_width=bounds)
         else:
             self._generics[name] = Generic(self._default_lang, name, dtype, value)
+        
         pass
 
 
@@ -977,7 +969,7 @@ class Interface:
         for g in self.getGenerics().values():
             if(align):
                 spaces = farthest - len(g.getName()) + 1
-            connect_txt = connect_txt + g.writeConstant(form, spaces) +'\n'
+            connect_txt = connect_txt + g.writeConnection(form, spaces) +'\n'
         
         #add new-line between generics and signals
         if(len(self.getGenerics())):
@@ -990,7 +982,7 @@ class Interface:
         for p in self.getPorts().values():
             if(align):
                 spaces = farthest - len(p.getName()) + 1
-            connect_txt = connect_txt + p.writeSignal(form, spaces) +'\n'
+            connect_txt = connect_txt + p.writeConnection(form, spaces) +'\n'
 
         return connect_txt
     
@@ -1184,7 +1176,7 @@ class Interface:
                 for gen in gens:
                     if(align):
                         spaces = farthest - len(gen.getName()) + 1
-                    comp_line = gen.writeConstant(form, spaces=spaces, inc_const=False)
+                    comp_line = gen.writeDeclaration(form, spaces=spaces)
                     comp_txt = comp_txt + ((tabs+1)*T)+comp_line[:len(comp_line)-1] #trim off ';'
                     if(gen != gens[-1]):
                         comp_txt = comp_txt + ';\n'
@@ -1223,7 +1215,7 @@ class Interface:
                 comp_txt = comp_txt + ' #(\n'
                 #add-in every generic as a 'parameter'
                 for gen in gens:
-                    gen_dec = ((tabs+1)*T)+gen.writeConstant(form, spaces=spaces, inc_const=False)
+                    gen_dec = ((tabs+1)*T)+gen.writeDeclaration(form, spaces=spaces)
                     #chop off semicolon
                     gen_dec = gen_dec[:len(gen_dec)-1]
                     if(gen == gens[-1]):
