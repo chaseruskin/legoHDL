@@ -366,9 +366,14 @@ class Verilog(Language):
 
         print('dtype',dtype)
 
+        #determine bounds for vector connections
+        pivot = -1
+        if(dtype.count(':')):
+            pivot = dtype.index(':')
+        bounds = self.getBounds(dtype, pivot, ('[',']'))
         #add connections to module's interface
         for c in identifiers:
-            module.getInterface().addConnection(c, mode, dtype, value, is_port)
+            module.getInterface().addConnection(c, mode, dtype, value, is_port, bounds=bounds)
             pass
 
         pass

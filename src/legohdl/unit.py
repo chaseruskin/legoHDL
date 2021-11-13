@@ -631,13 +631,6 @@ class Signal:
                     if(keep_net == False):
                         dt = dt[len('reg'):]
                         dt = 'wire'+dt
-                #make sure all signals are declared as 'wire' implicitly
-                elif(dt.startswith('wire') == False and keep_net == False):
-                    if(len(dt)):
-                        dt = 'wire '+dt
-                    else:
-                        dt = 'wire'
-                pass
             return dt
         #cast from verilog to vhdl
         elif(lang == Unit.Language.VHDL):
@@ -1247,7 +1240,10 @@ class Interface:
             ports = list(self.getPorts().values())
             #add the ports (if exists)
             if(len(ports)):
-                comp_txt = comp_txt + ' (\n'
+                if(hang_end == False):
+                    comp_txt = comp_txt + '\n(\n'
+                else:
+                    comp_txt = comp_txt + ' (\n'
                 #get all datatypes
                 ports_dt = []
                 for p in ports:
