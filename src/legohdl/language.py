@@ -324,46 +324,48 @@ class Language(ABC):
         return self._about
 
 
-    def getBounds(self, cseg, central_i, tokens):
+    def getBounds(self, dtype, central_i, tokens):
         '''
         Returns the upper and lower bounds of a code statement by branching to the left
         and right of `central_i` index.
 
         Parameters:
-            cseg ([str]): code segment
+            dtype ([str]): code segment corresponding to the datatype
             central_i (int): index where the pivot occurs for a bus
             tokens ((str,str)): the L and R tokens to stop at
         Returns:
-            l_bound (str): list of items on lhs condensed to a str from [str]
-            r_bound (str): list of items on rhs condensed to a str from [str]
+            l_bound,r_bound ((str,str)): list of items on lhs and rhs from [str] to str
         '''
         l_bound = []
         r_bound = []
         tkn_cnt = 0
+        #return nothing
+        if(central_i == -1):
+            return ('','')
         #head leftways
         for i in range(central_i-1, -1, -1):
             #stop once token count is positive
-            if(cseg[i] == tokens[1]):
+            if(dtype[i] == tokens[1]):
                 tkn_cnt -= 1
-            if(cseg[i] == tokens[0]):
+            if(dtype[i] == tokens[0]):
                 tkn_cnt += 1
             #exit case
             if(tkn_cnt == 1):
                 break
-            l_bound += [cseg[i]]
+            l_bound += [dtype[i]]
         #reset token counter
         tkn_cnt = 0
         #head rightways
-        for i in range(central_i+1, len(cseg), 1):
+        for i in range(central_i+1, len(dtype), 1):
             #stop once token count is positive
-            if(cseg[i] == tokens[0]):
+            if(dtype[i] == tokens[0]):
                 tkn_cnt += 1
-            if(cseg[i] == tokens[1]):
+            if(dtype[i] == tokens[1]):
                 tkn_cnt -= 1
             #exit case
             if(tkn_cnt == -1):
                 break
-            r_bound += [cseg[i]]
+            r_bound += [dtype[i]]
         #reverse lhs because algorithm read R -> L
         l_bound.reverse()
         #condense to single str
@@ -372,7 +374,7 @@ class Language(ABC):
         #condenset to single str
         r_bound = apt.listToStr(r_bound, delim='')
         #print("RHS:",r_bound)
-        return l_bound,r_bound
+        return (l_bound,r_bound)
 
 
     def swapUnitNames(self, name_pairs):

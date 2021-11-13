@@ -283,10 +283,19 @@ class Vhdl(Language):
         value = tokens[j+1:]
         print('value',value)
 
+        #determine lower and upper range bounds
+        pivot = -1
+        for k in range(len(dtype)):
+            if(dtype[k].lower() == 'to' or dtype[k].lower() == 'downto'):
+                pivot = k
+                break
+        bounds = self.getBounds(dtype,pivot, ('(',')'))
+
+        print("BOUNDS:",bounds)
         #assign signals
         for c in identifiers:
             #pass to interface object
-            entity.getInterface().addConnection(c, mode, dtype, value, is_port)
+            entity.getInterface().addConnection(c, mode, dtype, value, is_port, bounds)
             pass
         pass
 

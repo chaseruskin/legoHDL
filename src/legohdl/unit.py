@@ -904,7 +904,7 @@ class Interface:
         pass
 
 
-    def addConnection(self, name, mode, dtype, value, isPort):
+    def addConnection(self, name, mode, dtype, value, isPort, bounds=('','')):
         '''
         Adds an interface connection.
 
@@ -914,11 +914,12 @@ class Interface:
             dtype ([str]): tokens for connection's datatype
             value ([str]): tokens for connection's initial value
             isPort (bool): determine if to store as port or generic
+            bounds ((str,str)): the L and R bounds of the specified port
         Returns:
             None
         '''
         if(isPort):
-            self._ports[name] = Port(self._default_lang, name, mode, dtype, value)
+            self._ports[name] = Port(self._default_lang, name, mode, dtype, value, bus_width=bounds)
         else:
             self._generics[name] = Generic(self._default_lang, name, dtype, value)
         pass
