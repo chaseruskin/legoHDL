@@ -857,7 +857,10 @@ class Port(Signal):
 
     def writeDeclaration(self, lang, spaces=1, fit=True):
         if(lang == Unit.Language.VHDL):
+            #gather the basic connection writing
             d_txt = self.writeConnection(lang, spaces)
+            #remove the 'signal' keyword
+            d_txt = d_txt[len('signal '):]
             #add-in the mode
             i = d_txt.find(':')
             d_txt = d_txt[:i+1] + ' ' + self.castRoute(lang, even=fit) + d_txt[i+1:]
@@ -963,16 +966,6 @@ class Interface:
     def getLibrary(self):
         '''Returns _library (str).'''
         return self._library
-
-
-    def getMappingNames(self, mapping, lower_case=False):
-        'Return a list of the collected dictionary keys for the mapping parameter.'
-        m_list = list(mapping.keys())
-        if(lower_case):
-            for i in range(len(m_list)):
-                m_list[i] = m_list[i].lower()
-
-        return m_list
 
 
     def writeConnections(self, form=None, align=True):
