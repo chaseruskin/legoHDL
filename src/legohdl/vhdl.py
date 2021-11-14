@@ -398,34 +398,33 @@ class Vhdl(Language):
         g_list = []
         in_ports = False
         in_gens = False
-        stack = 0 #stack of parentheses
-        inst_by_name = (cseg.count('=>') > 0)
-        #print(cseg)
 
+        #iterate through every token of the entity instance
         for i in range(1, len(cseg)-1):
             token = cseg[i].lower()
-            if(token.lower() == 'port'):
+            #entering ports
+            if(token == 'port'):
                 in_ports = True
                 in_gens = False
-            elif(token.lower() == 'generic'):
+            #entering generics
+            elif(token == 'generic'):
                 in_gens = True
                 in_ports = False
-            elif(token == '=>'):
+            #get the connection name
+            elif(i > 1 and cseg[i-2].lower() == 'map' or cseg[i-1] == ','):
                 if(in_gens):
-                    g_list += [cseg[i-1].lower()]
+                    g_list += [token]
                 elif(in_ports):
-                    p_list += [cseg[i-1].lower()]
-            elif(token == '('):
-                stack += 1
-            elif(token == ')'):
-                stack -= 1
-            #add to respective lists
-            if(inst_by_name == False):
-                if((token == '(' and stack == 1) or token == ','):
-                    if(in_gens):
-                        g_list += ['?']
-                    elif(in_ports):
-                        p_list += ['?']
+                    p_list += [token]
+            pass
+
+        #check if positional mapping is used
+        positional = (cseg.count('=>') < len(g_list)+len(p_list))
+
+        #add to respective lists
+        if(positional):
+            g_list = ['?']*len(g_list)
+            p_list = ['?']*len(p_list)
             pass
         #print(p_list, g_list)        
         return p_list, g_list

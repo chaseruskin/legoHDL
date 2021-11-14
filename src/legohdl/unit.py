@@ -433,7 +433,7 @@ class Unit:
             challenged_ports = list(potentials[i].getInterface().getPorts().values())
             #can only compare lengths if positional arguments were used
             if(len(ports) and ports.count('?')):
-                scores[i] += -abs(len(challenged_ports) - len(ports))
+                scores[i] = len(ports) - abs(len(challenged_ports) - len(ports))
             #compare the instance ports with the real ports
             else:
                 for c_port in challenged_ports:
@@ -445,7 +445,7 @@ class Unit:
                         continue
                     #this port was not instantiated, yet it MUST since its an input
                     elif(c_port.getRoute() == Port.Route.IN):
-                        #automatically set score to 0
+                        #automatically set score to 0 (DQ'ed)
                         scores[i] = 0
                         break
                 pass
@@ -454,19 +454,18 @@ class Unit:
             challenged_gens = list(potentials[i].getInterface().getGenerics().values())
             #can only compare lengths if positional arguments were used
             if(len(gens) and gens.count('?')):
-                scores[i] += -abs(len(challenged_gens) - len(gens))
-            #compare the instance ports with the real ports
+                scores[i] = len(gens) - abs(len(challenged_gens) - len(gens))
+            #compare the instance generics with the real generics
             else:
                 for c_gen in challenged_gens:
-                    #check if the true port is instantiated
+                    #check if the true generic is instantiated
                     if(c_gen.getName().lower() in gens):
                         scores[i] += 1
-                    #this port was already previously initialized and can be ignored
+                    #this generic was already previously initialized and can be ignored
                     elif(c_gen.isInitialized()):
                         continue
-                    #this generic was not instantiated, yet it MUST
+                    #this generic was not initialized, yet it MUST be so its DQ'ed (score to 0)
                     else:
-                        #automatically set score to 0
                         scores[i] = 0
                         break
                 pass

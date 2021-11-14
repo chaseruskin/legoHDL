@@ -540,8 +540,7 @@ scripts)?", warning=False)
             ['-- Package: TEMPLATE'] + \
             ['-- Description:'] + \
             ['--  Auto-generated package file by legoHDL. Components declared:'] + \
-            ['--'] + \
-            [apt.listToGrid(comp_names, min_space=4, offset='--  ')] + \
+            [apt.listToGrid(comp_names, min_space=4, offset='--  \t')] + \
             ['-'*80] + \
             [' ']
 
