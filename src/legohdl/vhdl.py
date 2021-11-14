@@ -7,8 +7,6 @@
 #
 #   A VHDL file has entities.
 
-from legohdl.language import Language
-import logging as log
 from .language import Language
 from .unit import Unit
 from .map import Map
@@ -112,9 +110,12 @@ class Vhdl(Language):
             #link a configuration
             elif(cseg[0].lower() == 'configuration'):
                 #log.info("Identified configuration "+cseg[1]+" for entity: "+cseg[3])
+                entity_name = cseg[3]
                 #get who owns this configuration
-                dsgn_entity = cseg[3]
-                Unit.Jar[self.getOwner().M()][self.getOwner().L()][self.getOwner().N()][dsgn_entity].linkConfig(cseg[1])
+                dsgn_unit = Unit.Jar[self.getOwner().M()][self.getOwner().L()][self.getOwner().N()][entity_name]
+                dsgn_unit.setConfig(cseg[1])
+                #decode the configuration and assign it the entity
+                self._getConfigurations(dsgn_unit, cseg[1])
                 pass
             #link an architecture
             elif(cseg[0].lower() == 'architecture'):
@@ -138,19 +139,23 @@ class Vhdl(Language):
         Returns:
             None
         '''
+        #do not decode unit again if already decoded
+        if(u.isChecked()):
+            return
+
         #get all available units availalble as components
         comps = []
+        #mapping of identifiers to find and replace with value
+        configurations = Map()
+        configurations['all'] = Map()
+
         in_arch = False
         in_begin = False
         arch_name = ''
         #get all code statements
         csegs = self.spinCode()
 
-        #do not decode unit again if already decoded
-        if(u.isChecked()):
-            return
-
-        # :todo: get configurations support (similiar to find/replace)
+        # :todo: get configurations from external unit (similiar to find/replace)
 
         #collect all visible component declarations
         for pkg in u.decodePkgs():
@@ -170,9 +175,39 @@ class Vhdl(Language):
             #determine when to enter the architecture
             if(cseg[0].lower() == 'architecture' and cseg[3].lower() == u.E().lower()):
                 in_arch = True
-                arch_name = cseg[1].lower() #store arch_name for exit case later
+                #reset configurations
+                configurations = Map()
+                configurations['all'] = Map()
+                #store arch_name for exit case later
+                arch_name = cseg[1].lower() 
             elif(in_arch == False):
                 continue
+            #inside architecture declaration section
+            elif(in_begin == False):
+                #print(cseg)
+                if(cseg[0].lower() == 'for'):
+                    #find first ':'
+                    if(cseg.count(':') == 0):
+                        continue
+                    #find what instances should be used for this configuration
+                    inst_name = cseg[1]
+                    if(inst_name.lower() not in configurations.keys()):
+                        configurations[inst_name] = Map()
+
+                    i = cseg.index(':')
+                    #store what identifier should be found in the architecture
+                    search_for = cseg[i+1]
+                    #find what identifier is to replace and configure an instance
+                    for j in range(i+1, len(cseg)):
+                        if(cseg[j].lower() == 'use'):
+                            #skip over 'entity' is that was the following keyword
+                            replace_with = cseg[j+1+int(cseg[j+1].lower() == 'entity')]
+                            break
+                    #add configuration
+                    configurations[inst_name][search_for] = replace_with
+                    pass
+                pass
+
             #track scope stack to determine when maybe within the architecture implementation
             if(cseg[0].lower() == 'begin'):
                 in_begin = True
@@ -196,13 +231,24 @@ class Vhdl(Language):
                 while cseg.count(':'):
                     sp_i = cseg.index(':')
                     comp_name = cseg[sp_i+1]
+                    inst_name = cseg[sp_i-1]
                     #is it an entity style?
                     entity_style = (comp_name.lower() == 'entity')
                     if(entity_style):
                         comp_name = cseg[sp_i+2]
                     #move through the code segment
-                    old_cseg = cseg
                     cseg = cseg[sp_i+1:]
+
+                    #was it a configuration?
+                    if(comp_name.lower() in configurations['all'].keys()):
+                        #swap with configuration this component to be configured for 'all'
+                        comp_name = configurations['all'][comp_name]
+                        entity_style = True
+                    elif(inst_name.lower() in configurations.keys() and \
+                        comp_name.lower() in configurations[inst_name].keys()):
+                        #swap configuration if this instance name
+                        comp_name = configurations[inst_name][comp_name]
+                        entity_style = True
 
                     #default not reference a library
                     lib = None
@@ -344,6 +390,58 @@ class Vhdl(Language):
                 #print(cseg)
                 self._collectConnections(u, cseg, in_ports)
                 pass
+        pass
+
+
+    def _getConfigurations(self, entity, cfg_name):
+        '''
+        Decode the translation between finding indentifiers and what they
+        should be replaced with within the entity's architectures.
+
+        Parameters:
+            entity (Unit): the entity who has this configuration
+            cfg_name (str): name of the configuration
+        Returns:
+            (Map): configurations architectures in the entity
+        '''
+        #print("Decoding configuration for",entity)
+        #print(entity)
+        
+        csegs = self.spinCode()
+        in_config = False
+        arch = None
+
+        for cseg in csegs:
+            if(cseg[0].lower() == 'configuration' and cseg[1] == cfg_name):
+                in_config = True
+            elif(in_config == False):
+                continue
+            #determine when to exit the configuration code
+            if(len(cseg) > 1 and cseg[0].lower() == 'end' and (cseg[1].lower() == 'configuration' or \
+                cseg[1].lower() == cfg_name.lower())):
+                break
+            #print(cseg)
+            if(cseg[0].lower() == 'for' and cseg.count(':')):
+                inner_for = (cseg[2].lower() == 'for')
+                if(inner_for):
+                    #identify the architecture
+                    arch = cseg[1].lower()
+                
+                #idenfity the instance name
+                inst_name = cseg[1+(2*int(inner_for))].lower()
+
+                #idenfity the entity to replace with
+                i = cseg.index(':')
+                #store what identifier should be found in the architecture
+                search_for = cseg[i+1]
+                #find what identifier is to replace and configure an instance
+                for j in range(i+1, len(cseg)):
+                    if(cseg[j].lower() == 'use'):
+                        #skip over 'entity' is that was the following keyword
+                        replace_with = cseg[j+1+int(cseg[j+1].lower() == 'entity')]
+                        break
+                print("CONFIG:",arch,inst_name,search_for,replace_with)
+                entity.linkConfig(arch, inst_name, search_for, replace_with)
         pass
 
 

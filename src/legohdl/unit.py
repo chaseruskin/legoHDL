@@ -83,6 +83,7 @@ class Unit:
 
         self._checked = False
         self._config = None
+        self._config_modes = Map()
 
         #create an empty interface
         self._interface = Interface(name=self.E(), library=self.L(), def_lang=self.getLang())
@@ -215,9 +216,25 @@ class Unit:
         pass
 
 
-    def linkConfig(self, config):
+    def setConfig(self, config):
         '''Sets _config (str) attr.'''
         self._config = config
+        pass
+
+
+    def linkConfig(self, arch, inst_name, search_for, replace_with):
+        '''
+        Sets a new (Map) for the given unit.
+        
+        Parameters:
+            arch (str): architecture to apply configuration to
+            inst_name (str): instance name to look for inside architecture
+            search_for (str): new identifier to find in the architecture definition
+            replace_with (str): the real entity name to use in the architecture definition
+        Returns:
+            None
+        '''
+
         pass
 
 
@@ -503,12 +520,15 @@ class Unit:
         return m+self.L()+'.'+self.N()+apt.ENTITY_DELIM+self.E()
 
 
-    def setConfig(self, config_name):
-        self._config = config_name
-
-
-    def getConfig(self):
-        return self._config
+    def getConfig(self, arch=None):
+        '''Returns the _config (str) attr when arch is None. If an arch (str) is
+        specified, return the 2-level (Map) for that architecture's configuration.'''
+        if(arch == None):
+            return self._config
+        elif(arch.lower() in self._config_modes.keys()):
+            return self._config_modes[arch]
+        else:
+            return Map()
 
 
     def getInterface(self):
