@@ -393,12 +393,12 @@ class Unit:
         Parameters:
             u (str): entity name
             l (str): library name
-            ports ([str]): list of ports that were instantiated
-            gens ([str]): list of generics that were instantiated
+            ports ([str]): list of ports that were instantiated (all lower-case)
+            gens ([str]): list of generics that were instantiated (all lower-case)
         Returns:
             (Unit): unit object from the Jar
         '''
-        #create a list of all potential design units
+        #[1.] create a list of all potential design units
         potentials = []
         #if no library, get list of all units
         if(lib == '' or lib == None):
@@ -411,54 +411,85 @@ class Unit:
         elif(lib.lower() in cls.Bottle.keys() and dsgn_name.lower() in cls.Bottle[lib].keys()):
             potentials = cls.Bottle[lib][dsgn_name]
 
+        #[2.] determine if ICR needs to be performed or unit is obviously only one
         dsgn_unit = None
         #the choice is clear; only one option available to be this design unit
         if(len(potentials) == 1):
             #log.info("Instantiating "+potentials[0].getTitle())
-            dsgn_unit = potentials[0]
-            pass
-        #perform intelligent component recognition by comparing ports and generics
-        elif(len(potentials) > 1):
-            log.info("Performing Intelligent Component Recognition for "+dsgn_name+"...")
-            #initialize scores for each potential component
-            scores = [0]*len(potentials)
+            return potentials[0]
+        #no unit found to match this naming in the jar
+        if(len(potentials) == 0):
+            return dsgn_unit
 
-            #iterate through every potential component
-            for i in range(len(potentials)):
-                #get the real ports for this component
-                interf = potentials[i].getInterface()
-                challenged_ports = interf.getMappingNames(interf.getPorts(), lower_case=True)
-                #compare the instance ports with the real ports
-                for sig in challenged_ports:
+        #[3.] perform intelligent component recognition by comparing ports and generics
+        log.info("Performing Intelligent Component Recognition for "+dsgn_name+"...")
+        #initialize scores for each potential component
+        scores = [0]*len(potentials)
+
+        #iterate through every potential component
+        for i in range(len(potentials)):
+
+            #[3a.] get the real ports for this challenging/potential component
+            challenged_ports = list(potentials[i].getInterface().getPorts().values())
+            #can only compare lengths if positional arguments were used
+            if(len(ports) and ports.count('?')):
+                scores[i] += -abs(len(challenged_ports) - len(ports))
+            #compare the instance ports with the real ports
+            else:
+                for c_port in challenged_ports:
                     #check if the true port is instantiated
-                    if(sig in ports):
+                    if(c_port.getName().lower() in ports):
                         scores[i] += 1
-                    #can only compare lengths
-                    elif(len(ports) and ports[0] == '?'):
-                        scores[i] = -abs(len(challenged_ports) - len(ports))
-                        break
+                    #this port was already previously initialized and can be ignored
+                    elif(c_port.isInitialized()):
+                        continue
                     #this port was not instantiated, yet it MUST since its an input
-                    elif(interf.getPorts()[sig].getRoute() == Port.Route.IN):
+                    elif(c_port.getRoute() == Port.Route.IN):
                         #automatically set score to 0
                         scores[i] = 0
                         break
+                pass
 
-            # :todo: rule out a unit if a gen is instantiated that's not in its true_gens
+            #[3b.] get the real generics for this challenging/potential component
+            challenged_gens = list(potentials[i].getInterface().getGenerics().values())
+            #can only compare lengths if positional arguments were used
+            if(len(gens) and gens.count('?')):
+                scores[i] += -abs(len(challenged_gens) - len(gens))
+            #compare the instance ports with the real ports
+            else:
+                for c_gen in challenged_gens:
+                    #check if the true port is instantiated
+                    if(c_gen.getName().lower() in gens):
+                        scores[i] += 1
+                    #this port was already previously initialized and can be ignored
+                    elif(c_gen.isInitialized()):
+                        continue
+                    #this generic was not instantiated, yet it MUST
+                    else:
+                        #automatically set score to 0
+                        scores[i] = 0
+                        break
+                pass
 
-            #pick the highest score
-            i = 0
-            print('--- ICR SCORE REPORT ---')
-            for j in range(len(scores)):
-                print('{:<1}'.format(' '),'{:<40}'.format(potentials[j].getTitle()),'{:<4}'.format('='),'{:<5}'.format(round(scores[j]/len(ports)*100,2)),"%")
-                if(scores[j] > scores[i]):
-                    i = j
-            dsgn_unit = potentials[i]
-            log.info("Intelligently selected "+dsgn_unit.getTitle())
-        else:
-            #log.error("Not a valid instance found within the bottle "+str(lib)+" "+dsgn_name)
             pass
 
-        # :todo: remember design for next encounter?
+        #[4.] pick the highest score
+        print('--- ICR SCORE REPORT ---')
+        i = 0
+        for j in range(len(scores)):
+            #calculate percentage based on computed score and number of possible points to get
+            percentage = round(scores[j]/(len(ports)+len(gens))*100,2)
+            #format report to the console
+            print('{:<1}'.format(' '),'{:<40}'.format(potentials[j].getTitle()),'{:<4}'.format('='),'{:<5}'.format(percentage),"%")
+            #select index with maximum score
+            if(scores[j] > scores[i]):
+                i = j
+            pass
+
+        #select design unit at index with maximum score
+        dsgn_unit = potentials[i]
+        log.info("Intelligently selected "+dsgn_unit.getTitle())
+        #return the selected design unit
         return dsgn_unit
 
 
@@ -729,9 +760,14 @@ class Signal:
         return self._dtype
 
 
+    def isInitialized(self):
+        '''Returns (bool) if connection has a default value declared.'''
+        return bool(len(self.getValue()) > 0)
+
+
     def getValue(self):
         '''Returns the list of tokens that make up the initial value (str).'''
-        return apt.listToStr(self._value,delim='')
+        return apt.listToStr(self._value, delim='')
 
 
     pass
@@ -838,7 +874,7 @@ class Port(Signal):
             if(len(self.getValue())):
                 d_txt = d_txt + ' = ' + self.getValue()
             
-            d_txt + d_txt + ','
+            d_txt = d_txt + ','
             pass
         
         return d_txt
@@ -882,9 +918,8 @@ class Interface:
         self._library = library
         self._default_lang = def_lang
 
-        # :todo: use map or dictionary? map will make ports of same name incompatible using verilog
-        self._ports = Map()
-        self._generics = Map()
+        self._ports = {}
+        self._generics = {}
         pass
 
 
@@ -932,11 +967,11 @@ class Interface:
 
     def getMappingNames(self, mapping, lower_case=False):
         'Return a list of the collected dictionary keys for the mapping parameter.'
-
         m_list = list(mapping.keys())
         if(lower_case):
             for i in range(len(m_list)):
                 m_list[i] = m_list[i].lower()
+
         return m_list
 
 
@@ -963,7 +998,7 @@ class Interface:
                 return connect_txt
         
         #determine farthest reach constant name
-        farthest = apt.computeLongestWord(self.getMappingNames(self.getGenerics()))
+        farthest = apt.computeLongestWord(self.getGenerics().keys())
                 
         #write constants
         for g in self.getGenerics().values():
@@ -976,7 +1011,7 @@ class Interface:
             connect_txt = connect_txt + '\n'
 
         #determine farthest reach signal name
-        farthest = apt.computeLongestWord(self.getMappingNames(self.getPorts()))
+        farthest = apt.computeLongestWord(self.getPorts().keys())
         
         #write signals
         for p in self.getPorts().values():
@@ -1002,7 +1037,7 @@ class Interface:
             maps_on_newline (bool): determine if start of a mapping deserves a newline
             alignment (int): determine number of additional spaces
         Returns:
-            mapping_txt (str): the compatible code to be printed
+            m_txt (str): the compatible code to be printed
         '''
         #default selection is to write in original coding language
         if(lang == None):
@@ -1011,134 +1046,159 @@ class Interface:
         if(inst_name == None):
             inst_name = 'uX'
 
-        mapping_txt = 'Empty interface!\n'
+        m_txt = 'Empty interface!\n'
         #default number of spaces when not aligning
         spaces = alignment
         #do not write anything if no interface!
         if(len(self.getGenerics()) == 0 and len(self.getPorts()) == 0):
-                return mapping_txt
+                return m_txt
         
         #write VHDL-style code
         if(lang == Unit.Language.VHDL):
             #write the instance name and entity name
-            mapping_txt = inst_name + " : "+self.getName()+" "
+            m_txt = inst_name + " : "+self.getName()+" "
             #re-assign beginning of mapping to be a pure entity instance
             if(entity_lib != None):
-                mapping_txt = inst_name+" : entity "+entity_lib+"."+self.getName()+" "
+                m_txt = inst_name+" : entity "+entity_lib+"."+self.getName()+" "
             #place mapping on new line
             if(maps_on_newline):
-                 mapping_txt =  mapping_txt + "\n"
+                 m_txt =  m_txt + "\n"
 
             #generics to map
             if(len(self.getGenerics())):
-                mapping_txt = mapping_txt + "generic map(\n"
+                m_txt = m_txt + "generic map(\n"
 
-                gens = self.getMappingNames(self.getGenerics())
-                farthest = apt.computeLongestWord(self.getMappingNames(self.getGenerics()))
+                farthest = apt.computeLongestWord(self.getGenerics().keys())
                 #iterate through every generic
-                for i in range(len(gens)):
+                gens = list(self.getGenerics().values())
+                for g in gens:
+                    #compute number of spaces for this generic instance mapping
                     if(fit):
-                        spaces = farthest - len(gens[i]) + alignment
-                    line =  self._generics[gens[i]].writeMapping(lang, spaces, fit)
-                    #add a comma if not on last generic
-                    if(i != len(gens)-1):
-                        line = line + ","
-                    #don't add \n to last map if hang_end
-                    elif(hang_end == False):
-                        mapping_txt = mapping_txt + line
-                        continue
-                    #append to entire text
-                    mapping_txt = mapping_txt + line+"\n"
+                        spaces = farthest - len(g.getName()) + alignment
+
+                    #add generic instance mapping
+                    m_txt = m_txt + g.writeMapping(lang, spaces, fit)
+                    
+                    #add newline
+                    if(g == gens[-1]):
+                        #trim final ','
+                        m_txt = m_txt[:len(m_txt)-1]
+                        #don't add \n to last map if hang_end
+                        if(hang_end == False):
+                            continue
+                    #append a newline
+                    m_txt = m_txt + "\n"
                     pass
                 #add necessary closing
-                mapping_txt = mapping_txt + ") "
+                m_txt = m_txt + ") "
                 pass
 
             #ports to map
             if(len(self.getPorts())):
                 #add new line if generics were written
                 if(len(self.getGenerics()) and hang_end == False):
-                    mapping_txt = mapping_txt + "\n"
+                    m_txt = m_txt + "\n"
 
-                mapping_txt = mapping_txt + "port map(\n"
+                m_txt = m_txt + "port map(\n"
 
-                ports = self.getMappingNames(self.getPorts())
-                farthest = apt.computeLongestWord(self.getMappingNames(self.getPorts()))
+                farthest = apt.computeLongestWord(self.getPorts().keys())
+
                 #iterate through every port
-                for i in range(len(ports)):
+                ports = list(self.getPorts().values())
+                for p in ports:
+                    #compute number of spaces needed for this port instance mapping
                     if(fit):
-                        spaces = farthest - len(ports[i]) + alignment
-                    line = self._ports[ports[i]].writeMapping(lang, spaces, fit)
-                    #add a comma if not on the last port
-                    if(i != len(ports)-1):
-                        line = line + ","
-                    #don't add \n to last map if hang_end
-                    elif(hang_end == False):
-                        mapping_txt = mapping_txt + line
-                        continue
+                        spaces = farthest - len(p.getName()) + alignment
+                    #add port instance mapping
+                    m_txt = m_txt + p.writeMapping(lang, spaces, fit)
+                    #add newline
+                    if(p == ports[-1]):
+                        #trim final ','
+                        m_txt = m_txt[:len(m_txt)-1]
+                        #don't add \n to last map if hang_end
+                        if(hang_end == False):
+                            continue
                     #append to the entire text
-                    mapping_txt = mapping_txt + line+"\n"
+                    m_txt = m_txt + "\n"
                     pass
                 #add necessary closing
-                mapping_txt = mapping_txt + ")"
+                m_txt = m_txt + ")"
                 pass
 
             #add final ';'
-            mapping_txt = mapping_txt + ";\n"
+            m_txt = m_txt + ";\n"
             pass
         #write VERILOG-style code
         elif(lang == Unit.Language.VERILOG):
             #start with entity's identifier
-            mapping_txt = self.getName()
+            m_txt = self.getName()
             #write out parameter section
-            params = self.getMappingNames(self.getGenerics())
-            if(len(params)):
-                farthest = apt.computeLongestWord(params)
-                mapping_txt = mapping_txt + ' #(\n'
+            if(len(self.getGenerics())):
+                #compute longest identifier name for auto-fit
+                farthest = apt.computeLongestWord(self.getGenerics().keys())
+                #begin parameter mapping
+                m_txt = m_txt + ' #(\n'
+
+                #iterate through every parameter
+                params = list(self.getGenerics().values())
                 for p in params:
+                    #compute number of spaces for this parameter
                     if(fit):
-                        spaces = farthest - len(p) + alignment
-                    mapping_txt = mapping_txt + self.getGenerics()[p].writeMapping(lang, spaces, fit)
+                        spaces = farthest - len(p.getName()) + alignment
+                    #add parameter instance mapping
+                    m_txt = m_txt + p.writeMapping(lang, spaces, fit)
                     #don't add ',\n' if on last generic
                     if(p == params[-1]): 
+                        #trim final ','
+                        m_txt = m_txt[:len(m_txt)-1]
+                        #enter newlines
                         if(hang_end == True):
-                            mapping_txt = mapping_txt + "\n) "
+                            m_txt = m_txt + "\n) "
                         else:
-                            mapping_txt = mapping_txt + ")\n"
-                        mapping_txt = mapping_txt + inst_name
+                            m_txt = m_txt + ")\n"
+                        #add instance name
+                        m_txt = m_txt + inst_name
                     else:
-                        mapping_txt = mapping_txt + ",\n"
+                        m_txt = m_txt + '\n'
+                    pass
+                pass
             #no generics...so begin with instance name
             else:
-                mapping_txt = mapping_txt + " " + inst_name
+                m_txt = m_txt + ' ' + inst_name
 
             #write out port section
-            ports = self.getMappingNames(self.getPorts())
-            if(len(ports)):
-                mapping_txt = mapping_txt + ' (\n'
-                farthest = apt.computeLongestWord(ports)
-                #iterate through every port
-                for p in ports:
-                    if(fit):
-                        spaces = farthest - len(p) + alignment
-                    mapping_txt = mapping_txt + self.getPorts()[p].writeMapping(lang, spaces, fit)
+            if(len(self.getPorts())):
+                m_txt = m_txt + ' (\n'
+                #compute farthest identifier word length
+                farthest = apt.computeLongestWord(self.getPorts().keys())
 
+                #iterate through every port
+                ports = list(self.getPorts().values())
+                for p in ports:
+                    #compute number of spaces for even fit for port declaration
+                    if(fit):
+                        spaces = farthest - len(p.getName()) + alignment
+                    #add port declaration
+                    m_txt = m_txt + p.writeMapping(lang, spaces, fit)
                     #don't add ,\n if on last port
                     if(p == ports[-1]):
+                        #trim final ','
+                        m_txt = m_txt[:len(m_txt)-1]
                         #add newline if hanging end
                         if(hang_end == True):
-                            mapping_txt = mapping_txt + "\n"
-                        mapping_txt = mapping_txt + ")"
+                            m_txt = m_txt + "\n"
+                        #add closing ')'
+                        m_txt = m_txt + ")"
                     else:
-                        mapping_txt = mapping_txt +",\n"
+                        m_txt = m_txt + '\n'
                     pass
                 pass
 
             #add final ';'
-            mapping_txt = mapping_txt + ';'
+            m_txt = m_txt + ';'
             pass
-        #print(mapping_txt)
-        return mapping_txt
+        #print(m_txt)
+        return m_txt
 
     
     def writeDeclaration(self, form, align=True, hang_end=True, tabs=0):
@@ -1170,37 +1230,50 @@ class Interface:
             #write generics
             gens = list(self.getGenerics().values())
             if(len(gens)):
-                farthest = apt.computeLongestWord(self.getMappingNames(self.getGenerics()))
+                farthest = apt.computeLongestWord(self.getGenerics().keys())
                 comp_txt  = comp_txt + (tabs*T)+'generic(' + '\n'
                 #write every generic
                 for gen in gens:
+                    #determine number of spaces for this declaration
                     if(align):
                         spaces = farthest - len(gen.getName()) + 1
-                    comp_line = gen.writeDeclaration(form, spaces=spaces)
-                    comp_txt = comp_txt + ((tabs+1)*T)+comp_line[:len(comp_line)-1] #trim off ';'
+
+                    comp_txt = comp_txt + ((tabs+1)*T) + gen.writeDeclaration(form, spaces=spaces)
+                    #trim off final ';'
+                    if(gen == gens[-1]):
+                        comp_txt = comp_txt[:len(comp_txt)-1]
+                    #enter newline
                     if(gen != gens[-1]):
-                        comp_txt = comp_txt + ';\n'
+                        comp_txt = comp_txt + '\n'
                     elif(hang_end):
                          comp_txt = comp_txt + '\n'
+                    pass
                 #add final generic closing token
-                comp_txt = comp_txt + (tabs*T*int(hang_end))+');\n'
+                comp_txt = comp_txt + (tabs*T*int(hang_end)) + ');\n'
+                pass
             #write ports
             ports = list(self.getPorts().values())
             if(len(ports)):
-                farthest = apt.computeLongestWord(self.getMappingNames(self.getPorts()))
+                farthest = apt.computeLongestWord(self.getPorts().keys())
                 comp_txt = comp_txt + (tabs*T)+'port(' + '\n'
                 #write every port
                 for port in ports:
+                    #determine number of spaces for this declaration
                     if(align):
                         spaces = farthest - len(port.getName()) + 1
-                    comp_line = port.writeDeclaration(form, spaces, align)
-                    comp_txt = comp_txt + ((tabs+1)*T)+comp_line[:len(comp_line)-1] #trim off ';'
+                    #add port declaration
+                    comp_txt = comp_txt + ((tabs+1)*T) + port.writeDeclaration(form, spaces, align)
+                    #trim off final ';'
+                    if(port == ports[-1]):
+                        comp_txt = comp_txt[:len(comp_txt)-1]
+                    #enter newlines
                     if(port != ports[-1]):
-                        comp_txt = comp_txt + ';\n'
+                        comp_txt = comp_txt + '\n'
                     elif(hang_end):
                         comp_txt = comp_txt + '\n'
+                    pass
                 #add final port closing token
-                comp_txt = comp_txt + (tabs*T*int(hang_end))+');\n'
+                comp_txt = comp_txt + (tabs*T*int(hang_end)) + ');\n'
             #add final closing segment
             comp_txt = comp_txt + (tabs*T)+'end component;'
             pass
@@ -1215,16 +1288,18 @@ class Interface:
                 comp_txt = comp_txt + ' #(\n'
                 #add-in every generic as a 'parameter'
                 for gen in gens:
+                    #add declaration
                     gen_dec = ((tabs+1)*T)+gen.writeDeclaration(form, spaces=spaces)
-                    #chop off semicolon
-                    gen_dec = gen_dec[:len(gen_dec)-1]
+                    #enter newlines
                     if(gen == gens[-1]):
+                        #trim final ','
+                        gen_dec = gen_dec[:len(gen_dec)-1]
                         #check if to hang end
                         if(hang_end):
                             gen_dec = gen_dec + '\n'
                         gen_dec = gen_dec + ')'
                     else:
-                        gen_dec = gen_dec + ',\n'
+                        gen_dec = gen_dec + '\n'
                     comp_txt = comp_txt + gen_dec
                 pass
 
@@ -1244,19 +1319,23 @@ class Interface:
                 farthest = apt.computeLongestWord(ports_dt)
                 #add-in every port
                 for port in ports:
+                    #compute number of spaces for this port declaration
                     if(align):
                         spaces = farthest - len(port.castDatatype(form, keep_net=True)) + 1
-                    port_dec = ((tabs+1)*T)+port.writeDeclaration(form, spaces, align)
-                    #chop off semicolon
-                    port_dec = port_dec[:len(port_dec)-1]
+                    #add port declaration
+                    port_dec = ((tabs+1)*T) + port.writeDeclaration(form, spaces, align)
+                    #enter newlines
                     if(port == ports[-1]):
+                        #chop off final ','
+                        port_dec = port_dec[:len(port_dec)-1]
                         #check if to hang end
                         if(hang_end):
                             port_dec = port_dec + '\n'
                         port_dec = port_dec + ')'
                     else:
-                        port_dec = port_dec + ',\n'
+                        port_dec = port_dec + '\n'
                     comp_txt = comp_txt + port_dec
+                    pass
                 pass
             
             #add final semicolon

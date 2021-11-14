@@ -383,7 +383,7 @@ class Vhdl(Language):
     def collectInstanceMaps(self, cseg):
         '''
         Parse entity instantiation mappings to form a generics list and ports list from 
-        an instantiation code statement.
+        an instantiation code statement (all lower-case).
 
         If a component was instantiated by position, '?' will appear in the list to get
         an appropriate length of number of ports mapped.

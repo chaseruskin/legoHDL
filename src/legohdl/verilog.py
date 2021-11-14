@@ -394,7 +394,7 @@ class Verilog(Language):
     def collectInstanceMaps(self, cseg):
         '''
         Parse entity instantiation mappings to form a generics list and ports list from 
-        an instantiation code statement.
+        an instantiation code statement (all lower-case).
 
         If a component was instantiated by position, '?' will appear in the list to get
         an appropriate length of number of ports mapped.
@@ -448,7 +448,7 @@ class Verilog(Language):
                 #detect a interface identifier following a '.'
                 if(prev_c == '.'):
                     #print("GEN:",c)
-                    g_list += [c]
+                    g_list += [c.lower()]
                 #also count commas in case instance identifiers are not used
                 if(c == ',' or (g_comma_cnt == 0 and c != '(' and c!= ')')):
                     g_comma_cnt += 1
@@ -457,9 +457,9 @@ class Verilog(Language):
                 #detect a interface identifier following a '.'
                 if(prev_c == '.'):
                     #print("PORT:",c)
-                    p_list += [c]
+                    p_list += [c.lower()]
                 #also count commas in case instance identifiers are not used
-                if(c == ',' or (p_comma_cnt == 0 and c != '(' and c!= ')')):
+                if(c == ',' or (p_comma_cnt == 0 and c != '(' and c != ')')):
                     p_comma_cnt += 1
             #store the previous code token
             prev_c = c
