@@ -997,8 +997,13 @@ scripts)?", warning=False)
             return
         M,L,N,_ = Block.snapTitle(title)
 
-        #default path to make a new block :todo: allow user's to edit a setting to specify default download path
+        #default path to make a new block
         block_path = self.WS().getPath()+L+"/"+N+"/"
+
+        #override default path is specified on command-line
+        if(self.getVar('path') != None):
+            block_path = apt.fs(self.WS().getPath()+self.getVar('path'))
+
         #create block object
         b = Block(block_path, self.WS())
         #create the new block
