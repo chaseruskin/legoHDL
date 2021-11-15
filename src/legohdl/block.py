@@ -1895,12 +1895,12 @@ class Block:
         return sects[0],sects[1],sects[2],V
 
 
-    def identifyTop(self):
+    def identifyTop(self, verbose=True):
         '''
         Auto-detects the top-level design entity. Returns None if not found.
 
         Parameters:
-            None
+            verbose (bool): determine if to print info
         Returns:
             self._top (Unit): unit object that is the top-level for this block
         '''
@@ -1926,7 +1926,8 @@ class Block:
                     top_contenders.remove(dep.E().lower())
 
         if(len(top_contenders) == 0):
-            log.warning("No top level detected.")
+            if(verbose):
+                log.warning("No top level detected.")
         elif(len(top_contenders) > 1):
             log.warning("Multiple top levels detected. "+str(top_contenders))
             try:
@@ -1943,9 +1944,8 @@ class Block:
         #detected a single top-level design unit
         if(len(top_contenders) == 1):
             self._top = units[top_contenders[0]]
-
-            log.info("DETECTED TOP-LEVEL ENTITY: "+self._top.E())
-            self.identifyBench(self._top.E(), save=True)
+            if(verbose):
+                log.info("Identified top-level unit: "+self._top.E())
 
             #update metadata and will save if different
             if("toplevel" in self.getMeta().keys() and self._top.E() != self.getMeta("toplevel")):
@@ -1955,14 +1955,15 @@ class Block:
         return self._top
 
 
-    def identifyBench(self, entity_name, save=False):
+    def identifyBench(self, entity_name, expl=None, verbose=True):
         '''
         Determine what testbench is used for the top-level design entity (if 
         found). Returns None if not found.
 
         Parameters:
             entity_name (str): name of entity to be under test
-            save (bool): determine if to record the changes to the metadata
+            expl (str): the name of the testbench (if explicitly stated)
+            verbose (bool): determine if to print info to console
         Returns:
             self._bench (Unit): testbench unit object
         '''
@@ -1972,7 +1973,8 @@ class Block:
 
         self._bench = None 
         #load all project-level units
-        units = self.getUnits(recursive=False)
+        units = self.getUnits(recursive=False)            
+
         benches = []
         #iterate through each available unit and eliminate it
         for unit in units.values():
@@ -1980,6 +1982,14 @@ class Block:
                 if(dep.E().lower() == entity_name and unit.isTb()):
                     benches.append(unit)
             pass
+
+        #try to find explicit testbench
+        if(expl != None):
+            benches = []
+            if(expl.lower() in units.keys()):
+                benches = [units[expl]]
+            pass             
+
         #perfect; only 1 was found  
         if(len(benches) == 1):
             self._bench = benches[0]
@@ -2002,29 +2012,32 @@ class Block:
             #assign the testbench entered by the user
             self._bench = units[validTop]
         #print what the detected testbench is
-        if(self._bench != None):
-            log.info("DETECTED TOP-LEVEL BENCH: "+self._bench.E())
-        else:
-            log.warning("No testbench detected.")
+        if(verbose):
+            if(self._bench != None):
+                log.info("Identified top-level testbench: "+self._bench.E())
+            else:
+                log.warning("No testbench detected.")
         #update the metadata is saving
-        if("bench" in self.getMeta().keys() and save):
+        if("bench" in self.getMeta().keys()):
             if(self._bench == None):
                 self.setMeta('bench', None)
             else:
                 self.setMeta('bench', self._bench.E())
             self.save()
-        #return the entity
+        #return the Unit object
         return self._bench
 
 
-    def identifyTopDog(self, top=None, inc_tb=True):
+    def identifyTopDog(self, top=None, expl_tb=None, inc_tb=True, verbose=True):
         '''
         Determine what unit is utmost highest, whether it be a testbench
         (if applicable) or entity. Returns None if DNE.
 
         Parameters:
             top (str): a unit identifier
+            expl_tb (str): a unit identifier to be the testbench
             inc_tb (bool): determine if to include testbench files
+            verbose (bool): determine if to print info to console
         Returns:
             top_dog (Unit): top-level everything
             top_dsgn (Unit): top-level design unit
@@ -2047,7 +2060,7 @@ class Block:
                 top_dsgn = top_dog
                 #auto-detect the testbench
                 if(inc_tb):
-                    top_tb = self.identifyBench(top_dsgn.E())
+                    top_tb = self.identifyBench(top_dsgn.E(), expl=expl_tb, verbose=verbose)
                     #set top_dog as the testbench if found one and allowed to be included
                     if(top_tb != None):
                         top_dog = top_tb
@@ -2060,11 +2073,11 @@ class Block:
             exit(log.error("Entity "+top+" does not exist within this block."))
 
         #auto-detect the top level design
-        top_dsgn = self.identifyTop()
+        top_dsgn = self.identifyTop(verbose=verbose)
         
         if(top_dsgn != None and inc_tb):
             #auto-detect the top level's testbench
-            top_tb = self.identifyBench(top_dsgn.E())
+            top_tb = self.identifyBench(top_dsgn.E(), expl=expl_tb, verbose=verbose)
 
         #set top_dog as the testbench if found one and allowed to be included
         if(top_tb != None and inc_tb):

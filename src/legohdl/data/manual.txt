@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/14/2021
+; Modified: 11/15/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -245,7 +245,7 @@ NAME:
         graph - Visualize the dependency tree for the design
 
 SYNOPSIS:
-        legohdl graph [<entity>] [-tb=<tb>] [-ignore-tb]
+        legohdl graph [<entity>] [-tb=<tb> | -ignore-tb]
 
 DESCRIPTION:
         Create and view the dependency tree for the current block design. This 
@@ -275,12 +275,12 @@ NAME:
         export - Generate a blueprint file or VHDL package file
 
 SYNOPSIS:
-        legohdl export [<unit>] [-tb=<tb>] [-ignore-tb] [-quiet] [-no-clean]
+        legohdl export [<unit>] [-tb=<tb> | -ignore-tb] [-quiet] [-no-clean]
                 [-all]
         legohdl export -pack[=<file>] [-omit=<units>] [-inc=<units>]
 
 DESCRIPTION:
-        :todo:
+        -ignore-tb has higher precedence than when a <tb> is stated.
 
         For generating a VHDL package file, passing -inc will ignore -omit if it
         is passed to the command-line as well. -inc has higher precedence than 
@@ -549,11 +549,15 @@ NAME:
         download - Bring a block to the local workspace for development
 
 SYNOPSIS:
-        legohdl download (<block> | (<url> [-fork])) [-open]
+        legohdl download (<block> | (<url> [-fork])) [-open] [-path=<path>]
 
 DESCRIPTION:
 
+
 OPTIONS:
+        -path=<path>
+            Overrides the default download path and instead creates block at
+            <path> relative to the workspace's local path.
 
 
 * update

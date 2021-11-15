@@ -192,8 +192,12 @@ class legoHDL:
         it = self._item
         if(raw):
             return it
+        #get the flag name if an '=' was used on the flag
+        eq_i = len(it)
+        if(it.count('=')):
+            eq_i = it.find('=')
         #make sure the item is not a flag
-        if(len(it) and it[1:].lower() in self._flags):
+        if(len(it) and it[1:eq_i].lower() in self._flags):
             it = None
         #make sure the item is not a blank string
         if(it == ''):
@@ -337,11 +341,17 @@ scripts)?", warning=False)
     def _graph(self):
         '''Run the 'graph' command.'''
 
+        inc_tb = (self.hasFlag('ignore-tb') == False)
+
         self.WS().loadBlocks(id_dsgns=True)
         block = Block.getCurrent()
 
+        #capture the passed-in entity name
         top = self.getItem()
-        top_dog,_,_ = block.identifyTopDog(top, inc_tb=(not self.hasFlag('ignore-tb')))
+        #capture the command-line testbench
+        explicit_tb = self.getVar('tb')
+
+        top_dog,_,_ = block.identifyTopDog(top, expl_tb=explicit_tb, inc_tb=inc_tb)
         
         log.info("Generating dependency tree...")
 
@@ -369,6 +379,9 @@ scripts)?", warning=False)
     def _export(self):
         '''Run the 'export' command.'''
 
+        verbose = (self.hasFlag('quiet') == False)
+        inc_tb = (self.hasFlag('ignore-tb') == False)
+
         #load labels
         Label.load()
         #load blocks and their designs
@@ -377,8 +390,6 @@ scripts)?", warning=False)
         #get the working block
         block = Block.getCurrent()
 
-        inc_tb = (not self.hasFlag('ignore-tb'))
-
         #trying to export a package file?
         if(self.hasFlag('pack')):
             #reads lists 'omit' and 'inc' from command-line
@@ -386,10 +397,13 @@ scripts)?", warning=False)
                 inc=apt.strToList(self.getVar('inc')), \
                 filepath=self.getVar('pack'))
             return
-
+     
         #capture the passed-in entity name
         top = self.getItem()
-        top_dog,dsgn,tb = block.identifyTopDog(top, inc_tb=inc_tb)
+        #capture the command-line testbench
+        explicit_tb = self.getVar('tb')
+
+        top_dog,dsgn,tb = block.identifyTopDog(top, expl_tb=explicit_tb, inc_tb=inc_tb, verbose=verbose)
 
         #get all units
         if(self.hasFlag('all')):
@@ -399,7 +413,8 @@ scripts)?", warning=False)
         else:
             #start with top unit (returns all units if no top unit is found (packages case))
             block.getUnits(top_dog)
-            Unit.Hierarchy.output(top_dog)
+            if(verbose):
+                Unit.Hierarchy.output(top_dog)
             pass
 
         unit_order,block_order = Unit.Hierarchy.topologicalSort()
@@ -454,15 +469,21 @@ scripts)?", warning=False)
             #add to blueprint's data for top-level design
             blueprint_data += [line+"-SRC-TOP "+dsgn.E()+" "+dsgn.getFile()]
         
-        #clean the build directory
-        log.info("Cleaning build folder...")
         build_dir = block.getPath()+apt.getBuildDirectory()
-        if(os.path.isdir(build_dir)):
-            shutil.rmtree(build_dir, onerror=apt.rmReadOnly)
+
+        #clean the build directory
+        if(self.hasFlag('no-clean') == False):
+            if(verbose):
+                log.info("Cleaning build folder...")
+            if(os.path.isdir(build_dir)):
+                shutil.rmtree(build_dir, onerror=apt.rmReadOnly)
+            pass
+
         #create the build directory
         os.makedirs(build_dir, exist_ok=True)
 
-        log.info("Exporting blueprint...")
+        if(verbose):
+            log.info("Exporting blueprint...")
         
         #create the blueprint file
         blueprint_path = build_dir+"blueprint"
@@ -472,10 +493,11 @@ scripts)?", warning=False)
         for line in blueprint_data:
             blueprint.write(line+'\n')
 
-        log.info("Blueprint found at: "+blueprint_path)
+        if(verbose):
+            log.info("Blueprint found at: "+blueprint_path)
 
         #update block's dependencies
-        block.updateRequires(quiet=True)
+        block.updateRequires(quiet=(verbose == False))
         pass
 
 
