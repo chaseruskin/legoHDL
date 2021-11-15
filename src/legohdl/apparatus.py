@@ -73,7 +73,9 @@ class Apparatus:
                     'alignment' : cfg.NULL,
                     'newline-maps' : cfg.NULL,
                     'default-language' : cfg.NULL,
-                    'instance-name' : cfg.NULL
+                    'instance-name' : cfg.NULL,
+                    'port-modifier' : cfg.NULL,
+                    'generic-modifier' : cfg.NULL
                 },
                 'metadata' : {}
             }
@@ -186,6 +188,13 @@ class Apparatus:
         elif(align > 80):
             align = 80
         cls.setField(align, ['HDL-styling', 'alignment'])
+
+        #ensure the modifiers have a default value (wildcard)
+        if(cls.getField(['HDL-styling', 'generic-modifier']) == ''):
+            cls.setField('*', ['HDL-styling', 'generic-modifier'])
+
+        if(cls.getField(['HDL-styling', 'port-modifier']) == ''):
+            cls.setField('*', ['HDL-styling', 'port-modifier'])
 
         pass
 
@@ -1036,6 +1045,23 @@ class Apparatus:
 ; description:
 ;   Determine the default instantiation name given to a unit being used.
 ;   Placeholders are supported.
+; value:
+;   assignment of string'''),
+
+    'hdl-styling|generic-modifier' : (cfg.VAR,\
+'''
+; description:
+;   Determine the constant/parameter identifier name to connect to 
+;   instantiation generics/parameters. Wildcard '*' will be replaced with 
+;   the generics' original identifiers.
+; value:
+;   assignment of string'''),
+
+    'hdl-styling|port-modifier' : (cfg.VAR,\
+'''
+; description:
+;   Determine the signal/wire identifier name to connect to instantiation ports.
+;   Wildcard '*' will be replaced with the ports' original identifiers.
 ; value:
 ;   assignment of string'''),
 

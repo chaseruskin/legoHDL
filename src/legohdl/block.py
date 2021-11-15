@@ -2319,8 +2319,8 @@ class Block:
         maps_on_newline = apt.getField(['HDL-styling', 'newline-maps'], int)
         inst_name = apt.getField(['HDL-styling', 'instance-name'])
 
-        g_mod = '*'
-        p_mod = '*'
+        g_mod = apt.getField(['HDL-styling', 'generic-modifier'])
+        p_mod = apt.getField(['HDL-styling', 'port-modifier'])
 
         #swap placeholders in inst name
         for ph in self.getPlaceholders(ent.E()):
