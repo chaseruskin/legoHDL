@@ -30,6 +30,7 @@ class Verilog(Language):
         self._atomics = ['end', 'endmodule', 'endtask', 'endcase', \
             'endfunction', 'endprimitive', 'endspecify', 'endtable', 'begin', \
             'endgenerate', 'generate']
+        self._join_dots = False
 
         self.spinCode()
 

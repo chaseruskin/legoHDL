@@ -128,6 +128,7 @@ class Language(ABC):
         Uses _dual_chars ([str]) to combine any two-character tokens to be a single index.
         Uses _multi ((str, str)) to identify multi-line comment sections.
         Uses _atomics ([str]) to separate special keywords into their own statements.
+        Uses _join_dots (bool) to determine if to join left and right side of dots together
         
         Dynamically creates attr _code_stream so the operation can be reused.
 
@@ -208,7 +209,7 @@ class Language(ABC):
                     #skip any empty statements
                     if(len(statement) == 0):
                         continue
-                        
+
                     #combine dual characters together
                     statement_final = []
                     for i in range(len(statement)-1):
@@ -219,8 +220,18 @@ class Language(ABC):
                                 statement[i] = ''
                                 statement[i+1] = '' 
                                 continue
+                        #join LHS and RHS of dots
+                        if(self._join_dots and statement[i+1] == '.' and i < len(statement)-1):
+                            statement[i+2] = statement[i] + statement[i+1] + statement[i+2]
+                            #make empty so these indices don't get added
+                            statement[i+1] = ''
+                            statement[i] = ''
+                            pass
+                        #add all non-blank tokens
                         if(statement[i] != ''):
                             statement_final.append(statement[i])
+                        pass
+
                     #make sure to add last item
                     if(statement[-1] != ''):
                             statement_final.append(statement[-1])
@@ -252,8 +263,9 @@ class Language(ABC):
             pass
 
         for cs in self._code_stream:
-           #print(cs)
-           pass
+            #if(self.getPath().endswith('adder.vhd')):
+                #print(cs)
+            pass
         return self._code_stream
 
 

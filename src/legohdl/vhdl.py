@@ -27,14 +27,13 @@ class Vhdl(Language):
         '''
         super().__init__(fpath, block)
 
-        ### new important stuff
-        self._seps = [':', '=', '(', ')', '>', '<', ',', '"']
+        self._seps = [':', '=', '(', ')', '>', '<', ',', '"', '.']
         self._dual_chars = [':=', '<=', '=>']
         self._comment = '--'
         self._atomics = ['begin', 'is']
+        self._join_dots = True
 
         self.spinCode()
-        ###
 
         #run with VHDL decoder
         self.identifyDesigns()
