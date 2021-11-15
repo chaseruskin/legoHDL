@@ -2328,6 +2328,7 @@ class Block:
             pass
 
         #print comment header (about)
+        print("--- ABOUT ---")
         print(ent.readAbout())
         #print dependencies
         if(edges):
