@@ -424,6 +424,8 @@ class Unit:
         Returns:
             (Unit): unit object from the Jar
         '''
+        #toggle 'verbose' to print scores to console
+        verbose = False
         #[1.] create a list of all potential design units
         potentials = []
         #if no library, get list of all units
@@ -453,7 +455,8 @@ class Unit:
             return dsgn_unit
 
         #[3.] perform intelligent component recognition by comparing ports and generics
-        log.info("Performing Intelligent Component Recognition for "+dsgn_name+"...")
+        if(verbose):
+            log.info("Performing Intelligent Component Recognition for "+dsgn_name+"...")
         #initialize scores for each potential component
         scores = [0]*len(potentials)
 
@@ -504,13 +507,15 @@ class Unit:
             pass
 
         #[4.] pick the highest score
-        print('--- ICR SCORE REPORT ---')
+        if(verbose):
+            print('--- ICR SCORE REPORT ---')
         i = 0
         for j in range(len(scores)):
             #calculate percentage based on computed score and number of possible points to get
             percentage = round(scores[j]/(len(ports)+len(gens))*100,2)
             #format report to the console
-            print('{:<1}'.format(' '),'{:<40}'.format(potentials[j].getTitle()),'{:<4}'.format('='),'{:<5}'.format(percentage),"%")
+            if(verbose):
+                print('{:<1}'.format(' '),'{:<40}'.format(potentials[j].getTitle()),'{:<4}'.format('='),'{:<5}'.format(percentage),"%")
             #select index with maximum score
             if(scores[j] > scores[i]):
                 i = j
@@ -518,7 +523,8 @@ class Unit:
 
         #select design unit at index with maximum score
         dsgn_unit = potentials[i]
-        log.info("Intelligently selected "+dsgn_unit.getTitle())
+        if(verbose):
+            log.info("Intelligently selected "+dsgn_unit.getTitle())
         #return the selected design unit
         return dsgn_unit
 
