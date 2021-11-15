@@ -234,8 +234,17 @@ class Unit:
         Returns:
             None
         '''
-
+        #make the architecture map
+        if(arch.lower() not in self._config_modes.keys()):
+            self._config_modes[arch] = Map()
+        #know what identifier to find
+        if(search_for.lower() not in self._config_modes[arch].keys()):
+            self._config_modes[arch][search_for] = Map()
+        #know what instances fall for this
+        if(inst_name.lower() not in self._config_modes[arch][search_for].keys()):
+            self._config_modes[arch][search_for][inst_name] = replace_with
         pass
+        #print(self._config_modes)
 
 
     def setChecked(self, c):
