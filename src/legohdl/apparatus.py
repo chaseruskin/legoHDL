@@ -55,7 +55,8 @@ class Apparatus:
                     'author' : cfg.NULL, 
                     'editor' : cfg.NULL,
                     'template' : cfg.NULL, 
-                    'profiles' : cfg.NULL, 
+                    'profiles' : cfg.NULL,
+                    'mixed-language' : cfg.NULL, 
                     'multi-develop' : cfg.NULL, 
                     'refresh-rate' : cfg.NULL,
                     'overlap-global' : cfg.NULL},
@@ -160,7 +161,7 @@ class Apparatus:
 
         cls.generateDefault(dict,"market","script","workspace","metadata","placeholders",header=None)
 
-        cls.generateDefault(bool,"multi-develop","overlap-global",header="general")
+        cls.generateDefault(bool,"multi-develop","overlap-global","mixed-language",header="general")
         cls.generateDefault(int,"refresh-rate",header="general")
         cls.generateDefault(list,"profiles",header="general")
 
@@ -731,7 +732,7 @@ class Apparatus:
     @classmethod
     def getMixedLanguage(cls):
         '''Returns (bool) if all units from cross-languages should be included.'''
-        return True
+        return cls.SETTINGS['general']['mixed-language']
 
 
     @classmethod
@@ -881,6 +882,16 @@ class Apparatus:
 ;   A list of profiles to import settings, templates, and/or scripts.
 ; value: 
 ;   list of strings'''),
+
+    'general|mixed-language' : (cfg.VAR,\
+'''
+; description:
+;   When enabled, units will be able to be identified as instantiated regardless
+;   what language it was written in (VHDL or Verilog). When disabled,
+;   determining what component is instantiated is filtered to only search
+;   through units written in the original language.
+; value: 
+;   boolean (true or false)'''),
 
     'general|multi-develop' : (cfg.VAR,\
 '''

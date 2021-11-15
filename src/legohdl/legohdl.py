@@ -954,7 +954,7 @@ scripts)?", warning=False)
                     apt.setRefreshRate(v)
                 else:
                     #convert to booleans values for these settings
-                    if(k == 'multi-develop' or k == 'overlap-global'):
+                    if(k == 'multi-develop' or k == 'overlap-global' or k == 'mixed-language'):
                         v = cfg.castBool(v)
                     apt.SETTINGS['general'][k] = v
                 #save settings adjusments

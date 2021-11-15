@@ -48,6 +48,11 @@ release the blocks as new versions so any changes are set in stone (default is d
 across different versions (overlapping). If disabled, it will not write multiple labels for the same \
 file, even across different block versions (default is disabled).",
 
+        'mixed-language' :
+"When enabled, units will be able to be identified as instantiated regardless what language it was \
+written in (VHDL or Verilog). When disabled, determining what component is instantiated is filtered \
+to only search through units written in the original language.",
+
         'label:local' : 
 "User-defined groupings of filetypes to be collected and written to the blueprint file on export. \
 Labels help bridge a custom workflow with the user's backend tool. Local labels are only searched \
@@ -347,6 +352,8 @@ settings that will be merged in when importing that profile. A profile directory
                     if(field == 'overlap-global'):
                         ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._tk_vars[section][field], padx=padx, pady=pady)
                     elif(field == 'multi-develop'):
+                        ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._tk_vars[section][field], padx=padx, pady=pady)
+                    elif(field == 'mixed-language'):
                         ToggleSwitch(self._field_frame, 'on', 'off', row=i, col=1, state_var=self._tk_vars[section][field], padx=padx, pady=pady)
                     pass
                 elif(isinstance(value, int)):
