@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/12/2021
+; Modified: 11/14/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -25,7 +25,7 @@ NAME:
         new - Create a new legoHDL block (project)
 
 SYNOPSIS:
-        legohdl new <block> [-open] [-remote=<url>] [-no-template]
+        legohdl new <block> [-open] [-remote=<url>] [-path=<path>] [-no-template]
         legohdl new <file> -file[=<template-file>] [-force]
 
 DESCRIPTION:
@@ -57,6 +57,10 @@ OPTIONS:
         -remote=<url>
             A bare remote git repository to be attached to the created block's
             git repository.
+
+        -path=<path>
+            Overrides the default download path and instead creates block at
+            <path> relative to the workspace's local path.
 
         -no-template
             Do not copy in the configured template folder. The created block
