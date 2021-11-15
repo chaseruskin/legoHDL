@@ -2319,6 +2319,9 @@ class Block:
         maps_on_newline = apt.getField(['HDL-styling', 'newline-maps'], int)
         inst_name = apt.getField(['HDL-styling', 'instance-name'])
 
+        g_mod = '*'
+        p_mod = '*'
+
         #swap placeholders in inst name
         for ph in self.getPlaceholders(ent.E()):
             inst_name = inst_name.replace(ph[0],ph[1])
@@ -2348,7 +2351,10 @@ class Block:
                 hang_end=hang_end))
             print()
         if(inst):
-            print(ent.getInterface().writeConnections(form=lang, align=auto_fit))
+            print(ent.getInterface().writeConnections(form=lang, \
+                align=auto_fit, \
+                g_name=g_mod, \
+                p_name=p_mod))
             lib = None
             #determine the entity's library name
             if(comp == False):
@@ -2365,7 +2371,9 @@ class Block:
                 fit=auto_fit, \
                 hang_end=hang_end, \
                 maps_on_newline=maps_on_newline, \
-                alignment=alignment))
+                alignment=alignment, \
+                g_name=g_mod, \
+                p_name=p_mod))
 
         return True
 

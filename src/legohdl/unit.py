@@ -645,7 +645,7 @@ class Signal:
         self._value = value
         pass
 
-    def writeConnection(self, lang, spaces=1, end=';'):
+    def writeConnection(self, lang, spaces=1, end=';', name='*'):
         '''
         Create compatible code for signal/wire declarations. Includes ';' at the
         end.
@@ -654,6 +654,7 @@ class Signal:
             lang (Unit.Language): VHDL or VERILOG coding format
             spaces (int): number of spaces between identifier and keyword/token
             end (str): final character
+            name (str): the name of the connection
         Returns:
             c_txt (str): compatible line of code to be printed
         '''
@@ -666,7 +667,7 @@ class Signal:
             else:
                 c_txt = 'signal '
             #append identifier
-            c_txt = c_txt + self.getName()+(spaces*' ')+': '
+            c_txt = c_txt + self.getName(mod=name)+(spaces*' ')+': '
             #append datatype
             c_txt = c_txt + self.castDatatype(lang)
             #append initial value
@@ -680,7 +681,7 @@ class Signal:
             #write the datatype
             c_txt = self.castDatatype(lang, keep_net=False) 
             #append the name
-            c_txt = c_txt + " " + self.getName()
+            c_txt = c_txt + " " + self.getName(mod=name)
             #append the initial value
             if(len(self.getValue())):
                 c_txt = c_txt + ' = ' + self.getValue()
@@ -689,7 +690,7 @@ class Signal:
         return c_txt + ';'
 
 
-    def writeMapping(self, lang, spaces=0, fit=False, end=','):
+    def writeMapping(self, lang, spaces=0, fit=False, end=',', name='*'):
         '''
         Create the compatible code for mapping a given signal.
 
@@ -703,9 +704,9 @@ class Signal:
         r_space = 1 if(fit) else spaces
 
         if(lang == Unit.Language.VHDL):
-            m_txt = "    "+self.getName()+(spaces*' ')+"=>"+(r_space*' ')+self.getName()
+            m_txt = "    "+self.getName()+(spaces*' ')+"=>"+(r_space*' ')+self.getName(mod=name)
         elif(lang == Unit.Language.VERILOG):
-            m_txt = "    ."+self.getName()+(spaces*' ')+"("+self.getName()+")"
+            m_txt = "    ."+self.getName()+(spaces*' ')+"("+self.getName(mod=name)+")"
 
         return m_txt+end
 
@@ -784,9 +785,11 @@ class Signal:
             return dtype
 
 
-    def getName(self):
-        '''Returns the identifier (str).'''
-        return self._name
+    def getName(self, mod=None):
+        '''Returns the identifier (str). Use mod (str) to modify the name.'''
+        if(mod == None):
+            return self._name
+        return mod.replace('*', self._name)
 
     
     def getLang(self):
@@ -1007,7 +1010,7 @@ class Interface:
         return self._library
 
 
-    def writeConnections(self, form=None, align=True):
+    def writeConnections(self, form=None, align=True, g_name=None, p_name=None):
         '''
         Write the necessary constants (from generics) and signals (from ports)
         for the given entity.
@@ -1015,6 +1018,8 @@ class Interface:
         Parameters:
             form (Unit.Language): VHDL or VERILOG compatible code style
             align (bool): determine if names should be all equally spaced
+            g_name (str): the modified generics name pattern
+            p_name (str): the modified ports name pattern
         Returns:
             connect_txt (str): compatible code to be printed
         '''
@@ -1030,32 +1035,38 @@ class Interface:
                 return connect_txt
         
         #determine farthest reach constant name
-        farthest = apt.computeLongestWord(self.getGenerics().keys())
+        identifiers = list(self.getGenerics().values())
+        for i in range(len(identifiers)):
+            identifiers[i] = identifiers[i].getName(mod=g_name)
+        farthest = apt.computeLongestWord(identifiers)
                 
         #write constants
         for g in self.getGenerics().values():
             if(align):
-                spaces = farthest - len(g.getName()) + 1
-            connect_txt = connect_txt + g.writeConnection(form, spaces) +'\n'
+                spaces = farthest - len(g.getName(mod=g_name)) + 1
+            connect_txt = connect_txt + g.writeConnection(form, spaces, name=g_name) +'\n'
         
         #add new-line between generics and signals
         if(len(self.getGenerics())):
             connect_txt = connect_txt + '\n'
 
         #determine farthest reach signal name
-        farthest = apt.computeLongestWord(self.getPorts().keys())
+        identifiers = list(self.getPorts().values())
+        for i in range(len(identifiers)):
+            identifiers[i] = identifiers[i].getName(mod=p_name)
+        farthest = apt.computeLongestWord(identifiers)
         
         #write signals
         for p in self.getPorts().values():
             if(align):
-                spaces = farthest - len(p.getName()) + 1
-            connect_txt = connect_txt + p.writeConnection(form, spaces) +'\n'
+                spaces = farthest - len(p.getName(mod=p_name)) + 1
+            connect_txt = connect_txt + p.writeConnection(form, spaces, name=p_name) +'\n'
 
         return connect_txt
     
 
     def writeInstance(self, lang=None, entity_lib=None, inst_name='uX', fit=True, \
-        hang_end=True, maps_on_newline=False, alignment=1):
+        hang_end=True, maps_on_newline=False, alignment=1, g_name=None, p_name=None):
         '''
         Write the correct compatible code for an instantiation of the given
         entity.
@@ -1068,6 +1079,8 @@ class Interface:
             hand_end (bool): true if ) deserves its own line
             maps_on_newline (bool): determine if start of a mapping deserves a newline
             alignment (int): determine number of additional spaces
+            g_name (str): the modified generics name pattern
+            p_name (str): the modified ports name pattern
         Returns:
             m_txt (str): the compatible code to be printed
         '''
@@ -1109,7 +1122,7 @@ class Interface:
                         spaces = farthest - len(g.getName()) + alignment
 
                     #add generic instance mapping
-                    m_txt = m_txt + g.writeMapping(lang, spaces, fit)
+                    m_txt = m_txt + g.writeMapping(lang, spaces, fit, name=g_name)
                     
                     #add newline
                     if(g == gens[-1]):
@@ -1142,7 +1155,7 @@ class Interface:
                     if(fit):
                         spaces = farthest - len(p.getName()) + alignment
                     #add port instance mapping
-                    m_txt = m_txt + p.writeMapping(lang, spaces, fit)
+                    m_txt = m_txt + p.writeMapping(lang, spaces, fit, name=p_name)
                     #add newline
                     if(p == ports[-1]):
                         #trim final ','
@@ -1178,7 +1191,7 @@ class Interface:
                     if(fit):
                         spaces = farthest - len(p.getName()) + alignment
                     #add parameter instance mapping
-                    m_txt = m_txt + p.writeMapping(lang, spaces, fit)
+                    m_txt = m_txt + p.writeMapping(lang, spaces, fit, name=g_name)
                     #don't add ',\n' if on last generic
                     if(p == params[-1]): 
                         #trim final ','
@@ -1211,7 +1224,7 @@ class Interface:
                     if(fit):
                         spaces = farthest - len(p.getName()) + alignment
                     #add port declaration
-                    m_txt = m_txt + p.writeMapping(lang, spaces, fit)
+                    m_txt = m_txt + p.writeMapping(lang, spaces, fit, name=p_name)
                     #don't add ,\n if on last port
                     if(p == ports[-1]):
                         #trim final ','
