@@ -933,6 +933,14 @@ class Block:
             log.info("Path is not within the workspace!")
             return False
 
+        #make sure Block.cfg files do not exist beyond the current directory
+        md_files = glob.glob(self.getPath()+"**/"+apt.MARKER, recursive=True)
+        if(len(md_files) > 0 and self.isValid() == False):
+            log.error("Cannot initialize a block when sub-directories are blocks.")
+            return False
+
+        #:todo: make sure no directories to get to this one are valid Blocks
+
         #make sure a git repository is empty if passing in a remote
         if(remote != None and Git.isBlankRepo(remote) == False):
             if(Git.isValidRepo(remote, remote=True)):
