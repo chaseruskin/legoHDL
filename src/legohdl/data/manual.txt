@@ -170,7 +170,7 @@ NAME:
         get - Print the compatible code for the ports list of a specified entity
 
 SYNOPSIS:
-        legohdl get [<block>:]<entity> [-comp[=<lang>] -inst[=<lang>]] [-arch]
+        legohdl get [<block>:]<entity> [-comp[=<lang>]] [-inst[=<lang>]] [-arch]
                 [-about] [-edges] [-D | -I]
 
 DESCRIPTION:
