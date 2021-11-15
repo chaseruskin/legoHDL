@@ -347,13 +347,13 @@ class CfgFile:
         Returns:
             (bool): str_val determined as a boolean type
 
-        Accepted true cases are: 'true', '1', 'yes', 'on', 'enable'. All others
+        Accepted true cases are: 'true', '!=0', 'yes', 'on', 'enable'. All others
         will return false.
         '''
         if(isinstance(str_val, bool)):
             return str_val
         str_val = str_val.lower()
-        return (str_val == 'true' or str_val == '1' or 
+        return (str_val == 'true' or (str_val.isdigit() and str_val != '0') or 
                 str_val == 'yes' or str_val == 'on' or str_val == 'enable')
     
 
