@@ -281,11 +281,13 @@ class Vhdl(Language):
                         u.addReq(comp_unit)
                         if(comp_unit.isChecked() == False and recursive):
                             comp_unit.getLanguageFile().decode(comp_unit, recursive)
-                    else:
-                        #print(cseg)
                         pass
-                    #exit()  #exit for debugging 
+
+                    pass
                 pass
+            
+            pass
+
         pass
 
 
