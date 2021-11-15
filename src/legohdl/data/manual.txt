@@ -612,6 +612,9 @@ OPTIONS:
                 Return data from the block with specified version/partial
                 version.
         
+        -A
+                Return data from the block at the available level.
+        
         -stats
                 Get relevant stats about the block such as units created.
 

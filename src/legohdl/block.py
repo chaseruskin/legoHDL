@@ -2324,6 +2324,9 @@ class Block:
         if(list_arch):
             print('--- ARCHITECTURES ---')
             print(ent.readArchitectures())
+        #do not continue to try to print instantiation or component code for packages
+        if(ent.getDesign() == Unit.Design.PACKAGE):
+            return
         if(comp or inst):
             print('--- CODE ---')
         if(comp):
