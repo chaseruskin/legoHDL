@@ -1010,7 +1010,10 @@ scripts)?", warning=False)
         #create a new file
         if(self.hasFlag('file')):
             Block(os.getcwd(), self.WS())
-            Block.getCurrent().newFile(self.getItem(raw=True), self.getVar("file"), self.hasFlag('force'))
+            Block.getCurrent().newFile(self.getItem(raw=True), \
+                self.getVar("file"), \
+                self.hasFlag('force'), \
+                self.hasFlag('open'))
             return
         
         title = self.getItem()

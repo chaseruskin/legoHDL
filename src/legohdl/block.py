@@ -855,7 +855,7 @@ class Block:
         pass
 
 
-    def newFile(self, fpath, tmplt_fpath=None, force=False):
+    def newFile(self, fpath, tmplt_fpath=None, force=False, auto_open=False):
         '''
         Create a new file from a template file to an already existing block.
 
@@ -863,6 +863,7 @@ class Block:
             fpath (str): the file to create
             tmpltfpath (str): the file to copy from
             force (bool): determine if to overwrite an existing file of same desired name
+            auto_open (bool): determine if to open the file after creation
         Returns:
             success (bool): determine if operation was successful
         '''
@@ -902,7 +903,11 @@ class Block:
         #copy file
         shutil.copyfile(tmplt_fpath, fpath)
         #fill in placeholder values
-        return self.fillPlaceholders(fpath, template_val=fname)
+        success = self.fillPlaceholders(fpath, template_val=fname)
+
+        if(success and auto_open):
+            apt.execute(apt.getEditor(), fpath)
+        return success
 
     
     def create(self, title, cp_template=True, remote=None):
