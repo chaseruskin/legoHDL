@@ -275,7 +275,7 @@ class Vhdl(Language):
                     #gather instantiated ports and generics
                     p_list, g_list = self.collectInstanceMaps(cseg)
                     #try to locate the unit with the given information
-                    comp_unit = Unit.ICR(comp_name, lib=lib, ports=p_list, gens=g_list)
+                    comp_unit = Unit.ICR(comp_name, lang=u.getLang(), lib=lib, ports=p_list, gens=g_list)
                     #add the unit as a requirement and decode it if exists
                     if(comp_unit != None):
                         u.addReq(comp_unit)
@@ -285,7 +285,7 @@ class Vhdl(Language):
 
                     pass
                 pass
-            
+
             pass
 
         pass

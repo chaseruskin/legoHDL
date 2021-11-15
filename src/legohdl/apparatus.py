@@ -727,6 +727,12 @@ class Apparatus:
         '''Returns the build directory (str) relative to a block's cfg file.'''
         return 'build/'
 
+    
+    @classmethod
+    def getMixedLanguage(cls):
+        '''Returns (bool) if all units from cross-languages should be included.'''
+        return True
+
 
     @classmethod
     def setEditor(cls, editor):

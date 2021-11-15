@@ -145,7 +145,7 @@ class Verilog(Language):
                 #gather instantiated ports and generics
                 p_list, g_list = self.collectInstanceMaps(cseg[cseg.index(comp_name):])
                 #try to locate the unit with the given information
-                comp_unit = Unit.ICR(comp_name, lib=None, ports=p_list, gens=g_list)
+                comp_unit = Unit.ICR(comp_name, lang=u.getLang(), lib=None, ports=p_list, gens=g_list)
                 if(comp_unit != None):
                     #add as a requirement
                     u.addReq(comp_unit)

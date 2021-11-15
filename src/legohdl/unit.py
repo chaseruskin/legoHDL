@@ -197,7 +197,7 @@ class Unit:
                 lib_name = self.L()
             pkg_name = pkg_parts[1]
             
-            dsgn_pkg = Unit.ICR(pkg_name, lib=lib_name)
+            dsgn_pkg = Unit.ICR(pkg_name, lang=self.getLang(), lib=lib_name)
             #add the package object if its been found
             if(dsgn_pkg != None):
                 dsgn_pkgs += [dsgn_pkg] 
@@ -406,7 +406,7 @@ class Unit:
 
 
     @classmethod
-    def ICR(cls, dsgn_name, lib=None, ports=[], gens=[]):
+    def ICR(cls, dsgn_name, lang, lib=None, ports=[], gens=[]):
         '''
         Intelligently select the entity given the unit name and library (if exists). 
         
@@ -433,9 +433,14 @@ class Unit:
                 #could be any design that falls under this unit name
                 if(dsgn_name.lower() in list(ul.keys())):
                     potentials += ul[dsgn_name]
+
         #a library was given, only pull list from that specific library.unit slot
         elif(lib.lower() in cls.Bottle.keys() and dsgn_name.lower() in cls.Bottle[lib].keys()):
             potentials = cls.Bottle[lib][dsgn_name]
+        
+        #filter the units to only include original language units if mixed language is OFF
+        if(apt.getMixedLanguage() == False):
+            potentials = list(filter(lambda a: a.getLang() == lang, potentials))
 
         #[2.] determine if ICR needs to be performed or unit is obviously only one
         dsgn_unit = None
