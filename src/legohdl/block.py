@@ -2554,7 +2554,8 @@ class Block:
 
         #read the list of versions implemented and obtainable
         if(versions):
-            info_txt = ''
+            info_txt = '{:<12}'.format("Version")+' '+'{:<2}'.format("I")+' '+'{:<18}'.format("Partials")
+            info_txt = info_txt + '\n' + "-"*12+" "+"-"*2+" "+"-"*18 + '\n'
             
             instl_versions = []
             #try to see if there are any installation versions
@@ -2572,31 +2573,33 @@ class Block:
             if(len(all_versions) == 0):
                 all_versions = self.sortVersions(self.getTaggedVersions())
             
-            #track what major versions have been identified
-            maj_vers = []
+            #track what partial versions have been identified
+            logged_part_vers = []
             #iterate through all versions
             for x in all_versions:
+                status = ''
+                partials = []
+                
                 #:todo: constrain the list to what the user inputted
-                if(ver != None and False):
-                    continue
-                info_txt = info_txt + x + '\t'
-                #notify user of the installs in cache
-                if(x in instl_versions):
-                    if(x != instl_versions[0] or instl_versions.count(x) > 1):
-                        info_txt = info_txt + '*'
+                
+                #check if this specific version is installed to cache
+                if(x in instl_versions and \
+                    (x != instl_versions[0] or instl_versions.count(x) > 1)):
+                    status = '*'
+                    #identify what version are partial versions
+                    maj_ver = apt.listToStr(x.split('.')[:1], delim='.')
+                    if(maj_ver in instl_versions and maj_ver not in logged_part_vers):
+                        partials += [maj_ver]
+                        logged_part_vers.append(maj_ver)
+                
+                #latest is the highest version from instl_versions
+                if(x == instl_versions[0]):
+                    partials += ['latest']
 
-                        #identify what version are sub versions
-                        maj_ver = apt.listToStr(x.split('.')[:1], delim='.')
-                        if(maj_ver in instl_versions):
-                            if(maj_ver not in maj_vers):
-                                info_txt = info_txt + '\t' + maj_ver
-                                maj_vers.append(maj_ver)
-                    
-                    #latest is the highest version from instl_versions
-                    if(x == instl_versions[0]):
-                        info_txt = info_txt + '\t' + 'latest'
-                pass
                 #add new line for next version to be formatted
+                info_txt = info_txt + '{:<12}'.format(x)+' '+ \
+                    '{:<2}'.format(status)+' '+ \
+                    '{:<18}'.format(apt.listToStr(partials, delim=' '))
                 info_txt = info_txt + '\n'
                 pass
             pass
