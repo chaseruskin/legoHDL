@@ -2473,14 +2473,14 @@ class Block:
         return round(float(apt.getPathSize(self.getPath())/1000), 2)
 
 
-    def readInfo(self, stats=False, versions=False, ver=None):
+    def readInfo(self, stats=False, versions=False, ver_range=None):
         '''
         Return information relevant to the current block (metadata).
 
         Parameters:
             stats (bool): determine if to print additional stats
             versions (bool): determine if to print the available versions
-            ver (str): a constraint string for how to filter available versions (v1.0.0:1.9.0)
+            ver_range (str): a constraint string for how to filter available versions (v1.0.0:1.9.0)
         Returns:
             info_txt (str): information text to be printed to console
         '''
@@ -2598,6 +2598,10 @@ class Block:
                 #latest is the highest version from instl_versions
                 if(x == instl_versions[0]):
                     partials += ['latest']
+                
+                #do not write version if constrained to list only installed versions
+                if(ver_range.lower() == 'i' and len(status) + len(partials) == 0):
+                    continue
 
                 #add new line for next version to be formatted
                 info_txt = info_txt + '{:<12}'.format(x)+' '+ \

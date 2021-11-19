@@ -806,7 +806,7 @@ scripts)?", warning=False)
             exit(log.error("Could not identify a block with "+self.getItem()+'.'))
 
         success = block.uninstall(self.getVerNum(places=[1,2,3]))
-        
+
         if(success):
             log.info("Success.")
         pass
@@ -871,7 +871,8 @@ scripts)?", warning=False)
             pass
 
         print(block.readInfo(self.hasFlag('stats'), \
-            self.hasFlag('vers')))
+            versions=self.hasFlag('vers'), \
+            ver_range=self.getVar('vers')))
         pass
 
 

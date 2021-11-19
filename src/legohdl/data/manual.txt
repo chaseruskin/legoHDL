@@ -590,7 +590,8 @@ NAME:
         info - Read detailed information about a block
 
 SYNOPSIS:
-        legohdl info <block> [-D | -I | -<version> | -A] [-stats] [-vers]
+        legohdl info <block> [-D | -I | -<version> | -A] [-stats] 
+                [-vers[=<range>]]
         legohdl info <profile> -profile
 
 DESCRIPTION:
@@ -623,8 +624,10 @@ OPTIONS:
                 Get relevant stats about the block such as the path, project 
                 size, design units, and block integrations.
 
-        -vers
-                List all available versions for the specified block.
+        -vers[=<range>]
+                List all available versions for the specified block. <range>
+                will constrain the list of versions. Accepted values for <range>
+                are I or a version indexing.
 
         <profile>
                 :ref:
