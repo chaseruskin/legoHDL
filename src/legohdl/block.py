@@ -49,13 +49,14 @@ class Block:
 
     #all possible metadata that may go under [block]
     FIELDS = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', \
-        'remote', 'market', 'requires', 'versions', 'size']
+        'remote', 'market', 'requires', 'versions', 'size', 'vhdl-units', \
+        'vlog-units']
 
     #metadata that must be written in [block] else the block is seen as corrupted
     REQ_FIELDS = ['name', 'library', 'version', 'market', 'requires']
 
     #metadata that gets added as block loses detail (at AVAILABLE level)
-    EXTRA_FIELDS = ['versions', 'size']
+    EXTRA_FIELDS = ['versions', 'size', 'vhdl-units', 'vlog-units']
 
     #class attribute that is a block object found on current path
     _Current = None
@@ -2229,7 +2230,7 @@ class Block:
         return vhdl_cnt, vlog_cnt
 
 
-    def loadHDL(self, returnnames=False):
+    def loadHDL(self, returnnames=False, lang=''):
         '''
         Identify all HDL files within the block and all designs in each file.
 
@@ -2237,12 +2238,29 @@ class Block:
         
         Parameters:
             returnnames (bool): determine if to return list of names
+            lang (str): filter based on HDL coding language ('vhdl' or 'vlog')
         Returns:
             self._units (Map): the Unit Map object down to M/L/N level
             or
             ([str]): list of unit names if returnnames is True
         '''
         if(hasattr(self, "_units")):
+            if(lang != ''):
+                #filter between vhdl or verilog units
+                tmp_fltr = []
+                if(lang.lower() == 'vhdl'):
+                    tmp_fltr = list(filter(lambda a: a[1].getLang() == Unit.Language.VHDL, self._units.items()))
+                elif(lang.lower() == 'vlog'):
+                    tmp_fltr = list(filter(lambda a: a[1].getLang() == Unit.Language.VERILOG, self._units.items()))
+                #compile into a Map
+                tmp = Map()
+                for u in tmp_fltr:
+                    tmp[u[0]] = u[1]
+                #only return the keys (names)
+                if(returnnames):
+                    return list(tmp.keys())
+                return tmp
+
             if(returnnames):
                 return list(self._units.keys())
             return self._units
@@ -2263,6 +2281,22 @@ class Block:
             self._units = Unit.Jar[self.M()][self.L()][self.N()]
         else:
             self._units = Map()
+
+        if(lang != ''):
+            #filter between vhdl or verilog units
+            tmp_fltr = []
+            if(lang.lower() == 'vhdl'):
+                tmp_fltr = list(filter(lambda a: a[1].getLang() == Unit.Language.VHDL, self._units.items()))
+            elif(lang.lower() == 'vlog'):
+                tmp_fltr = list(filter(lambda a: a[1].getLang() == Unit.Language.VERILOG, self._units.items()))
+            #compile into a Map
+            tmp = Map()
+            for u in tmp_fltr:
+                tmp[u[0]] = u[1]
+            #only return the keys (names)
+            if(returnnames):
+                return list(tmp.keys())
+            return tmp
             
         if(returnnames):
             return list(self._units.keys())
@@ -2453,6 +2487,8 @@ class Block:
 
         all_versions = []
         size = self.getSize()
+        vhdl_units = []
+        vlog_units = []
 
         #read the metadata by default
         info_txt = '--- METADATA ---\n'
@@ -2470,10 +2506,16 @@ class Block:
                 if(in_header.lower() == '[block]' and in_field.lower() in Block.EXTRA_FIELDS):
                     #capture available versions
                     if(in_field.lower() == 'versions' and len(all_versions) == 0):
-                        all_versions = self.getMeta('versions')
+                        all_versions = self.getMeta(in_field)
                     #capture the block's size
                     elif(in_field.lower() == 'size'):
-                        size = self.getMeta('size')
+                        size = self.getMeta(in_field)
+                    #capture VHDL units
+                    elif(in_field.lower() == 'vhdl-units'):
+                        vhdl_units = self.getMeta(in_field)
+                    #capture VLOG units
+                    elif(in_field.lower() == 'vlog-units'):
+                        vlog_units = self.getMeta(in_field)
                     #do not write to metadata section (but do write empty lines)
                     if(len(line.strip()) > 0):
                         continue
@@ -2494,13 +2536,10 @@ class Block:
             info_txt = info_txt + '\n'
 
             #read the units found in this block
-            vhdl_units = []
-            vlog_units = []
-            for u in self.loadHDL().values():
-                if(u.getLang() == Unit.Language.VHDL):
-                    vhdl_units += [u.E()]
-                elif(u.getLang() == Unit.Language.VERILOG):
-                    vlog_units += [u.E()]
+            if(len(vhdl_units) == 0):
+                vhdl_units = self.loadHDL(lang='vhdl', returnnames=True)
+            if(len(vlog_units) == 0):
+                vlog_units = self.loadHDL(lang='vlog', returnnames=True)
 
             if(len(vhdl_units) > 0):
                 txt = '\nVHDL units:\n'

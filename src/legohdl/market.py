@@ -163,6 +163,15 @@ class Market:
         #add the size of latest project (kilobytes)
         meta['block']['size'] = block.getSize()
 
+        #add VHDL units and Verilog units
+        vhdl_units = block.loadHDL(lang='vhdl', returnnames=True)
+        vlog_units = block.loadHDL(lang='vlog', returnnames=True)
+
+        if(len(vhdl_units)):
+            meta['block']['vhdl-units'] = vhdl_units
+        if(len(vlog_units)):
+            meta['block']['vlog-units'] = vlog_units
+
         #write metadata to marker file in market for this block
         with open(meta_path, 'w') as meta_file:
             cfg.save(meta, meta_file, ignore_depth=True, space_headers=True)
