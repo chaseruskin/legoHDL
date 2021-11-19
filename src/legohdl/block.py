@@ -2570,7 +2570,6 @@ class Block:
 
             #sort the versions available in cache
             instl_versions = self.sortVersions(instl_versions)
-            print(instl_versions)
             
             #sort the versions found on the self block
             if(len(all_versions) == 0):
