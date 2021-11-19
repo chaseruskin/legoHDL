@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/15/2021
+; Modified: 11/18/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -177,7 +177,7 @@ SYNOPSIS:
 DESCRIPTION:
         When trying to access current block-level entities, the <block>
         can be omitted (a form of shortcutting). To reference a entity,
-        <market>.<library>.<name>(<version>):<entity>.
+        <market>.<library>.<project>:<entity>.
 
         By default, it will print the 'about' section and the component 
         declaration for VHDL entities or the module interface for Verilog 
