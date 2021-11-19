@@ -419,18 +419,36 @@ scripts)?", warning=False)
 
         unit_order,block_order = Unit.Hierarchy.topologicalSort()
 
+        #store the text lines to write to the blueprint file
         blueprint_data = []
+
+        #store what files each block's version has added to the blueprint
+        block_files = Map()
 
         #get all label data from blocks
         for b in block_order:
+            block_key = b.getFull(inc_ver=True)
+            #create new keyslot for this block
+            if(block_key not in block_files.keys()):
+                block_files[block_key] = []
             for lbl in Label.Jar.values():
                 #get global labels from external blocks
                 if(lbl.isGlobal() == True):
                     #gather files with specific label extension
-                    paths = b.gatherSources(ext=lbl.getExtensions())
+                    path = None
+                    #if partial version check its specific version path
+                    if(b.getLvl(to_int=False) == Block.Level.VER):
+                        root,_ = os.path.split(b.getPath()[:len(b.getPath())-1])
+                        path = root+'/v'+b.getVersion()+'/'
+
+                    paths = b.gatherSources(ext=lbl.getExtensions(), path=path)
                     #add every found file identified with this label to the blueprint
                     for p in paths:
-                        blueprint_data += ['@'+lbl.getName()+' '+p]
+                        #only add files that have not already been added for this block's version
+                        if(p not in block_files[block_key]):
+                            blueprint_data += ['@'+lbl.getName()+' '+p]
+                            block_files[block_key] += [p]
+
                     pass
                 #perform local-only label searching on current block
                 if(b == block_order[-1]):
