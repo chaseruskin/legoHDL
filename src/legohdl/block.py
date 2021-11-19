@@ -1907,7 +1907,7 @@ class Block:
         for e in ext:
             srcs = srcs + glob.glob(path+"/**/"+e, recursive=True)
         #print(srcs)
-        return srcs
+        return set(srcs)
 
 
     @classmethod
@@ -2299,8 +2299,6 @@ class Block:
             if(returnnames):
                 return list(tmp.keys())
             return tmp
-
-        print(self._units)
             
         if(returnnames):
             return list(self._units.keys())

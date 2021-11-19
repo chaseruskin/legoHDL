@@ -108,10 +108,10 @@ class Unit:
             self.Jar[self.M()][self.L()][self.N()][self.E()] = self
         else:
             log.error("An entity at this level already exists as: "+self.E()+"!")
+            print("Already:")
             print(self.Jar[self.M()][self.L()][self.N()][self.E()])
-            print(self.Jar[self.M()][self.L()][self.N()][self.E()].getFile())
+            print("Tries:")
             print(self)
-            print(self.getFile())
             exit(1)
 
         # add to Bottle - a 2-level Map with values as lists effectively binning units together

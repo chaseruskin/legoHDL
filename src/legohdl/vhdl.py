@@ -87,7 +87,7 @@ class Vhdl(Language):
                 pass
             #declare an entity
             if(cseg[0].lower() == 'entity'):
-                print("Identified entity: "+cseg[1])
+                #print("Identified entity: "+cseg[1])
                 self._designs += [Unit(cseg[1], self.getPath(), Unit.Design.ENTITY, self)]
                 dsgn_unit = self._designs[-1]
                 self.getInterface(dsgn_unit, c_statements[c_statements.index(cseg):])
