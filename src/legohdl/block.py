@@ -2299,6 +2299,8 @@ class Block:
             if(returnnames):
                 return list(tmp.keys())
             return tmp
+
+        print(self._units)
             
         if(returnnames):
             return list(self._units.keys())
@@ -2600,8 +2602,9 @@ class Block:
                     partials += ['latest']
                 
                 #do not write version if constrained to list only installed versions
-                if(ver_range.lower() == 'i' and len(status) + len(partials) == 0):
-                    continue
+                if(ver_range != None):
+                    if(ver_range.lower() == 'i' and len(status) + len(partials) == 0):
+                        continue
 
                 #add new line for next version to be formatted
                 info_txt = info_txt + '{:<12}'.format(x)+' '+ \

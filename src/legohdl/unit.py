@@ -80,7 +80,6 @@ class Unit:
         self._V = lang_obj.getOwner().V()
         self._E = name
 
-
         self._checked = False
         self._config = None
         self._config_modes = Map()
@@ -88,8 +87,7 @@ class Unit:
         #create an empty interface
         self._interface = Interface(name=self.E(), library=self.L(), def_lang=self.getLang())
 
-        # :note: printing component declarations needs to be done, as well as allowing package's to 
-        # print their information like a component can
+        # :note: allowing packages to print their information like a component can
 
         # by default, look at the entities available in download section? or look at entities
         # in installation section.
@@ -108,6 +106,9 @@ class Unit:
         #store entity at this nested level
         if(self.E().lower() not in self.Jar[self.M()][self.L()][self.N()].keys()):
             self.Jar[self.M()][self.L()][self.N()][self.E()] = self
+        #skip if entity has already been defined (self-duplicate)
+        elif(self == self.Jar[self.M()][self.L()][self.N()][self.E()]):
+            return
         else:
             log.error("An entity at this level already exists as: "+self.E()+"!")
             print(self.getFile())
@@ -124,7 +125,6 @@ class Unit:
              self.Bottle[self.L()][self.E()] = []
         #add entity to a list
         self.Bottle[self.L()][self.E()] += [self]
-
         pass
 
 

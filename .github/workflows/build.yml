@@ -10,8 +10,6 @@ jobs:
     steps:
       - uses: actions/setup-python@v2.2.2
       - uses: actions/checkout@v2
-      #- run: git config --global user.email ""
-      #- run: git config --global user.name "chase"
       - run: pip install .
       - run: printf 'y\n\nchase\ngedit\n~/demo/\ny\n' | legohdl
       - run: legohdl new library1.Lab0
