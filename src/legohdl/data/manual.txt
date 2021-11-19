@@ -640,8 +640,11 @@ SYNOPSIS:
                 [-multi-develop=<bool>] [-overlap-global=<bool>]
                 [-refresh-rate=<rt>] [-profile=<profile-name>] 
                 [-script=<alias>:<cmd>] [-workspace=<ws>:<path>] 
-                [-market=<mrkt>[:<url>] [-link | -unlink]]
-                
+                [-market=<mrkt>[:<url>] [-link | -unlink]] [-auto-fit=<bool>]
+                [-newline-maps=<bool>] [-alignment=<int>] [-hanging-end=<bool>]
+                [default-language=<lang>] [-instance-name=<inst>] 
+                [-port-modifier=<mod>] [-generic-modifier=<mod>] 
+                [-placeholder=<ph>:<value>]           
 
 DESCRIPTION:
         :todo:

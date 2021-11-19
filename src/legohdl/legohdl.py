@@ -989,17 +989,36 @@ scripts)?", warning=False)
                 #save adjustments
                 Workspace.save()
                 pass
-            elif(k in apt.SETTINGS['general'].keys()):
-                if(k == 'active-workspace'):
-                    Workspace.setActiveWorkspace(v)
-                    Workspace.save()
-                elif(k == 'refresh-rate'):
-                    apt.setRefreshRate(v)
-                else:
+            #modify placeholders
+            elif(k == 'placeholder'):
+                apt.setField(var_val, ['placeholders', var_key])
+                apt.save()
+            #modify active workspace setting
+            elif(k == 'active-workspace'):
+                Workspace.setActiveWorkspace(v)
+                Workspace.save()
+            #modify refresh-rate
+            elif(k == 'refresh-rate'):
+                apt.setRefreshRate(v)
+                apt.save()
+            else:
+                header = None
+                #try to find what section the setting is under
+                if(k.lower() in apt.SETTINGS['general'].keys()):
+                    header = 'general'
+                elif(k.lower() in apt.SETTINGS['HDL-styling'].keys()):
+                    header = 'HDL-styling'
+                #continue to write the value to the correct setting if found
+                if(header != None):
                     #convert to booleans values for these settings
-                    if(k == 'multi-develop' or k == 'overlap-global' or k == 'mixed-language'):
-                        v = cfg.castBool(v)
-                    apt.SETTINGS['general'][k] = v
+                    if(k == 'multi-develop' or k == 'overlap-global' or \
+                        k == 'mixed-language' or k == 'newline-maps' or \
+                        k == 'auto-fit' or k == 'hanging-end'):
+                            v = cfg.castBool(v)
+                    #write to setting
+                    apt.setField(v, [header, k])
+                pass          
+
                 #save settings adjusments
                 apt.save()
         pass

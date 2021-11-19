@@ -612,7 +612,7 @@ class Apparatus:
     @classmethod
     def getRefreshRate(cls):
         '''Returns the refresh-rate (int) from the settings data structure.'''
-        return cls.SETTINGS['general']['refresh-rate']
+        return cfg.castInt(cls.getField(['general', 'refresh-rate']))
 
 
     @classmethod
@@ -626,14 +626,14 @@ class Apparatus:
             None
         '''
         #convert to integer
-        cfg.castInt(r)
+        r = cfg.castInt(r)
         #clamp upper and lower bounds
         if(r > cls.MAX_RATE):
             r = cls.MAX_RATE
         elif(r < cls.MIN_RATE):
             r = cls.MIN_RATE
         #set in settings
-        cls.SETTINGS['general']['refresh-rate'] = r
+        cls.setField(r, ['general', 'refresh-rate'])
         pass
 
 
