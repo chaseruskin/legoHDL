@@ -861,6 +861,14 @@ scripts)?", warning=False)
                     return
                 pass
             pass
+        #wishing to get information from metadata found in this block's market
+        elif(self.hasFlag('a')):
+            block = block.getLvlBlock(Block.Level.AVAIL)
+            #no download to read from
+            if(block == None):
+                log.error("Block "+title+" is not available in a market!")
+                return
+            pass
 
         print(block.readInfo(self.hasFlag('stats'), \
             self.hasFlag('vers')))

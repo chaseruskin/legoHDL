@@ -7,7 +7,6 @@
 #   root folder.
 
 import os, shutil, stat, glob
-from posixpath import split
 import logging as log
 from datetime import date
 from enum import Enum
@@ -50,10 +49,13 @@ class Block:
 
     #all possible metadata that may go under [block]
     FIELDS = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', \
-        'remote', 'market', 'requires', 'versions']
+        'remote', 'market', 'requires', 'versions', 'size']
 
     #metadata that must be written in [block] else the block is seen as corrupted
     REQ_FIELDS = ['name', 'library', 'version', 'market', 'requires']
+
+    #metadata that gets added as block loses detail (at AVAILABLE level)
+    EXTRA_FIELDS = ['versions', 'size']
 
     #class attribute that is a block object found on current path
     _Current = None
@@ -1546,9 +1548,12 @@ class Block:
         #install the specific version
         b = self.installPartialVersion(ver, places=3)
 
+        #failed if block was corrupted
+        if(b == None):
+            return b
+
         #try to update the sub-version associated with this specific version
-        if(b != None):
-            self.installPartialVersion(ver, places=1)
+        self.installPartialVersion(ver, places=1)
 
         #re-disable write permissions for installation block
         self.modWritePermissions(False)
@@ -2441,10 +2446,32 @@ class Block:
         #make sure the metadata is properly formatted
         self.secureMeta()
 
+        all_versions = []
+        size = self.getSize()
+
         #read the metadata by default
         info_txt = '--- METADATA ---\n'
+        in_header = ''
+        in_field = ''
+        
         with open(self.getMetaFile(), 'r') as file:
             for line in file:
+                if(len(line) > 1 and line.strip()[0] == '[' and line.strip()[-1] == ']'):
+                    in_header = line.strip()
+                elif(line.count('=')):
+                    in_field = line[:line.find('=')].strip()
+                #print(in_header+'|'+in_field)
+                #avoid printing extra fields in metadata section
+                if(in_header.lower() == '[block]' and in_field.lower() in Block.EXTRA_FIELDS):
+                    #capture available versions
+                    if(in_field.lower() == 'versions' and len(all_versions) == 0):
+                        all_versions = self.getMeta('versions')
+                    #capture the block's size
+                    elif(in_field.lower() == 'size'):
+                        size = self.getMeta('size')
+                    #do not write to metadata section (but do write empty lines)
+                    if(len(line.strip()) > 0):
+                        continue
                 info_txt = info_txt + line
 
         #read relevant stats
@@ -2453,7 +2480,7 @@ class Block:
            
             #read location
             info_txt = info_txt + '\nLocation: '+self.getPath()+'\n'
-            info_txt = info_txt + 'Size: '+str(self.getSize())+' KB\n'
+            info_txt = info_txt + 'Size: '+str(size)+' KB\n'
             
             #read what blocks require this block
             info_txt = info_txt + '\nRequired by:\n'
@@ -2498,7 +2525,8 @@ class Block:
             instl_versions = self.sortVersions(instl_versions)
             
             #sort the versions found on the self block
-            all_versions = self.sortVersions(self.getTaggedVersions())
+            if(len(all_versions) == 0):
+                all_versions = self.sortVersions(self.getTaggedVersions())
             
             #track what major versions have been identified
             maj_vers = []
