@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/18/2021
+; Modified: 11/19/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -587,7 +587,7 @@ NAME:
         info - Read detailed information about a block
 
 SYNOPSIS:
-        legohdl info <block> [-D | -I | -<version>] [-stats] [-vers]
+        legohdl info <block> [-D | -I | -<version> | -A] [-stats] [-vers]
         legohdl info <profile> -profile
 
 DESCRIPTION:
