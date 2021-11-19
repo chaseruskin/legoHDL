@@ -235,7 +235,7 @@ class Block:
         base_path = apt.fs(base_path)
         dirs = os.listdir(base_path)
         for d in dirs:
-            if(Block.validVer(d, places=[1,3])):
+            if(Block.validVer(d, places=[1,2,3])):
                 path = apt.fs(base_path+d+'/')
                 instl._instls[d] = Block(path, instl.getWorkspace(), lvl=Block.Level.VER)
 
@@ -1561,6 +1561,8 @@ class Block:
         #try to update the sub-version associated with this specific version
         self.installPartialVersion(ver, places=1)
 
+        self.installPartialVersion(ver, places=2)
+
         #re-disable write permissions for installation block
         self.modWritePermissions(False)
 
@@ -2568,6 +2570,7 @@ class Block:
 
             #sort the versions available in cache
             instl_versions = self.sortVersions(instl_versions)
+            print(instl_versions)
             
             #sort the versions found on the self block
             if(len(all_versions) == 0):
@@ -2586,11 +2589,12 @@ class Block:
                 if(x in instl_versions and \
                     (x != instl_versions[0] or instl_versions.count(x) > 1)):
                     status = '*'
-                    #identify what version are partial versions
-                    maj_ver = apt.listToStr(x.split('.')[:1], delim='.')
-                    if(maj_ver in instl_versions and maj_ver not in logged_part_vers):
-                        partials += [maj_ver]
-                        logged_part_vers.append(maj_ver)
+                    #identify what version are partial versions (maj and min partials)
+                    for i in range(1,3):
+                        part_ver = apt.listToStr(x.split('.')[:i], delim='.')
+                        if(part_ver in instl_versions and part_ver not in logged_part_vers):
+                            partials += [part_ver]
+                            logged_part_vers.append(part_ver)
                 
                 #latest is the highest version from instl_versions
                 if(x == instl_versions[0]):

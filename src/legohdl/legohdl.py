@@ -806,7 +806,7 @@ scripts)?", warning=False)
             exit(log.error("Could not identify a block with "+self.getItem()+'.'))
 
         success = block.uninstall(self.getVerNum(places=[1,2,3]))
-
+        
         if(success):
             log.info("Success.")
         pass
@@ -842,7 +842,7 @@ scripts)?", warning=False)
                 return
             pass
         #wishing to pull in information on the installed block
-        elif(self.hasFlag('i') or self.getVerNum(places=[1,3]) != None):
+        elif(self.hasFlag('i') or self.getVerNum(places=[1,2,3]) != None):
             block = block.getLvlBlock(Block.Level.INSTL)
             #no installation to read from
             if(block == None):
