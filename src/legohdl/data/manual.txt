@@ -27,7 +27,7 @@ NAME:
 SYNOPSIS:
         legohdl new <block> [-open] [-remote=<url>] [-path=<path>] 
                 [-no-template]
-        legohdl new <file> -file[=<template-file>] [-force] [-open]
+        legohdl new <file> -file[=<template-file>] [-force] [-no-open]
 
 DESCRIPTION:
         Create a new HDL project recognized by legoHDL as a "block". The block
@@ -44,8 +44,8 @@ DESCRIPTION:
         per-block basis.
         
         If trying to create a new file and that path already exists, the
-        existing file will not be overwritten unless -force is used.
-        :todo:
+        existing file will not be overwritten unless -force is used. Creating 
+        new files by default will auto-open in the configured text editor.
 
 OPTIONS:
         <block>
@@ -79,6 +79,9 @@ OPTIONS:
         -force
                 Overwrite the filepath even if it already exists when 
                 initializing a file.
+
+        -no-open
+                Do not open the newly created file in the configured editor.
 
 
 * init
@@ -159,7 +162,7 @@ OPTIONS:
             template folder will be opened.
         
         -settings[=<mode>]
-            The flag to indicate the settings is trying to be opened.
+            The flag to indicate the settings are trying to be opened.
 
             <mode> determines how to open the settings. Accepted values are gui 
             and file. When omitted, the default is to open the settings in gui 
@@ -168,16 +171,16 @@ OPTIONS:
                
 * get
 NAME:
-        get - Print the compatible code for the ports list of a specified entity
+        get - Print the compatible code for the ports list of a specified unit
 
 SYNOPSIS:
-        legohdl get [<block>:]<entity> [-comp[=<lang>]] [-inst[=<lang>]] [-arch]
+        legohdl get [<block>:]<unit> [-comp[=<lang>]] [-inst[=<lang>]] [-arch]
                 [-about] [-edges] [-D | -I]
 
 DESCRIPTION:
         When trying to access current block-level entities, the <block>
-        can be omitted (a form of shortcutting). To reference a entity,
-        <market>.<library>.<project>:<entity>.
+        can be omitted (a form of shortcutting). To reference a unit,
+        <market>.<library>.<project>:<unit>.
 
         By default, it will print the 'about' section and the component 
         declaration for VHDL entities or the module interface for Verilog 
@@ -197,8 +200,9 @@ OPTIONS:
                 The block's title. If omitted, the <entity> is searched for only
                 within the current block's scope.
 
-        <entity>
-                The design unit name.
+        <unit>
+                The design unit name. For VHDL this is a package or entity, and
+                for Verilog this is a module.
 
         -comp[=<lang>]
                 Print the component declaration. For Verilog language, the 
@@ -216,16 +220,16 @@ OPTIONS:
                 
                 <lang> specifies what HDL language to use to print the formatted
                 code. Accepted values are vlog and vhdl. Omitting <lang> prints 
-                the code in the entity's original language.
+                the code in the unit's original language.
 
         -arch
-                List the available architectures. If the entity is a Verilog
+                List the available architectures. If the unit is a Verilog
                 module, only "rtl" will be listed.
 
         -about
                 Print the comment header block found at the beginning of this
-                entity's file (if exists). Helpful to read more information
-                about an entity and how it behaves.
+                unit's file (if exists). Helpful to read more information
+                about an unit and how it behaves.
         
         -edges
                 Print the units are required by this unit and print the units 
@@ -233,11 +237,11 @@ OPTIONS:
                 the hierarchical graph.
 
         -D
-                Search the downloaded blocks to get this entity, regardless of
+                Search the downloaded blocks to get this unit, regardless of
                 the status of 'multi-develop'.
 
         -I
-                Search the installed blocks to get this entity, regardless of 
+                Search the installed blocks to get this unit, regardless of 
                 the status of 'multi-develop'.
 
 
@@ -257,7 +261,7 @@ DESCRIPTION:
         user will be prompted to select one if multiple exist. When -ignore-tb 
         and -tb=<tb> are absent, the testbench for the top-level entity will be 
         auto-detected, if one exists. The user will be prompted to select one if
-         multiple exist.
+        multiple exist.
 
 OPTIONS:
         <entity>
@@ -330,8 +334,6 @@ OPTIONS:
                 by ','.
 
 
-
-
 * build
 NAME:
         build - Execute a custom backend script/tool command
@@ -396,9 +398,10 @@ SYNOPSIS:
         legohdl del <block> [-uninstall]
 
 DESCRIPTION:
+        :todo:
 
 OPTIONS:
-
+        :todo:
 
 
 ; --- MANAGEMENT COMMANDS ---
@@ -424,19 +427,19 @@ OPTIONS:
                 Optional field to narrow the given list by. 
 
         -unit
-                Instead of listing blocks, list the entities.
+                Instead of listing blocks, list the units.
 
         -alpha
                 Organize the list in alphabetical order.
 
         -I
-                Filter only installed blocks or entities.
+                Filter only installed blocks or units.
 
         -D
-                Filter only downloaded blocks or entities.    
+                Filter only downloaded blocks or units.    
 
         -A
-                Filter only available blocks or entities from markets.
+                Filter only available blocks or units from markets.
 
         -all
                 Display all units, regardless if they are usable or not
@@ -450,7 +453,7 @@ OPTIONS:
                 and global.
         
         -market
-                Return the list of markets. Fields a are market, remote 
+                Return the list of markets. Fields are market, remote 
                 repository, block count, and active.
         
         -workspace
@@ -479,9 +482,9 @@ EXAMPLES:
                 Since a library is omitted and a name is omitted, all block's 
                 starting with "uf-ece" in their market are returned.
 
-        legohdl list ..:mux_2x1 -entity
+        legohdl list ..:mux_2x1 -unit
                 All M.L.N subsections are blank, so the entire database is 
-                searched to see if an entity exists with the name mux_2x1.
+                searched to see if an unit exists with the name mux_2x1.
 
 
 * refresh
@@ -593,7 +596,7 @@ SYNOPSIS:
 DESCRIPTION:
         By default, will print the metadata about the given block. 
         
-        If -version is applied, it will list all the available versions for 
+        If -vers is applied, it will list all the available versions for 
         installation, and hightlight which versions are installed under the 
         workspace cache.
 
@@ -617,7 +620,8 @@ OPTIONS:
                 Return data from the block at the available level.
         
         -stats
-                Get relevant stats about the block such as units created.
+                Get relevant stats about the block such as the path, project 
+                size, design units, and block integrations.
 
         -vers
                 List all available versions for the specified block.

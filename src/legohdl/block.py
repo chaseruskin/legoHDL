@@ -858,7 +858,7 @@ class Block:
         pass
 
 
-    def newFile(self, fpath, tmplt_fpath=None, force=False, auto_open=False):
+    def newFile(self, fpath, tmplt_fpath=None, force=False, not_open=False):
         '''
         Create a new file from a template file to an already existing block.
 
@@ -866,7 +866,7 @@ class Block:
             fpath (str): the file to create
             tmpltfpath (str): the file to copy from
             force (bool): determine if to overwrite an existing file of same desired name
-            auto_open (bool): determine if to open the file after creation
+            not_open (bool): determine if to not open the file after creation
         Returns:
             success (bool): determine if operation was successful
         '''
@@ -893,22 +893,27 @@ class Block:
         os.makedirs(base_path, exist_ok=True)
 
         #only create a new empty file
+        success = False
         if(tmplt_fpath == None):
             log.info("Creating empty file "+fpath+"...")
             with open(fpath, 'w') as f:
                 f.close()
-            return True
-        #get full path for template file
-        tmplt_fpath = apt.fs(apt.getTemplatePath()+tmplt_fpath)
-        #create file from template file
-        log.info("Creating file "+fpath+" from "+tmplt_fpath+"...")
+            success = True
+            pass
+        else:
+            #get full path for template file
+            tmplt_fpath = apt.fs(apt.getTemplatePath()+tmplt_fpath)
+            #create file from template file
+            log.info("Creating file "+fpath+" from "+tmplt_fpath+"...")
+            #copy file
+            shutil.copyfile(tmplt_fpath, fpath)
+            #fill in placeholder values
+            success = self.fillPlaceholders(fpath, template_val=fname)
+            pass
 
-        #copy file
-        shutil.copyfile(tmplt_fpath, fpath)
-        #fill in placeholder values
-        success = self.fillPlaceholders(fpath, template_val=fname)
-
-        if(success and auto_open):
+        #open the file
+        if(success and not_open == False):
+            log.info("Opening file "+fpath+"...")
             apt.execute(apt.getEditor(), fpath)
         return success
 

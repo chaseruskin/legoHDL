@@ -1059,9 +1059,9 @@ scripts)?", warning=False)
         if(self.hasFlag('file')):
             Block(os.getcwd(), self.WS())
             Block.getCurrent().newFile(self.getItem(raw=True), \
-                self.getVar("file"), \
-                self.hasFlag('force'), \
-                self.hasFlag('open'))
+                tmplt_fpath=self.getVar("file"), \
+                force=self.hasFlag('force'), \
+                not_open=self.hasFlag('no-open'))
             return
         
         title = self.getItem()
