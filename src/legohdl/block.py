@@ -7,6 +7,7 @@
 #   root folder.
 
 import os, shutil, stat, glob
+from posixpath import split
 import logging as log
 from datetime import date
 from enum import Enum
@@ -1019,22 +1020,34 @@ class Block:
         return True
 
 
-    def getFilesHDL(self):
+    def getFilesHDL(self, returnpaths=False):
         '''
         Returns a list of the HDL files associated with this block.
 
         Dynamically creates _hdl_files ([Language]) attr for faster repeated use.
 
         Parameters:
-            None
+            returnpaths (bool): determine if to return the [(str)] of file paths
         Returns:
             _hdl_files ([Language]): list of HDL Language file objects
         '''
         if(hasattr(self, "_hdl_files")):
+            if(returnpaths):
+                paths = []
+                for hdl in self._hdl_files:
+                    paths += [hdl.getPath()]
+                return paths
             return self._hdl_files
 
         #load hdl files (creates attr _hdl_files)
         self.loadHDL()
+        #return all file paths if requested
+        if(returnpaths):
+            paths = []
+            for hdl in self._hdl_files:
+                paths += [hdl.getPath()]
+            return paths
+        #return Language objects
         return self._hdl_files
 
 
@@ -1500,6 +1513,8 @@ class Block:
             #make files read-only
             instl_block.modWritePermissions(False)
 
+            log.info("Installation size: "+str(instl_block.getSize())+" KB.")
+
             #install requirements for this block
             instl_block.installReqs()
 
@@ -1572,10 +1587,14 @@ class Block:
             if(self.cmpVer(ver, cur_ver) == cur_ver):
                 #do not overwrite the version here if 'cur_ver' is greater
                 return None
+            log.info("Updating partial version "+sub_ver+" from "+cur_ver+" to "+ver+"...")
             #delete old block in this place to install bigger version 'ver'
             standing_block.delete()
+        elif(places < 3):
+            log.info("Installing partial version "+sub_ver+" as "+ver+"...")
 
         #proceed to create sub version 
+
 
         #create cache directory based on this block's path
         cache_path = self.getPath()+'../'+sub_ver+'/'
@@ -1585,6 +1604,24 @@ class Block:
 
         #copy in all files from self
         shutil.copytree(self.getPath(), cache_path)
+
+        #delete all files not ending in a supported source code extensions if
+        #its a partial version (places < 3)
+        if(places < 3):
+            all_files = glob.glob(cache_path+"**/*", recursive=True)
+            for f in all_files:
+                if(os.path.isfile(f) == False):
+                    continue
+                #get file extension
+                _,ext = os.path.splitext(f)
+                #get file name (+ extension)
+                _,fname = os.path.split(f)
+                #keep metadata file
+                if(fname == 'Block.cfg'):
+                    continue
+                #check if extension is one of supported HDL source codes
+                if('*'+ext.lower() not in apt.SRC_CODE):
+                    os.remove(f)
 
         #delete specific version's git repository data
         repo = Git(cache_path)
@@ -1629,6 +1666,8 @@ class Block:
 
         #disable write permissions for specific version block
         b.modWritePermissions(False)
+
+        log.info("Installation size: "+str(b.getSize())+" KB.")
 
         return b
 
@@ -2379,6 +2418,15 @@ class Block:
         return True
 
 
+    def getSize(self):
+        '''Returns Block's total file size (int) in kilobytes.'''
+        #return unknown value if the block is created from 'AVAILABLE' level
+        if(self.getLvl(to_int=False) == Block.Level.AVAIL):
+            return '?'
+        
+        return round(float(apt.getPathSize(self.getPath())/1000), 2)
+
+
     def readInfo(self, stats=False, versions=False, ver=None):
         '''
         Return information relevant to the current block (metadata).
@@ -2405,6 +2453,7 @@ class Block:
            
             #read location
             info_txt = info_txt + '\nLocation: '+self.getPath()+'\n'
+            info_txt = info_txt + 'Size: '+str(self.getSize())+' KB\n'
             
             #read what blocks require this block
             info_txt = info_txt + '\nRequired by:\n'

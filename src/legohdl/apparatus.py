@@ -96,8 +96,8 @@ class Apparatus:
     MIN_RATE = -1
 
     #types of accepted HDL files to parse and interpret
-    VHDL_CODE = ["*.vhd","*.vhdl"]
-    VERILOG_CODE = ["*.v","*.sv"]
+    VHDL_CODE = ["*.vhd","*.vhdl", "*.VHD", "*.VHDL"]
+    VERILOG_CODE = ["*.v","*.sv", "*.V", "*.SV"]
 
     SRC_CODE = VHDL_CODE + VERILOG_CODE
 
@@ -808,6 +808,37 @@ class Apparatus:
             if(count % cols == 0 and it != items[-1]):
                 grid = grid + '\n' + offset
         return grid
+
+
+    @classmethod
+    def getPathSize(cls, path):
+        '''
+        Recursively sums the file sizes within the 'path' parameter to get
+        the total size in bytes.
+        
+        Parameters:
+            path (str): the path to begin getting total size
+        Returns:
+            total (int): number of bytes within the 'path'
+        '''
+        path = cls.fs(path)
+        #return 0 if path DNE
+        if(os.path.exists(path) == False):
+            return 0
+        #base case: return the file's size in bytes
+        elif(os.path.isfile(path) == True):
+            return os.path.getsize(path)
+        #ensure the last character in path is '/' for concatenation purposes
+        if(path[-1] != '/'):
+            path = path + '/'
+        #recursively add each sub directory/file :todo: fix (see pong for details)
+        dirs = os.listdir(path)
+        total = 0
+        #iterate through all sub-paths
+        for d in dirs:
+            total += cls.getPathSize(path+d)
+
+        return total
 
 
     @classmethod

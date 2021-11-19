@@ -150,7 +150,7 @@ class Graph:
                 pass
 
         if(len(block_order) == 0):
-            exit(log.error("Invalid current block, try adding a VHDL file."))
+            exit(log.error("Invalid current block, try adding an HDL file."))
             
         #ensure current block is last in the order
         block_order.remove(order[-1].getLanguageFile().getOwner())

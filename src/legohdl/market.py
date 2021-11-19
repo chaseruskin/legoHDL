@@ -157,7 +157,11 @@ class Market:
         #add more information to the metadata before publishing to market
         meta = block.getMeta(every=True).copy()
 
+        #add what versions are available
         meta['block']['versions'] = block.sortVersions(block.getTaggedVersions())
+
+        #add the size of latest project (kilobytes)
+        meta['block']['size'] = block.getSize()
 
         #write metadata to marker file in market for this block
         with open(meta_path, 'w') as meta_file:
