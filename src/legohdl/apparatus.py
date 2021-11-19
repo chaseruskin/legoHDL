@@ -821,17 +821,18 @@ class Apparatus:
         Returns:
             total (int): number of bytes within the 'path'
         '''
-        path = cls.fs(path)
         #return 0 if path DNE
         if(os.path.exists(path) == False):
             return 0
         #base case: return the file's size in bytes
         elif(os.path.isfile(path) == True):
             return os.path.getsize(path)
+        #standardize the path's format
+        path = cls.fs(path)
         #ensure the last character in path is '/' for concatenation purposes
         if(path[-1] != '/'):
             path = path + '/'
-        #recursively add each sub directory/file :todo: fix (see pong for details)
+        #recursively add each sub directory/file
         dirs = os.listdir(path)
         total = 0
         #iterate through all sub-paths
