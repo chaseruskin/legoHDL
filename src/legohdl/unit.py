@@ -8,7 +8,7 @@
 #   VHDL and verilog. Units are used to help gather data on the type of HDL
 #   dependency tree that will be generated for the current design.
 
-import os
+import os, re
 import logging as log
 from enum import Enum
 
@@ -990,26 +990,6 @@ class Interface:
         pass
 
 
-    def getPorts(self):
-        '''Returns _ports (Map).'''
-        return self._ports
-
-
-    def getGenerics(self):
-        '''Returns _generics (Map).'''
-        return self._generics
-
-
-    def getName(self):
-        '''Returns _name (str).'''
-        return self._name
-
-
-    def getLibrary(self):
-        '''Returns _library (str).'''
-        return self._library
-
-
     def writeConnections(self, form=None, align=True, g_name=None, p_name=None):
         '''
         Write the necessary constants (from generics) and signals (from ports)
@@ -1035,10 +1015,13 @@ class Interface:
                 return connect_txt
         
         #determine farthest reach constant name
-        identifiers = list(self.getGenerics().values())
-        for i in range(len(identifiers)):
-            identifiers[i] = identifiers[i].getName(mod=g_name)
-        farthest = apt.computeLongestWord(identifiers)
+        g_pairs = []
+        g_ids = list(self.getGenerics().values())
+        for i in range(len(g_ids)):
+            g_pairs += [[g_ids[i].getName(), g_ids[i].getName(mod=g_name)]]
+            g_ids[i] = g_ids[i].getName(mod=g_name)
+            
+        farthest = apt.computeLongestWord(g_ids)
                 
         #write constants
         for g in self.getGenerics().values():
@@ -1051,18 +1034,27 @@ class Interface:
             connect_txt = connect_txt + '\n'
 
         #determine farthest reach signal name
-        identifiers = list(self.getPorts().values())
-        for i in range(len(identifiers)):
-            identifiers[i] = identifiers[i].getName(mod=p_name)
-        farthest = apt.computeLongestWord(identifiers)
+        p_ids = list(self.getPorts().values())
+        for i in range(len(p_ids)):
+            p_ids[i] = p_ids[i].getName(mod=p_name)
+        farthest = apt.computeLongestWord(p_ids)
         
         #write signals
+        signal_txt = ''
         for p in self.getPorts().values():
             if(align):
                 spaces = farthest - len(p.getName(mod=p_name)) + 1
-            connect_txt = connect_txt + p.writeConnection(form, spaces, name=p_name) +'\n'
+            signal_txt = signal_txt + p.writeConnection(form, spaces, name=p_name) +'\n'
 
-        return connect_txt
+        #replace all old generic identifiers with new modifiers
+        for pair in g_pairs:
+            #replace pairs only that have complete word
+            expression = re.compile('\\b'+pair[0]+'\\b', re.IGNORECASE)
+            #rewrite the connection text
+            signal_txt = expression.sub(pair[1], signal_txt)
+            pass
+
+        return connect_txt + signal_txt
     
 
     def writeInstance(self, lang=None, entity_lib=None, inst_name='uX', fit=True, \
@@ -1390,10 +1382,31 @@ class Interface:
         return comp_txt
 
 
+    def getPorts(self):
+        '''Returns _ports (Map).'''
+        return self._ports
+
+
+    def getGenerics(self):
+        '''Returns _generics (Map).'''
+        return self._generics
+
+
+    def getName(self):
+        '''Returns _name (str).'''
+        return self._name
+
+
+    def getLibrary(self):
+        '''Returns _library (str).'''
+        return self._library
+
+
     def __str__(self):
         return f'''
         ports: {list(self.getPorts().values())}
         generics: {list(self.getGenerics().values())}
         '''
+
 
     pass
