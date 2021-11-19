@@ -361,7 +361,7 @@ scripts)?", warning=False)
         hierarchy = Unit.Hierarchy
         
         #print the dependency tree
-        hierarchy.output(top_dog)
+        hierarchy.output(top_dog, compress=self.hasFlag('compress'))
         print()
         
         unit_order,block_order = hierarchy.topologicalSort()

@@ -250,7 +250,7 @@ NAME:
         graph - Visualize the dependency tree for the design
 
 SYNOPSIS:
-        legohdl graph [<entity>] [-tb=<tb> | -ignore-tb]
+        legohdl graph [<entity>] [-tb=<tb> | -ignore-tb] [-compress]
 
 DESCRIPTION:
         Create and view the dependency tree for the current block design. This 
@@ -273,6 +273,9 @@ OPTIONS:
         
         -ignore-tb
                 Do not include any testbench unit in the dependency tree.
+
+        -compress
+                Compress duplicate branchs of the graph into reference points.
 
 
 * export

@@ -160,7 +160,7 @@ class Graph:
 
 
     #only display entities in the tree (no package units)
-    def output(self, top, leaf='+-', disp_full=False):
+    def output(self, top, leaf='+-', disp_full=False, ref_points=Map(), compress=False):
         '''
         Formats and prints the current entity's dependency graph.
 
@@ -170,6 +170,8 @@ class Graph:
             top (Unit): top-level unit to start graph from
             leaf (str): inner-recursive parameter to see what parent leaf was
             disp_full (bool): determine how to display entity (with full block title?)
+            ref_points (Map): mapping for unit names/branchs to letters
+            compress (bool): determine if to compress graph using reference points
         Returns:  
             None
         '''
@@ -190,6 +192,10 @@ class Graph:
         #start with top level
         if(top not in self._adj_list.keys()):
             exit(log.error('Entity '+top.E()+' may be missing an architecture.'))
+
+        ref = ''
+        if(compress):
+            ref = len(ref_points)+1
         #only display units
         if(not top.isPkg()):
             temp_leaf = leaf
@@ -200,16 +206,20 @@ class Graph:
                 temp_leaf = temp_leaf.replace(reg_branch, edge_branch)
             #print to console
             node = top.getFull()
-            if(disp_full):
+            if(compress and top in ref_points.keys() and len(self._adj_list[top])):
+                node = '['+str(ref_points[top])+']'
+            elif(disp_full):
                 node = top.getTitle()
-            print(temp_leaf,node)
+
+            print(temp_leaf,node,ref)
 
         #return if no children exist
-        if(len(self._adj_list) == 0):
+        if(len(self._adj_list) == 0): #or (compress and top in ref_points.keys())):
             return
 
         #go through all entity's children
         for sub_entity in self._adj_list[top]:
+
             #add twig if the parent was not an edge branch
             if(leaf.count(reg_branch)):
                 next_leaf = leaf[0:len(leaf)-2] + twig
@@ -226,7 +236,12 @@ class Graph:
             else:
                 next_leaf = next_leaf + reg_branch
             #recursive call
-            self.output(sub_entity, next_leaf)
+            self.output(sub_entity, next_leaf, ref_points=ref_points, compress=compress)
+
+            #add reference point
+            if(sub_entity not in ref_points.keys()):
+                ref_points[sub_entity] = ref
+            #print(ref_points)
         pass
 
 
