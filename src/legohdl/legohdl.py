@@ -431,6 +431,7 @@ scripts)?", warning=False)
             #create new keyslot for this block
             if(block_key not in block_files.keys()):
                 block_files[block_key] = []
+            #iterate through every label
             for lbl in Label.Jar.values():
                 #get global labels from external blocks
                 if(lbl.isGlobal() == True):
@@ -445,10 +446,12 @@ scripts)?", warning=False)
                     #add every found file identified with this label to the blueprint
                     for p in paths:
                         #only add files that have not already been added for this block's version
-                        if(p not in block_files[block_key]):
-                            blueprint_data += ['@'+lbl.getName()+' '+p]
-                            block_files[block_key] += [p]
-
+                        if(p in block_files[block_key]):
+                            continue
+                        #add label and file to blueprint data
+                        blueprint_data += ['@'+lbl.getName()+' '+p]
+                        #note this file as added for this block's version
+                        block_files[block_key] += [p]
                     pass
                 #perform local-only label searching on current block
                 if(b == block_order[-1]):
