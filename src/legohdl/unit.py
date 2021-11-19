@@ -106,15 +106,13 @@ class Unit:
         #store entity at this nested level
         if(self.E().lower() not in self.Jar[self.M()][self.L()][self.N()].keys()):
             self.Jar[self.M()][self.L()][self.N()][self.E()] = self
-        #skip if entity has already been defined (self-duplicate)
-        elif(self == self.Jar[self.M()][self.L()][self.N()][self.E()]):
-            return
         else:
             log.error("An entity at this level already exists as: "+self.E()+"!")
-            print(self.getFile())
+            print(self.Jar[self.M()][self.L()][self.N()][self.E()])
             print(self.Jar[self.M()][self.L()][self.N()][self.E()].getFile())
-            exit()
-            return
+            print(self)
+            print(self.getFile())
+            exit(1)
 
         # add to Bottle - a 2-level Map with values as lists effectively binning units together
         #create new library level if libray DNE
