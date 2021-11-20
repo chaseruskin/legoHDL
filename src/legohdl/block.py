@@ -45,17 +45,17 @@ class Block:
                 'toplevel' : cfg.NULL,
                 'bench' : cfg.NULL,
                 'remote' : cfg.NULL,
-                'market' : cfg.NULL,
+                'vendor' : cfg.NULL,
                 'requires' : []},
             }
 
     #all possible metadata that may go under [block]
     FIELDS = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', \
-        'remote', 'market', 'requires', 'versions', 'size', 'vhdl-units', \
+        'remote', 'vendor', 'requires', 'versions', 'size', 'vhdl-units', \
         'vlog-units']
 
     #metadata that must be written in [block] else the block is seen as corrupted
-    REQ_FIELDS = ['name', 'library', 'version', 'market', 'requires']
+    REQ_FIELDS = ['name', 'library', 'version', 'vendor', 'requires']
 
     #metadata that gets added as block loses detail (at AVAILABLE level)
     EXTRA_FIELDS = ['versions', 'size', 'vhdl-units', 'vlog-units']
@@ -333,19 +333,19 @@ class Block:
         return sects[index-dist:index+1]
 
 
-    def getTitle_old(self, low=True, mrkt=False):
+    def getTitle_old(self, low=True, vndr=False):
         '''
         Returns the full block title combined.
         
         Parameters:
             low (bool): enable case-sensitivity
-            mrkt (bool): prepend market name, if available
+            vndr (bool): prepend vendor name, if available
         Returns:
             (str): M.L.N format
         '''
         m = ''
-        if(mrkt and self.getMeta('market') != None):
-            m = self.getMeta('market')+'.'
+        if(vndr and self.getMeta('vendor') != None):
+            m = self.getMeta('vendor')+'.'
             
         return m+self.L()+'.'+self.N()
 
@@ -560,7 +560,7 @@ class Block:
 
         self._repo.git('tag',next_ver+apt.TAG_ID)
 
-        #6. Push to remote and to market if applicable
+        #6. Push to remote and to vendor if applicable
 
         #synch changes with remote repository
         self._repo.push()
@@ -571,27 +571,27 @@ class Block:
             
             self.install()
 
-        #no market to publish to then release algorithm is complete
-        if(len(self.getMeta('market')) == 0):
+        #no vendor to publish to then release algorithm is complete
+        if(len(self.getMeta('vendor')) == 0):
             return
 
         #check if a remote exists
         if(self._repo.remoteExists() == False):
-            log.error("Could not publish to a market because a remote repository does not exist.")
+            log.error("Could not publish to a vendor because a remote repository does not exist.")
             return
             
-        #try to find the market
-        mrkt = None
-        for m in self.getWorkspace().getMarkets():
-            if(self.getMeta('market').lower() == m.getName().lower()):
-                mrkt = m
+        #try to find the vendor
+        vndr = None
+        for m in self.getWorkspace().getVendors():
+            if(self.getMeta('vendor').lower() == m.getName().lower()):
+                vndr = m
                 break
         else:
-            log.warning("Could not publish because market "+self.M()+" is not found in this workspace.")
+            log.warning("Could not publish because vendor "+self.M()+" is not found in this workspace.")
             return
 
-        #publish to the market
-        mrkt.publish(self)
+        #publish to the vendor
+        vndr.publish(self)
 
         pass
 
@@ -857,11 +857,11 @@ class Block:
             self.setMeta('remote', self._repo.getRemoteURL())
             pass
 
-        #ensure the market is valid
-        if(self.getMeta('market') != ''):
-            m = self.getMeta('market')
-            if(m.lower() not in self.getWorkspace().getMarkets(returnnames=True)):
-                log.warning("Market "+m+" from "+self.getFull()+" is not available in this workspace.")
+        #ensure the vendor is valid
+        if(self.getMeta('vendor') != ''):
+            m = self.getMeta('vendor')
+            if(m.lower() not in self.getWorkspace().getVendors(returnnames=True)):
+                log.warning("Vendor "+m+" from "+self.getFull()+" is not available in this workspace.")
                 pass
             pass
 
@@ -1023,12 +1023,12 @@ class Block:
 
         #fill in preliminary data for block.cfg metadata
 
-        #check if market is in an allowed market
+        #check if vendor is in an allowed vendor
         if(M != ''):
-            if(M.lower() in self.getWorkspace().getMarkets(returnnames=True)):
-                self.setMeta("market", M)
+            if(M.lower() in self.getWorkspace().getVendors(returnnames=True)):
+                self.setMeta("vendor", M)
             else:
-                log.warning("Skipping invalid market name "+M+"...")
+                log.warning("Skipping invalid vendor name "+M+"...")
 
         self.setMeta('library', L)
         self.setMeta('name', N)
@@ -1187,7 +1187,7 @@ class Block:
             #input all title components into metadata
             if(exists == False):
                 M,L,N,_ = Block.snapTitle(title)
-                self.setMeta('market', M)
+                self.setMeta('vendor', M)
                 self.setMeta('library', L)
                 self.setMeta('name', N)
             pass
@@ -1963,7 +1963,7 @@ class Block:
             title (str): the string to be parsed into title components
             inc_ent (bool): also return the entity name if found
         Returns:
-            M (str): block market
+            M (str): block vendor
             L (str): block library
             N (str): block name
             V (str): block version
@@ -2203,7 +2203,7 @@ class Block:
         '''Returns nicely formatted block title (str).'''
         # :todo: store MLNV as tuple and use single function for full-access
         title = ''
-        #prepend market if not blank
+        #prepend vendor if not blank
         if(self.M() != ''):
             title = self.M()+'.'
         #join together library and name
@@ -2215,11 +2215,15 @@ class Block:
 
 
     def M(self):
-        '''Returns _M (str) attr market.'''
+        '''Returns _M (str) attr vendor.'''
         if(hasattr(self, "_M")):
             return self._M 
         #read from metadata
-        self._M = self.getMeta('market')
+        if(self.getMeta('market') != ''):
+            self.setMeta('vendor', self.getMeta('market'))
+            del self._meta['block']['market']
+            self.save(force=True)
+        self._M = self.getMeta('vendor')
         return self._M
 
 
@@ -2388,8 +2392,8 @@ class Block:
         if(hasattr(cls, '_all_blocks')):
             return cls._all_blocks
         cls._all_blocks = []
-        for mrkts in cls.Inventory.values():
-            for libs in mrkts.values():
+        for vndrs in cls.Inventory.values():
+            for libs in vndrs.values():
                 for blks in libs.values():
                     for lvl in blks:
                         if(lvl != None):

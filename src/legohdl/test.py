@@ -1,8 +1,10 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: script.py
 # Author: Chase Ruskin
 # Description:
 #   Runs unit-tests by enabling its block of code.
+# ------------------------------------------------------------------------------
 
 import shutil,os
 
@@ -12,7 +14,7 @@ from .script import Script
 from .map import Map
 from .git import Git
 from .profile import Profile
-from .market import Market
+from .vendor import Vendor
 from .apparatus import Apparatus as apt
 from .workspace import Workspace
 from .label import Label
@@ -104,8 +106,8 @@ def main():
         pass
 
     if(False):
-        print('\n---MARKET CLASS---')
-        print(Market.Jar)
+        print('\n---VENDOR CLASS---')
+        print(Vendor.Jar)
 
     if(False):
         print('\n---WORKSPACE CLASS---')
@@ -115,7 +117,7 @@ def main():
         Workspace(tmp_ws, "~/develop/temporal/", ['uf-ece'])
         Workspace(other_ws, "~/develop/wsII", ['OPEN-IP'])
         for nm,ws in apt.SETTINGS['workspace'].items():
-            Workspace(nm, apt.SETTINGS['workspace'][nm]['path'], apt.SETTINGS['workspace'][nm]['market'])
+            Workspace(nm, apt.SETTINGS['workspace'][nm]['path'], apt.SETTINGS['workspace'][nm]['vendor'])
         Workspace.tidy()
         #grab workspace from Jar
         tmp = Workspace.Jar[tmp_ws]
@@ -196,23 +198,23 @@ def main():
         print(Label.Jar[t.getName()])
 
     if(False):
-        print('\n---MARKET CLASS---')
+        print('\n---VENDOR CLASS---')
 
-        Market("open-ip")
+        Vendor("open-ip")
 
-        Market("soc-blocks", "https://gitlab.com/chase800/mymarket.git")
+        Vendor("soc-blocks", "https://gitlab.com/chase800/mymarket.git")
 
-        Market('uf-ece', "https://gitlab.com/uf-eel4712c/uf-ece.git")
+        Vendor('uf-ece', "https://gitlab.com/uf-eel4712c/uf-ece.git")
 
         #Market2("marketIII", "https://gitlab.com/chase800/mymarket.git")
 
-        Market.printAll()
+        Vendor.printAll()
 
-        Market.Jar['UF-ECE'].refresh()
+        Vendor.Jar['UF-ECE'].refresh()
 
-        Market.tidy()
+        Vendor.tidy()
 
-        #shutil.rmtree(Market.Jar['soc-blocks'].getMarketDir(), onerror=apt.rmReadOnly)
+        #shutil.rmtree(Vendor.Jar['soc-blocks'].getMarketDir(), onerror=apt.rmReadOnly)
     if(True):
         print('\n---LANGUAGE CLASSES---')
 

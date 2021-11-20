@@ -1,12 +1,16 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: unit.py
 # Author: Chase Ruskin
 # Description:
 #   This script describes the attributes and functions for a HDL design 
-#   unit. In verilog, this is called a 'module', and in VHDL, this is called an 
+#   unit. 
+#   
+#   In verilog, this is called a 'module', and in VHDL, this is called an 
 #   'entity'. Other design units include 'packages', which are available in both
 #   VHDL and verilog. Units are used to help gather data on the type of HDL
 #   dependency tree that will be generated for the current design.
+# ------------------------------------------------------------------------------
 
 import os, re
 import logging as log
@@ -93,7 +97,7 @@ class Unit:
         # in installation section.
 
         # add to Jar
-        #create new market level if market DNE
+        #create new vendor level if vendor DNE
         if(self.M().lower() not in self.Jar.keys()):
             self.Jar[self.M()] = Map()
         #create new library level if libray DNE

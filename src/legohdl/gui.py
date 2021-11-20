@@ -1,14 +1,15 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: gui.py
 # Author: Chase Ruskin
 # Description:
 #   This script contains the class describing the settings GUI framework
 #   and behavior for interacting, modifying, and saving settings.
+# ------------------------------------------------------------------------------
 
 import os, webbrowser
 import logging as log
 from .apparatus import Apparatus as apt
-from .profile import Profile
 
 
 import_success = True
@@ -30,7 +31,7 @@ class GUI:
         'author' : "Your name.",
 
         'refresh-rate' : 
-"How often to synchronize markets with their remote every day. Set to -1 to refresh on every call. \
+"How often to synchronize vendors with their remote every day. Set to -1 to refresh on every call. \
 Max value is 1440 (every minute). Evenly divides the refresh points throughout the 24-hour day. \
 This automates the 'refresh' command.",
 
@@ -74,15 +75,15 @@ Use scripts to read a block's exported blueprint file and perform custom actions
 
         'workspace' : 
 "User-defined spaces for working with blocks. Blocks must appear in the workspace's path to be \
-recognized as downloaded. Multiple markets can be configured to one workspace and markets can \
+recognized as downloaded. Multiple vendors can be configured to one workspace and vendors can \
 be shared across workspaces. Block downloads and installations in one workspace are separate from \
-those of another workspace. List multiple markets by separating values with a comma (,).",
+those of another workspace. List multiple vendors by separating values with a comma (,).",
 
-        'market' : 
-"The list of available markets to be connected to workspaces. A market allows blocks to be visible \
-from remote repositories and downloaded/installed across machines. If a market is not configured \
-to a remote repository, its remote connection is empty. Markets identified by remote connection cannot \
-be renamed. Markets have a .mrkt file at the root of their directory.",
+        'vendor' : 
+"The list of available vendors to be connected to workspaces. A vendor allows blocks to be visible \
+from remote repositories and downloaded/installed across machines. If a vendor is not configured \
+to a remote repository, its remote connection is empty. Vendors identified by remote connection cannot \
+be renamed. Vendors have a .vndr file at the root of their directory.",
 
         'profiles' : 
 "A list of profiles to import settings, templates, and/or scripts. Add a template by creating a template/ folder \
@@ -206,7 +207,7 @@ settings that will be merged in when importing that profile. A profile directory
                         pass
                     pass
                 # --- SCRIPTS and MARKETS ---
-                elif(key == 'script' or key == 'market'):
+                elif(key == 'script' or key == 'vendor'):
                     #load records directly from table for scripts
                     self._tk_vars[key] = {}
                     for record in self._tb.getAllValues():
@@ -246,13 +247,13 @@ settings that will be merged in when importing that profile. A profile directory
                     self._tk_vars[key] = {}
                     apt.SETTINGS[key] = {}
                     for record in self._tb.getAllValues():
-                        #properly formart market list
+                        #properly formart vendor list
                         mkts = []
                         for m in list(record[2].split(',')):
                             if(m != ''):
                                 mkts += [m]
                         #store the inner workspace dictionaries
-                        self._tk_vars[key][record[0]] = {'path' : record[1], 'market' : mkts}
+                        self._tk_vars[key][record[0]] = {'path' : record[1], 'vendor' : mkts}
                         #copy dictionary back to settings
                         apt.SETTINGS[key][record[0]] = self._tk_vars[key][record[0]].copy()
                     pass
@@ -428,7 +429,7 @@ settings that will be merged in when importing that profile. A profile directory
         elif(section == 'workspace'):
             self._tk_vars[section] = apt.SETTINGS[section].copy()
             #create the table object
-            self._tb = Table(self._field_frame, 'name', 'path', 'markets', row=0, col=0, rules=Table.workspaceRules)
+            self._tb = Table(self._field_frame, 'name', 'path', 'vendors', row=0, col=0, rules=Table.workspaceRules)
             i = self._tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in self._tk_vars[section].items():
@@ -443,10 +444,10 @@ settings that will be merged in when importing that profile. A profile directory
 
                 self._tb.insertRecord(fields)
             pass
-        elif(section == 'market'):
+        elif(section == 'vendor'):
             self._tk_vars[section] = apt.SETTINGS[section].copy()
             #create the table object
-            self._tb = Table(self._field_frame, 'name', 'remote connection', row=0, col=0, rules=Table.marketRules)
+            self._tb = Table(self._field_frame, 'name', 'remote connection', row=0, col=0, rules=Table.vendorRules)
             i = self._tb.mapPeripherals(self._field_frame)
             #load the table elements from the settings
             for key,val in self._tk_vars[section].items():
@@ -689,9 +690,9 @@ class Table:
         return elements
 
     @classmethod
-    def marketRules(cls, self, data, new):
+    def vendorRules(cls, self, data, new):
         '''
-        Extra rules for adding/updating a market record.
+        Extra rules for adding/updating a vendor record.
 
         Parameters
         ---
@@ -703,7 +704,7 @@ class Table:
         duplicate_remote = False
         valid_remote = True
 
-        #cannot rename a market
+        #cannot rename a vendor
         if(new == False):
             rename_atmpt = (data[0].lower() not in self.getAllRows(col=0, lower=True))
             if(data[1] != ''):
@@ -721,9 +722,9 @@ class Table:
         if(valid_remote == False):
             tk.messagebox.showerror(title='Invalid Remote', message='This git remote repository does not exist.')
         elif(rename_atmpt):
-            tk.messagebox.showerror(title='Failed Rename', message='A market cannot be renamed.')
+            tk.messagebox.showerror(title='Failed Rename', message='A vendor cannot be renamed.')
         elif(duplicate_remote):
-            tk.messagebox.showerror(title='Duplicate Remote', message='This market is already configured.')
+            tk.messagebox.showerror(title='Duplicate Remote', message='This vendor is already configured.')
 
         return (not rename_atmpt) and (not duplicate_remote) and valid_remote
 
@@ -799,13 +800,13 @@ class Table:
 
         #define rules for updating data fields
         if(self.validEntry(data, new=False)):
-            #cannot reconfigure a market's remote connection if it already is established
-            if(self._rules != self.marketRules or self.getValues(sel)[1] == ''):
+            #cannot reconfigure a vendor's remote connection if it already is established
+            if(self._rules != self.vendorRules or self.getValues(sel)[1] == ''):
                 #now plug into selected space
                 self.replaceRecord(data, index=sel)
                 self.clearEntries()
             else:
-                tk.messagebox.showerror(title='Market Configured', message='This market\'s remote configuration is locked.')
+                tk.messagebox.showerror(title='Vendor Configured', message='This vendor\'s remote configuration is locked.')
         pass
 
     def handleAppend(self):
@@ -839,13 +840,13 @@ class Table:
         data = self.getValues(sel)
         #clear any old values from entry boxes
         self.clearEntries()
-        #ensure it is able to be edited (only for markets)
-        if(self._rules != self.marketRules or data[1] == ''):
+        #ensure it is able to be edited (only for vendors)
+        if(self._rules != self.vendorRules or data[1] == ''):
             #load the values into the entry boxes
             for ii in range(len(data)):
                 self.getEntries()[ii].insert(0,str(data[ii]))
         else:
-            tk.messagebox.showerror(title='Invalid Edit', message='This market cannot be edited.')
+            tk.messagebox.showerror(title='Invalid Edit', message='This vendor cannot be edited.')
         pass
 
     def getTreeview(self):

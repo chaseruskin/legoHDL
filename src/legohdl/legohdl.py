@@ -25,7 +25,7 @@ from .map import Map
 from .unit import Unit
 from .gui import GUI
 from .test import main as test
-from .market import Market
+from .vendor import Vendor
 from .workspace import Workspace
 from .profile import Profile
 from .script import Script
@@ -80,9 +80,9 @@ class legoHDL:
             self.runSetup()
 
         apt.load()
-        #initialize all Markets
-        Market.load()
-        Market.tidy()
+        #initialize all Vendors
+        Vendor.load()
+        Vendor.tidy()
         #initialize all Workspaces
         Workspace.load()
         Workspace.setActiveWorkspace(apt.SETTINGS['general']['active-workspace'])
@@ -869,12 +869,12 @@ scripts)?", warning=False)
                     return
                 pass
             pass
-        #wishing to get information from metadata found in this block's market
+        #wishing to get information from metadata found in this block's vendor
         elif(self.hasFlag('a')):
             block = block.getLvlBlock(Block.Level.AVAIL)
             #no download to read from
             if(block == None):
-                log.error("Block "+title+" is not available in a market!")
+                log.error("Block "+title+" is not available in a vendor!")
                 return
             pass
 
@@ -959,38 +959,38 @@ scripts)?", warning=False)
                     
                 Profile.save()
                 pass
-            #modify market
-            elif(k == 'market'):
-                #ensure a market name is given
+            #modify vendor
+            elif(k == 'vendor'):
+                #ensure a vendor name is given
                 if(var_key == ''):
-                    log.error("Must provide a market name.")
+                    log.error("Must provide a vendor name.")
                     continue
 
-                mrkt = None
-                #modify an existing market
-                if(var_key.lower() in Market.Jar.keys()):
-                    mrkt = Market.Jar[var_key]
+                vndr = None
+                #modify an existing vendor
+                if(var_key.lower() in Vendor.Jar.keys()):
+                    vndr = Vendor.Jar[var_key]
 
                     #if its local and remote given try to set a remote
-                    if(mrkt.isRemote() == False and var_val != ''):
-                        mrkt.setRemoteURL(var_val)
-                #market name is not found
+                    if(vndr.isRemote() == False and var_val != ''):
+                        vndr.setRemoteURL(var_val)
+                #vendor name is not found
                 else:
                     #try to create from the url
                     if(var_val != ''):
-                        mrkt = Market(var_key, var_val)
+                        vndr = Vendor(var_key, var_val)
                
-                #alter the workspace's connections to markets
-                if(mrkt != None and Workspace.inWorkspace()):
+                #alter the workspace's connections to vendors
+                if(vndr != None and Workspace.inWorkspace()):
                     if(self.hasFlag('unlink')):
-                        self.WS().unlinkMarket(mrkt.getName())
+                        self.WS().unlinkVendor(vndr.getName())
                     elif(self.hasFlag('link')):
-                        self.WS().linkMarket(mrkt.getName())
+                        self.WS().linkVendor(vndr.getName())
                     pass
                     Workspace.save()
         
                 #save adjustments
-                Market.save()
+                Vendor.save()
                 pass
             #modify workspace
             elif(k == 'workspace'):
@@ -1114,18 +1114,18 @@ scripts)?", warning=False)
     def _refresh(self):
         '''Run 'refresh' command.'''
 
-        #package value is the market looking to refresh
-        #if package value is null then all markets tied to this workspace refresh by default
+        #package value is the vendor looking to refresh
+        #if package value is null then all vendors tied to this workspace refresh by default
         if(self.hasFlag('all')):
-            log.info("Refreshing all markets...")
-            for mkrt in Market.Jar.values():
+            log.info("Refreshing all vendors...")
+            for mkrt in Vendor.Jar.values():
                 mkrt.refresh()
         elif(self.getItem() == None):
-            log.info("Refreshing all workspace "+self.WS().getName()+" markets...")
-            for mrkt in self.WS().getMarkets():
-                mrkt.refresh()
-        elif(self.getItem() in Market.Jar.keys()):
-            Market.Jar[self.getItem()].refresh()
+            log.info("Refreshing all workspace "+self.WS().getName()+" vendors...")
+            for vndr in self.WS().getVendors():
+                vndr.refresh()
+        elif(self.getItem() in Vendor.Jar.keys()):
+            Vendor.Jar[self.getItem()].refresh()
         pass
 
 
@@ -1140,8 +1140,8 @@ scripts)?", warning=False)
             #load labels
             Label.load()
             Label.printList()
-        elif(self.hasFlag("market")):
-            Market.printList(self.WS().getMarkets())
+        elif(self.hasFlag("vendor")):
+            Vendor.printList(self.WS().getVendors())
         elif(self.hasFlag("workspace")):
             Workspace.printList()
         elif(self.hasFlag("profile")):
@@ -1331,7 +1331,7 @@ scripts)?", warning=False)
         print()
         print("Management")
         formatHelp("list","print list of all blocks available")
-        formatHelp("refresh","sync local markets with their remotes")
+        formatHelp("refresh","sync local vendors with their remotes")
         formatHelp("install","bring a block to the cache for dependency use")
         formatHelp("uninstall","remove a block from the cache")
         formatHelp("download","bring a block to the workspace path for development")

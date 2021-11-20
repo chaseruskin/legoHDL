@@ -1,3 +1,4 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: apparatus.py
 # Author: Chase Ruskin
@@ -5,6 +6,7 @@
 #   This script is used to hold the legohdl settings. It includes code for 
 #   safety measures to ensure the proper settings exits, as well as helper
 #   functions that are used throughout other scripts.
+# ------------------------------------------------------------------------------
 
 import os,shutil,stat,glob,subprocess
 import copy,platform
@@ -38,8 +40,8 @@ class Apparatus:
 
     #path to template within legohdl
     TEMPLATE = HIDDEN+"template/"
-    #path to markets within legohdl
-    MARKETS = HIDDEN+"markets/"
+    #path to vendors within legohdl
+    MARKETS = HIDDEN+"vendors/"
     #path to workspaces within legohdl
     WORKSPACE = HIDDEN+"workspaces/"
 
@@ -48,7 +50,7 @@ class Apparatus:
 
     #all available options allowed to be edited within the legohdl.cfg
     #append all non-field options here (editable dictionaries)
-    OPTIONS = ['label', 'script', 'workspace', 'market', 'placeholders', 'metadata']
+    OPTIONS = ['label', 'script', 'workspace', 'vendor', 'placeholders', 'metadata']
 
     LAYOUT = { 'general' : {
                     'active-workspace' : cfg.NULL, 
@@ -65,7 +67,7 @@ class Apparatus:
                     'global' : {}},
                 'script' : {},
                 'workspace' : {},
-                'market' : {},
+                'vendor' : {},
                 'placeholders' : {},
                 'HDL-styling' : {
                     'hanging-end' : cfg.NULL,
@@ -82,7 +84,7 @@ class Apparatus:
     
     #this is appended to the tag to make it unique for legoHDL
     TAG_ID = '-legohdl'    
-    #file kept in markets to remember all valid release points
+    #file kept in vendors to remember all valid release points
     VER_LOG = "version.log"
 
     #file kept in registry base folder to remember when last refresh
@@ -161,7 +163,7 @@ class Apparatus:
         '''
         cls.generateDefault(dict,"local","global",header="label")
 
-        cls.generateDefault(dict,"market","script","workspace","metadata","placeholders",header=None)
+        cls.generateDefault(dict,"vendor","script","workspace","metadata","placeholders",header=None)
 
         cls.generateDefault(bool,"multi-develop","overlap-global","mixed-language",header="general")
         cls.generateDefault(int,"refresh-rate",header="general")
@@ -621,7 +623,7 @@ class Apparatus:
         Sets the refresh-rate to settings data structure.
 
         Parameters:
-            r (int): how often to refresh markets
+            r (int): how often to refresh vendors
         Returns:
             None
         '''
@@ -947,7 +949,7 @@ class Apparatus:
     'general|refresh-rate' : (cfg.VAR,\
 '''
 ; description: 
-;   How often to synchronize markets with their remote every day. set to 
+;   How often to synchronize vendors with their remote every day. set to 
 ;   -1 to refresh on every call. Max value is 1440 (every minute). Evenly divides
 ;   the refresh points throughout the 24-hour day. This setting simply
 ;   is automation for the 'refresh' command.
@@ -1000,12 +1002,12 @@ class Apparatus:
 ; --- Workspace settings ---
 ; description:
 ;   User-defined spaces for working with blocks. Blocks must appear in the 
-;   workspace's path to be recognized as downloaded. Multiple markets can be
-;   configured to one workspace and markets can be shared across workspaces.
+;   workspace's path to be recognized as downloaded. Multiple vendors can be
+;   configured to one workspace and vendors can be shared across workspaces.
 ;   Block downloads and installations in one workspace are separate from those 
 ;   of another workspace.
 ; value:
-;   headers with 'path' assignment of string and 'market' assignment of list 
+;   headers with 'path' assignment of string and 'vendor' assignment of list 
 ;   of strings'''),
 
     'placeholders' : (cfg.HEADER,\
@@ -1097,13 +1099,13 @@ class Apparatus:
 ; value:
 ;   assignment of string'''),
 
-    'market' : (cfg.HEADER,\
+    'vendor' : (cfg.HEADER,\
 '''
-; --- Market settings ---
+; --- Vendor settings ---
 ; description:
-;   The list of available markets to be connected to workspaces. A market allows
+;   The list of available vendors to be connected to workspaces. A vendor allows
 ;   blocks to be visible from remote repositories and downloaded/installed 
-;   across machines. If a market is not configured to a remote repository, its
+;   across machines. If a vendor is not configured to a remote repository, its
 ;   assignment is empty.
 ; value:
 ;   assignments of string'''),

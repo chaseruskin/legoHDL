@@ -50,7 +50,7 @@ DESCRIPTION:
 OPTIONS:
         <block>
             The project's title. A library and a name must be included, and 
-            optionally a market can be prepended to the title.
+            optionally a vendor can be prepended to the title.
 
         -open
             Upon creating the block, open it in the configured text-editor.
@@ -89,7 +89,7 @@ NAME:
         init - Initialize a legoHDL block from existing code and block metadata.
 
 SYNOPSIS:
-        legohdl init <block> [-remote=<url> [-fork]] [-market=<mkrt>] 
+        legohdl init <block> [-remote=<url> [-fork]] [-vendor=<mkrt>] 
                 [-summary=<summary>]
 
 DESCRIPTION:
@@ -112,8 +112,8 @@ OPTIONS:
                 Do not link to the remote repository and try to push any changes
                 to the provided <url>.
 
-        -market=<mrkt>
-                Set the block's market. <market> must be a valid market 
+        -vendor=<vndr>
+                Set the block's vendor. <vendor> must be a valid vendor 
                 available in the current workspace.
 
         -summary=<summary>
@@ -180,7 +180,7 @@ SYNOPSIS:
 DESCRIPTION:
         When trying to access current block-level entities, the <block>
         can be omitted (a form of shortcutting). To reference a unit,
-        <market>.<library>.<project>:<unit>.
+        <vendor>.<library>.<project>:<unit>.
 
         By default, it will print the 'about' section and the component 
         declaration for VHDL entities or the module interface for Verilog 
@@ -420,7 +420,7 @@ NAME:
 
 SYNOPSIS:
         legohdl list [<search>] [[-unit [-all]] | [-D] [-I] [-A]] [-alpha]
-        legohdl list [-script | -label | -market | -workspace | -profile | 
+        legohdl list [-script | -label | -vendor | -workspace | -profile | 
                 -template]
 
 DESCRIPTION:
@@ -446,7 +446,7 @@ OPTIONS:
                 Filter only downloaded blocks or units.    
 
         -A
-                Filter only available blocks or units from markets.
+                Filter only available blocks or units from vendors.
 
         -all
                 Display all units, regardless if they are usable or not
@@ -459,13 +459,13 @@ OPTIONS:
                 Return the list of labels. Fields are label, extensions,
                 and global.
         
-        -market
-                Return the list of markets. Fields are market, remote 
+        -vendor
+                Return the list of vendors. Fields are vendor, remote 
                 repository, block count, and active.
         
         -workspace
                 Return the list of workspaces. Fields are workspace, active, 
-                path, and markets.
+                path, and vendors.
 
         -profile
                 Return the list of profiles. Fields are profile, last import, 
@@ -478,16 +478,16 @@ OPTIONS:
 
 EXAMPLES:
         legohdl list lab0
-                Since a market is omitted and a library is omitted, all block's 
+                Since a vendor is omitted and a library is omitted, all block's 
                 starting with "lab0" in their name are returned.
 
         legohdl list eel4712c.  
-                Since a market is omitted and a name is omitted, all block's 
+                Since a vendor is omitted and a name is omitted, all block's 
                 starting with "eel4712c" in their library are returned.
 
         legohdl list uf-ece..
                 Since a library is omitted and a name is omitted, all block's 
-                starting with "uf-ece" in their market are returned.
+                starting with "uf-ece" in their vendor are returned.
 
         legohdl list ..:mux_2x1 -unit
                 All M.L.N subsections are blank, so the entire database is 
@@ -496,26 +496,26 @@ EXAMPLES:
 
 * refresh
 NAME:
-        refresh - Synchronize local market repositories with their remotes
+        refresh - Synchronize local vendor repositories with their remotes
 
 SYNOPSIS:
-        legohdl refresh [<market>] [-all]
+        legohdl refresh [<vendor>] [-all]
 
 DESCRIPTION:
-        Checks for updates from market remote repositories and pulls them down
+        Checks for updates from vendor remote repositories and pulls them down
         to stay up-to-date.
 
-        If no arguments are given, by default all markets available to the
+        If no arguments are given, by default all vendors available to the
         current workspace will try to refresh. If -all is given, every possible
-        market, even outside workspace availability, will sync with its remote 
+        vendor, even outside workspace availability, will sync with its remote 
         (if exists).
 
 OPTIONS:
-        <market>
-                The name of the known market to synchronize.
+        <vendor>
+                The name of the known vendor to synchronize.
 
         -all
-                Synchronize all markets across all workspaces.
+                Synchronize all vendors across all workspaces.
 
 
 * install
@@ -660,7 +660,7 @@ SYNOPSIS:
                 [-multi-develop=<bool>] [-overlap-global=<bool>]
                 [-refresh-rate=<rt>] [-profile=<profile-name>] 
                 [-script=<alias>:<cmd>] [-workspace=<ws>:<path>] 
-                [-market=<mrkt>[:<url>] [-link | -unlink]] [-auto-fit=<bool>]
+                [-vendor=<vndr>[:<url>] [-link | -unlink]] [-auto-fit=<bool>]
                 [-newline-maps=<bool>] [-alignment=<int>] [-hanging-end=<bool>]
                 [default-language=<lang>] [-instance-name=<inst>] 
                 [-port-modifier=<mod>] [-generic-modifier=<mod>] 

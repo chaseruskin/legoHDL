@@ -4,7 +4,7 @@
 # Author: Chase Ruskin
 # Description:
 #   The Workspace class. A Workspace object has a path and a list of available
-#   markets. This is what the user keeps their work's scope within for a given
+#   vendors. This is what the user keeps their work's scope within for a given
 #   "organization".
 # ------------------------------------------------------------------------------
 
@@ -12,7 +12,7 @@ import os, shutil, glob
 import logging as log
 from datetime import datetime
 
-from .market import Market
+from .vendor import Vendor
 from .apparatus import Apparatus as apt
 from .map import Map
 from .git import Git
@@ -34,14 +34,14 @@ class Workspace:
     MAX_RATE = 1440
 
 
-    def __init__(self, name, path, markets=[], ask=True):
+    def __init__(self, name, path, vendors=[], ask=True):
         '''
         Create a workspace instance.
 
         Parameters:
             name (str): the identity for the workspace
             path (str): the local path where blocks will be looked for
-            markets ([str]): the list of markets that are tied to this workspace
+            vendors ([str]): the list of vendors that are tied to this workspace
             ask (bool): will ask user if wishing to enter workspace path
         Returns:
             None
@@ -88,13 +88,13 @@ class Workspace:
         if(os.path.isfile(self.getDir()+self.LOG_FILE) == False):
             open(self.getDir()+self.LOG_FILE, 'w').close()
 
-        self._markets = []
-        #find all market objects by name and store in list
-        for mrkt in markets:
-            if(mrkt.lower() in Market.Jar.keys()):
-                self._markets += [Market.Jar[mrkt]]
+        self._vendors = []
+        #find all vendor objects by name and store in list
+        for vndr in vendors:
+            if(vndr.lower() in Vendor.Jar.keys()):
+                self._vendors += [Vendor.Jar[vndr]]
             else:
-                log.warning("Could not link unknown market "+mrkt+" to "+self.getName()+".")
+                log.warning("Could not link unknown vendor "+vndr+" to "+self.getName()+".")
             pass
 
         #add to class Jar
@@ -186,56 +186,56 @@ class Workspace:
         pass
 
 
-    def linkMarket(self, mrkt):
+    def linkVendor(self, vndr):
         '''
-        Attempts to add a market to the workspace's market list.
+        Attempts to add a vendor to the workspace's vendor list.
 
         Parameters:
-            mrkt (str): name of the market to add
+            vndr (str): name of the vendor to add
         Returns:
-            (bool): true if the market list was modified (successful add)
+            (bool): true if the vendor list was modified (successful add)
         '''
-        if(mrkt.lower() in Market.Jar.keys()):
-            mrkt_obj = Market.Jar[mrkt]
-            if(mrkt_obj in self.getMarkets()):
-                log.info("Market "+mrkt_obj.getName()+" is already linked to this workspace.")
+        if(vndr.lower() in Vendor.Jar.keys()):
+            vndr_obj = Vendor.Jar[vndr]
+            if(vndr_obj in self.getVendors()):
+                log.info("Vendor "+vndr_obj.getName()+" is already linked to this workspace.")
                 return False
             else:
-                log.info("Linking market "+mrkt_obj.getName()+" to the workspace...")
-                self._markets += [mrkt_obj]
+                log.info("Linking vendor "+vndr_obj.getName()+" to the workspace...")
+                self._vendors += [vndr_obj]
                 return True
         else:
-            log.warning("Could not link unknown market "+mrkt+" to "+self.getName()+".")
+            log.warning("Could not link unknown vendor "+vndr+" to "+self.getName()+".")
             return False
 
 
-    def unlinkMarket(self, mrkt):
+    def unlinkVendor(self, vndr):
         '''
-        Attempts to remove a market from the workspace's market list.
+        Attempts to remove a vendor from the workspace's vendor list.
 
         Parameters:
-            mrkt (str): name of the market to remove
+            vndr (str): name of the vendor to remove
         Returns:
-            (bool): true if the market list was modified (successful remove)
+            (bool): true if the vendor list was modified (successful remove)
         '''
-        if(mrkt.lower() in Market.Jar.keys()):
-            mrkt_obj = Market.Jar[mrkt]
-            if(mrkt_obj not in self.getMarkets()):
-                log.info("Market "+mrkt_obj.getName()+" is already unlinked from the workspace.")
+        if(vndr.lower() in Vendor.Jar.keys()):
+            vndr_obj = Vendor.Jar[vndr]
+            if(vndr_obj not in self.getVendors()):
+                log.info("Vendor "+vndr_obj.getName()+" is already unlinked from the workspace.")
                 return False
             else:
-                log.info("Unlinking market "+mrkt_obj.getName()+" from the workspace...")
-                self._markets.remove(mrkt_obj)
+                log.info("Unlinking vendor "+vndr_obj.getName()+" from the workspace...")
+                self._vendors.remove(vndr_obj)
                 return True
         else:
-            log.warning("Could not unlink unknown market "+mrkt+" from "+self.getName()+".")
+            log.warning("Could not unlink unknown vendor "+vndr+" from "+self.getName()+".")
             return False
 
     
     def loadBlocks(self, id_dsgns=False):
         '''
         Loads all blocks found at all levels: dnld (workspace path), instl (workspace
-        cache), avail (workspace markets).
+        cache), avail (workspace vendors).
 
         When id_dsgns is True, this method uses the 'multi-develop' setting to 
         determine which level has precedence in loadHDL(). 
@@ -301,11 +301,11 @@ class Workspace:
 
         #3. Search for available blocks
             
-        #glob on each market path
+        #glob on each vendor path
         marker_files = []
-        #find all marker files in each of the workspace's markets
-        for mrkt in self.getMarkets():
-            marker_files += glob.glob(mrkt.getMarketDir()+"**/*/"+apt.MARKER, recursive=True)
+        #find all marker files in each of the workspace's vendors
+        for vndr in self.getVendors():
+            marker_files += glob.glob(vndr.getVendorDir()+"**/*/"+apt.MARKER, recursive=True)
         #iterate through all found availables
         for mf in marker_files:
             b = Block(mf, self, Block.Level.AVAIL)
@@ -477,7 +477,7 @@ class Workspace:
             alpha (bool): determine if to alphabetize the block list order
             instl (bool): determine if to capture only blocks that are installed
             dnld (bool): determine if to capture only blocks that are downloaded
-            avail (bool): determine if to capture blocks available from market
+            avail (bool): determine if to capture blocks available from vendor
         Returns:
             None
         '''
@@ -488,14 +488,14 @@ class Workspace:
         M,L,N,_ = Block.snapTitle(title, inc_ent=False)
 
         #get all blocks from inventory
-        print('{:<16}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<10}'.format("Version"),'{:<16}'.format("Market"))
+        print('{:<16}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<10}'.format("Version"),'{:<16}'.format("Vendor"))
         print("-"*16+" "+"-"*20+" "+"-"*8+" "+"-"*10+" "+"-"*16)
-        #iterate through every market
-        for mrkt_k,mrkts in Block.Inventory.items():
-            if(mrkt_k.startswith(M.lower()) == False):
+        #iterate through every vendor
+        for vndr_k,vndrs in Block.Inventory.items():
+            if(vndr_k.startswith(M.lower()) == False):
                 continue
             #iterate through every library
-            for lib_k,libs in mrkts.items():
+            for lib_k,libs in vndrs.items():
                 if(lib_k.startswith(L.lower()) == False):
                     continue
                 #iterate through every block
@@ -622,7 +622,7 @@ class Workspace:
 
     def autoRefresh(self, rate):
         '''
-        Automatically refreshes all markets for the given workspace. Reads its
+        Automatically refreshes all vendors for the given workspace. Reads its
         log file to determine if past next interval for refresh.
 
         Parameters:
@@ -709,10 +709,10 @@ class Workspace:
         if(refresh):
             #display what interval is being refreshed on the day
             infoo = "("+str(stage)+"/"+str(rate)+")" if(rate > 0) else ''
-            log.info("Automatically refreshing workspace "+self.getName()+" markets... "+infoo)
-            #refresh all markets attached to this workspace
-            for mrkt in self.getMarkets():
-                mrkt.refresh()
+            log.info("Automatically refreshing workspace "+self.getName()+" vendors... "+infoo)
+            #refresh all vendors attached to this workspace
+            for vndr in self.getVendors():
+                vndr.refresh()
                 pass
 
             #write updated time value to log file
@@ -729,8 +729,8 @@ class Workspace:
         wspcs = apt.SETTINGS['workspace']
         
         for ws in wspcs.keys():
-            if('path' in wspcs[ws].keys() and 'market' in wspcs[ws].keys()):
-                Workspace(ws, wspcs[ws]['path'], wspcs[ws]['market'])
+            if('path' in wspcs[ws].keys() and 'vendors' in wspcs[ws].keys()):
+                Workspace(ws, wspcs[ws]['path'], wspcs[ws]['vendors'])
         pass
 
 
@@ -752,7 +752,7 @@ class Workspace:
                 continue
             serialized[ws.getName()] = {}
             serialized[ws.getName()]['path'] = ws.getPath()
-            serialized[ws.getName()]['market'] = ws.getMarkets(returnnames=True, lowercase=False)
+            serialized[ws.getName()]['vendors'] = ws.getVendors(returnnames=True, lowercase=False)
         
         #update settings dictionary
         apt.SETTINGS['workspace'] = serialized
@@ -822,7 +822,7 @@ class Workspace:
 
 
     def isLinked(self):
-        return len(self.getMarkets())
+        return len(self.getVendors())
 
 
     def getPath(self):
@@ -845,45 +845,45 @@ class Workspace:
         return self == self.getActive()
 
 
-    def getMarkets(self, returnnames=False, lowercase=True):
+    def getVendors(self, returnnames=False, lowercase=True):
         '''
-        Return the market objects associated with the given workspace.
+        Return the vendor objects associated with the given workspace.
 
         Parameters:
-            returnnames (bool): true will return market names
+            returnnames (bool): true will return vendor names
             lowercase (bool): true will return lower-case names if returnnames is enabled
         Returns:
-            ([Market]) or ([str]): list of available markets
+            ([Vendor]) or ([str]): list of available vendors
             
         '''
         if(returnnames):
-            mrkt_names = []
-            for mrkt in self._markets:
-                name = mrkt.getName()
+            vndr_names = []
+            for vndr in self._vendors:
+                name = vndr.getName()
                 if(lowercase):
                     name = name.lower()
-                mrkt_names += [name]
-            return mrkt_names
+                vndr_names += [name]
+            return vndr_names
         else:
-            return self._markets
+            return self._vendors
 
     
     @classmethod
     def printList(cls):
         '''
-        Prints formatted list for workspaces with market availability and which is active.
+        Prints formatted list for workspaces with vendor availability and which is active.
 
         Parameters:
             None
         Returns:
             None
         '''
-        print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Markets"))
+        print('{:<16}'.format("Workspace"),'{:<6}'.format("Active"),'{:<40}'.format("Path"),'{:<14}'.format("Vendors"))
         print("-"*16+" "+"-"*6+" "+"-"*40+" "+"-"*14+" ")
         for ws in cls.Jar.values():
-            mrkts = apt.listToStr(ws.getMarkets(returnnames=True))
+            vndrs = apt.listToStr(ws.getVendors(returnnames=True))
             act = 'yes' if(ws == cls.getActive()) else '-'
-            print('{:<16}'.format(ws.getName()),'{:<6}'.format(act),'{:<40}'.format(ws.getPath()),'{:<14}'.format(mrkts))
+            print('{:<16}'.format(ws.getName()),'{:<6}'.format(act),'{:<40}'.format(ws.getPath()),'{:<14}'.format(vndrs))
             pass
         pass
 
@@ -910,7 +910,7 @@ class Workspace:
         Active: {self.isActive()}
         Hidden directory: {self.getDir()}
         Linked to: {self.isLinked()}
-        Markets: {self.getMarkets(returnnames=True)}
+        Vendors: {self.getVendors(returnnames=True)}
         '''
 
     pass

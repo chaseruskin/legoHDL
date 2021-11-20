@@ -1,3 +1,4 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: profile.py
 # Author: Chase Ruskin
@@ -6,6 +7,7 @@
 #   and/or scripts that can be maintained and imported. They are mainly used
 #   to save certain setting configurations (loadouts) and share settings across
 #   users.
+# ------------------------------------------------------------------------------
 
 import os,shutil,copy,glob
 import logging as log
@@ -47,7 +49,7 @@ class Profile:
 
             #create profile directory if DNE
             os.makedirs(self.getProfileDir(), exist_ok=True)
-            #create profile market file if DNE
+            #create profile marker file if DNE
             if(os.path.exists(self.getProfileDir()+self.getName()+self.EXT) == False):
                 open(self.getProfileDir()+self.getName()+self.EXT, 'w').close()
             
@@ -305,7 +307,7 @@ class Profile:
             'hello'  : 'python '+apt.ENV_NAME+'/scripts/hello_world.py',
         }
         def_settings['workspace'] = dict()
-        def_settings['workspace']['primary'] = {'path' : None, 'market' : None}
+        def_settings['workspace']['primary'] = {'path' : None, 'vendors' : None}
         #create default legohdl.cfg
         with open(default.getProfileDir()+apt.SETTINGS_FILE, 'w') as f:
             cfg.save(def_settings, f)
@@ -372,7 +374,7 @@ class Profile:
         prfl_files = glob.glob(cls.DIR+"**/*"+cls.EXT, recursive=True)
         for f in prfl_files:
             prfl_name = os.path.basename(f).replace(cls.EXT,'')
-            #remove a market that is not found in settings (Jar class container)
+            #remove a profile that is not found in settings (Jar class container)
             if(prfl_name.lower() not in cls.Jar.keys()):
                 log.info("Removing stale profile "+prfl_name+"...")
                 prfl_dir = f.replace(os.path.basename(f),'')
