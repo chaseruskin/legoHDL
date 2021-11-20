@@ -1120,7 +1120,7 @@ scripts)?", warning=False)
         if(self.hasFlag('profile')):
             jar = Profile.Jar
             target = 'profiles'
-            
+
         #package value is the vendor looking to refresh
         #if package value is null then all vendors tied to this workspace refresh by default
         if(self.hasFlag('all')):
@@ -1295,7 +1295,7 @@ scripts)?", warning=False)
                 if(sep[0].startswith(';')):
                     continue
                 #find where to start
-                if(len(sep) > 1 and sep[0] == '*' and sep[1] == self._item.lower()):
+                if(len(sep) > 1 and sep[0] == '*' and sep[1] == self.getItem(True).lower()):
                     disp = True
                 elif(disp == True):
                     if(sep[0] == '*'):
@@ -1361,6 +1361,10 @@ scripts)?", warning=False)
             None
         '''
         cmd = self._command
+        
+        if(self.hasFlag('h') or self.hasFlag('help')):
+            self._item = cmd
+            cmd = 'help'
 
         if('new' == cmd):
             self._new()
