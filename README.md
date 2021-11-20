@@ -1,4 +1,4 @@
-# ![](./docs/assets/title_3x.png)
+# ![](./docs/src/images/title_3x.png)
 
 # legoHDL
 ![ci-build](https://github.com/c-rus/legohdl/actions/workflows/build.yml/badge.svg)

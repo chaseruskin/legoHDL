@@ -1,3 +1,5 @@
 # Summary
 
-- [Chapter 1](./chapter_1.md)
+[Introduction](./index.md)
+
+- [Getting Started](./1_0_starting.md)
