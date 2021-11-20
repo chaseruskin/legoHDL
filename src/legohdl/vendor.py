@@ -65,6 +65,7 @@ class Vendor:
 
         #are we trying to attach a blank remote?
         if(success == False):
+            log.info("Creating new vendor "+self.getName()+"...")
             if(url != None and Git.isBlankRepo(url)):
                 self._repo.setRemoteURL(url)
             #if did not exist then must add and push new commits    
@@ -116,7 +117,7 @@ class Vendor:
                 success = False
 
             #try to add profile if found a name (.vndr file)
-            if(hasattr(self, '_name')):
+            if(success and hasattr(self, '_name')):
                 #do not add to profiles if name is already in use
                 if(self.getName().lower() in self.Jar.keys()):
                     log.error("Cannot add vendor "+self.getName()+" due to name conflict.")
