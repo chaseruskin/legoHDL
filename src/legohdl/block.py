@@ -1541,8 +1541,7 @@ class Block:
             os.makedirs(block_cache_path, exist_ok=True)
 
             #clone git repository to new cache directory
-            Git(block_cache_path+self.N(), ensure_exists=False).git('clone', \
-                apt.TMP, block_cache_path+self.N(), '--single-branch')
+            Git(block_cache_path+self.N(), clone=apt.TMP)
 
             #clean up tmp directory
             apt.cleanTmpDir()
