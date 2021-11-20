@@ -741,13 +741,13 @@ scripts)?", warning=False)
             lang = self.getVar('comp')
 
         #print the relevant information for the requested unit
-        block.get(entity=ent, about=self.hasFlag('about'), \
-                        list_arch=self.hasFlag('arch'), \
-                        inst=self.hasFlag('inst'), \
-                        comp=self.hasFlag('comp'), \
-                        lang=lang, \
-                        edges=self.hasFlag('edges')
-                    )
+        block.get(entity=ent, \
+                no_about=self.hasFlag('no-about'), \
+                list_arch=self.hasFlag('arch'), \
+                inst=self.hasFlag('inst'), \
+                comp=self.hasFlag('comp'), \
+                lang=lang, \
+                edges=self.hasFlag('edges'))
         pass
 
 
@@ -1095,6 +1095,20 @@ scripts)?", warning=False)
         pass
 
 
+    def _download(self):
+        '''Run 'download' command.'''
+
+        print("NOT IMPLEMENTED YET")
+        pass
+
+
+    def _update(self):
+        '''Run 'update' command.'''
+
+        print("NOT IMPLEMENTED YET")
+        pass
+
+
     def _refresh(self):
         '''Run 'refresh' command.'''
 
@@ -1291,18 +1305,21 @@ scripts)?", warning=False)
         Returns:
             None
         '''
-        print('USAGE: \
-        \n\tlegohdl <command> [argument] [flags]\
-        \n')
-        print("COMMANDS:\n")
+
         def formatHelp(cmd, des):
             print('  ','{:<12}'.format(cmd),des)
             pass
+
+        print('\nUsage: \
+        \n\tlegohdl <command> [argument] [flags]\
+        \n')
+        print("Commands:")
+
         print("Development")
         formatHelp("new","create a new legohdl block (project)")
         formatHelp("init","initialize existing code into a legohdl block")
         formatHelp("open","open a block with the configured text-editor")
-        formatHelp("get","print instantiation code for an HDL entity")
+        formatHelp("get","print instantiation code for an HDL unit")
         formatHelp("graph","visualize HDL dependency graph")
         formatHelp("export","generate a blueprint file")
         formatHelp("build","execute a custom configured script")
@@ -1387,11 +1404,11 @@ scripts)?", warning=False)
             pass
 
         elif('download' == cmd):
-            
+            self._download()
             pass
 
         elif('update' == cmd):
-            
+            self._update()
             pass
 
         elif('info' == cmd):
@@ -1409,9 +1426,9 @@ scripts)?", warning=False)
         elif('' == cmd):
             self._default()
             pass
-        #notify user when a unknown command was entereds
-        else: 
-            log.error("Unknown command - "+cmd+".")
+        #notify user when a unknown command was entered
+        else:
+            log.error("Unknown command \""+cmd+"\"")
             pass
         pass
 

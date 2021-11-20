@@ -1287,7 +1287,8 @@ class Block:
 
     def setMeta(self, key, value, sect='block'):
         '''
-        Updates the block metatdata dictionary.
+        Updates the block metatdata dictionary. If the key does not exist,
+        one will be created.
         
         Parameters:
             key (str): key within sect that covers the value in dictionary
@@ -1608,7 +1609,6 @@ class Block:
 
         #proceed to create sub version 
 
-
         #create cache directory based on this block's path
         cache_path = self.getPath()+'../'+sub_ver+'/'
 
@@ -1657,12 +1657,19 @@ class Block:
         mod_unit_names = []
         #store what language objects will need to swap unit names
         lang_files = [] 
+
+        vhdl_units = []
+        vlog_units = []
         #iterate through every unit to create find/replace pairings
         for key,u in unit_names.items():
             mod_unit_names += [[key, key+'_'+sub_ver.replace('.','_')]]
             #add its file to the list if not already included
             if(u.getLanguageFile() not in lang_files):
                 lang_files += [u.getLanguageFile()]
+            if(u.getLang() == Unit.Language.VHDL):
+                vhdl_units += [mod_unit_names[-1][1]]
+            elif(u.getLang() == Unit.Language.VERILOG):
+                vlog_units += [mod_unit_names[-1][1]]
 
         #modify all entity/unit names within the specific version to reflect
         #that specific version
@@ -1675,6 +1682,11 @@ class Block:
                 b.setMeta('toplevel', n[1])
             if(n[0].lower() == b.getMeta('bench').lower()):
                 b.setMeta('bench', n[1])
+
+        #add VHDL units and Verilog units to metadata
+        b.setMeta('vhdl-units', vhdl_units)
+        b.setMeta('vlog-units', vlog_units)
+
         b.save(force=True)
 
         #disable write permissions for specific version block
@@ -2356,14 +2368,14 @@ class Block:
         return cls._all_blocks
 
 
-    def get(self, entity, about, list_arch, inst, comp, lang, edges):
+    def get(self, entity, no_about, list_arch, inst, comp, lang, edges):
         '''
         Get various pieces of information about a given entity as well as any
         compatible code for instantiations.
 
         Parameters:
             entity (str): name of entity to be fetched
-            about (bool): determine if to print the comment header
+            no_about (bool): determine if to skip the about section
             list_arch (bool): determine if to list the architectures
             inst (bool): determine if to print instantiation
             comp (bool): determine if to print component declaration
@@ -2413,8 +2425,9 @@ class Block:
             pass
 
         #print comment header (about)
-        print("--- ABOUT ---")
-        print(ent.readAbout())
+        if(no_about == False):
+            print("--- ABOUT ---")
+            print(ent.readAbout())
         #print dependencies
         if(edges):
             print("--- EDGES ---")

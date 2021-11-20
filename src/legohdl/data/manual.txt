@@ -175,7 +175,7 @@ NAME:
 
 SYNOPSIS:
         legohdl get [<block>:]<unit> [-comp[=<lang>]] [-inst[=<lang>]] [-arch]
-                [-about] [-edges] [-D | -I]
+                [-edges] [-D | -I] [-no-about]
 
 DESCRIPTION:
         When trying to access current block-level entities, the <block>
@@ -184,7 +184,9 @@ DESCRIPTION:
 
         By default, it will print the 'about' section and the component 
         declaration for VHDL entities or the module interface for Verilog 
-        modules.
+        modules. This is the comment header block found at the beginning of this
+        unit's file (if exists). Helpful to read more information about an unit 
+        and how it behaves (if a developer wrote one).
 
         If -comp is present when -inst is also present and the language 
         outputted is VHDL, the returned VHDL instantiation code will be a 
@@ -225,11 +227,6 @@ OPTIONS:
         -arch
                 List the available architectures. If the unit is a Verilog
                 module, only "rtl" will be listed.
-
-        -about
-                Print the comment header block found at the beginning of this
-                unit's file (if exists). Helpful to read more information
-                about an unit and how it behaves.
         
         -edges
                 Print the units are required by this unit and print the units 
@@ -243,6 +240,9 @@ OPTIONS:
         -I
                 Search the installed blocks to get this unit, regardless of 
                 the status of 'multi-develop'.
+
+        -no-about
+                Do not print the 'about' section for the given design unit.
 
 
 * graph
