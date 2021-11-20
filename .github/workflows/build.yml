@@ -6,25 +6,39 @@ jobs:
       fail-fast: false
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.5', '3.x']
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/setup-python@v2.2.2
       - uses: actions/checkout@v2
+
+      - name: Set up Python
+      - uses: actions/setup-python@v2.2.2
+      - with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -c "import sys; print(sys.version)"
+      
+      - name: Install and configure legoHDL
       - run: pip install .
       #configure legohdl for use
       - run: printf 'y\n\nchase\ngedit\n~/demo/\ny\n' | legohdl
       #set some settings via command-line
       - run: legohdl config -default-language=vhdl -alignment=1 -auto-fit=1
+
+      - name: Create a block
       #create a new block
       - run: legohdl new library1.Lab0
       #view blocks
       - run: legohdl list
+
+      - name: Configure a vendor
       #link this vendor to the active-workspace
       - run: legohdl config -vendor=uf-ece:https://github.com/uf-eel4712c/uf-ece.git -link
       #view blocks
       - run: legohdl list
       #view vendors
       - run: legohdl list -vendor
+
+      - name: Install a design from a vendor
       #install the available block from uf-ece
       - run: legohdl install sample.mux_2x1
       #collect data about mux_2x1 block and its design entity
