@@ -107,7 +107,7 @@ class Apparatus:
     #an entity
     ENTITY_DELIM = ':'
 
-    DOCUMENTATION_URL = 'https://legohdl.readthedocs.io/en/latest/index.html'
+    DOCUMENTATION_URL = 'https://c-rus.github.io/legoHDL/'
 
 
     @classmethod

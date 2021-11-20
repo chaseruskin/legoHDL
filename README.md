@@ -21,7 +21,7 @@ legoHDL is available to work completely local or along with remote locations to 
 
 ### __Documentation__
 
-Documentation can be found [here](https://legohdl.readthedocs.io/en/latest/index.html). 
+Documentation can be found [here](https://c-rus.github.io/legoHDL/). 
 
 
 ### __Roadmap__
@@ -46,7 +46,7 @@ Once the roadmap is complete for v1.0.0, users will be able to install legoHDL d
 4. Enter other prompted information such as your name, text-editor, and workspace path.
 
 5. Ready to design! Create a block from the imported default template and automatically open it in the configured text-editor: `legohdl new MyLib.MyBlock -open`. Refer
-to the [documentation](https://hdl.notion.site/legoHDL-f798525eee2f4378bcf5e970ae6373cf) for more details.
+to the [documentation](https://c-rus.github.io/legoHDL/) for more details.
 
 ### Commands
 
