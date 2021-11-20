@@ -600,10 +600,6 @@ class Unit:
         return reqs
 
 
-    def __repr__(self):
-        return f'''{self.getTitle()}'''
-
-
     # uncomment to use for debugging
     # def __str__(self):
     #     reqs = '\n'
@@ -845,9 +841,6 @@ class Generic(Signal):
         return d_txt  
 
 
-    def __repr__(self):
-        return f'''\n{self.getName()} * {self._dtype} = {self._value}'''
-
     pass
 
 
@@ -950,9 +943,6 @@ class Port(Signal):
             rt = str(self.getRoute().name).lower()+(spaces*' ')
         return rt
 
-    
-    def __repr__(self):
-        return f'''\n{self.getName()} - {self.getRoute()} * {self.getDatatype()}'''
 
     pass
 
