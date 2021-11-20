@@ -1,2 +1,0 @@
-Typical Workflow
-================

@@ -1,2 +1,0 @@
-Mixed Language Support
-======================
