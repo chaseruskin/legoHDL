@@ -2219,10 +2219,6 @@ class Block:
         if(hasattr(self, "_M")):
             return self._M 
         #read from metadata
-        if(self.getMeta('market') != ''):
-            self.setMeta('vendor', self.getMeta('market'))
-            del self._meta['block']['market']
-            self.save(force=True)
         self._M = self.getMeta('vendor')
         return self._M
 
