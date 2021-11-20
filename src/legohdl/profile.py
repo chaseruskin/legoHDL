@@ -273,24 +273,27 @@ class Profile:
         return about_txt
 
 
-    def update(self):
+    def refresh(self, quiet=False):
         '''
         If has a remote repository, checks with it to ensure the current branch
         is up-to-date and pulls any changes.
         
         Parameters:
-            None
+            quiet (bool): determine if to display information to user or keep quiet
         Returns:
             None
         '''
-        log.info("Updating repository for profile "+self.getName()+"...")
-        #check status from remote
-        if(self._repo.isLatest() == False):
-            log.info('Pulling new updates...')
-            self._repo.pull()
-            log.info("success")
-        else:
-            log.info("Already up-to-date.")
+        if(self._repo.remoteExists()):
+            log.info("Refreshing profile "+self.getName()+"...")
+            #check status from remote
+            if(self._repo.isLatest() == False):
+                log.info('Pulling new updates...')
+                self._repo.pull()
+                log.info("success")
+            else:
+                log.info("Already up-to-date.")
+        elif(quiet == False):
+            log.info("Profile "+self.getName()+" is local and does not require refresh.")
         pass
 
 

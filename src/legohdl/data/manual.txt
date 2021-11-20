@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/19/2021
+; Modified: 11/20/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -499,7 +499,8 @@ NAME:
         refresh - Synchronize local vendor repositories with their remotes
 
 SYNOPSIS:
-        legohdl refresh [<vendor>] [-all]
+        legohdl refresh [<vendor> | -all]
+        legohdl refresh [<profile> | -all] -profile
 
 DESCRIPTION:
         Checks for updates from vendor remote repositories and pulls them down
@@ -515,8 +516,14 @@ OPTIONS:
                 The name of the known vendor to synchronize.
 
         -all
-                Synchronize all vendors across all workspaces.
+                Synchronize all profiles or vendors across all workspaces.
 
+        <profile>
+                The name of the profile to syncrhonize.
+        
+        -profile
+                Flag to indicate that a profile is trying to be refreshed.
+        
 
 * install
 NAME:

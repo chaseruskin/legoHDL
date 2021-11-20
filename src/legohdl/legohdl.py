@@ -1114,18 +1114,26 @@ scripts)?", warning=False)
     def _refresh(self):
         '''Run 'refresh' command.'''
 
+        jar = Vendor.Jar
+        target = 'vendors'
+        #package value could be profile looking to refresh
+        if(self.hasFlag('profile')):
+            jar = Profile.Jar
+            target = 'profiles'
+            
         #package value is the vendor looking to refresh
         #if package value is null then all vendors tied to this workspace refresh by default
         if(self.hasFlag('all')):
-            log.info("Refreshing all vendors...")
-            for mkrt in Vendor.Jar.values():
-                mkrt.refresh()
-        elif(self.getItem() == None):
+            log.info("Refreshing all "+target+"...")
+            for it in jar.values():
+                it.refresh()
+        #refresh all workspace vendors
+        elif(self.getItem() == None and self.hasFlag('profile') == False):
             log.info("Refreshing all workspace "+self.WS().getName()+" vendors...")
             for vndr in self.WS().getVendors():
                 vndr.refresh()
-        elif(self.getItem() in Vendor.Jar.keys()):
-            Vendor.Jar[self.getItem()].refresh()
+        elif(self.getItem() in jar.keys()):
+            jar[self.getItem()].refresh()
         pass
 
 
