@@ -180,22 +180,34 @@ class Graph:
         twig = '|'
         spaces = 2
         first = (leaf == reg_branch)
+        txt = ''
 
         #print title if method is on top-level entity
         if(first):
-            print('--- DEPENDENCY TREE ---')
+            txt = '--- DEPENDENCY TREE ---' + '\n'
         
         #make sure a unit is passed as top
         if(top == None):
-            print('N/A')
-            return
+            return 'N/A'
+
         #start with top level
         if(top not in self._adj_list.keys()):
             exit(log.error('Entity '+top.E()+' may be missing an architecture.'))
 
+        #skip reference point if compress is not set
         ref = ''
-        if(compress):
-            ref = len(ref_points)+1
+        if(compress == False):
+            pass
+        #add to reference points
+        elif(top in ref_points.keys()):
+            ref = str(ref_points[top])
+        #do not use reference if lowest-level entity
+        elif(len(self._adj_list[top]) == 0):
+            ref = ''
+        #create new reference point
+        else:
+            ref = '['+str(len(ref_points))+']'
+
         #only display units
         if(not top.isPkg()):
             temp_leaf = leaf
@@ -206,20 +218,24 @@ class Graph:
                 temp_leaf = temp_leaf.replace(reg_branch, edge_branch)
             #print to console
             node = top.getFull()
-            if(compress and top in ref_points.keys() and len(self._adj_list[top])):
-                node = '['+str(ref_points[top])+']'
+            if(compress):
+                pass
             elif(disp_full):
                 node = top.getTitle()
+            #add this graph-line to the text
+            txt = txt + temp_leaf+' '+node+' '+ref+'\n'
+            pass
 
-            print(temp_leaf,node,ref)
+        #return if no children exist or already referenced in compression
+        if(len(self._adj_list) == 0 or (compress and top in ref_points.keys())):
+            return txt
 
-        #return if no children exist
-        if(len(self._adj_list) == 0): #or (compress and top in ref_points.keys())):
-            return
+        #add the point to the reference mapping
+        if(top not in ref_points.keys()):
+            ref_points[top] = ref
 
         #go through all entity's children
         for sub_entity in self._adj_list[top]:
-
             #add twig if the parent was not an edge branch
             if(leaf.count(reg_branch)):
                 next_leaf = leaf[0:len(leaf)-2] + twig
@@ -235,14 +251,36 @@ class Graph:
             #use + if a regular branch
             else:
                 next_leaf = next_leaf + reg_branch
-            #recursive call
-            self.output(sub_entity, next_leaf, ref_points=ref_points, compress=compress)
 
-            #add reference point
-            if(sub_entity not in ref_points.keys()):
-                ref_points[sub_entity] = ref
-            #print(ref_points)
-        pass
+            #recursive call
+            txt = txt + self.output(sub_entity, next_leaf, ref_points=ref_points, compress=compress)
+            pass
+
+        #clean up the graph during compression
+        if(compress and first):
+            #remove all reference points that only appear once
+            remap_cnt = 0
+            for i in range(0,len(ref_points)):
+                rp = '['+str(i)+']'
+                rp_cnt = txt.count(rp)
+                #delete the reference point if was unused (not appear >1)
+                if(rp_cnt <= 1):
+                    txt = txt.replace(rp, '')
+                    continue
+                #compute reference point into string of characters
+                ascii_len = remap_cnt
+                new_rp = str(chr((ascii_len%26)+65))
+                #continuously divide to get next character
+                while(ascii_len >= 26):
+                    ascii_len = int(int(ascii_len)/26)-1
+                    new_rp = str(chr((ascii_len%26)+65)) + new_rp
+                #replace old reference with new reference point
+                txt = txt.replace(rp, '['+str(new_rp)+']')
+                #increment the number of reference remaps
+                remap_cnt += 1
+                pass
+            
+        return txt
 
 
     def getNeighbors(self, vertex, upstream=False):
