@@ -1,9 +1,16 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: legohdl.py
 # Author: Chase Ruskin
 # Description:
-#   This script is the entry-point to the legohdl program. It parses the
-#   command-line arguments and contains a method for each valid command.
+#   This script is the entry-point to the legohdl program. 
+# 
+#   It parses the command-line arguments and contains a method for each valid 
+#   command. This is the top-level script that interfaces with the user from
+#   the command-line to determine what flags are raised, variables defined,
+#   command requested, and determines how to route the program to the correct
+#   method for the user.
+# ------------------------------------------------------------------------------
 
 import os, sys, shutil
 import logging as log
