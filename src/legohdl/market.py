@@ -177,7 +177,16 @@ class Market:
             cfg.save(meta, meta_file, ignore_depth=True, space_headers=True)
             pass
 
-        #stage changes
+        #write changelog in market for this block (if exists)
+        if(block.getChangelog() != None):
+            #get the changelog name
+            _,cl_file = os.path.split(block.getChangelog())
+            #copy changelog into market
+            shutil.copyfile(block.getChangelog(), path+cl_file)
+            #stage changelog change
+            self._repo.add(block.L()+'/'+block.N()+'/'+cl_file)
+
+        #stage meta changes
         self._repo.add(block.L()+'/'+block.N()+'/'+apt.MARKER)
 
         self._repo.commit("Publishes "+block.getFull(inc_ver=True))

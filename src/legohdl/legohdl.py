@@ -58,10 +58,11 @@ class legoHDL:
             #first is the command
             if(i == 0):
                 self._command = arg.lower()
-            #next is the "item" (may not be used for all commands)
-            elif(i == 1):
+            #first arg without a starting '-' is the "item" (may not be used for all commands)
+            elif(arg[0] != '-'):
                 self._item = arg
-            else:
+
+            if(self._item != ""):
                 break
 
         #only display the program's version and exit
@@ -1173,7 +1174,8 @@ scripts)?", warning=False)
         block.release(self.getItem(), msg=self.getVar("msg"), \
             dry_run=self.hasFlag('dry-run'), \
             only_meta=self.hasFlag('strict'), \
-            no_install=self.hasFlag('no-install'))
+            no_install=self.hasFlag('no-install'), \
+            skip_changelog=self.hasFlag('no-changelog'))
         pass
 
 

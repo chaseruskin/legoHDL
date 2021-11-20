@@ -1,3 +1,4 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: block.py
 # Author: Chase Ruskin
@@ -5,6 +6,7 @@
 #   This script describes the attributes and behaviors for a "block" within
 #   the legohdl framework. A block is a HDL project with a marker file at the 
 #   root folder.
+# ------------------------------------------------------------------------------
 
 import os, shutil, stat, glob
 import logging as log
@@ -57,6 +59,9 @@ class Block:
 
     #metadata that gets added as block loses detail (at AVAILABLE level)
     EXTRA_FIELDS = ['versions', 'size', 'vhdl-units', 'vlog-units']
+
+    #supported files to be identified as "changelogs"
+    CHANGE_LOGS = ['changelog.md', 'change.log', 'changelog.txt']
 
     #class attribute that is a block object found on current path
     _Current = None
@@ -369,31 +374,81 @@ class Block:
 
 
     def waitOnChangelog(self):
-        #:todo make better/review
-        change_file = self.getPath()+apt.CHANGELOG
+        '''
+        Automatically opens the CHANGELOG in the configured editor to update.
+
+        Parameters:
+            None
+        Returns:
+            None
+        ''' 
+        cl = self.getChangelog()
+        #no changelog identified for this block.
+        if(cl == None):
+            return False  
+        #no editor available to open the changelog      
+        if(apt.getEditor() == cfg.NULL):
+            log.info("Skipping updating CHANGELOG due to no configured text-editor...")
+            return False
+
         #check that a changelog exists for this block
-        if(os.path.exists(change_file)):
-            with open(change_file, 'r+') as f:
-                data = f.read()
-                f.seek(0)
-                f.write("## v"+self.getVersion()+'\n\n'+data)
-                f.close()
-            #print(change_file)
-            #open the changelog and wait for the developer to finish writing changes
-            apt.execute(apt.getEditor(), change_file)
+        with open(cl, 'r+') as f:
+            data = f.read()
+            f.seek(0)
+            f.write("v"+self.getVersion()+'\n\n'+data)
+            f.close()
+
+        #open the changelog and wait for the developer to finish writing changes
+        apt.execute(apt.getEditor(), cl)
+        try:
+            resp = input("Enter 'k' when done writing CHANGELOG to proceed...")
+        except KeyboardInterrupt:
+            exit('\nExited prompt. Release cancelled.')
+        while resp.lower() != 'k':
             try:
-                resp = input("Enter 'k' when done writing CHANGELOG.md to proceed...")
+                resp = input()
             except KeyboardInterrupt:
-                exit('\nExited prompt.')
-            while resp.lower() != 'k':
-                try:
-                    resp = input()
-                except KeyboardInterrupt:
-                    exit('\nExited prompt.')
-        return
+                exit('\nExited prompt. Release cancelled.')
+
+        return True
 
 
-    def release(self, next_ver, msg=None, dry_run=False, only_meta=False, no_install=False):
+    def getChangelog(self, rel_path=False, returnname=False):
+        '''
+        Find a supported changelog file and return its filepath. Dynamically
+        creates a _changelog (str) attr. Returns None if DNE.
+
+        Parameters:
+            rel_path (bool): determine if to return the changelog's relative path
+        Returns:
+            _changelog (str): filepath for the changelog
+        '''
+        if(hasattr(self, "_changelog")):
+            if(rel_path and self._changelog != None):
+                return self._changelog.replace(self.getPath(), '')
+            return self._changelog
+
+        #get all files
+        all_files = glob.glob(self.getPath()+"**/*", recursive=True)
+        self._changelog = None
+        #iterate through all results to find a changelog
+        for f in all_files:
+            #skip all non-files found
+            if(os.path.isfile(f) == False):
+                continue
+            #extract the filename
+            _,fname = os.path.split(f)
+            #check if filename matches a supported changelog file
+            if(fname.lower() in Block.CHANGE_LOGS):
+                self._changelog = f
+                break
+            pass
+        if(rel_path and self._changelog != None):
+            return self._changelog.replace(self.getPath(), '')
+        return self._changelog
+
+
+    def release(self, next_ver, msg=None, dry_run=False, only_meta=False, no_install=False, skip_changelog=False):
         '''
         Releases a new version for a block to be utilized in other designs.
 
@@ -406,6 +461,7 @@ class Block:
             dry_run (bool): determine if to fake the release to see if things would go smoothly
             only_meta (bool): determine if to add/commit only metadata file or all unsaved changes
             no_install (bool): determine if to avoid automically installing new release to cache
+            skip_changelog (bool): determine if to skip writing to changelog (if exists)
         Returns:
             None
         '''
@@ -480,10 +536,17 @@ class Block:
         self.updateRequires()
         self.save(force=True)
 
+        #check to write updates to changelog
+        changelog_altered = False
+        if(skip_changelog == False):
+            changelog_altered = self.waitOnChangelog()
+
         #4. Make a new git commit
 
         if(only_meta):
             self._repo.add(apt.MARKER)
+            if(changelog_altered):
+                self._repo.add(self.getChangelog(rel_path=True))
         else:
             self._repo.add('.')
 
@@ -562,32 +625,6 @@ class Block:
         #write new metadata file
         with open(self.getPath()+apt.MARKER, 'w') as mdf:
             cfg.save(meta, mdf, ignore_depth=True, space_headers=True)
-        pass
-
-
-    def stripExcessMeta(self, varis=[]):
-        '''
-        Removes excess metadata from the block section.
-        
-        Parameters:
-            varis ([str]): variables to remove under 'block' section
-        Returns:
-            (dict): copy of metadata stripped down
-        '''
-        meta = self.getMeta(every=True)
-        for v in varis:
-            #find the variable in block
-            if(v in meta['block']):
-                del meta['block'][v]
-            pass
-
-        #:todo:
-
-        return meta
-    
-
-    def download(self):
-        #:todo:
         pass
 
 
@@ -1028,6 +1065,19 @@ class Block:
         return True
 
 
+    def download(self):
+        '''
+        Download the block to the workspace's local path.
+        
+        Parameters:
+            None
+        Returns:
+            None
+        '''
+
+        pass
+
+
     def getFilesHDL(self, returnpaths=False):
         '''
         Returns a list of the HDL files associated with this block.
@@ -1309,24 +1359,6 @@ class Block:
     def getMetaFile(self):
         '''Return the path to the marker file.'''
         return self.getPath()+apt.MARKER
-
-
-    def getChangeLog(self, path):
-        '''
-        Return the contents of the changelog, if exists. Returns None otherwise.
-
-        Parameters:
-            path (str): path that should lead to the changelog file
-        Returns:
-            (str): contents of the changelog lines
-        '''
-        #:todo:
-        path = path+"/"+apt.CHANGELOG
-        if(os.path.isfile(path)):
-                with open(path,'r') as f:
-                    return f.readlines()
-        else:
-            return None
 
 
     def getPlaceholders(self, tmp_val):

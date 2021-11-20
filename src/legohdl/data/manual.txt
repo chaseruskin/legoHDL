@@ -364,7 +364,7 @@ NAME:
 
 SYNOPSIS:
         legohdl release <version> [-msg=<msg>] [-strict] [-dry-run] 
-                [-no-install]
+                [-no-changelog] [-no-install]
 
 DESCRIPTION:
         :todo:
@@ -391,6 +391,10 @@ OPTIONS:
 
         -no-install
                 Will not automatically install the latest version to the cache.
+
+        -no-changelog
+                Skip auto-opening a changelog file (if exists) during the
+                release process.
 
 
 * del
