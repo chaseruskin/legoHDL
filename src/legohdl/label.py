@@ -1,3 +1,4 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: workspace.py
 # Author: Chase Ruskin
@@ -5,6 +6,7 @@
 #   The Label class. A Label object has a unique name that will be prepended
 #   with '@' in the blueprint file. A label has a list of extensions to be
 #   searched for within a block. A label can be global or local.
+# ------------------------------------------------------------------------------
 
 import logging as log
 from .map import Map

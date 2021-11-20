@@ -1,3 +1,4 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: map.py
 # Author: Chase Ruskin
@@ -5,6 +6,7 @@
 #   The Map class. A map object is a special modification of a python dictionary
 #   where keys are converted to lower case. Inspired by: 
 #   https://stackoverflow.com/questions/3387691/how-to-perfectly-override-a-dict
+# ------------------------------------------------------------------------------
 
 from collections.abc import MutableMapping
 

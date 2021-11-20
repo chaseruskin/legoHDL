@@ -1,3 +1,4 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: language.py
 # Author: Chase Ruskin
@@ -9,6 +10,7 @@
 #   A file (language) has entities. A file object's role is to create the 
 #   entities/design units from its code, depending on if its 1 of the 2 
 #   supported languages: VHDL or verilog.
+# ------------------------------------------------------------------------------
 
 import re
 from abc import ABC, abstractmethod

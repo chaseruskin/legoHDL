@@ -1,3 +1,4 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: vhdl.py
 # Author: Chase Ruskin
@@ -5,7 +6,8 @@
 #   This script inherits language.py and implements the behaviors for
 #   VHDL code files (syntax, deciphering).
 #
-#   A VHDL file has entities.
+#   A VHDL file has entities, architectures, packages, and/or configurations.
+# ------------------------------------------------------------------------------
 
 from .language import Language
 from .unit import Unit

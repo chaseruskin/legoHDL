@@ -1,9 +1,11 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: script.py
 # Author: Chase Ruskin
 # Description:
 #   The Script class. A Script object can be used to execute a command through
 #   legohdl, very similiar to how aliases function within the command-line.
+# ------------------------------------------------------------------------------
 
 import os
 import logging as log

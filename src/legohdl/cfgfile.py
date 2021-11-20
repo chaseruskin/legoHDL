@@ -1,9 +1,11 @@
+# ------------------------------------------------------------------------------
 # Project: legohdl
 # Script: cfgfile.py
 # Author: Chase Ruskin
 # Description:
 #   This script handles reading/writing the custom configuration files used
 #   for settings and blocks.
+# ------------------------------------------------------------------------------
 
 import logging as log
 
