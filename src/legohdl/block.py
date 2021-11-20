@@ -2666,12 +2666,13 @@ class Block:
         return info_txt
 
 
-    def __str__(self):
-        return f'''
-        id: {hex(id(self))}
-        block: {self.M()+'.'+self.L()+'.'+self.N()+'('+self.V()+')'}
-        path: {self.getPath()}
-        '''
+    # uncomment to use for debugging
+    # def __str__(self):
+    #     return f'''
+    #     id: {hex(id(self))}
+    #     block: {self.M()+'.'+self.L()+'.'+self.N()+'('+self.V()+')'}
+    #     path: {self.getPath()}
+    #     '''
 
 
     pass

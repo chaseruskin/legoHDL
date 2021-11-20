@@ -372,12 +372,14 @@ class Git:
         return self.getRemoteURL() != ''
 
 
-    def __str__(self):
-        return f'''
-        ID: {hex(id(self))}
-        path: {self.getPath()}
-        branch: {self.getBranch()}
-        remote: {self.getRemoteName()} {self.getRemoteURL()}
-        '''
+    # uncomment to use for debugging
+    # def __str__(self):
+    #     return f'''
+    #     ID: {hex(id(self))}
+    #     path: {self.getPath()}
+    #     branch: {self.getBranch()}
+    #     remote: {self.getRemoteName()} {self.getRemoteURL()}
+    #     '''
+
 
     pass

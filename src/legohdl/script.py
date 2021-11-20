@@ -209,13 +209,15 @@ class Script:
         pass
 
 
-    def __str__(self):
-        return f'''
-        ID: {hex(id(self))}
-        alias: {self.getAlias()}
-        cmd: {self.getCommand()}
-        program: {self.getExe()}
-        path: {self.getPath()}
-        '''
+    # uncomment to use for debugging
+    # def __str__(self):
+    #     return f'''
+    #     ID: {hex(id(self))}
+    #     alias: {self.getAlias()}
+    #     cmd: {self.getCommand()}
+    #     program: {self.getExe()}
+    #     path: {self.getPath()}
+    #     '''
+
 
     pass

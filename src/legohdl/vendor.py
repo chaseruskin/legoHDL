@@ -377,14 +377,16 @@ class Vendor:
             print('key:',key)
             print(vndr)
     
-    
-    def __str__(self):
-        '''Returns string object translation.'''
-        return f'''
-        ID: {hex(id(self))}
-        name: {self.getName()}
-        dir: {self.getVendorDir()}
-        remote: {self._repo.getRemoteURL()}
-        '''
+
+    # uncomment to use for debugging 
+    # def __str__(self):
+    #     '''Returns string object translation.'''
+    #     return f'''
+    #     ID: {hex(id(self))}
+    #     name: {self.getName()}
+    #     dir: {self.getVendorDir()}
+    #     remote: {self._repo.getRemoteURL()}
+    #     '''
+
 
     pass

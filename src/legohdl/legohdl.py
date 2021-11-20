@@ -1448,13 +1448,14 @@ scripts)?", warning=False)
         pass
 
 
-    def __str__(self):
-        return f'''
-        command: {self._command}
-        item: {self.getItem()}
-        flags: {self._flags}
-        vars: {self._vars}
-        '''
+    # uncomment to use for debugging
+    # def __str__(self):
+    #     return f'''
+    #     command: {self._command}
+    #     item: {self.getItem()}
+    #     flags: {self._flags}
+    #     vars: {self._vars}
+    #     '''
 
 
     pass

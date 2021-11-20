@@ -165,12 +165,14 @@ class Label:
         return self._name
 
 
-    def __str__(self):
-        return f'''
-        ID: {hex(id(self))}
-        Label: {self.getName()}
-        Extensions: {self.getExtensions()}
-        Global: {self.isGlobal()}
-        '''
+    # uncomment to use for debugging
+    # def __str__(self):
+    #     return f'''
+    #     ID: {hex(id(self))}
+    #     Label: {self.getName()}
+    #     Extensions: {self.getExtensions()}
+    #     Global: {self.isGlobal()}
+    #     '''
+
 
     pass

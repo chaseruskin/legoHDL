@@ -42,16 +42,6 @@ class Vhdl(Language):
         pass
 
 
-    def __str__(self):
-        dsgns = ''
-        for d in self.identifyDesigns():
-            dsgns = dsgns + str(d) + '\n'
-        
-        return super().__str__()+f'''
-        designs: {dsgns}
-        '''
-
-
     def identifyDesigns(self):
         '''
         Analyzes the current VHDL file to only identify design units. Does not
@@ -530,5 +520,16 @@ class Vhdl(Language):
         #print(p_list, g_list)        
         return p_list, g_list
     
+
+    # uncomment to use for debugging
+    # def __str__(self):
+    #     dsgns = ''
+    #     for d in self.identifyDesigns():
+    #         dsgns = dsgns + str(d) + '\n'
+        
+    #     return super().__str__()+f'''
+    #     designs: {dsgns}
+    #     '''
+
 
     pass

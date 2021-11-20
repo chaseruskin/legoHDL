@@ -526,15 +526,17 @@ class Profile:
         return self == self.LastImport
 
 
-    def __str__(self):
-        return f'''
-        ID: {hex(id(self))}
-        Name: {self.getName()}
-        Imported Last: {self.isLastImport()}
-        settings: {self.hasSettings()}
-        template: {self.hasTemplate()}
-        scripts: {self.hasScripts()}
-            repo: {self._repo}
-        '''
+    # uncomment to use for debugging
+    # def __str__(self):
+    #     return f'''
+    #     ID: {hex(id(self))}
+    #     Name: {self.getName()}
+    #     Imported Last: {self.isLastImport()}
+    #     settings: {self.hasSettings()}
+    #     template: {self.hasTemplate()}
+    #     scripts: {self.hasScripts()}
+    #         repo: {self._repo}
+    #     '''
+
 
     pass

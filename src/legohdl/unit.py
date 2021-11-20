@@ -604,23 +604,24 @@ class Unit:
         return f'''{self.getTitle()}'''
 
 
-    def __str__(self):
-        reqs = '\n'
-        for dep in self.getReqs():
-            reqs = reqs + '-'+dep.M()+'.'+dep.L()+'.'+dep.N()+':'+dep.E()+" "
-            reqs = reqs + hex(id(dep)) + "\n"
-        return f'''
-        ID: {hex(id(self))}
-        Completed? {self.isChecked()}
-        full name: {self.getTitle()}
-        file: {self.getFile()}
-        dsgn: {self.getDesign()}
-        lang: {self.getLang()}
-        arch: {self.getArchitectures()}
-        tb?   {self.isTb()}
-        conf? {self.getConfig()}
-        reqs: {reqs}
-        '''
+    # uncomment to use for debugging
+    # def __str__(self):
+    #     reqs = '\n'
+    #     for dep in self.getReqs():
+    #         reqs = reqs + '-'+dep.M()+'.'+dep.L()+'.'+dep.N()+':'+dep.E()+" "
+    #         reqs = reqs + hex(id(dep)) + "\n"
+    #     return f'''
+    #     ID: {hex(id(self))}
+    #     Completed? {self.isChecked()}
+    #     full name: {self.getTitle()}
+    #     file: {self.getFile()}
+    #     dsgn: {self.getDesign()}
+    #     lang: {self.getLang()}
+    #     arch: {self.getArchitectures()}
+    #     tb?   {self.isTb()}
+    #     conf? {self.getConfig()}
+    #     reqs: {reqs}
+    #     '''
 
 
     pass
@@ -1404,11 +1405,12 @@ class Interface:
         return self._library
 
 
-    def __str__(self):
-        return f'''
-        ports: {list(self.getPorts().values())}
-        generics: {list(self.getGenerics().values())}
-        '''
+    # uncomment to use for debugging
+    # def __str__(self):
+    #     return f'''
+    #     ports: {list(self.getPorts().values())}
+    #     generics: {list(self.getGenerics().values())}
+    #     '''
 
 
     pass

@@ -902,15 +902,17 @@ class Workspace:
         return cls._ActiveWorkspace
 
 
-    def __str__(self):
-        return f'''
-        ID: {hex(id(self))}
-        Name: {self.getName()}
-        Path: {self.getPath()}
-        Active: {self.isActive()}
-        Hidden directory: {self.getDir()}
-        Linked to: {self.isLinked()}
-        Vendors: {self.getVendors(returnnames=True)}
-        '''
+    # uncomment to use for debugging
+    # def __str__(self):
+    #     return f'''
+    #     ID: {hex(id(self))}
+    #     Name: {self.getName()}
+    #     Path: {self.getPath()}
+    #     Active: {self.isActive()}
+    #     Hidden directory: {self.getDir()}
+    #     Linked to: {self.isLinked()}
+    #     Vendors: {self.getVendors(returnnames=True)}
+    #     '''
+
 
     pass

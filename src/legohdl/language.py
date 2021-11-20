@@ -431,11 +431,12 @@ class Language(ABC):
         return self._block
 
 
-    def __str__(self):
-        return f'''
-        file: {self.getPath()}
-        owner: {self.getOwner().M()+'.'+self.getOwner().L()+'.'+self.getOwner().N()+'('+self.getOwner().V()+')'}
-        '''
+    # uncomment to use for debugging
+    # def __str__(self):
+    #     return f'''
+    #     file: {self.getPath()}
+    #     owner: {self.getOwner().M()+'.'+self.getOwner().L()+'.'+self.getOwner().N()+'('+self.getOwner().V()+')'}
+    #     '''
     
 
     pass
