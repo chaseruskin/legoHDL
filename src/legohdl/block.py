@@ -138,12 +138,9 @@ class Block:
         cls._Current = b
 
 
-    def getLvl(self, to_int=True):
-        '''Casts _lvl (Block.Level) to (int).'''
-        if(to_int):
-            return int(self._lvl.value)
-        else:
-            return self._lvl
+    def getLvl(self):
+        '''Returns _lvel (Block.Level). Use .value to get (int) representation.'''
+        return self._lvl
 
 
     def addToInventory(self):
@@ -166,13 +163,14 @@ class Block:
         if(self.N().lower() not in Block.Inventory[self.M()][self.L()].keys()):
             Block.Inventory[self.M()][self.L()][self.N()] = [None, None, None]
         #check if the level location is empty
-        if(self.getLvl() < len(Block.Inventory[self.M()][self.L()][self.N()])):
-            if(Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] != None):
-                log.error("Block "+self.getFull()+" already exists at level "+str(self.getLvl())+"!")
+        lvl = self.getLvl().value
+        if(lvl < len(Block.Inventory[self.M()][self.L()][self.N()])):
+            if(Block.Inventory[self.M()][self.L()][self.N()][lvl] != None):
+                log.error("Block "+self.getFull()+" already exists at level "+str(lvl)+"!")
                 return False
             #add to inventory if spot is empty
             else:
-                Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] = self
+                Block.Inventory[self.M()][self.L()][self.N()][lvl] = self
 
         if(self.getMeta('requires') != None):
             #update graph
@@ -268,7 +266,7 @@ class Block:
         if(lvls.count(None) == len(lvls)-1):
             yes = apt.confirmation("Block "+self.getFull()+" does not exist anywhere else; deleting "+\
                 "it from the workspace path may make it unrecoverable. Delete anyway?")
-        elif(self.getLvl(to_int=False) == Block.Level.DNLD and prompt):
+        elif(self.getLvl() == Block.Level.DNLD and prompt):
             yes = apt.confirmation("Are you sure you want to remove block "+self.getFull()+" from the "+\
                 "workspace's local path?")
 
@@ -279,11 +277,11 @@ class Block:
         shutil.rmtree(self.getPath(), onerror=apt.rmReadOnly)
 
         #remove from inventory
-        if(self.getLvl() < len(lvls)):
-            Block.Inventory[self.M()][self.L()][self.N()][self.getLvl()] = None
+        if(self.getLvl().value < len(lvls)):
+            Block.Inventory[self.M()][self.L()][self.N()][self.getLvl().value] = None
 
         #display message to user indicating deletion was successful
-        if(self.getLvl(to_int=False) == Block.Level.DNLD):
+        if(self.getLvl() == Block.Level.DNLD):
             log.info("Deleted block "+self.getFull()+" from downloads.")
 
         #try to continually clean up empty folders
@@ -1497,8 +1495,8 @@ class Block:
             (Block): the newly installed block. 
         '''
         #determine if looking to install main cache block
-        if(self.getLvl(to_int=False) == Block.Level.DNLD or \
-            self.getLvl(to_int=False) == Block.Level.AVAIL):
+        if(self.getLvl() == Block.Level.DNLD or \
+            self.getLvl() == Block.Level.AVAIL):
             log.info("Installing latest version v"+self.getVersion()+" for "+self.getFull()+" to cache...")
 
             #if a remote is available clone to tmp directory
@@ -1506,7 +1504,7 @@ class Block:
             if(Git.isValidRepo(rem, remote=True)):
                 Git(apt.TMP, clone=rem)
             #else clone the downloaded block to tmp directory
-            elif(self.getLvl(to_int=False) == Block.Level.DNLD):
+            elif(self.getLvl() == Block.Level.DNLD):
                 Git(apt.TMP, clone=self.getPath())
             else:
                 log.error("Cannot access block's repository.")
@@ -1562,7 +1560,7 @@ class Block:
             return instl_block
 
         #make sure trying to install a specific 'side' version
-        elif(self.getLvl(to_int=False) != Block.Level.INSTL):
+        elif(self.getLvl() != Block.Level.INSTL):
             return None
 
         #ensure version argument has a v prepended
@@ -2510,7 +2508,7 @@ class Block:
     def getSize(self):
         '''Returns Block's total file size (int) in kilobytes.'''
         #return unknown value if the block is created from 'AVAILABLE' level
-        if(self.getLvl(to_int=False) == Block.Level.AVAIL):
+        if(self.getLvl() == Block.Level.AVAIL):
             return '?'
         
         return round(float(apt.getPathSize(self.getPath())/1000), 2)

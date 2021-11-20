@@ -446,7 +446,7 @@ scripts)?", warning=False)
                     #gather files with specific label extension
                     path = None
                     #if partial version check its specific version path
-                    if(b.getLvl(to_int=False) == Block.Level.VER):
+                    if(b.getLvl() == Block.Level.VER):
                         root,_ = os.path.split(b.getPath()[:len(b.getPath())-1])
                         path = root+'/v'+b.getVersion()+'/'
 
