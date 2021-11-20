@@ -560,7 +560,6 @@ class Block:
 
         self._repo.git('tag',next_ver+apt.TAG_ID)
 
-
         #6. Push to remote and to market if applicable
 
         #synch changes with remote repository
@@ -2518,7 +2517,7 @@ class Block:
         return round(float(apt.getPathSize(self.getPath())/1000), 2)
 
 
-    def readInfo(self, stats=False, versions=False, ver_range=None):
+    def readInfo(self, stats=False, versions=False, ver_range=None, see_changelog=False):
         '''
         Return information relevant to the current block (metadata).
 
@@ -2526,6 +2525,7 @@ class Block:
             stats (bool): determine if to print additional stats
             versions (bool): determine if to print the available versions
             ver_range (str): a constraint string for how to filter available versions (v1.0.0:1.9.0)
+            see_changelog (bool): determine if to read the changelog file (if exists)
         Returns:
             info_txt (str): information text to be printed to console
         '''
@@ -2537,11 +2537,20 @@ class Block:
         vhdl_units = []
         vlog_units = []
 
+        #only print changelog information if requested
+        if(see_changelog):
+            info_txt = '--- CHANGELOG ---\n'
+            #no changelog available (N/A)
+            if(self.getChangelog() == None):
+                return info_txt+'N/A'
+            #dump changelog file contents to be printed
+            return info_txt + apt.listToStr(open(self.getChangelog(), 'r').readlines(), '')
+
         #read the metadata by default
         info_txt = '--- METADATA ---\n'
         in_header = ''
         in_field = ''
-        
+        #open and dump the metadata contents into 'info_txt'
         with open(self.getMetaFile(), 'r') as file:
             for line in file:
                 if(len(line) > 1 and line.strip()[0] == '[' and line.strip()[-1] == ']'):

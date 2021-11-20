@@ -598,7 +598,7 @@ NAME:
 
 SYNOPSIS:
         legohdl info <block> [-D | -I | -<version> | -A] [-stats] 
-                [-vers[=<range>]]
+                [-vers[=<range>]] [-changelog]
         legohdl info <profile> -profile
 
 DESCRIPTION:
@@ -607,6 +607,9 @@ DESCRIPTION:
         If -vers is applied, it will list all the available versions for 
         installation, and hightlight which versions are installed under the 
         workspace cache.
+
+        If -changelog is applied, only the changelog file will be printed to
+        the console (if exists).
 
 OPTIONS:
         <block>
@@ -635,6 +638,9 @@ OPTIONS:
                 List all available versions for the specified block. <range>
                 will constrain the list of versions. Accepted values for <range>
                 are I or a version indexing.
+
+        -changelog
+                Print the associated changelog with the block.
 
         <profile>
                 :ref:

@@ -880,7 +880,8 @@ scripts)?", warning=False)
 
         print(block.readInfo(self.hasFlag('stats'), \
             versions=self.hasFlag('vers'), \
-            ver_range=self.getVar('vers')))
+            ver_range=self.getVar('vers'), \
+            see_changelog=self.hasFlag('changelog')))
         pass
 
 
