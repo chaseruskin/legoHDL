@@ -1,0 +1,7 @@
+build/
+docs/book/
+dist/
+
+src/legoHDL.egg-info/
+src/legohdl/__pycache__/
+pip-wheel-metadata/
