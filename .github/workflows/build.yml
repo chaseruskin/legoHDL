@@ -11,13 +11,23 @@ jobs:
       - uses: actions/setup-python@v2.2.2
       - uses: actions/checkout@v2
       - run: pip install .
+      #configure legohdl for use
       - run: printf 'y\n\nchase\ngedit\n~/demo/\ny\n' | legohdl
+      #set some settings via command-line
+      - run: legohdl config -default-language=vhdl -alignment=1 -auto-fit=1
+      #create a new block
       - run: legohdl new library1.Lab0
+      #view blocks
       - run: legohdl list
+      #link this market to the active-workspace
       - run: legohdl config -market=uf-ece:https://github.com/uf-eel4712c/uf-ece.git -link
+      #view blocks
       - run: legohdl list
+      #view markets
       - run: legohdl list -market
+      #install the available block from uf-ece
       - run: legohdl install sample.mux_2x1
-      - run: legohdl info uf-ece.sample.mux_2x1
+      #collect data about mux_2x1 block and its design entity
+      - run: legohdl info uf-ece.sample.mux_2x1 -stats
       - run: legohdl get sample.mux_2x1:mux_2x1 -inst
       - run: legohdl get mux_2x1 -arch
