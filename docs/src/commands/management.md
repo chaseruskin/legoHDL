@@ -1,10 +1,10 @@
 # Management Commands
 
-- [list](./development/list.md)
-- [refresh](./development/refresh.md)
-- [install](./development/install.md)
-- [uninstall](./development/uninstall.md)
-- [download](./development/download.md)
-- [update](./development/update.md)
-- [info](./development/info.md)
-- [config](./development/config.md)
+- [list](./management/list.md)
+- [refresh](./management/refresh.md)
+- [install](./management/install.md)
+- [uninstall](./management/uninstall.md)
+- [download](./management/download.md)
+- [update](./management/update.md)
+- [info](./management/info.md)
+- [config](./management/config.md)
