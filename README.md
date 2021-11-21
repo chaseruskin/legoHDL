@@ -91,7 +91,7 @@ if(tb_entity != None):
 
 legoHDL has multiple configurable settings that can be easily changed through its integrated GUI.
 
-![legohdl settings label](./docs/src/images/settings_label_gui.png)
+![legohdl settings label](./docs/src/images/settings_gui_label.png)
 
 <br /> 
 
