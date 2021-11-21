@@ -41,7 +41,7 @@ sample           mux_2x1                I A    3.0.1      uf-ece
 ```
 
 ### __Instantly reuse existing IP into larger projects. No really, instantly.__
-With a single command, return relevant information collected from the IP file's initial comment block and ready-to-use compatible code for VHDL or Verilog instantiation. By instantiating a design into a project, legoHDL automatically knows to use that IP's file for building a project.
+With a single command, return relevant information collected from the IP file's initial comment block and ready-to-use compatible code for VHDL or Verilog instantiation. By instantiating a design into a project, legoHDL automatically knows to use that IP's file for building a project, even if it's located outside the current project.
 ```
 --- ABOUT ---
 ------------------------------------------------------------------------------
