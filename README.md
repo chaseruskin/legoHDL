@@ -8,7 +8,7 @@
 
 legoHDL is a complete, robust, and flexible HDL package manager and development tool used through the command-line interface. It provides full package management capabilities and incorporates special functionality specific to HDL designs to rapidly improve development workflow.
 
-__VHDL__ and __Verilog__ are supported and also as mixed-language.
+__VHDL__ and __Verilog__ are supported as well as mixed-language.
 
 Cross-platform compatibility with __macos__, __ubuntu__, and __windows__.
 
@@ -18,9 +18,7 @@ Requires only python 3.5+, git, and your favorite text-editor.
 ## __Better IP management. For all.__
 
 ### __Every design at your fingertips.__
-
-Projects are called __blocks__ within legoHDL, and are managed under 3 levels: downloaded (D), installed (I), or available (A). See what blocks are in your active workspace. Blocks contain your HDL source files, which allows users to use any design from any block for a new project.
-
+Projects are called __blocks__ within legoHDL, and are managed under 3 levels: downloaded (D), installed (I), or available (A). See which levels blocks are at in your active workspace. Blocks contain your HDL source files and their designs, which can be referenced by any new project.
 ```
 Library          Block                Status   Version    Vendor
 ---------------- -------------------- -------- ---------- ----------------
@@ -32,7 +30,7 @@ eel4712c         lab5                 D I      1.0.4
 eel4712c         lab6                 D
 graphics         LED_Animation        D
 graphics         VGA                  D
-cpu              mips                 D        0.0.1      uf-ece
+cpu              mips                 D   A    0.0.1      uf-ece
 eel4744c         lab4                 D
 audio            synthesizer          D I      2.0.2      Kazhuu
 io               motor_driver         D
@@ -106,7 +104,6 @@ INFO:   Generating dependency tree...
 
 ### __Export a blueprint to build your project, your way.__
 When a developer is ready to build their project, whether it's for linting, simulation, synthesis, or generating a bitstream, legoHDL exports a simple text file called a __blueprint__ that lists the necessary HDL files in a topologically sorted order to be read and plugged into _any_ backend tool for a completely custom workflow.
-
 ```
 @BOARD-DESIGN /Users/chase/develop/eel4712c/synth/quartus/system_top_level.bdf
 @VHDL-SRC /Users/chase/develop/eel4712c/synth/vhd/wave_gen.vhd
@@ -122,8 +119,7 @@ When a developer is ready to build their project, whether it's for linting, simu
 ```
 
 ### __Write any workflow, for any tool.__
-Developers set up custom workflows by writing a build __script__ as simple or complex only once for their backend tool to be reused with all projects. No more copying makefiles or tcl scripts into every project. Easily share scripts, settings, and templates across your team by setting up __profiles__.
-
+Developers set up custom workflows by writing a build __script__ in any language as simple or as complex only once for their backend tool to be reused with all projects. No more copying makefiles or tcl scripts into every project.
 ``` python
 # --A simple build script to run a VHDL simulation using GHDL--
 import os
@@ -160,6 +156,9 @@ if(tb_entity != None):
     os.system('ghdl -r --std=08 --ieee=synopsys '+tb_entity)
 ```
 
+### __Roll solo or in teams.__
+legoHDL is designed to benefit the individual developer as well as those working together. Set up a __vendor__ to centralize IPs for you or your team to use and collaborate. Easily share scripts, settings, and templates across your team by setting up __profiles__.
+
 ### __Completely customizable.__
 legoHDL has configurable aspects, such as custom labels, multiple workspaces, and vendor repositories, that can be easily changed through its integrated GUI.
 
@@ -168,10 +167,10 @@ legoHDL has configurable aspects, such as custom labels, multiple workspaces, an
 <br /> 
 
 ### __Documentation__
-Documentation can be found [here](https://c-rus.github.io/legoHDL/). 
+To learn more about the powers of legoHDL, read the [documentation](https://c-rus.github.io/legoHDL/).
 
 ### __Roadmap__
-This project is under active development, and the [roadmap](https://github.com/c-rus/legoHDL/projects/1) gives a glimpse into what features and enhancements are being worked on. Documentation and features are constantly being added/changed.
+Check out the [roadmap](https://github.com/c-rus/legoHDL/projects/1) to see what features and enhancements are currently being worked on.
 
 ### __Trying it out__
 
@@ -185,7 +184,7 @@ This project is under active development, and the [roadmap](https://github.com/c
 
 `git clone https://github.com/c-rus/legoHDL.git`
 
-3. Install the python program via pip
+3. Install the program via pip from the root of the legoHDL repository
 
 `pip install .`
 
