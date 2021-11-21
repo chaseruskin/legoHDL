@@ -17,6 +17,73 @@ Requires only python 3.5+, git, and your favorite text-editor.
 
 ## __Better IP management. For all.__
 
+### __Every design at your fingertips.__
+
+Projects are called __blocks__ within legoHDL, and are managed under 3 levels: downloaded (D), installed (I), or available (A). See what blocks are in your active workspace. Blocks contain your HDL source files, which allows users to use any design from any block for a new project.
+
+```
+Library          Block                Status   Version    Vendor
+---------------- -------------------- -------- ---------- ----------------
+eel4712c         lab1                   I      3.0.1
+eel4712c         lab2                   I      3.0.2
+eel4712c         lab3                 D I      1.1.1
+eel4712c         lab4                 D I      2.0.1
+eel4712c         lab5                 D I      1.0.4
+eel4712c         lab6                 D
+graphics         LED_Animation        D
+graphics         VGA                  D
+cpu              mips                 D        0.0.1      uf-ece
+eel4744c         lab4                 D
+audio            synthesizer          D I      2.0.2      Kazhuu
+io               motor_driver         D
+io               rotary_encoder         I      1.0.2      open-ip
+projects         digilock             D I      0.0.1
+util             toolbox              D I      1.0.3
+sample           mux_2x1                I A    3.0.1      uf-ece
+```
+
+### __Instantly reuse existing IP into larger projects. No really, instantly.__
+With a single command, return relevant information collected from the IP file's initial comment block and ready-to-use compatible code for VHDL or Verilog instantiation. By instantiating a design into a project, legoHDL automatically knows to use that IP's file for building a project.
+```
+--- ABOUT ---
+------------------------------------------------------------------------------
+ Project: eel4712c.lab5
+ Author: Chase Ruskin
+ Course: Digital Design - UF EEL4712C
+ Created: October 16, 2021
+ Entity: bcd_encoder
+ Description:
+  Converts a binary number into a binary-coded decimal number using the
+  "double dabble" algorithm. If at any point during the computation the input
+  number changes, the algorithm resets.
+------------------------------------------------------------------------------
+
+--- CODE ---
+constant WIDTH  : positive := 4;
+constant DIGITS : positive := 2;
+
+signal clk   : std_logic;
+signal rst_n : std_logic;
+signal go    : std_logic;
+signal bin   : std_logic_vector(WIDTH-1 downto 0);
+signal bcd   : std_logic_vector((4*DIGITS) -1 downto 0);
+signal done  : std_logic;
+signal ovfl  : std_logic;
+
+uX : entity eel4712c.bcd_encoder generic map(
+    WIDTH  => WIDTH,
+    DIGITS => DIGITS)
+port map(
+    clk   => clk,
+    rst_n => rst_n,
+    go    => go,
+    bin   => bin,
+    bcd   => bcd,
+    done  => done,
+    ovfl  => ovfl);
+```
+
+### __Quickly see how a project takes shape.__
 legoHDL approaches IP management by allowing the developer to solely focus on designing new hardware, not wasting time fighting with tools and rewriting code. Developers take advantage of structural modeling styles to reuse IP, and legoHDL analyzes HDL source files to determine what external designs are required based on instantiations within the source code.
 ```
 INFO:   Identified top-level unit: synthesizer
@@ -37,6 +104,7 @@ INFO:   Generating dependency tree...
 [1]^-   audio.synthesizer(v2.0.2)
 ```
 
+### __Export a blueprint to build your project, your way.__
 When a developer is ready to build their project, whether it's for linting, simulation, synthesis, or generating a bitstream, legoHDL exports a simple text file called a __blueprint__ that lists the necessary HDL files in a topologically sorted order to be read and plugged into _any_ backend tool for a completely custom workflow.
 
 ```
@@ -52,9 +120,12 @@ When a developer is ready to build their project, whether it's for linting, simu
 @VHDL-SIM-TOP tb_synthesizer /Users/chase/develop/eel4712c/synth/tb/tb_synthesizer.vhd
 @VHDL-SRC-TOP synthesizer /Users/chase/develop/eel4712c/synth/vhd/synthesizer.vhd
 ```
+
+### __Write any workflow, for any tool.__
 Developers set up custom workflows by writing a build __script__ as simple or complex only once for their backend tool to be reused with all projects. No more copying makefiles or tcl scripts into every project. Easily share scripts, settings, and templates across your team by setting up __profiles__.
 
 ``` python
+# --A simple build script to run a VHDL simulation using GHDL--
 import os
 #blueprint file is located in 'build/' directory
 os.chdir('build') 
@@ -89,7 +160,8 @@ if(tb_entity != None):
     os.system('ghdl -r --std=08 --ieee=synopsys '+tb_entity)
 ```
 
-legoHDL has multiple configurable settings that can be easily changed through its integrated GUI.
+### __Completely customizable.__
+legoHDL has configurable aspects, such as custom labels, multiple workspaces, and vendor repositories, that can be easily changed through its integrated GUI.
 
 ![legohdl settings label](./docs/src/images/settings_gui_label.png)
 
