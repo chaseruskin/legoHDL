@@ -232,7 +232,7 @@ Development
 
 Management
    list         print list of all blocks available
-   refresh      sync local markets with their remotes
+   refresh      sync local vendors with their remotes
    install      bring a block to the cache for dependency use
    uninstall    remove a block from the cache
    download     bring a block to the workspace path for development
