@@ -17,11 +17,80 @@ Requires only python 3.5+, git, and your favorite text-editor.
 
 ## __Better IP management. For all.__
 
-It approaches IP management by allowing the developer to soley focus on designing new hardware, not wasting time fighting with tools and rewriting code. Developers take advantage of structural modeling styles to reuse IP, and legoHDL analyzes HDL source files to determine what external designs are required based on instantiations within the source code. 
+legoHDL approaches IP management by allowing the developer to soley focus on designing new hardware, not wasting time fighting with tools and rewriting code. Developers take advantage of structural modeling styles to reuse IP, and legoHDL analyzes HDL source files to determine what external designs are required based on instantiations within the source code.
+```
+INFO:   Identified top-level unit: synthesizer
+INFO:   Identified top-level testbench: tb_synthesizer
+INFO:   Generating dependency tree...
+--- DEPENDENCY TREE ---
+\- audio.tb_synthesizer 
+   +- audio.synthesizer 
+   |  +- audio.wave_gen 
+   |  +- audio.multi_port_adder 
+   |  |  \- audio.adder 
+   |  +- audio.audio_ctrl 
+   |  \- audio.piano 
+   \- audio.audio_codec_model 
 
-When a developer is ready to build their project, whether it for simulation, linting, synthesis, or generating a bitstream, legoHDL exports a simple text file called a __blueprint__ that lists the necessary HDL files in a topologically sorted order to be read and plugged into _any_ backend tool for a completely custom workflow.
+
+--- BLOCK ORDER ---
+[1]^-   audio.synthesizer(v2.0.2)
+```
+
+When a developer is ready to build their project, whether it's for linting, simulation, synthesis, or generating a bitstream, legoHDL exports a simple text file called a __blueprint__ that lists the necessary HDL files in a topologically sorted order to be read and plugged into _any_ backend tool for a completely custom workflow.
+
+```
+@BOARD-DESIGN /Users/chase/develop/eel4712c/synth/quartus/system_top_level.bdf
+@VHDL-SRC /Users/chase/develop/eel4712c/synth/vhd/wave_gen.vhd
+@VHDL-SRC /Users/chase/develop/eel4712c/synth/vhd/adder.vhd
+@VHDL-SRC /Users/chase/develop/eel4712c/synth/vhd/audio_ctrl.vhd
+@VHDL-SRC /Users/chase/develop/eel4712c/synth/vhd/piano.vhd
+@VHDL-SRC /Users/chase/develop/eel4712c/synth/vhd/audio_codec_model.vhd
+@VHDL-SRC /Users/chase/develop/eel4712c/synth/vhd/multi_port_adder.vhd
+@VHDL-SRC /Users/chase/develop/eel4712c/synth/vhd/synthesizer.vhd
+@VHDL-SIM /Users/chase/develop/eel4712c/synth/tb/tb_synthesizer.vhd
+@VHDL-SIM-TOP tb_synthesizer /Users/chase/develop/eel4712c/synth/tb/tb_synthesizer.vhd
+@VHDL-SRC-TOP synthesizer /Users/chase/develop/eel4712c/synth/vhd/synthesizer.vhd
+```
+Developers set up custom workflows by writing a build __script__ as simple or complex only once for their backend tool to be reused with all projects. No more copying makefiles or tcl scripts into every project. Easily share scripts, settings, and templates across your team by setting up __profiles__.
+
+``` python
+import os
+#blueprint file is located in 'build/' directory
+os.chdir('build') 
+
+tb_entity = None
+#list of tuples storing the (library,filepath) to be analyzed in order
+src_list = [] 
+#[!] read blueprint file to collect the necessary data to build the design
+with open('blueprint', 'r') as blueprint:
+    for rule in blueprint.readlines():
+        #break up line into list of words
+        rule = rule.split()
+        #label is always first item, filepath is always last item
+        label,filepath = rule[0],rule[-1]
+        #collect data on non-work VHDL files and their libraries
+        if('@VHDL-LIB' == label): 
+            lib = rule[1] #second item is library name
+            src_list += [(lib, filepath)]
+        #collect data on VHDL work files
+        elif('@VHDL-SRC' == label or '@VHDL-SIM' == label): 
+            src_list += [('work', filepath)]
+        #collect data on VHDL testbench entity
+        elif('@VHDL-SIM-TOP' == label): 
+            tb_entity = rule[1] #second item is entity name
+
+#[!] analyze all collected VHDL files
+for src in src_list:
+    os.system('ghdl -a --std=08 --ieee=synopsys --work='+src[0]+' '+src[1])
+
+#[!] run simulation if a testbench entity is provided
+if(tb_entity != None):
+    os.system('ghdl -r --std=08 --ieee=synopsys '+tb_entity)
+```
 
 legoHDL has multiple configurable settings that can be easily changed through its integrated GUI.
+
 <br /> 
 
 ### __Documentation__
