@@ -3,9 +3,8 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title></title>
-                        <base href="/">
-        
+        <title>Installation - legoHDL</title>
+                
 
         <!-- Custom HTML head -->
         
@@ -15,21 +14,21 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
-                <link rel="icon" href="favicon.svg">
-                        <link rel="shortcut icon" href="favicon.png">
-                <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-                <link rel="stylesheet" href="css/print.css" media="print">
+                <link rel="icon" href="../favicon.svg">
+                        <link rel="shortcut icon" href="../favicon.png">
+                <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+                <link rel="stylesheet" href="../css/print.css" media="print">
         
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-                <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+                <link rel="stylesheet" href="../fonts/fonts.css">
         
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
         
@@ -37,7 +36,7 @@
     <body>
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
@@ -83,7 +82,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_getting_started.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_getting_started/1_installation.html"><strong aria-hidden="true">1.1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="1_getting_started/2_new_beginnings.html"><strong aria-hidden="true">1.2.</strong> New Beginnings</a></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">2.</strong> Glossary</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../1_getting_started.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../1_getting_started/1_installation.html" class="active"><strong aria-hidden="true">1.1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="../1_getting_started/2_new_beginnings.html"><strong aria-hidden="true">1.2.</strong> New Beginnings</a></li></ol></li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">2.</strong> Glossary</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -115,7 +114,7 @@
                     <h1 class="menu-title">legoHDL</h1>
 
                     <div class="right-buttons">
-                                                <a href="print.html" title="Print this book" aria-label="Print this book">
+                                                <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
                                                                         
@@ -144,14 +143,73 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
+<p>There are very minimal requirements to get legoHDL up and running. Even though git is a requirement, developers do not need to fully understand git nor directly run git commands.</p>
+<h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
+<ul>
+<li><a href="https://www.python.org/downloads/">python</a> (version 3.5+)</li>
+<li><a href="https://git-scm.com/downloads">git</a></li>
+<li>your favorite text-editor</li>
+</ul>
+<p>Some recommended text-editors:</p>
+<ul>
+<li><a href="https://code.visualstudio.com/download">visual studio code</a> (ubuntu, macos, windows)</li>
+<li><a href="https://atom.io">atom</a> (ubuntu, macos, windows)</li>
+<li><a href="https://notepad-plus-plus.org/downloads/">notepad++</a> (windows)</li>
+<li><a href="https://www.gnu.org/software/emacs/">emacs</a> (ubuntu, macos, windows)</li>
+</ul>
+<blockquote>
+<p><strong>Note:</strong> If you have never ran <code>git</code> before, make sure to configure your name and email address before continuing. Check out git's documentation for <a href="https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup">first time setup</a> (notably the section titled &quot;Your Identity&quot;).</p>
+</blockquote>
+<p>Verify an acceptable python version is installed (greater than or equal to 3.5).</p>
+<p><code>$ python --version</code></p>
+<p>Verify git is installed.</p>
+<p><code>$ git --version</code></p>
+</br>
+<p>There are two places to install legoHDL from: GitHub or PYPI.</p>
+<h2 id="installing-from-github"><a class="header" href="#installing-from-github">Installing from GitHub</a></h2>
+<ol>
+<li>Clone the project from GitHub</li>
+</ol>
+<p><code>$ git clone https://github.com/c-rus/legoHDL.git</code></p>
+<ol start="2">
+<li>Install the python program using PIP</li>
+</ol>
+<p><code>$ pip install ./legoHDL</code></p>
+<ol start="3">
+<li>Delete the cloned project.</li>
+</ol>
+<p>ubuntu | macos: <code>$ rm -r ./legoHDL</code></p>
+<p>windows: <code>$ rmdir /S ./legoHDL</code></p>
+<ol start="4">
+<li>Verify legoHDL is installed.</li>
+</ol>
+<p><code>$ legohdl --version</code>
+</br></p>
+<h2 id="installing-from-pypi"><a class="header" href="#installing-from-pypi">Installing from PYPI</a></h2>
+<blockquote>
+<p><strong>Note</strong>: This method is currently unavailable.</p>
+</blockquote>
+<ol>
+<li>Install the python program using PIP</li>
+</ol>
+<p><code>$ pip install legohdl</code></p>
+<ol start="2">
+<li>Verify legoHDL is installed.</li>
+</ol>
+<p><code>$ legohdl --version</code></p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                                                    <a rel="prev" href="../1_getting_started.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
                         
+                                                    <a rel="next" href="../1_getting_started/2_new_beginnings.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
                         
                         <div style="clear: both"></div>
                     </nav>
@@ -159,7 +217,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                                    <a rel="prev" href="../1_getting_started.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
                 
+                                    <a rel="next" href="../1_getting_started/2_new_beginnings.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
                             </nav>
 
         </div>
@@ -172,13 +236,13 @@
         </script>
         
         
-                <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+                <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
         
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
         

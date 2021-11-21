@@ -83,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_getting_started.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_getting_started/1_installation.html"><strong aria-hidden="true">1.1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="1_getting_started/2_new_beginnings.html"><strong aria-hidden="true">1.2.</strong> New Beginnings</a></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">2.</strong> Glossary</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -152,6 +152,90 @@
 Stop wasting time reinventing the wheel, fighting with tools, and copying HDL files into new projects.</p>
 <p>Being a command-line interface packaging and development tool written in python, it is compatible with <strong>macos</strong>, <strong>windows</strong>, and <strong>ubuntu</strong>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="1-getting-started"><a class="header" href="#1-getting-started">1. Getting Started</a></h1>
+<p>legoHDL is a python program that is mainly interfaced through a computer's <em>terminal</em>, also known as the <em>command-line</em>. Any time a snippet of code is presented in this documentation beginning with a <code>$</code>, the text proceeding it is to be entered into the terminal (exlcuding the <code>$</code>).</p>
+<ul>
+<li><a href="./1_getting_started/1_installation.html">Installation</a></li>
+<li><a href="./1_getting_started/2_new_beginnings.html">New Beginnings</a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
+<p>There are very minimal requirements to get legoHDL up and running. Even though git is a requirement, developers do not need to fully understand git nor directly run git commands.</p>
+<h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
+<ul>
+<li><a href="https://www.python.org/downloads/">python</a> (version 3.5+)</li>
+<li><a href="https://git-scm.com/downloads">git</a></li>
+<li>your favorite text-editor</li>
+</ul>
+<p>Some recommended text-editors:</p>
+<ul>
+<li><a href="https://code.visualstudio.com/download">visual studio code</a> (ubuntu, macos, windows)</li>
+<li><a href="https://atom.io">atom</a> (ubuntu, macos, windows)</li>
+<li><a href="https://notepad-plus-plus.org/downloads/">notepad++</a> (windows)</li>
+<li><a href="https://www.gnu.org/software/emacs/">emacs</a> (ubuntu, macos, windows)</li>
+</ul>
+<blockquote>
+<p><strong>Note:</strong> If you have never ran <code>git</code> before, make sure to configure your name and email address before continuing. Check out git's documentation for <a href="https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup">first time setup</a> (notably the section titled &quot;Your Identity&quot;).</p>
+</blockquote>
+<p>Verify an acceptable python version is installed (greater than or equal to 3.5).</p>
+<p><code>$ python --version</code></p>
+<p>Verify git is installed.</p>
+<p><code>$ git --version</code></p>
+</br>
+<p>There are two places to install legoHDL from: GitHub or PYPI.</p>
+<h2 id="installing-from-github"><a class="header" href="#installing-from-github">Installing from GitHub</a></h2>
+<ol>
+<li>Clone the project from GitHub</li>
+</ol>
+<p><code>$ git clone https://github.com/c-rus/legoHDL.git</code></p>
+<ol start="2">
+<li>Install the python program using PIP</li>
+</ol>
+<p><code>$ pip install ./legoHDL</code></p>
+<ol start="3">
+<li>Delete the cloned project.</li>
+</ol>
+<p>ubuntu | macos: <code>$ rm -r ./legoHDL</code></p>
+<p>windows: <code>$ rmdir /S ./legoHDL</code></p>
+<ol start="4">
+<li>Verify legoHDL is installed.</li>
+</ol>
+<p><code>$ legohdl --version</code>
+</br></p>
+<h2 id="installing-from-pypi"><a class="header" href="#installing-from-pypi">Installing from PYPI</a></h2>
+<blockquote>
+<p><strong>Note</strong>: This method is currently unavailable.</p>
+</blockquote>
+<ol>
+<li>Install the python program using PIP</li>
+</ol>
+<p><code>$ pip install legohdl</code></p>
+<ol start="2">
+<li>Verify legoHDL is installed.</li>
+</ol>
+<p><code>$ legohdl --version</code></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="new-beginnings"><a class="header" href="#new-beginnings">New Beginnings</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
+<p>In this section, key terms are listed and defined relating to legoHDL.</p>
+<h3 id="block"><a class="header" href="#block">Block</a></h3>
+<h3 id="library"><a class="header" href="#library">Library</a></h3>
+<h3 id="unit"><a class="header" href="#unit">Unit</a></h3>
+<h3 id="vendor"><a class="header" href="#vendor">Vendor</a></h3>
+<h3 id="profile"><a class="header" href="#profile">Profile</a></h3>
+<h3 id="blueprint"><a class="header" href="#blueprint">Blueprint</a></h3>
+<h3 id="project"><a class="header" href="#project">Project</a></h3>
+<h3 id="blockcfg"><a class="header" href="#blockcfg">Block.cfg</a></h3>
+<h3 id="labels"><a class="header" href="#labels">Labels</a></h3>
+<h3 id="scripts"><a class="header" href="#scripts">Scripts</a></h3>
+<h3 id="workspaces"><a class="header" href="#workspaces">Workspaces</a></h3>
+<h3 id="vhdl"><a class="header" href="#vhdl">VHDL</a></h3>
+<h3 id="verilog"><a class="header" href="#verilog">Verilog</a></h3>
+<h3 id="systemverilog"><a class="header" href="#systemverilog">SystemVerilog</a></h3>
+<h3 id="semantic-versioning"><a class="header" href="#semantic-versioning">Semantic Versioning</a></h3>
+<h3 id="legohdlcfg"><a class="header" href="#legohdlcfg">legohdl.cfg</a></h3>
+<h3 id="package-manager"><a class="header" href="#package-manager">Package Manager</a></h3>
+<h3 id="development-tool"><a class="header" href="#development-tool">Development Tool</a></h3>
+<h3 id="hardware-description-languages-hdl"><a class="header" href="#hardware-description-languages-hdl">Hardware Description Languages (HDL)</a></h3>
+<h3 id="intellectual-property-ip"><a class="header" href="#intellectual-property-ip">Intellectual Property (IP)</a></h3>
+<h3 id="workflow"><a class="header" href="#workflow">Workflow</a></h3>
 
                     </main>
 
