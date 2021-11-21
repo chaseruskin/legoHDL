@@ -2,41 +2,59 @@
 
 # legoHDL
 ![ci-build](https://github.com/c-rus/legohdl/actions/workflows/build.yml/badge.svg)
-### The custom, lightweight, and powerful HDL package manager and development tool.
+### The package manager and development tool for Hardware Description Languages (HDL).
   
 <br />  
 
-legoHDL is a simple, powerful, and flexible HDL package manager and development tool used through the command-line interface. It provides full package management capabilities as one would expect from premiere software package managers like Cargo, APT, PIP, and RubyGems and incorporates special functionality specific to HDL designing to rapidly improve development workflow.
+legoHDL is a complete, robust, and flexible HDL package manager and development tool used through the command-line interface. It provides full package management capabilities and incorporates special functionality specific to HDL designs to rapidly improve development workflow.
 
-Inspired by the modular and fun building approach of LEGO® bricks, legoHDL brings modularity and management to the HDL world by enabling designs to be built as if they are LEGO® bricks. LEGO® is a trademark of the LEGO Group of companies which does not sponsor, authorize or endorse this site or this project.
+__VHDL__ and __Verilog__ are supported and also as mixed-language.
 
-Supports Linux, macOS, and Windows.
+Cross-platform compatibility with __macos__, __ubuntu__, and __windows__.
 
-Supports VHDL and Verilog with mixed language support.
+Requires only python 3.5+, git, and your favorite text-editor.
 
-<br />
 
-legoHDL is available to work completely local or along with remote locations to collaborate and share blocks with others. It is designed to give the developer complete customization and increased productivity in their workflow. Settings can be modified via an integrated GUI.
+## __Better IP management. For all.__
+
+It approaches IP management by allowing the developer to soley focus on designing new hardware, not wasting time fighting with tools and rewriting code. Developers take advantage of structural modeling styles to reuse IP, and legoHDL analyzes HDL source files to determine what external designs are required based on instantiations within the source code. 
+
+When a developer is ready to build their project, whether it for simulation, linting, synthesis, or generating a bitstream, legoHDL exports a simple text file called a __blueprint__ that lists the necessary HDL files in a topologically sorted order to be read and plugged into _any_ backend tool for a completely custom workflow.
+
+legoHDL has multiple configurable settings that can be easily changed through its integrated GUI.
 <br /> 
 
 ### __Documentation__
-
 Documentation can be found [here](https://c-rus.github.io/legoHDL/). 
 
-
 ### __Roadmap__
-The project is currently under development, and the [roadmap](https://github.com/c-rus/legoHDL/projects/1) gives a glimpse into what is being developed with new things always being added.
+This project is under active development, and the [roadmap](https://github.com/c-rus/legoHDL/projects/1) gives a glimpse into what features and enhancements are being worked on. Documentation and features are constantly being added/changed.
 
 ### __Trying it out__
-Being under active development, some things are out-of-date in the documentation and features are constantly being changed. If you still want to try some things out, you currently can:
-1. clone this repository
-2. run `pip install .` from within the repository's root directory.
-3. have fun! See the documentation website for further info on getting started.
 
-Once the roadmap is complete for v1.0.0, users will be able to install legoHDL directly through pip from PYPI.
+1. Make sure a version of python >=3.5 and git are installed.
+
+`python --version`
+
+`git --version`
+
+2. clone this repository
+
+`git clone https://github.com/c-rus/legoHDL.git`
+
+3. Install the python program via pip
+
+`pip install .`
+
+4. Verify it is properly installed.
+
+`legohdl --version`
+
+5. See the documentation website for further details on [getting started](https://c-rus.github.io/legoHDL/1_0_starting.html).
+
+> __Note__: Once the roadmap is complete for __v1.0.0__, users will be able to install legoHDL directly through pip from PYPI.
 
 ### __Quick Start__
-
 1. Upon first time calling legohdl, run `legohdl` from the command line.
 
 2. When prompted to import a profile, return `y`.
@@ -45,19 +63,19 @@ Once the roadmap is complete for v1.0.0, users will be able to install legoHDL d
 
 4. Enter other prompted information such as your name, text-editor, and workspace path.
 
-5. Ready to design! Create a block from the imported default template and automatically open it in the configured text-editor: `legohdl new MyLib.MyBlock -open`. Refer
-to the [documentation](https://c-rus.github.io/legoHDL/) for more details.
+5. legoHDL is now ready. Create a block from the imported default template and automatically open it in the configured text-editor
+`legohdl new MyLib.MyBlock -open`
 
-### Commands
+Refer to the [documentation](https://c-rus.github.io/legoHDL/) for more details.
 
-Refer to the [manual](https://github.com/c-rus/legoHDL/blob/master/src/legohdl/data/manual.txt) for documentation on every command and their relevant flags.
+### __Commands__
+Refer to the [manual](https://github.com/c-rus/legoHDL/blob/master/src/legohdl/data/manual.txt) for complete overview and explanations on every command and their relevant flags.
 
 ```
 USAGE:             
         legohdl <command> [argument] [flags]            
 
 COMMANDS:
-
 Development
    new          create a new legohdl block (project)
    init         initialize existing code into a legohdl block
@@ -82,3 +100,6 @@ Management
 Type 'legohdl help <command>' to read about the entered command.
 
 ```
+
+</br>
+Inspired by the modular and fun building approach of LEGO® bricks, legoHDL brings modularity and management to the HDL world by enabling designs to be built as if they are LEGO® bricks. LEGO® is a trademark of the LEGO Group of companies which does not sponsor, authorize or endorse this site or this project.
