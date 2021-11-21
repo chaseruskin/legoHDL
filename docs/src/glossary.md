@@ -1,6 +1,6 @@
 # Glossary
 
-In this section, key terms are listed and defined relating to legoHDL.
+This section lists and defines key terms relating to legoHDL.
 
 ### Block
 
@@ -43,3 +43,11 @@ In this section, key terms are listed and defined relating to legoHDL.
 ### Intellectual Property (IP)
 
 ### Workflow
+
+### Block Identifier
+
+### Shortcutting
+
+### Specific version
+
+### Partial version

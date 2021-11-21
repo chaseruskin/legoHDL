@@ -1,4 +1,4 @@
-# Bare Bones Beginnings
+# Initial Setup
 
 Here we will configure some required preliminary settings.
 
