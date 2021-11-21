@@ -17,7 +17,7 @@ Requires only python 3.5+, git, and your favorite text-editor.
 
 ## __Better IP management. For all.__
 
-legoHDL approaches IP management by allowing the developer to soley focus on designing new hardware, not wasting time fighting with tools and rewriting code. Developers take advantage of structural modeling styles to reuse IP, and legoHDL analyzes HDL source files to determine what external designs are required based on instantiations within the source code.
+legoHDL approaches IP management by allowing the developer to solely focus on designing new hardware, not wasting time fighting with tools and rewriting code. Developers take advantage of structural modeling styles to reuse IP, and legoHDL analyzes HDL source files to determine what external designs are required based on instantiations within the source code.
 ```
 INFO:   Identified top-level unit: synthesizer
 INFO:   Identified top-level testbench: tb_synthesizer
