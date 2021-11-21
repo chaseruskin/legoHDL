@@ -83,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_getting_started.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_getting_started/1_installation.html"><strong aria-hidden="true">1.1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="1_getting_started/2_new_beginnings.html"><strong aria-hidden="true">1.2.</strong> New Beginnings</a></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">2.</strong> Glossary</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_getting_started.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_getting_started/1_installation.html"><strong aria-hidden="true">1.1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="1_getting_started/2_bare_bones_beginnings.html"><strong aria-hidden="true">1.2.</strong> Bare Bones Beginnings</a></li><li class="chapter-item expanded "><a href="1_getting_started/3_new_kid_on_the_block.html"><strong aria-hidden="true">1.3.</strong> New Kid on the Block</a></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">2.</strong> Glossary</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -155,7 +155,8 @@ Stop wasting time reinventing the wheel, fighting with tools, and copying HDL fi
 <p>legoHDL is a python program that is mainly interfaced through a computer's <em>terminal</em>, also known as the <em>command-line</em>. Any time a snippet of code is presented in this documentation beginning with a <code>$</code>, the text proceeding it is to be entered into the terminal (excluding the <code>$</code>).</p>
 <ul>
 <li><a href="./1_getting_started/1_installation.html">Installation</a></li>
-<li><a href="./1_getting_started/2_new_beginnings.html">New Beginnings</a></li>
+<li><a href="./1_getting_started/2_bare_bones_beginnings.html">Bare Bones Beginnings</a></li>
+<li><a href="./1_getting_started/3_new_kid_on_the_block.html">New Kid on the Block</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
 <p>There are very minimal requirements to get legoHDL up and running. Even though git is a requirement, developers do not need to fully understand git nor directly run git commands.</p>
@@ -212,7 +213,80 @@ Stop wasting time reinventing the wheel, fighting with tools, and copying HDL fi
 <li>Verify legoHDL is installed.</li>
 </ol>
 <p><code>$ legohdl --version</code></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="new-beginnings"><a class="header" href="#new-beginnings">New Beginnings</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="bare-bones-beginnings"><a class="header" href="#bare-bones-beginnings">Bare Bones Beginnings</a></h1>
+<p>Here we will configure some required preliminary settings.</p>
+<p>Running <code>legohdl</code> for the first time will prompt the user if they would like to set up a <a href="1_getting_started/./../glossary.html#profile">profile</a>- a group of settings, scripts, and a template.</p>
+<pre><code>$ legohdl
+INFO:	This looks like your first time running legoHDL!
+Would you like to use a profile (import settings, template,
+and scripts)? [y/n]
+</code></pre>
+<p>Returning <code>y</code> gives the user 3 choices.</p>
+<pre><code>$ y
+Enter:
+1) nothing for default profile
+2) a path or git repository to a profile
+3) 'exit' to cancel configuration
+</code></pre>
+<p>Unless you have a profile already that you would like to use, let's go ahead and return an empty string to use the default profile.</p>
+<pre><code>$
+INFO:	Setting up default profile...
+INFO:	Reloading default profile...
+INFO:	Importing profile default...
+INFO:	Overloading legohdl.cfg...
+INFO:	[workspace] [primary] path = 
+INFO:	[workspace] [primary] vendors = 
+INFO:	Importing template...
+INFO:	Importing scripts...
+INFO:	Copying hello.py to built-in scripts folder...
+INFO:	Overloading scripts in legohdl.cfg...
+INFO:	[script] hello = python /Users/chase/.legohdl/scripts/hello_world.py
+</code></pre>
+<p>legoHDL then asks for your name</p>
+<pre><code>Enter your name:
+</code></pre>
+<p>and how it should call your text-editor to run.</p>
+<pre><code>Enter your text-editor:
+</code></pre>
+<p>Finally, you must specify a path for the current active-workspace, which is named &quot;primary&quot; by default.</p>
+<pre><code>INFO:	Local path for workspace primary cannot be empty.
+Enter path for workspace primary: 
+</code></pre>
+<blockquote>
+<p><strong>Note</strong>: If the entered path does not exist, legoHDL will notify you and ask to verify the creation of the new path.</p>
+</blockquote>
+<p>Now you should see the regular output from legoHDL. This means all required configurations are complete.</p>
+<pre><code>Usage:         
+	legohdl &lt;command&gt; [argument] [flags]        
+
+Commands:
+Development
+   new          create a new legohdl block (project)
+   init         initialize existing code into a legohdl block
+   open         open a block with the configured text-editor
+   get          print instantiation code for an HDL unit
+   graph        visualize HDL dependency graph
+   export       generate a blueprint file
+   build        execute a custom configured script
+   release      set a newer version for the current block
+   del          delete a block from the local workspace path
+
+Management
+   list         print list of all blocks available
+   refresh      sync local vendors with their remotes
+   install      bring a block to the cache for dependency use
+   uninstall    remove a block from the cache
+   download     bring a block to the workspace path for development
+   update       update an installed block to be its latest version
+   info         read further detail about a block
+   config       modify legohdl settings
+
+Type 'legohdl help &lt;command&gt;' to read about the entered command.
+</code></pre>
+<p>You can change any settings at anytime in the GUI with</p>
+<p><code>$ legohdl open -settings</code></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="new-kid-on-the-block"><a class="header" href="#new-kid-on-the-block">New Kid on the Block</a></h1>
+<p>Here we introduce the concept of a block.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
 <p>In this section, key terms are listed and defined relating to legoHDL.</p>
 <h3 id="block"><a class="header" href="#block">Block</a></h3>
