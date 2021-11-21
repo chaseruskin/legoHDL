@@ -167,13 +167,13 @@ legoHDL has configurable aspects, such as custom labels, multiple workspaces, an
 
 <br /> 
 
-### __Documentation__
+## __Documentation__
 To learn more about the powers of legoHDL, read the [documentation](https://c-rus.github.io/legoHDL/).
 
-### __Roadmap__
+## __Roadmap__
 Check out the [roadmap](https://github.com/c-rus/legoHDL/projects/1) to see what features and enhancements are currently being worked on.
 
-### __Trying it out__
+## __Trying it out__
 
 1. Make sure a version of python >=3.5 and git are installed.
 
@@ -197,7 +197,7 @@ Check out the [roadmap](https://github.com/c-rus/legoHDL/projects/1) to see what
 
 > __Note__: Once the roadmap is complete for __v1.0.0__, users will be able to install legoHDL directly through pip from PYPI.
 
-### __Quick Start__
+## __Quick Start__
 1. Upon first time calling legohdl, run `legohdl` from the command line.
 
 2. When prompted to import a profile, return `y`.
@@ -211,7 +211,7 @@ Check out the [roadmap](https://github.com/c-rus/legoHDL/projects/1) to see what
 
 Refer to the [documentation](https://c-rus.github.io/legoHDL/) for more details.
 
-### __Commands__
+## __Commands__
 Refer to the [manual](https://github.com/c-rus/legoHDL/blob/master/src/legohdl/data/manual.txt) for complete overview and explanations on every command and their relevant flags.
 
 ```
