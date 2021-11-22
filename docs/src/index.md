@@ -1,6 +1,6 @@
 # legoHDL
 
-![legoHDL title](images/title_3x.png)
+![legoHDL title](./images/title_3x.png)
 
 legoHDL is the package manager and development tool for Hardware Description Languages (HDL).
 
