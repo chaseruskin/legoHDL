@@ -2647,7 +2647,7 @@ class Block:
                             logged_part_vers.append(part_ver)
                 
                 #latest is the highest version from instl_versions
-                if(x == instl_versions[0]):
+                if(len(instl_versions) and x == instl_versions[0]):
                     partials += ['latest']
                 
                 #do not write version if constrained to list only installed versions
