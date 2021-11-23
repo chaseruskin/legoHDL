@@ -595,7 +595,9 @@ class Block:
 
         #5. Create a new git tag
         
-        if(dry_run == False):
+        if(dry_run):
+            print("Git tag:",next_ver+apt.TAG_ID)
+        else:
             self._repo.git('tag',next_ver+apt.TAG_ID)
 
         #6. Push to remote and to vendor if applicable
@@ -1976,16 +1978,30 @@ class Block:
             if(b not in block_requires.keys()):
                 update = True
                 break
-
-        if(update):
+        #display requirements to user on dry run for informational purposes
+        if(dry_run):
+            spacer = '\n    '
+            if(not quiet):
+                #default is to show 'no requirements'
+                reqs_str = 'N/A'
+                #override default assignment with list of block identifiers
+                if(len(block_titles)):
+                    reqs_str = apt.listToStr(list(block_titles.values()),delim=spacer)
+                #print list to console
+                print("Identified Requirements:"+spacer+reqs_str)
+            pass
+        #update the metadata for requirements
+        elif(update):
             if(not quiet):
                 log.info("Saving new requirements to metadata...")
             #save the changes for the real deal
-            if(dry_run == False):
-                self.setMeta('requires', list(block_titles.values()))
-                self.save()
+            self.setMeta('requires', list(block_titles.values()))
+            self.save()
+            pass
+        #inform user that no changes to metadata occurred for block requirements
         elif(not quiet):
             log.info("No change in requirements found.")
+            pass
         pass
 
 
