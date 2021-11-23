@@ -898,6 +898,9 @@ class Block:
                 #validate its remote connection
                 if(Git.isValidRepo(rem, remote=True)):
                     self._repo.setRemoteURL(rem)
+                #remove remote connection
+                elif(rem == cfg.NULL):
+                    self._repo.setRemoteURL('', force=True)
 
             #set the remote correctly
             self.setMeta('remote', self._repo.getRemoteURL())

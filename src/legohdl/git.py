@@ -251,9 +251,9 @@ class Git:
         cls.setRepoProperties(path, valid=is_valid, blank=is_blank)
         #verify no errors on output
         if(is_valid):
-            log.info("success")
+            log.info("Connection successful.")
         else:
-            log.info("failed")
+            log.info("Connection failed.")
         return is_valid
 
 
