@@ -106,18 +106,24 @@ class Git:
         pass
 
 
-    def push(self):
+    def push(self, dry_run=False):
         '''
         Push to remote repository, if exists.
         
         Parameters:
-            None
+            dry_run (bool): determine if to run a test push
         Returns:
-            None
+            success (bool): determine if the operation was successful
         '''
+        arg = '--dry-run' if(dry_run) else ''
         if(self.remoteExists()):
-            log.info("Pushing changes to remote url "+self.getRemoteURL()+"...")
-            self.git('push','--set-upstream',self.getRemoteName(),self.getBranch(),'--tags')
+            if(dry_run == False):
+                log.info("Pushing changes to remote url "+self.getRemoteURL()+"...")
+
+            _,err = self.git('push','--set-upstream',self.getRemoteName(),self.getBranch(),'--tags',arg)
+            return (err.count("fatal:") == 0)
+        else:
+            return True
         pass
         
 
@@ -295,6 +301,19 @@ class Git:
             #verify no output and no errors (it is blank)
             return is_blank
         return False
+
+    
+    def hasWritePermission(self):
+        '''
+        Check if the user is allowed to push to the configured remote repository.
+        Returns True if there is no remote repository configured.
+
+        Parameters:
+            None
+        Returns:
+            (bool): if the user has write permissions to the remote
+        '''
+        return self.push(dry_run=True)
 
 
     def getBranch(self, force=False):

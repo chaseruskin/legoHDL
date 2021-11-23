@@ -468,15 +468,33 @@ class Block:
             log.error("No version given for next release point.")
             return
 
+        #check which command-line argument was used
         inc_major = next_ver.lower() == 'major'
         inc_minor = next_ver.lower() == 'minor'
         inc_patch = next_ver.lower() == 'patch'
         use_version = Block.validVer(next_ver, places=[3])
 
-        #1. Verify the repository has the latest commits
+        #try to locate the vendor
+        vndr = None
+        for m in self.getWorkspace().getVendors():
+            if(self.getMeta('vendor').lower() == m.getName().lower()):
+                vndr = m
+                break
+
+        #1. Verify security checks and that the repository has the latest commits
 
         #make sure the metadata looks good
         self.secureMeta()
+
+        #verify user has permission to write to remote if it exists
+        if(self._repo.hasWritePermission() == False):
+            log.error("Unable to release block due to invalid write permissions for block's remote repository!")
+            return
+
+        #look ahead to verify user has permission to write to the vendor if it exists
+        if(vndr != None and vndr._repo.hasWritePermission() == False):
+            log.error("Unable to release block to vendor "+vndr.getName()+" due to invalid write permissions for vendor's remote repository!")
+            return
 
         #make sure the repository is up to date
         log.info("Verifying repository is up-to-date...")
@@ -531,8 +549,10 @@ class Block:
         self._tags += [next_ver]
 
         self.setMeta('version', next_ver[1:])
-        self.updateRequires()
-        self.save(force=True)
+        self.updateRequires(dry_run=dry_run)
+        #save changes if the real deal
+        if(dry_run == False):
+            self.save(force=True)
 
         #check to write updates to changelog
         changelog_altered = False
@@ -566,31 +586,24 @@ class Block:
         #7. install latest version to the cache
         if(no_install == False):
             #reset inventory
-            
             self.install()
 
         #no vendor to publish to then release algorithm is complete
         if(len(self.getMeta('vendor')) == 0):
             return
 
-        #check if a remote exists
-        if(self._repo.remoteExists() == False):
-            log.error("Could not publish to a vendor because a remote repository does not exist.")
+        #check if vendor is found in workspace for publishing
+        if(vndr == None):
+            log.warning("Unable to publish because vendor "+self.M()+" is not found in this workspace.")
             return
-            
-        #try to find the vendor
-        vndr = None
-        for m in self.getWorkspace().getVendors():
-            if(self.getMeta('vendor').lower() == m.getName().lower()):
-                vndr = m
-                break
-        else:
-            log.warning("Could not publish because vendor "+self.M()+" is not found in this workspace.")
+
+        #check if the block has a remote repo in order to publish to vendor
+        if(self._repo.remoteExists() == False):
+            log.warning("Could not publish to vendor "+vndr.getName()+" because a remote repository is not configured.")
             return
 
         #publish to the vendor
         vndr.publish(self)
-
         pass
 
 
@@ -1140,6 +1153,11 @@ class Block:
                     if(success):
                         self.setMeta("remote",remote)
                         self._repo.push()
+                elif(remote == ''):
+                    #clear the remote
+                    self._repo.setRemoteURL('', force=True)
+                    #update metadata if successfully cleared the url
+                    self.setMeta("remote", self._repo.getRemoteURL())
                 else:
                     log.error("Cannot set existing block to a non-empty remote.")
                     return False
@@ -1858,7 +1876,7 @@ class Block:
         pass
 
 
-    def updateRequires(self, quiet=False):
+    def updateRequires(self, quiet=False, dry_run=False):
         '''
         Updates the metadata section 'requires' for required blocks needed by
         the current block.
@@ -1868,6 +1886,7 @@ class Block:
 
         Parameters:
             quiet (bool): determine if to display messages to the user
+            dry_run (bool): determine if to save any changes (False)
         Returns:
             None
         '''
@@ -1923,8 +1942,10 @@ class Block:
         if(update):
             if(not quiet):
                 log.info("Saving new requirements to metadata...")
-            self.setMeta('requires', list(block_titles.values()))
-            self.save()
+            #save the changes for the real deal
+            if(dry_run == False):
+                self.setMeta('requires', list(block_titles.values()))
+                self.save()
         elif(not quiet):
             log.info("No change in requirements found.")
         pass
