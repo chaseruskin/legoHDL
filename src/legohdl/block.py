@@ -424,6 +424,8 @@ class Block:
         if(hasattr(self, "_changelog")):
             if(rel_path and self._changelog != None):
                 return self._changelog.replace(self.getPath(), '')
+            elif(returnname):
+                return os.path.split(self._changelog)[1]
             return self._changelog
 
         #get all files
@@ -443,6 +445,8 @@ class Block:
             pass
         if(rel_path and self._changelog != None):
             return self._changelog.replace(self.getPath(), '')
+        elif(returnname):
+            return os.path.split(self._changelog)[1]
         return self._changelog
 
 
@@ -467,6 +471,9 @@ class Block:
         if(next_ver == None):
             log.error("No version given for next release point.")
             return
+
+        if(dry_run):
+            log.info("Performing dry-run...")
 
         #check which command-line argument was used
         inc_major = next_ver.lower() == 'major'
@@ -535,7 +542,10 @@ class Block:
             log.error("Invalid next version given as "+next_ver+'.')
             return
 
-        log.info("Saving block release point "+next_ver+"...")
+        if(dry_run):
+            print("Release point:",next_ver+".")
+        else:
+            log.info("Saving block release point "+next_ver+"...")
 
         #ensure version has a 'v' in prepended
         next_ver = next_ver.lower()
@@ -557,53 +567,71 @@ class Block:
         #check to write updates to changelog
         changelog_altered = False
         if(skip_changelog == False):
-            changelog_altered = self.waitOnChangelog()
+            if(dry_run):
+                if(self.getChangelog() != None):
+                    print("Identified CHANGELOG",self.getChangelog(returnname=True),"to edit.")
+                else:
+                    print("Identified no CHANGELOG to edit.")
+            else:
+                changelog_altered = self.waitOnChangelog()
 
         #4. Make a new git commit
 
-        if(only_meta):
+        if(only_meta and dry_run == False):
             self._repo.add(apt.MARKER)
             if(changelog_altered):
                 self._repo.add(self.getChangelog(rel_path=True))
-        else:
+        elif(dry_run == False):
             self._repo.add('.')
 
         #insert default message
         if(msg == None):
             msg = "Releases legohdl version "+next_ver
 
-        self._repo.commit(msg)
+        if(dry_run):
+            print("Commit message:",msg)
+        else:
+            self._repo.commit(msg)
 
         #5. Create a new git tag
-
-        self._repo.git('tag',next_ver+apt.TAG_ID)
+        
+        if(dry_run == False):
+            self._repo.git('tag',next_ver+apt.TAG_ID)
 
         #6. Push to remote and to vendor if applicable
 
         #synch changes with remote repository
-        self._repo.push()
+        if(dry_run == False):
+            self._repo.push()
 
         #7. install latest version to the cache
-        if(no_install == False):
+        if(no_install == False and dry_run == False):
             #reset inventory
             self.install()
 
         #no vendor to publish to then release algorithm is complete
         if(len(self.getMeta('vendor')) == 0):
+            if(dry_run):
+                log.info("Dry run complete.")
             return
+
+        publish = True
 
         #check if vendor is found in workspace for publishing
         if(vndr == None):
             log.warning("Unable to publish because vendor "+self.M()+" is not found in this workspace.")
-            return
+            publish = False
 
         #check if the block has a remote repo in order to publish to vendor
         if(self._repo.remoteExists() == False):
-            log.warning("Could not publish to vendor "+vndr.getName()+" because a remote repository is not configured.")
-            return
-
+            log.warning("Unable to publish to vendor "+vndr.getName()+" because a remote repository is not configured.")
+            publish = False
+        
+        if(dry_run):
+            log.info("Dry run complete.")
         #publish to the vendor
-        vndr.publish(self)
+        elif(publish):
+            vndr.publish(self)
         pass
 
 
@@ -863,6 +891,13 @@ class Block:
             correct_ver = self.getHighestTaggedVersion()[1:]   
             #dynamically determine the latest valid release point
             self.setMeta('version', correct_ver)
+
+            #check value in metadata if a valid remote to set different than repo's data
+            rem = self.getMeta('remote')
+            if(rem != None and rem != self._repo.getRemoteURL()):
+                #validate its remote connection
+                if(Git.isValidRepo(rem, remote=True)):
+                    self._repo.setRemoteURL(rem)
 
             #set the remote correctly
             self.setMeta('remote', self._repo.getRemoteURL())
