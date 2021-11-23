@@ -245,4 +245,6 @@ Type 'legohdl help <command>' to read about the entered command.
 ```
 
 </br>
-Inspired by the modular and fun building approach of LEGO® bricks, legoHDL brings modularity and management to the HDL world by enabling designs to be built as if they are LEGO® bricks. LEGO® is a trademark of the LEGO Group of companies which does not sponsor, authorize or endorse this site or this project.
+
+## __Disclaimer__
+Inspired by the modular building approach of LEGO® bricks, legoHDL brings modularity and management to hardware description languages by enabling designs to be built like LEGO® bricks. LEGO® is a trademark of the LEGO Group of companies which does not sponsor, authorize or endorse this project.
