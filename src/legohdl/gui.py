@@ -21,7 +21,9 @@ try:
 except ModuleNotFoundError:
     import_success = False
 
+
 class GUI:
+
 
     COMMENTS = {
         'active-workspace' : "The current workspace set.",
@@ -91,6 +93,7 @@ at the root of a profile. Add scripts into a scripts/ folder to be available for
 settings that will be merged in when importing that profile. A profile directory is indicated by having a .prfl file.",
     }
 
+
     def __init__(self):
         '''
         Create a Tkinter object.
@@ -124,11 +127,14 @@ settings that will be merged in when importing that profile. A profile directory
             log.info("Exiting GUI...")
         pass
 
+
     def getW(self):
         return self._width
 
+
     def getH(self):
         return self._height
+
 
     def initFrames(self):
         #divide window into 2 sections
@@ -180,9 +186,11 @@ settings that will be merged in when importing that profile. A profile directory
         btn_save.pack(side=tk.RIGHT, padx=20, pady=16)
         pass
 
+
     def clrFieldFrame(self):
         for widgets in self._field_frame.winfo_children():
             widgets.destroy()
+
 
     def save(self):
         '''
@@ -231,12 +239,12 @@ settings that will be merged in when importing that profile. A profile directory
                     if(self._tgl_labels.get() == 0):
                         self._tk_vars[key]['global'] = {}
                         for record in self._tb.getAllValues():
-                            self._tk_vars[key]['global'][record[0]] = record[1]
+                            self._tk_vars[key]['global'][record[0].upper()] = record[1]
                     #load records directly from table for local (tgl_label == 1)
                     else:
                         self._tk_vars[key]['local'] = {}
                         for record in self._tb.getAllValues():
-                            self._tk_vars[key]['local'][record[0]] = record[1]
+                            self._tk_vars[key]['local'][record[0].upper()] = record[1]
                     #copy dictionaries back to settings
                     apt.SETTINGS[key]['local'] = self._tk_vars[key]['local'].copy()
                     apt.SETTINGS[key]['global'] = self._tk_vars[key]['global'].copy()
@@ -284,11 +292,13 @@ settings that will be merged in when importing that profile. A profile directory
         log.info("Settings saved successfully.")
         pass
 
+
     def openDocs(self):
         '''
         Open the documentation website in default browser.
         '''
         webbrowser.open(apt.DOCUMENTATION_URL)
+
 
     def select(self, event):
         '''
@@ -300,6 +310,7 @@ settings that will be merged in when importing that profile. A profile directory
             sect = self._menu_list.get(i)  
             self.loadFields(section=sect)
         pass
+
 
     def loadFields(self, section):
         ft = font.nametofont("TkSmallCaptionFont")
@@ -500,6 +511,7 @@ settings that will be merged in when importing that profile. A profile directory
 
 class Table:
 
+
     def __init__(self, tk_frame, *headers, row=0, col=0, rules=None):
         '''
         Create an editable tkinter treeview object as a table containing records.
@@ -545,19 +557,24 @@ class Table:
         self._id_tracker = 0
         pass
 
+
     def getSize(self):
         return self._size
+
 
     def getHeaders(self):
         return self._headers
 
+
     def getEntries(self):
         return self._entries
+
 
     def assignID(self):
         #always increment id so every table element is unique
         self._id_tracker += 1
         return self._id_tracker
+
 
     def insertRecord(self, data, index=-1):
         '''
@@ -570,8 +587,10 @@ class Table:
         self._size += 1
         pass
 
+
     def replaceRecord(self, data, index):
         self._tv.item(index, text='', values=tuple(data))
+
 
     def removeRecord(self, index=-1):
         '''
@@ -587,14 +606,17 @@ class Table:
             self._size -= 1
         return popped_val
 
+
     def clearRecords(self):
         self._tv.delete(*self._tv.get_children())
         self._size = 0
+
 
     def clearEntries(self):
         #clear any old values from entry boxes
         for ii in range(len(self.getEntries())):
             self.getEntries()[ii].delete(0,tk.END)
+
 
     def getValues(self, index):
         '''
@@ -605,6 +627,7 @@ class Table:
             fields += [value]
         return fields
 
+
     def getAllValues(self):
         '''
         Returns a list of data values for each index from the table.
@@ -613,6 +636,7 @@ class Table:
         for i in self._tv.get_children():
             records += [self.getValues(i)]
         return records
+
 
     def mapPeripherals(self, field_frame, editable=True, openCmd=None):
         '''
@@ -666,6 +690,7 @@ class Table:
         #return the next availble row for the field_frame
         return self._initial_row+3
 
+
     def openProfile(self):
         sel = self._tv.focus()
         if(sel == ''): return
@@ -678,6 +703,7 @@ class Table:
                 tk.messagebox.showerror(title='Nonexistent Profile', message='Make sure to click apply to save settings.')
         pass
 
+
     def getAllRows(self, col, lower=True):
         '''
         This method returns a list of all the elements for a specific column.
@@ -688,6 +714,7 @@ class Table:
             val = val.lower() if(lower) else val
             elements += [val]
         return elements
+
 
     @classmethod
     def vendorRules(cls, self, data, new):
@@ -728,6 +755,7 @@ class Table:
 
         return (not rename_atmpt) and (not duplicate_remote) and valid_remote
 
+
     @classmethod
     def workspaceRules(cls, self, data, new):
         '''
@@ -753,6 +781,7 @@ class Table:
             tk.messagebox.showerror(title='Failed Rename', message='A workspace cannot be renamed.')
         #print('workspace rules')
         return valid_path and (not rename_atmpt)
+
 
     def validEntry(self, data, new):
         data = list(data)
@@ -782,6 +811,7 @@ class Table:
             tk.messagebox.showerror(title='Duplicate Key', message='A record already has that key.')
         return (not all_blank) and (not duplicate) and extra_valid
 
+
     def handleUpdate(self):
         #get what record is selected
         sel = self._tv.focus()
@@ -809,6 +839,7 @@ class Table:
                 tk.messagebox.showerror(title='Vendor Configured', message='This vendor\'s remote configuration is locked.')
         pass
 
+
     def handleAppend(self):
         #get the fields from the entry boxes
         data = []
@@ -826,12 +857,14 @@ class Table:
             self.clearEntries()
         pass
 
+
     def handleRemove(self):
         sel = self._tv.focus()
         if(sel == ''): return
         #delete the selected record
         self.removeRecord(int(sel))
         pass
+
 
     def handleEdit(self):
         sel = self._tv.focus()
@@ -849,13 +882,16 @@ class Table:
             tk.messagebox.showerror(title='Invalid Edit', message='This vendor cannot be edited.')
         pass
 
+
     def getTreeview(self):
         return self._tv
+
 
     pass
 
 
 class ToggleSwitch:
+
 
     def __init__(self, tk_frame, on_txt, off_txt, row, col, state_var, onCmd=None, offCmd=None, padx=0, pady=0):
         self._state = state_var
@@ -871,7 +907,9 @@ class ToggleSwitch:
         btn_on.pack(side=tk.RIGHT)
         pass
 
+
     def getState(self):
         return self._state.get()
+
 
     pass

@@ -20,7 +20,8 @@ class Label:
 
     def __init__(self, name, exts, is_global):
         '''
-        Creates Label instance.
+        Creates Label instance. The name will be automatically converted to all
+        upper-case.
 
         Parameters:
             name (str): label's name
@@ -29,7 +30,7 @@ class Label:
         Returns:
             None
         '''
-        self._name = name
+        self._name = name.upper()
         self._exts = exts
         self._global = is_global
 
