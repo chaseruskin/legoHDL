@@ -1,8 +1,8 @@
 # Initial Setup
 
-Here we will configure some required preliminary settings.
+Follow the process below to set up required preliminary settings.
 
-Running `legohdl` for the first time will prompt the user if they would like to set up a [profile](./../glossary.md#profile)- a group of settings, scripts, and a template.
+Running `legohdl` for the first time will prompt the user if they would like to set up a [profile](./../glossary.md#profile).
 
 ```
 $ legohdl

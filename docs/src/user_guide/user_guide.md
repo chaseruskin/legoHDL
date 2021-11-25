@@ -1,3 +1,3 @@
 # User Guide
 
-This chapter walks the user through how to leverage legoHDL, without going too in-depth about the 'whys'.
+In this chapter, you will learn how to use legoHDL for common problems and scenarios.

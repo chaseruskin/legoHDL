@@ -1,5 +1,11 @@
 # Glossary
 
+### Argument
+An _argument_ is a string/value proceding a call to a software program on the command-line that will be passed to that program.
+
+### Available
+_Available_ refers to a level at which the block is seen in the [catalog](./glossary.md#catalog). A block has available status (A) when the block is within a vendor that is linked to the active workspace. Blocks cannot be used nor opened from this level.
+
 ### Backend Tool
 In this context, a _backend_ _tool_ is a software program capable of performing a specific task on HDL source files. Some examples are: Quartus, Vivado, and GHDL.
 
@@ -19,17 +25,33 @@ A _blueprint_ is the outputted text file when a block is exported for building. 
 
 This file is always created in the `build/` directory found at the root of the current block.
 
+### Catalog
+The _catalog_ is the list of searchable blocks within the current active workspace. Blocks can exist at 3 levels within the catalog: [downloaded](./glossary.md#downloaded) (D), [installed](./glossary.md#installed) (I), and/or [available](./glossary.md#available) (A).
+
 ### Development Tool
 A _development tool_ is a software program specialized for a particular language that automates specific tasks to developing new projects for that language.
+
+### Downloaded
+_Downloaded_ refers to a level at which the block is seen in the [catalog](./glossary.md#catalog). A block has download status (D) if the block is within the active workspace's local path. Blocks that are downloaded are said to be in-development. 
+
+Blocks can be used from this level within other blocks only if the `multi-develop` setting is enabled.
+
+### Flag
+A _flag_ is a special type of [argument](./glossary.md#argument) that controls or modifies how the specified command will function.
 
 ### Hardware Description Languages (HDL)
 _Hardware_ _Description_ _Languages_ are a type of specialized computer language to describe electronic circuits.
 
+### Installed
+_Installed_ refers to a level at which the block is seen in the [catalog](./glossary.md#catalog). A block has install status (I) when the block is within the active workspace's cache. 
+
+Installed blocks are considered stable and are able to be used within blocks in-development.
+
 ### Intellectual Property (IP)
-_Intellectual Property_ is a created design. A legoHDL block can contain IP. 
+_Intellectual Property_ is a created design. The HDL designs within legoHDL blocks can be considered IP. 
 
 ### Label
-A _label_ is a unique name given to a group of files defined by their file extension. Defined labels are written to the blueprint file. Every label is written in all capital letters and will have an `@` symbol preceding it.
+A _label_ is a unique name given to a group of files defined by their file extension. Defined labels are written to the blueprint file. Every label is evaluated as all upper-case and will have an `@` symbol preceding it.
 
 Special default labels are: 
 - `VHDL-SRC`, `VHDL-SIM`, `VHDL-LIB`, `VHDL-SRC-TOP`, `VHDL-SIM-TOP` for VHDL files

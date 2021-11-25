@@ -1,6 +1,6 @@
 # Installation
 
-There are very minimal requirements to get legoHDL up and running. Even though git is a requirement, developers do not need to fully understand git nor directly run git commands.
+There are very minimal requirements to get legoHDL up and running. Even though git is a requirement, developers do not need to fully understand git nor directly run git commands. 
 
 ## Requirements
 
