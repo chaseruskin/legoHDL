@@ -15,7 +15,7 @@ The basic usage structure for every command is:
 
 Everything written after the call to `legohdl` is considered an argument. All commands and flags are evaluated as case-insensitive.
 
-A flag must start with a `-`. Flags are used to control how the command shall operate.
+A flag must start with a `-`. Flags are used to control how the command functions.
 
 `-comp`
 
