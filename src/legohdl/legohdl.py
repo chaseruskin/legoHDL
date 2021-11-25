@@ -1362,7 +1362,7 @@ scripts)?", warning=False)
         '''
         cmd = self._command
         
-        if(self.hasFlag('h') or self.hasFlag('help')):
+        if(cmd != 'build' and (self.hasFlag('h') or self.hasFlag('help'))):
             self._item = cmd
             cmd = 'help'
 
