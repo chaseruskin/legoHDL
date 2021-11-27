@@ -344,41 +344,55 @@ class Apparatus:
 
 
     @classmethod
-    def getTemplateFiles(cls, returnlist=False):
+    def getTemplateFiles(cls, tmplt_path, inc_hidden=False, is_hidden=False, returnnames=False):
         '''
         Returns a list of all available files within the template, excluding the
-        .git folder (if exists). Paths are relative to the template base path.
+        .git/ folder (if exists). Paths are relative to the template base path.
+        Recursive method.
 
         Parameters:
-            returnlist (bool): determine if to return list or print to console
+            tmplt_path (str): path to search for files/directories
+            inc_hidden (bool): determine if to add hidden files in the directory
+            is_hidden (bool): remember if the current path is hidden or not
+            returnnames (bool): determine if to only return the relative filepaths
         Returns:
-            ([str]): list of all available files within the current template.
+            ([(str, bool)]): list of all available files within the current template
+            or
+            ([str]): list of all available files without status of hidden or not
         '''
-        #get all files
-        cls.TEMPLATE = cls.fs(cls.TEMPLATE)
-        files = glob.glob(cls.TEMPLATE+"/**/*", recursive=True)
-        
-        tmplt_files = []
-        for f in files:
-            f = cls.fs(f)
+        #check what files/folders exist at under this path
+        branches = os.listdir(tmplt_path)
+
+        files = []
+
+        for f in branches:
+            next_hidden = False
             #skip all hidden git files
-            if(f.lower().count('/.git/')):
+            if(f.lower() == '.git'):
                 continue
-            #only print files
-            if(os.path.isfile(f)):
-                # :todo: it is an invisible file do something special?
-                #if(f.startswith('/.')):
-                #   pass
-                f = f.replace(cls.TEMPLATE,'/')
-                tmplt_files += [f]
-        #print files to the console
-        if(returnlist == False):
-            log.info("All available files in the current template:")
-            for tf in tmplt_files:
-                print('\t',tf)
+            #this file/directory is hidden if the previous was hidden
+            next_hidden = (f[0] == '.' or is_hidden)
+
+            next_path = cls.fs(tmplt_path+f)
+            #print(next_path)
+            #recursively search this directory
+            if(os.path.isdir(next_path+'/'*(f[0] == '.'))):
+                next_path = next_path+'/'*(f[0] == '.')
+                files += cls.getTemplateFiles(next_path, inc_hidden, is_hidden=next_hidden, returnnames=returnnames)
+
+            #add files to the list
+            elif(os.path.isfile(next_path)):
+                #shorten the template path to exluse the common template base path
+                rel_path = next_path[len(cls.getTemplatePath())-1:]
+                #determine how to store template file item in the list (attach hidden status?)
+                item = rel_path if(returnnames == True) else (rel_path, is_hidden)
+                #print(item)
+                #add all files or must make sure the file is not hidden
+                if(inc_hidden == True or is_hidden == False):
+                    files += [item]
+            pass
         #return the files as a list
-        else:
-            return tmplt_files
+        return files
 
 
     @classmethod
@@ -656,7 +670,7 @@ class Apparatus:
         #return built-in template folder if invalid folder in settings
         if(tmp == '' or os.path.exists(tmp) == False):
             tmp = cls.TEMPLATE
-        return tmp
+        return cls.fs(tmp)
 
     
     @classmethod

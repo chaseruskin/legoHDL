@@ -1155,7 +1155,16 @@ scripts)?", warning=False)
         elif(self.hasFlag("profile")):
             Profile.printList()
         elif(self.hasFlag("template")):
-            apt.getTemplateFiles()
+            #get all available template files
+            tmplt_files = apt.getTemplateFiles(apt.getTemplatePath(), inc_hidden=True, is_hidden=False)
+            #print the template files to the console along with if each is "hidden" or not
+            log.info('Files available within the selected template: '+apt.getTemplatePath())
+            print('{:<60}'.format("Relative Path"),'{:<8}'.format("Hidden"))
+            print("-"*60+" "+"-"*8)
+            for f in tmplt_files:
+                status = '-' if(f[1] == False) else 'yes'
+                print('{:<60}'.format(f[0]),'{:<8}'.format(status))
+                pass
         elif(self.hasFlag('unit')):
             self.WS().listUnits(title=self.getItem(), \
                 alpha=self.hasFlag('alpha'), \

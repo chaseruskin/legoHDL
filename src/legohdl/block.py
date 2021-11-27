@@ -973,7 +973,7 @@ class Block:
             log.error("File already exists.")
             return False
         #make sure if using template file that it does exist
-        if(tmplt_fpath != None and tmplt_fpath not in apt.getTemplateFiles(returnlist=True)):
+        if(tmplt_fpath != None and tmplt_fpath not in apt.getTemplateFiles(apt.getTemplatePath(), inc_hidden=True, returnnames=True)):
             log.error(tmplt_fpath+" does not exist in the current template.")
             return False
 
@@ -994,7 +994,11 @@ class Block:
             #create file from template file
             log.info("Creating file "+fpath+" from "+tmplt_fpath+"...")
             #copy file
-            shutil.copyfile(tmplt_fpath, fpath)
+            try:
+                shutil.copyfile(tmplt_fpath, fpath)
+            except PermissionError:
+                log.error("Permission denied trying to write to "+fpath+".")
+                exit(1)
             #fill in placeholder values
             success = self.fillPlaceholders(fpath, template_val=fname)
             pass
