@@ -422,7 +422,7 @@ scripts)?", warning=False)
             #start with top unit (returns all units if no top unit is found (packages case))
             block.getUnits(top_dog)
             if(verbose):
-                print(Unit.Hierarchy.output(top_dog))
+                print(Unit.Hierarchy.output(top_dog, compress=True))
             pass
 
         build_dir = block.getPath()+apt.getBuildDirectory()
