@@ -422,8 +422,21 @@ scripts)?", warning=False)
             #start with top unit (returns all units if no top unit is found (packages case))
             block.getUnits(top_dog)
             if(verbose):
-                Unit.Hierarchy.output(top_dog)
+                print(Unit.Hierarchy.output(top_dog))
             pass
+
+        build_dir = block.getPath()+apt.getBuildDirectory()
+
+        #clean the build directory
+        if(self.hasFlag('no-clean') == False):
+            if(verbose):
+                log.info("Cleaning build folder...")
+            if(os.path.isdir(build_dir)):
+                shutil.rmtree(build_dir, onerror=apt.rmReadOnly)
+            pass
+
+        #create the build directory
+        os.makedirs(build_dir, exist_ok=True)
 
         unit_order,block_order = Unit.Hierarchy.topologicalSort()
 
@@ -497,19 +510,6 @@ scripts)?", warning=False)
                 line = line+"VLOG"
             #add to blueprint's data for top-level design
             blueprint_data += [line+"-SRC-TOP "+dsgn.E()+" "+dsgn.getFile()]
-        
-        build_dir = block.getPath()+apt.getBuildDirectory()
-
-        #clean the build directory
-        if(self.hasFlag('no-clean') == False):
-            if(verbose):
-                log.info("Cleaning build folder...")
-            if(os.path.isdir(build_dir)):
-                shutil.rmtree(build_dir, onerror=apt.rmReadOnly)
-            pass
-
-        #create the build directory
-        os.makedirs(build_dir, exist_ok=True)
 
         if(verbose):
             log.info("Exporting blueprint...")
