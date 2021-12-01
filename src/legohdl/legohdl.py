@@ -457,7 +457,7 @@ scripts)?", warning=False)
                         if(p in block_files[block_key]):
                             continue
                         #add label and file to blueprint data
-                        blueprint_data += ['@'+lbl.getName()+' '+p]
+                        blueprint_data += ['@'+lbl.getName()+' '+apt.fs(p)]
                         #note this file as added for this block's version
                         block_files[block_key] += [p]
                     pass
@@ -467,7 +467,7 @@ scripts)?", warning=False)
                         paths = block.gatherSources(ext=lbl.getExtensions())
                         #add every found file identified with this label to the blueprint
                         for p in paths:
-                            blueprint_data += ['@'+lbl.getName()+' '+p]
+                            blueprint_data += ['@'+lbl.getName()+' '+apt.fs(p)]
                 pass
             pass
 
