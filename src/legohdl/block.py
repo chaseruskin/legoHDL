@@ -11,7 +11,7 @@
 import os, shutil, stat, glob
 import logging as log
 from datetime import date
-from enum import Enum, unique
+from enum import Enum
 
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
