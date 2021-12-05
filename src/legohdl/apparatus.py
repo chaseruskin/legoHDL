@@ -687,6 +687,20 @@ class Apparatus:
         tail,_ = os.path.split(file_path)
         return cls.fs(tail)
 
+
+    @classmethod
+    def autoFillUnitFields(cls):
+        '''
+        Determines if to auto-set unit fields from export command.
+
+        Parameters:
+            None
+        Returns:
+            (bool): determine if to auto-fill "toplevel" and "bench" in
+                metadata, if exists.
+        '''
+        return False
+
     
     @classmethod
     def getEditor(cls):
