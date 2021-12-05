@@ -2024,8 +2024,8 @@ class Block:
         if(path == None):
             path = self.getPath()
         for e in ext:
-            srcs = srcs + glob.glob(path+"/**/"+e, recursive=True)
-        #print(srcs)
+            srcs = srcs + glob.glob(path+"/[!build]**/"+e, recursive=True)
+        #print(apt.listToStr(srcs,delim='\n'))
         return set(srcs)
 
 
