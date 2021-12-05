@@ -2131,11 +2131,6 @@ class Block:
             if(verbose):
                 log.info("Identified top-level unit: "+self._top.E())
 
-            #update metadata and will save if different
-            if("toplevel" in self.getMeta().keys() and self._top.E() != self.getMeta("toplevel")):
-                self.setMeta('toplevel', self._top.E())
-                self.save()
-
         return self._top
 
 
@@ -2201,13 +2196,7 @@ class Block:
                 log.info("Identified top-level testbench: "+self._bench.E())
             else:
                 log.warning("No testbench detected.")
-        #update the metadata is saving
-        if("bench" in self.getMeta().keys()):
-            if(self._bench == None):
-                self.setMeta('bench', None)
-            else:
-                self.setMeta('bench', self._bench.E())
-            self.save()
+                
         #return the Unit object
         return self._bench
 
