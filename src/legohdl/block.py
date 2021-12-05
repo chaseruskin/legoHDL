@@ -11,7 +11,7 @@
 import os, shutil, stat, glob
 import logging as log
 from datetime import date
-from enum import Enum
+from enum import Enum, unique
 
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
@@ -2359,7 +2359,9 @@ class Block:
         '''
         Identify all HDL files within the block and all designs in each file.
 
-        Only loads from HDL once and then will dynamically return its attr _units.
+        Only loads from HDL once and then will dynamically return its attr _units. If
+        'returnnames' is set, then it will skip the attr and first try to find if 'vhdl-units'
+        or 'vlog-units' exists in metadata and return the names found there.
         
         Parameters:
             returnnames (bool): determine if to return list of names
@@ -2369,6 +2371,15 @@ class Block:
             or
             ([str]): list of unit names if returnnames is True
         '''
+        if(returnnames):
+            unit_names = []
+            if(self.getMeta('vhdl-units') != ''):
+                unit_names += self.getMeta('vhdl-units')
+            if(self.getMeta('vlog-units') != ''):
+                unit_names += self.getMeta('vlog-units')
+            if(len(unit_names)):
+                return unit_names
+
         if(hasattr(self, "_units")):
             if(lang != ''):
                 #filter between vhdl or verilog units
@@ -2497,6 +2508,7 @@ class Block:
         '''
         #get quick idea of what units exist for this block
         units = self.loadHDL()
+        #print(units)
         if(entity.lower() not in units.keys()):
             log.error("Entity "+entity+" not found in block "+self.getFull()+"!")
             return False

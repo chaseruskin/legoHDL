@@ -390,6 +390,20 @@ scripts)?", warning=False)
         verbose = (self.hasFlag('quiet') == False)
         inc_tb = (self.hasFlag('ignore-tb') == False)
 
+        #trying to export a package file?
+        if(self.hasFlag('pack')):
+            #load blocks
+            self.WS().loadBlocks(id_dsgns=False)
+            #get the working block
+            block = Block.getCurrent()
+            #load the design units
+            block.loadHDL()
+            #reads lists 'omit' and 'inc' from command-line
+            self.autoPackage(omit=apt.strToList(self.getVar('omit')), \
+                inc=apt.strToList(self.getVar('inc')), \
+                filepath=self.getVar('pack'))
+            return
+
         #load labels
         Label.load()
         #load blocks and their designs
@@ -397,14 +411,6 @@ scripts)?", warning=False)
 
         #get the working block
         block = Block.getCurrent()
-
-        #trying to export a package file?
-        if(self.hasFlag('pack')):
-            #reads lists 'omit' and 'inc' from command-line
-            self.autoPackage(omit=apt.strToList(self.getVar('omit')), \
-                inc=apt.strToList(self.getVar('inc')), \
-                filepath=self.getVar('pack'))
-            return
      
         #capture the passed-in entity name
         top = self.getItem()
@@ -705,7 +711,7 @@ scripts)?", warning=False)
     def _get(self):
         '''Run the 'get' command.'''
 
-        visibles = self.WS().loadBlocks(id_dsgns=True)
+        visibles = self.WS().loadBlocks(id_dsgns=False)
 
         #make sure an entity is being requested
         if(self.getItem() == None):
@@ -719,9 +725,9 @@ scripts)?", warning=False)
         #remember title for error statement in case block becomes None
         title = block.getFull()
         #verify the block is visible to the user
-        if(apt.getMultiDevelop() == False and block != Block.getCurrent(bypass=True)):
+        if(apt.getMultiDevelop() == False and block != Block.getCurrent(bypass=True) and block.getLvl() == Block.Level.DNLD):
             block = block.getLvlBlock(Block.Level.INSTL)
-          
+
         if(block not in visibles):
             if(apt.getMultiDevelop() == False):
                 exit(log.error("Cannot use "+title+" because it is not installed!"))
@@ -767,7 +773,7 @@ scripts)?", warning=False)
         '''Run the 'install' command.'''
 
         #load blocks
-        self.WS().loadBlocks()
+        self.WS().loadBlocks(id_dsgns=False)
 
         #shortcut name
         block = self.WS().shortcut(self.getItem(), visibility=False)
@@ -806,7 +812,7 @@ scripts)?", warning=False)
         '''Run the 'uninstall' command.'''
 
         #load blocks
-        self.WS().loadBlocks()
+        self.WS().loadBlocks(id_dsgns=False)
         #shortcut name
         block = self.WS().shortcut(self.getItem(), visibility=False)
         #check if block exists

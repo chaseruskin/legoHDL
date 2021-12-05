@@ -314,12 +314,17 @@ class Workspace:
             pass
 
         #4. ID all specific version blocks if identifying designs (except current block)
-        if(id_dsgns):
-            for vis_block in self._visible_blocks:
-                if(vis_block == Block.getCurrent(bypass=True)):
-                    continue
-                for spec_block in vis_block.getInstalls().values():
+        spec_vers_blocks = []
+        for vis_block in self._visible_blocks:
+            if(vis_block == Block.getCurrent(bypass=True)):
+                continue
+            for spec_block in vis_block.getInstalls().values():
+                spec_vers_blocks += [spec_block]
+                if(id_dsgns):
                     spec_block.loadHDL()
+                pass
+            pass
+        self._visible_blocks += spec_vers_blocks
 
         return self._visible_blocks
 
