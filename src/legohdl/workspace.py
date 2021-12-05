@@ -378,25 +378,44 @@ class Workspace:
             #collect list of all entities
             reg = Map()
             reg[entity] = []
+            #iterate through every block and create a mapping for their entity names
             for bk in blocks:
+                #get the entity names from this block
                 es = bk.loadHDL(returnnames=True)
+                #create mappings of entity names to their block owners
                 for e in es:
                     if(e.lower() not in reg.keys()):
                         reg[e] = []
                     reg[e] += [bk]
-                
+
+            #see how many blocks were fit to entity name's mapping
             num_blocks = len(reg[entity])
+            #algorithm only detected one possible solution
             if(num_blocks == 1):
-                #:todo: make sure rest of sections are correct before returning result
-                return reg[entity][0]
+                #make sure rest of sections are correct before returning result
+                potential = reg[entity][0]
+                title = potential.getTitle(index=2, dist=2)
+                #verify each part of block identifier matches what was requested
+                for i in range(len(sects)):
+                    #print(sects[i])
+                    if(len(sects[i]) and sects[i].lower() != title[i].lower()):
+                        return None
+                    pass
+                return potential
+            #algorithm detected multiple possible solutions (cannot infer)
             elif(num_blocks > 1):
                 possible_blocks = reg[entity]
+                #only was given an entity name, algorithm cannot solve requested entity
                 if(len(sects[2]) == 0):
                     log.info("Ambiguous unit; conflicts with")
                     #display the units/titles that conflict with input
                     for bk in reg[entity]:
                         print('\t '+bk.getFull()+":"+entity)
-                    exit(print())
+                    print()
+                    exit()
+            #no blocks matched the entity name being passed
+            else:
+                return None
             pass
         #search through all block names
         for start in range(len(sects)-1, -1, -1):
@@ -414,10 +433,19 @@ class Workspace:
                 reg[t] += [bk]
             #count how many blocks occupy this same name
             num_blocks = len(reg[term])
+            #algorithm only detected one possible solution
             if(num_blocks == 1):
-                #print("FOUND:",reg[term][0].getTitle(index=2, dist=2))
-                #:todo: make sure rest of sections are correct before returning result
-                return reg[term][0]
+                #make sure rest of sections are correct before returning result
+                potential = reg[term][0]
+                title = potential.getTitle(index=2, dist=2)
+                #verify each part of block identifier matches what was requested
+                for i in range(len(sects)):
+                    #print(sects[i])
+                    if(len(sects[i]) and sects[i].lower() != title[i].lower()):
+                        return None
+                    pass
+                return potential
+            #algorithm detected multiple solutions (cannot infer on this step)
             elif(num_blocks > 1):
                 #compare with blocks for a match and dwindle down choices
                 next_blocks = []
