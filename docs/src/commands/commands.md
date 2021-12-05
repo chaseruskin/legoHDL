@@ -19,7 +19,7 @@ A flag must start with a `-`. Flags are used to control how the command function
 
 `-comp`
 
-Any time `< >` are used, that argument is required.
+Any time `< >` are used, the string within the `< >` is used as a hint as to what the value should be to replace the entire `< >`.
 
 `<block>`
 
