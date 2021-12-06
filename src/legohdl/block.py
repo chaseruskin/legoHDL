@@ -2029,6 +2029,7 @@ class Block:
         #todo ignore build folder
         # for s in srcs:
         #     if(apt.fs(s).count('/build')):
+        #print(srcs)
 
         if(self == Block.getCurrent(bypass=True)):
             print(apt.listToStr(srcs,delim='\n'))
@@ -2400,11 +2401,11 @@ class Block:
                     tmp[u[0]] = u[1]
                 #only return the keys (names)
                 if(returnnames):
-                    return list(tmp.keys())
+                    tmp = [u.E() for u in tmp.values()]
                 return tmp
 
             if(returnnames):
-                return list(self._units.keys())
+                return [u.E() for u in self._units.values()]
             return self._units
 
         self._hdl_files = []
@@ -2437,11 +2438,11 @@ class Block:
                 tmp[u[0]] = u[1]
             #only return the keys (names)
             if(returnnames):
-                return list(tmp.keys())
+                return [u.E() for u in self._units.values()]
             return tmp
             
         if(returnnames):
-            return list(self._units.keys())
+            return [u.E() for u in self._units.values()]
         return self._units
 
     
