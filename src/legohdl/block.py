@@ -2024,8 +2024,14 @@ class Block:
         if(path == None):
             path = self.getPath()
         for e in ext:
-            srcs = srcs + glob.glob(path+"/[!build]**/"+e, recursive=True)
-        #print(apt.listToStr(srcs,delim='\n'))
+            srcs = srcs + glob.glob(path+"**/"+e, recursive=True)
+        
+        #todo ignore build folder
+        # for s in srcs:
+        #     if(apt.fs(s).count('/build')):
+
+        if(self == Block.getCurrent(bypass=True)):
+            print(apt.listToStr(srcs,delim='\n'))
         return set(srcs)
 
 
