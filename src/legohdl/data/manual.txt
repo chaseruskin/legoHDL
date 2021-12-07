@@ -342,7 +342,7 @@ NAME:
         build - Execute a custom backend script/tool command
 
 SYNOPSIS:
-        legohdl build +<script-alias> [<script-args...>]
+        legohdl [build] +<script-alias> [<script-args...>]
 
 DESCRIPTION:
         :todo:

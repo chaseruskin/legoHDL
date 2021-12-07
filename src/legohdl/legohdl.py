@@ -1377,6 +1377,11 @@ scripts)?", warning=False)
         '''
         cmd = self._command
         
+        #allow for 'build' command to be optional
+        if(len(cmd) and cmd[0] == '+'):
+            self._item = cmd
+            cmd = 'build'
+        #verify the help flag is intended for the legohdl program
         if(cmd != 'build' and (self.hasFlag('h') or self.hasFlag('help'))):
             self._item = cmd
             cmd = 'help'
