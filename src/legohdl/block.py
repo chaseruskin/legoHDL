@@ -139,7 +139,7 @@ class Block:
 
 
     def getLvl(self):
-        '''Returns _lvel (Block.Level). Use .value to get (int) representation.'''
+        '''Returns _lvl (Block.Level). Use .value to get (int) representation.'''
         return self._lvl
 
 
@@ -1147,7 +1147,10 @@ class Block:
         
         #find and clone from the block's remote URL (if exists)
         rem = self.getMeta('remote')
-        if(rem != None and len(rem)):
+        #validate repo
+        is_valid = rem != None and Git.isValidRepo(rem, remote=True)
+        #use remote repository
+        if(is_valid):
             success = True
 
             #create temp directory
@@ -1156,25 +1159,38 @@ class Block:
             if(g.hasWritePermission() == False):
                 log.error("Cannot download the block; write permissions are not granted for this repository.")
                 success = False
-                
-            if(success):
-                #move from repo to path
-                try:
-                    shutil.copytree(tmp, place)
-                #catch and handle error if the path is taken
-                except FileExistsError:
-                    log.error("Cannot download block to path "+place)
-                    success = False
 
             #remove temp directory
             apt.cleanTmpDir()
             pass
+        #use this repository itself if INSTL status
+        elif(self.getLvl() == Block.Level.INSTL):
+            success = True
+            tmp = self.getPath()
+            pass
 
+        #move from one folder to the folder marked in downloads area
         if(success):
-            log.info("Downloaded block "+self.getFull()+" to "+place)
-            #create and return the new block
-            return Block(place, self.getWorkspace(), lvl=Block.Level.DNLD)
-        return None
+            #move from repo to path
+            try:
+                shutil.copytree(tmp, place)
+            #catch and handle error if the path is taken
+            except FileExistsError:
+                log.error("Cannot download block to path "+place)
+                success = False
+
+        #return None if block download failed
+        if(success == False):
+            return None
+
+        log.info("Downloaded block "+self.getFull()+" to "+place)
+        #create and return the new block
+        dnld = Block(place, self.getWorkspace(), lvl=Block.Level.DNLD)
+        #allow user to edit files if coming from cache
+        if(is_valid == False and success == True):
+            dnld.modWritePermissions(enable=True)
+
+        return dnld
 
 
     def initialize(self, title, remote=None, fork=False, summary=None):
