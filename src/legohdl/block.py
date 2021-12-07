@@ -2407,7 +2407,7 @@ class Block:
             or
             ([str]): list of unit names if returnnames is True
         '''
-        if(returnnames):
+        if(returnnames and self.getLvl() != Block.Level.DNLD):
             unit_names = []
             if(self.getMeta('vhdl-units') != ''):
                 unit_names += self.getMeta('vhdl-units')
@@ -2712,6 +2712,7 @@ class Block:
             #read location
             info_txt = info_txt + '\nLocation: '+self.getPath()+'\n'
             info_txt = info_txt + 'Size: '+str(size)+' KB\n'
+            info_txt = info_txt + 'Level: '+str(self.getLvl().name)+'\n'
             
             #read what blocks require this block
             info_txt = info_txt + '\nRequired by:\n'
@@ -2720,10 +2721,11 @@ class Block:
             info_txt = info_txt + '\n'
 
             #read the units found in this block
-            if(len(vhdl_units) == 0):
-                vhdl_units = self.loadHDL(lang='vhdl', returnnames=True)
-            if(len(vlog_units) == 0):
-                vlog_units = self.loadHDL(lang='vlog', returnnames=True)
+            if(self.getLvl() == Block.Level.DNLD):
+                if(len(vhdl_units) == 0):
+                    vhdl_units = self.loadHDL(lang='vhdl', returnnames=True)
+                if(len(vlog_units) == 0):
+                    vlog_units = self.loadHDL(lang='vlog', returnnames=True)
 
             if(len(vhdl_units) > 0):
                 txt = '\nVHDL units:\n'
