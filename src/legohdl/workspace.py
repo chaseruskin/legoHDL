@@ -859,26 +859,32 @@ class Workspace:
 
 
     def isLinked(self):
+        '''Returns if any vendors are tied to this workspace (bool).'''
         return len(self.getVendors())
 
 
     def getPath(self):
+        '''Returns the local path where downloaded blocks are located (str).'''
         return self._path
 
 
     def getDir(self):
+        '''Returns the base hidden directory where the workspace data is kept (str).'''
         return self._ws_dir
 
 
     def getCachePath(self):
+        '''Returns the hidden directory where workspace installations are kept. (str).'''
         return self.getDir()+"cache/"
 
 
     def getName(self):
+        '''Returns the workspace's identifier (str).'''
         return self._name
 
 
     def isActive(self):
+        '''Returns is this workspace is the active workspace (bool).'''
         return self == self.getActive()
 
 
@@ -934,6 +940,7 @@ class Workspace:
 
     @classmethod
     def getActive(cls):
+        '''Returns the active workspace and will exit on error (Workspace).'''
         if(cls._ActiveWorkspace == None):
             exit(log.error("Not in a workspace!"))
         return cls._ActiveWorkspace
