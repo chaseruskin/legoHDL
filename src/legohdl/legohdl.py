@@ -1109,6 +1109,10 @@ scripts)?", warning=False)
         #determine if the item passed is a url to directly clone
         from_url = False
 
+        if(self.getItem() == None):
+            log.error("Enter a block or repository to download.")
+            return
+
         #get the block object from all possible blocks
         block = self.WS().shortcut(self.getItem(), visibility=False)
 
