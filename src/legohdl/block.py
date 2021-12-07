@@ -2407,7 +2407,7 @@ class Block:
             or
             ([str]): list of unit names if returnnames is True
         '''
-        if(returnnames and self.getLvl() != Block.Level.DNLD):
+        if(returnnames and self.getLvl() != Block.Level.DNLD and self.getLvl() != Block.Level.INSTL):
             unit_names = []
             if(self.getMeta('vhdl-units') != ''):
                 unit_names += self.getMeta('vhdl-units')
@@ -2721,7 +2721,7 @@ class Block:
             info_txt = info_txt + '\n'
 
             #read the units found in this block
-            if(self.getLvl() == Block.Level.DNLD):
+            if(self.getLvl() == Block.Level.DNLD or self.getLvl() == Block.Level.INSTL):
                 if(len(vhdl_units) == 0):
                     vhdl_units = self.loadHDL(lang='vhdl', returnnames=True)
                 if(len(vlog_units) == 0):
