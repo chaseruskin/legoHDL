@@ -1106,7 +1106,23 @@ scripts)?", warning=False)
     def _download(self):
         '''Run 'download' command.'''
 
-        print("NOT IMPLEMENTED YET")
+        #get the block object from all possible blocks
+        block = self.WS().shortcut(self.getItem(), visibility=False)
+
+        #make sure the user passed in a value for the item
+        if(block == None):
+            exit(log.error("Could not find a block as "+self.getItem()))
+
+        #successful download if block object is returned
+        block = block.download(place=self.getVar('path'))
+
+        #cannot continue without downloaded block object
+        if(block == None):
+            return
+
+        #open in-editor
+        if(self.hasFlag('open')):
+            block.openInEditor()
         pass
 
 

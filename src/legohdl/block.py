@@ -1119,48 +1119,62 @@ class Block:
         return True
 
 
-    def download(self):
+    def download(self, place=None):
         '''
-        Download the block to the workspace's local path.
+        Download the block to the workspace's local path. Default place to
+        put download is {library}/{name}/.
+
+        Creates a new block object if successfully downloads the block.
         
         Parameters:
-            None
+            place (str): relative path within the current workspace
         Returns:
-            None
+            (Block): return the downloaded block (if successful) else None
         '''
+        #check if the block is already downloaded
+        if(self.getLvlBlock(Block.Level.DNLD) != None):
+            log.info("Block "+self.getFull()+" is already downloaded!")
+            return None
 
-        pass
+        success = False
 
+        #assign default place to download block
+        if(place == None):
+            place = self.L()+"/"+self.N()+"/"
 
-    def getFilesHDL(self, returnpaths=False):
-        '''
-        Returns a list of the HDL files associated with this block.
+        #standardize the path and prepend the workspace's directory
+        place = apt.fs(self.getWorkspace().getPath())+apt.fs(place+'/')
+        
+        #find and clone from the block's remote URL (if exists)
+        rem = self.getMeta('remote')
+        if(rem != None and len(rem)):
+            success = True
 
-        Dynamically creates _hdl_files ([Language]) attr for faster repeated use.
+            #create temp directory
+            tmp = apt.makeTmpDir()
+            g = Git(tmp, clone=rem)
+            if(g.hasWritePermission() == False):
+                log.error("Cannot download the block; write permissions are not granted for this repository.")
+                success = False
+                
+            if(success):
+                #move from repo to path
+                try:
+                    shutil.copytree(tmp, place)
+                #catch and handle error if the path is taken
+                except FileExistsError:
+                    log.error("Cannot download block to path "+place)
+                    success = False
 
-        Parameters:
-            returnpaths (bool): determine if to return the [(str)] of file paths
-        Returns:
-            _hdl_files ([Language]): list of HDL Language file objects
-        '''
-        if(hasattr(self, "_hdl_files")):
-            if(returnpaths):
-                paths = []
-                for hdl in self._hdl_files:
-                    paths += [hdl.getPath()]
-                return paths
-            return self._hdl_files
+            #remove temp directory
+            apt.cleanTmpDir()
+            pass
 
-        #load hdl files (creates attr _hdl_files)
-        self.loadHDL()
-        #return all file paths if requested
-        if(returnpaths):
-            paths = []
-            for hdl in self._hdl_files:
-                paths += [hdl.getPath()]
-            return paths
-        #return Language objects
-        return self._hdl_files
+        if(success):
+            log.info("Downloaded block "+self.getFull()+" to "+place)
+            #create and return the new block
+            return Block(place, self.getWorkspace(), lvl=Block.Level.DNLD)
+        return None
 
 
     def initialize(self, title, remote=None, fork=False, summary=None):
