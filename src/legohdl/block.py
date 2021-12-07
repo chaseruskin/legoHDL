@@ -1159,9 +1159,6 @@ class Block:
             if(g.hasWritePermission() == False):
                 log.error("Cannot download the block; write permissions are not granted for this repository.")
                 success = False
-
-            #remove temp directory
-            apt.cleanTmpDir()
             pass
         #use this repository itself if INSTL status
         elif(self.getLvl() == Block.Level.INSTL):
@@ -1178,6 +1175,9 @@ class Block:
             except FileExistsError:
                 log.error("Cannot download block to path "+place)
                 success = False
+
+        #remove temp directory
+        apt.cleanTmpDir()
 
         #return None if block download failed
         if(success == False):
