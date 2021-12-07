@@ -1172,9 +1172,11 @@ scripts)?", warning=False)
                 print('{:<60}'.format(f[0]),'{:<8}'.format(status))
                 pass
         elif(self.hasFlag('unit')):
-            self.WS().listUnits(title=self.getItem(), \
-                alpha=self.hasFlag('alpha'), \
-                usable=(not self.hasFlag('all')))
+            self.WS().listUnits(title=self.getItem(),
+                alpha=self.hasFlag('alpha'),
+                usable=(not self.hasFlag('all')),
+                ignore_tb=self.hasFlag('ignore-tb')
+                )
             #categorize by hidden files (skipped)
             #and visible files (files that are copied in on using template)
         else:

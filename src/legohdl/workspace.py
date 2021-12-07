@@ -571,7 +571,7 @@ class Workspace:
         pass
 
 
-    def listUnits(self, title, alpha=False, usable=False):
+    def listUnits(self, title, alpha=False, usable=False, ignore_tb=False):
         '''
         Print a formatted table of all the design units.
 
@@ -579,16 +579,18 @@ class Workspace:
             title (str): block title to be broken into parts for searching
             alpha (bool): determine if to alphabetize the block list order
             usable (bool): determine if to display units that can be used
+            ignore_tb (bool): determine if to ignore testbench files
         Returns:
             None
         '''
         #[!] load blocks into inventory
         visible = self.loadBlocks()
 
+        #todo: print status of the unit and which status is usable (D or I)
         M,L,N,V,E = Block.snapTitle(title, inc_ent=True)
         print(M,L,N,V,E)
-        print('{:<39}'.format("Block"),'{:<22}'.format("Unit"),'{:<7}'.format("Usable"),'{:<9}'.format("Type"))
-        print("-"*39+" "+"-"*22+" "+"-"*7+" "+"-"*9)
+        print('{:<22}'.format("Unit"),'{:<7}'.format("Usable"),'{:<9}'.format("Type"),'{:<39}'.format("Block"))
+        print("-"*22+" "+"-"*7+" "+"-"*9+" "+"-"*39)
         for bk in Block.getAllBlocks():
             #for lvl in Block.Inventory[bk.M()][bk.L()][bk.N()]:
             block_title = bk.getFull(inc_ver=False)
@@ -613,6 +615,8 @@ class Workspace:
             for u in units:
                 if(len(E) and u.E().lower().startswith(E.lower()) == False):
                     continue
+                if(ignore_tb and u.isTb()):
+                    continue
                 #format if unit is visible/usable
                 vis = '-'
                 if(bk in visible):
@@ -621,7 +625,7 @@ class Workspace:
                 dsgn = u.getDesign().name.lower()
                 if(u.getLang() == u.Language.VERILOG and dsgn == 'entity'):
                     dsgn = 'module'
-                print('{:<39}'.format(block_title),'{:<22}'.format(u.E()),'{:<7}'.format(vis),'{:<9}'.format(dsgn))
+                print('{:<22}'.format(u.E()),'{:<7}'.format(vis),'{:<9}'.format(dsgn),'{:<39}'.format(block_title))
                 block_title = ''
                 printed = True
                 pass
