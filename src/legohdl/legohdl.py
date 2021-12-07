@@ -1106,15 +1106,29 @@ scripts)?", warning=False)
     def _download(self):
         '''Run 'download' command.'''
 
+        #determine if the item passed is a url to directly clone
+        from_url = False
+
         #get the block object from all possible blocks
         block = self.WS().shortcut(self.getItem(), visibility=False)
 
         #make sure the user passed in a value for the item
         if(block == None):
-            exit(log.error("Could not find a block as "+self.getItem()))
+            #try to see if a remote was passed
+            if(Git.isValidRepo(self.getItem(), remote=True)):
+                from_url = True
+            else:
+                exit(log.error("Could not find a block as "+self.getItem()))
 
-        #successful download if block object is returned
-        block = block.download(place=self.getVar('path'))
+        #download from the identified block
+        if(from_url == False):
+            #successful download if block object is returned
+            block = block.download(place=self.getVar('path'))
+            pass
+        #download directly from this repository
+        else:
+            block = None
+            pass
 
         #cannot continue without downloaded block object
         if(block == None):
