@@ -2012,7 +2012,7 @@ class Block:
     def gatherSources(self, ext=apt.SRC_CODE, path=None):
         '''
         Return all files associated with the given extensions from the specified
-        path.
+        path. Ignores the build/ directory directly within a block's path.
 
         Parameters:
             ext  ([str]): a list of extensions (use * to signify all files of given ext)
@@ -2020,20 +2020,19 @@ class Block:
         Returns:
             srcs ([str]): a list of files matching the given ext's
         '''
-        srcs = []
         if(path == None):
             path = self.getPath()
-        for e in ext:
-            srcs = srcs + glob.glob(path+"**/"+e, recursive=True)
-        
-        #todo ignore build folder
-        # for s in srcs:
-        #     if(apt.fs(s).count('/build')):
-        #print(srcs)
 
-        if(self == Block.getCurrent(bypass=True)):
-            print(apt.listToStr(srcs,delim='\n'))
-        return set(srcs)
+        srcs = []
+        #todo: find new method for ignoring build folder
+        #todo: use case insentivity on glob by using fnmatch and re modules
+        for e in ext:
+            srcs = srcs + glob.glob(path+"[!build]*/**/"+e, recursive=True)
+            srcs = srcs + glob.glob(path+e)
+            pass
+        
+        srcs = set(srcs)
+        return srcs
 
 
     @classmethod
