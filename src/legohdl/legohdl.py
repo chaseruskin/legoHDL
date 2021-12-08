@@ -876,17 +876,35 @@ scripts)?", warning=False)
                 pass
             pass
         #wishing to get information from metadata found in this block's vendor
-        elif(self.hasFlag('a')):
+        elif(self.hasFlag('a') and self.hasFlag('vers') == False):
             block = block.getLvlBlock(Block.Level.AVAIL)
             #no download to read from
             if(block == None):
                 log.error("Block "+title+" is not available in a vendor!")
                 return
             pass
+        
+        ver_range = ['0.0.0','']
+        #properly format and verify the passed in version range
+        if(self.getVar('vers') != None):
+            window = self.getVar('vers').split(':')
+            #validate first version range component (lower-bound, inclusive)
+            if(len(window) and Block.validVer(window[0], places=[1,2,3])):
+                ver_range[0] = Block.stdVer(window[0], rm_v=True, z_ext=True)
+            #validate second version range component (upper-bound, exclusive)  
+            if(len(window) > 1 and Block.validVer(window[1], places=[1,2,3])):
+                ver_range[1] = Block.stdVer(window[1], rm_v=True, z_ext=True)
+            
+            #if a ':' DNE, then zoom into only the given version
+            if(self.getVar('vers').find(':') == -1):
+                ver_range[1] = '-'
+            pass
 
-        print(block.readInfo(self.hasFlag('stats'), \
-            versions=self.hasFlag('vers'), \
-            ver_range=self.getVar('vers'), \
+        print(block.readInfo(self.hasFlag('stats'),
+            versions=self.hasFlag('vers'),
+            only_instls=self.hasFlag('i'), 
+            only_avail=self.hasFlag('a'),
+            ver_range=ver_range,
             see_changelog=self.hasFlag('changelog')))
         pass
 

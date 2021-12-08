@@ -739,20 +739,38 @@ class Block:
 
 
     @classmethod
-    def stdVer(cls, ver, add_v=False):
+    def stdVer(cls, ver, add_v=False, rm_v=False, z_ext=False):
         '''
-        Standardize the version argument by swapping _ with .
+        Standardize the version argument by swapping '_' with '.'. 'add_v' has 
+        higher precedence than 'rm_v'.
 
         Parameters:
             ver (str): word to perform replace on
             add_v (bool): determine if to add 'v' if DNE
+            rm_v (bool): detemine if to remove 'v' if exists
+            z_ext (bool): write version to have 3 places if less than 3 (zero-extend)
         Returns:
             (str): properly standardized version
         '''
+        #swap '_' for '.'
         ver = ver.replace('_','.')
+
+        #optionally remove 'v' from beginning
+        if(rm_v and len(ver) and ver[0] == 'v'):
+            ver = ver[1:]
         #optionally add 'v' to beginning
         if(add_v and len(ver) and ver[0] != 'v'):
             ver = 'v' + ver
+
+        #remove a trailing '.' if exists
+        if(len(ver) and ver[-1] == '.'):
+            ver = ver[:len(ver)-1]
+
+        #optionally zero-extend the version number
+        diff = 3 - len(ver.split('.'))
+        if(z_ext):
+            ver = ver + '.0'*diff
+
         return ver
 
 
@@ -2645,13 +2663,16 @@ class Block:
         return round(float(apt.getPathSize(self.getPath())/1000), 2)
 
 
-    def readInfo(self, stats=False, versions=False, ver_range=None, see_changelog=False):
+    def readInfo(self, stats=False, versions=False, ver_range=['0.0.0',''], see_changelog=False, 
+        only_instls=False, only_avail=False):
         '''
         Return information relevant to the current block (metadata).
 
         Parameters:
             stats (bool): determine if to print additional stats
             versions (bool): determine if to print the available versions
+            only_instls (bool): filter to only show specific version installs
+            only_avail (bool): filter to only show specific versions not installed
             ver_range (str): a constraint string for how to filter available versions (v1.0.0:1.9.0)
             see_changelog (bool): determine if to read the changelog file (if exists)
         Returns:
@@ -2766,8 +2787,6 @@ class Block:
                 status = ''
                 partials = []
                 
-                #:todo: constrain the list to what the user inputted
-                
                 #check if this specific version is installed to cache
                 if(x in instl_versions and \
                     (x != instl_versions[0] or instl_versions.count(x) > 1)):
@@ -2783,10 +2802,23 @@ class Block:
                 if(len(instl_versions) and x == instl_versions[0]):
                     partials += ['latest']
                 
-                #do not write version if constrained to list only installed versions
-                if(ver_range != None):
-                    if(ver_range.lower() == 'i' and len(status) + len(partials) == 0):
-                        continue
+                #do not write version if constrained to list only installed specific versions
+                if(only_instls and (len(status) + len(partials) == 0) and not only_avail):
+                    continue
+
+                #do not write version if constrained to list only non-installed specific versions
+                if(only_avail and (len(status) + len(partials) > 0) and not only_instls):
+                    continue
+
+                #constrain to version range
+                if(self.cmpVer(ver_range[0], x) == x and (ver_range[1] == '' or self.cmpVer(ver_range[1], x) == ver_range[1])):
+                    pass
+                #zoom to only singular version
+                elif(Block.stdVer(x, rm_v=True) == ver_range[0] and ver_range[1] == '-'):
+                    pass
+                #do not add this version to the text
+                else:
+                    continue
 
                 #add new line for next version to be formatted
                 info_txt = info_txt + '{:<12}'.format(x)+' '+ \
