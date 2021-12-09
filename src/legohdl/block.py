@@ -604,7 +604,7 @@ class Block:
 
         #synch changes with remote repository
         if(dry_run == False):
-            self._repo.push()
+            print(self._repo.push())
 
         #7. install latest version to the cache
         if(no_install == False and dry_run == False):
@@ -2354,6 +2354,8 @@ class Block:
             return self._M 
         #read from metadata
         self._M = self.getMeta('vendor')
+        if(self._M == None):
+            self._M = ''
         return self._M
 
 

@@ -76,6 +76,8 @@ class Git:
             output (str): stdout from the subprocess
             error (str): stderr from the subprocess
         '''
+        #filter out blank arguments
+        args = tuple(filter(lambda a: len(a), args))
         resp,err = apt.execute('git', '-C', self.getPath(), *args, quiet=self.QUIET, returnoutput=True)
         return resp,err
 
@@ -119,7 +121,7 @@ class Git:
         if(self.remoteExists()):
             if(dry_run == False):
                 log.info("Pushing changes to remote url "+self.getRemoteURL()+"...")
-
+            #add arg to the list of git commands
             _,err = self.git('push','--set-upstream',self.getRemoteName(),self.getBranch(),'--tags',arg)
             return (err.count("fatal:") == 0)
         else:
