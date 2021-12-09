@@ -67,18 +67,18 @@ A _library_ is the namespace that encapsulates [blocks](./glossary.md#block). Wh
 A _package manager_ is a software program used to automate the finding, installing, and uninstalling of modular groups of related files ("packages").
 
 ### Partial version
-A _partial_ _version_ consists of either 1 or 2 of the most significant parts of a semantic version (version X or version X.X). 
+A _partial_ _version_ consists of either 1 or 2 of the most significant parts of a semantic version (version X or version X.X).
+
+### Plugin
+A _plugin_ is a custom program to build the current block's design. It can consist of an executable or script written in any language to call any desired tool to perform any task such as linting, simulation, synthesis, generating a bitstream, or programming a bitfile to a target FPGA.
+
+In general, every plugin should read the [blueprint](./glossary.md#blueprint) file to collect necessary data such as the VHDL and Verilog files used for the current design. It is up to the developer to do what they want with the blueprint's collected information.
 
 ### Profile
-A _profile_ is a folder/repository that is a combination of settings defined in a `legohdl.cfg` file, a template defined in a `template/` folder, and/or a set of scripts defined in a `scripts/` folder. Profiles are used to share or save certain configurations.
+A _profile_ is a folder/repository that is a combination of settings defined in a `legohdl.cfg` file, a template defined in a `template/` folder, and/or a set of plugins defined in a `plugins/` folder. Profiles are used to share or save certain configurations.
 
 ### Project
 A _project_ is a folder containing HDL source code and any supporting files. The only difference between it and a block is it does not have the special Block.cfg file.
-
-### Script
-A _script_ is a set of instructions to be determine how to build the current block's design. It can be a file written in any language and call any desired tool to perform anything such as linting, simulation, synthesis, generating a bitstream, or programming a bitfile to a target FPGA.
-
-In general, every script should read the [blueprint](./glossary.md#blueprint) file to collect necessary data such as the VHDL and Verilog files used for the current design. It is up to the developer to do what they want with the blueprint's collected information.
 
 ### Semantic Versioning
 _Semantic_ _Versioning_ is a popular versioning scheme consisting of 3 different levels of numerical significance: major, minor, and patch.
@@ -106,7 +106,7 @@ VHSIC Hardware Description Language, or _VHDL_, is a hardware description langau
 ### Workflow
 A _workflow_ is a developer's particular needs and actions required on HDL source files. The typical HDL workflow consists of linting, synthesis, simulation, implementation, generating a bitstream, and programming a bitfile to a target FPGA.
 
-Developers define their own workflow by writing [scripts](./glossary.md#script) based on their available tools, environments, and needs.
+Developers define their own workflow by writing [plugins](./glossary.md#plugin) based on their available tools, environments, and needs.
 
 ### Workspaces
 _Workspaces_ define what vendors to use and the local path to search under for downloaded blocks. Each workspace has its own cache for block installations, but can share vendors.

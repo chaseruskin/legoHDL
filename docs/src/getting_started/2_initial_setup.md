@@ -8,7 +8,7 @@ Running `legohdl` for the first time will prompt the user if they would like to 
 $ legohdl
 INFO:	This looks like your first time running legoHDL!
 Would you like to use a profile (import settings, template,
-and scripts)? [y/n]
+and plugins)? [y/n]
 ```
 
 Returning `y` gives the user 3 choices.
@@ -31,10 +31,10 @@ INFO:	Overloading legohdl.cfg...
 INFO:	[workspace] [primary] path = 
 INFO:	[workspace] [primary] vendors = 
 INFO:	Importing template...
-INFO:	Importing scripts...
-INFO:	Copying hello.py to built-in scripts folder...
-INFO:	Overloading scripts in legohdl.cfg...
-INFO:	[script] hello = python /Users/chase/.legohdl/scripts/hello_world.py
+INFO:	Importing plugins...
+INFO:	Copying hello.py to built-in plugins folder...
+INFO:	Overloading plugins in legohdl.cfg...
+INFO:	[plugin] hello = python /Users/chase/.legohdl/plugins/hello_world.py
 ```
 legoHDL then asks for your name
 ```
@@ -64,7 +64,7 @@ Development
    get          print instantiation code for an HDL unit
    graph        visualize HDL dependency graph
    export       generate a blueprint file
-   build        execute a custom configured script
+   build        execute a custom configured plugin
    release      set a newer version for the current block
    del          delete a block from the local workspace path
 
