@@ -3,12 +3,13 @@
 # Script: apparatus.py
 # Author: Chase Ruskin
 # Description:
-#   This script is used to hold the legohdl settings. It includes code for 
-#   safety measures to ensure the proper settings exits, as well as helper
-#   functions that are used throughout other scripts.
+#   This script is used to hold the legohdl settings. 
+# 
+#   It includes code for safety measures to ensure the proper settings exits, 
+#   as well as helper functions that are used throughout other scripts.
 # ------------------------------------------------------------------------------
 
-import os,shutil,stat,glob,subprocess
+import os,shutil,stat,subprocess
 import copy,platform
 import logging as log
 from .cfgfile import CfgFile as cfg
