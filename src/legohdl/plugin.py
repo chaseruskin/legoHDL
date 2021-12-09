@@ -1,9 +1,9 @@
 # ------------------------------------------------------------------------------
 # Project: legohdl
-# Script: script.py
+# Script: plugin.py
 # Author: Chase Ruskin
 # Description:
-#   The Script class. A Script object can be used to execute a command through
+#   The Plugin class. A Plugin object can be used to execute a command through
 #   legohdl, very similiar to how aliases function within the command-line.
 # ------------------------------------------------------------------------------
 
@@ -13,15 +13,15 @@ from .apparatus import Apparatus as apt
 from .map import Map
 
 
-class Script:
+class Plugin:
 
-    #store all scripts in class variable
+    #store all plugins in class variable
     Jar = Map()
     
 
     def __init__(self, alias, cmd_call):
         '''
-        Create a script object from its string. The string may contain a
+        Create a plugin object from its string. The string may contain a
         valid path to a file to be executed by some program.
         
         Parameters:
@@ -40,8 +40,8 @@ class Script:
 
     def hasPath(self):
         '''
-        Returns true if the script object does have a path within its command.
-        Also is used to determine if the script is 'openable'.
+        Returns true if the plugin object does have a path within its command.
+        Also is used to determine if the plugin is 'openable'.
         
         Parameters:
             None
@@ -53,7 +53,7 @@ class Script:
 
     def setAlias(self, a):
         '''
-        Set the Script's alias name. Removes old key pair in dictionary
+        Set the Plugin's alias name. Removes old key pair in dictionary
         if one existed. Adds self as value to new key name in dictionary.
         
         Parameters:
@@ -62,10 +62,10 @@ class Script:
             (bool): if successfully added to Jar (key name not taken)
         '''
         if(a == '' or a == None):
-            log.error("Script alias cannot be empty.")
+            log.error("Plugin alias cannot be empty.")
             return False
         if(a.lower() in self.Jar.keys()):
-            log.error('Could not set script alias to '+a+' due to name conflict.')
+            log.error('Could not set plugin alias to '+a+' due to name conflict.')
             return False
 
         #remove old key if it exists
@@ -73,14 +73,14 @@ class Script:
             del self.Jar[self.getAlias()]
         #set the alias name and add it to the jar
         self._alias = a
-        #add this script to the dictionary
+        #add this plugin to the dictionary
         self.Jar[self.getAlias()] = self
         return True
 
 
     def setCommand(self, c):
         '''
-        Change the command. Appropriately update the path to script if exists.
+        Change the command. Appropriately update the path to plugin if exists.
         
         Parameters:
             c (str): command call
@@ -89,16 +89,16 @@ class Script:
         '''
         #do not change command if it is blank
         if(len(c.strip()) == 0):
-            log.error("Script "+self.getAlias()+" cannot have an empty command.")
+            log.error("Plugin "+self.getAlias()+" cannot have an empty command.")
             return False
 
         self._cmd = c
         #chop up the string into words
         cmd_parts = c.split()
-        #the program to execute the script is always first
+        #the program to execute the plugin is always first
         self._prog = cmd_parts[0]
 
-        #from the remaining words try to guess which is script path (if exists)
+        #from the remaining words try to guess which is plugin path (if exists)
         for word in cmd_parts[1:]:
             if(os.path.exists(word)):
                 self._path = word
@@ -113,7 +113,7 @@ class Script:
     @classmethod
     def printList(cls):
         '''
-        Prints formatted list for scripts with alias and the commands.
+        Prints formatted list for plugins with alias and the commands.
 
         Parameters:
             None
@@ -130,7 +130,7 @@ class Script:
 
     def getAlias(self):
         '''
-        Returns the script's name.
+        Returns the plugin's name.
         
         Parameters:
             None
@@ -142,7 +142,7 @@ class Script:
 
     def execute(self, args=[]):
         '''
-        Execute the script's command.
+        Execute the plugin's command.
 
         Parameters:
             args ([str]): list of additional arguments to go along with the command
@@ -174,25 +174,25 @@ class Script:
         Parameters:
             None
         Returns:
-            self._cmd (str): the entire command for this script
+            self._cmd (str): the entire command for this plugin
         '''
         return self._cmd
 
 
     @classmethod
     def load(cls):
-        '''Load scripts from settings.'''
+        '''Load plugins from settings.'''
         
-        scpts = apt.SETTINGS['script']
+        scpts = apt.SETTINGS['plugin']
         for alias,cmd in scpts.items():
-            Script(alias, cmd)
+            Plugin(alias, cmd)
         pass
 
 
     @classmethod
     def save(cls):
         '''
-        Serializes the Script objects and saves them to the settings dictionary.
+        Serializes the Plugin objects and saves them to the settings dictionary.
 
         Parameters:
             None
@@ -204,7 +204,7 @@ class Script:
         for scpt in cls.Jar.values():
             serialized[scpt.getAlias()] = scpt.getCommand()
         #update settings dictionary
-        apt.SETTINGS['script'] = serialized
+        apt.SETTINGS['plugin'] = serialized
         apt.save()
         pass
 

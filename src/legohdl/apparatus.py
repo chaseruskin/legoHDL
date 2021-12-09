@@ -51,7 +51,7 @@ class Apparatus:
 
     #all available options allowed to be edited within the legohdl.cfg
     #append all non-field options here (editable dictionaries)
-    OPTIONS = ['label', 'script', 'workspace', 'vendor', 'placeholders', 'metadata']
+    OPTIONS = ['label', 'plugin', 'workspace', 'vendor', 'placeholders', 'metadata']
 
     LAYOUT = { 'general' : {
                     'active-workspace' : cfg.NULL, 
@@ -66,7 +66,7 @@ class Apparatus:
                 'label' : {
                     'local' : {}, 
                     'global' : {}},
-                'script' : {},
+                'plugin' : {},
                 'workspace' : {},
                 'vendor' : {},
                 'placeholders' : {},
@@ -119,7 +119,7 @@ class Apparatus:
         
         os.makedirs(cls.HIDDEN, exist_ok=True)
         os.makedirs(cls.HIDDEN+"workspaces/", exist_ok=True)
-        os.makedirs(cls.HIDDEN+"scripts/", exist_ok=True)
+        os.makedirs(cls.HIDDEN+"plugins/", exist_ok=True)
         os.makedirs(cls.MARKETS, exist_ok=True)
         os.makedirs(cls.TEMPLATE, exist_ok=True)
         os.makedirs(cls.HIDDEN+"profiles/", exist_ok=True)
@@ -164,7 +164,7 @@ class Apparatus:
         '''
         cls.generateDefault(dict,"local","global",header="label")
 
-        cls.generateDefault(dict,"vendor","script","workspace","metadata","placeholders",header=None)
+        cls.generateDefault(dict,"vendor","plugin","workspace","metadata","placeholders",header=None)
 
         cls.generateDefault(bool,"multi-develop","overlap-global","mixed-language",header="general")
         cls.generateDefault(int,"refresh-rate",header="general")
@@ -498,7 +498,7 @@ class Apparatus:
         '''
         Execute the command and runs it through the terminal. 
         
-        Immediately exits the script if return code is non-zero and 
+        Immediately exits the command if return code is non-zero and 
         `returnoutput` is false.
 
         Parameters:
@@ -533,7 +533,7 @@ class Apparatus:
         #use os.system()
         else:
             rc = os.system(code_line)
-        #immediately stop script upon a bad return code
+        #immediately stop command upon a bad return code
         if(rc):
             exit(rc)
 
@@ -966,7 +966,7 @@ class Apparatus:
     'general|profiles' : (cfg.VAR,\
 '''
 ; description:
-;   A list of profiles to import settings, templates, and/or scripts.
+;   A list of profiles to import settings, templates, and/or plugins.
 ; value: 
 ;   list of strings'''),
 
@@ -1032,12 +1032,13 @@ class Apparatus:
 ; value:
 ;   assignments of string'''),
 
-    'script' : (cfg.HEADER,\
+    'plugin' : (cfg.HEADER,\
 '''
-; --- Script settings ---
+; --- Plugin settings ---
 ; description:
-;   User-defined aliases to execute backend scripts/tools. Assignments can
-;   be either a string or list of strings separated by commas.
+;   User-defined aliases to execute plugins (scripts/tools/commands). 
+;   Assignments can be either a string or list of strings separated by 
+;   commas.
 ; value:
 ;   assignments of string'''),
 

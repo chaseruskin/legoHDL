@@ -4,7 +4,7 @@
 # Author: Chase Ruskin
 # Description:
 #   The Profile class. A Profile object can have legohdl settings, template,
-#   and/or scripts that can be maintained and imported. They are mainly used
+#   and/or plugins that can be maintained and imported. They are mainly used
 #   to save certain setting configurations (loadouts) and share settings across
 #   users.
 # ------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ class Profile:
 
     def importLoadout(self, ask=False):
         '''
-        Load settings, template and/or scripts into legohdl from the profile.
+        Load settings, template and/or plugins into legohdl from the profile.
 
         Parameters:
             ask (bool): explicitly prompt user at each stage in the process
@@ -137,7 +137,7 @@ class Profile:
         '''
 
 
-        def deepMerge(src, dest, setting="", scripts_only=False):
+        def deepMerge(src, dest, setting="", plugins_only=False):
             '''
             Merge all values found in src to override destination into a modified
             dictionary.
@@ -145,7 +145,7 @@ class Profile:
             Parameters:
                 src (dict): multi-level dictionary to grab values from
                 dest (dict): multi-level dictionary to append values in
-                scripts_only (bool): only add in script settings
+                plugins_only (bool): only add in plugin settings
             Returns:
                 dest (dict): the modified dictionary with new overridden values
             '''
@@ -160,18 +160,18 @@ class Profile:
                     else:
                         next_level = next_level + k
                 #print(next_level)
-                #only proceed when importing just scripts
-                if(scripts_only and next_level.startswith(cfg.HEADER[0]+'script'+cfg.HEADER[1]) == 0):
+                #only proceed when importing just plugins
+                if(plugins_only and next_level.startswith(cfg.HEADER[0]+'plugin'+cfg.HEADER[1]) == 0):
                     continue
-                #skip scripts if not explicitly set in argument
-                elif(scripts_only == False and next_level.startswith(cfg.HEADER[0]+'script'+cfg.HEADER[1]) == 1):
+                #skip plugins if not explicitly set in argument
+                elif(plugins_only == False and next_level.startswith(cfg.HEADER[0]+'plugin'+cfg.HEADER[1]) == 1):
                     continue
                 #go even deeper into the dictionary tree
                 if(isinstance(v, dict)):
                     if(k not in dest.keys()):
                         dest[k] = dict()
                         #log.info("Creating new dictionary "+k+" under "+next_level+"...")
-                    deepMerge(v, dest[k], setting=next_level, scripts_only=scripts_only)
+                    deepMerge(v, dest[k], setting=next_level, plugins_only=plugins_only)
                 #combine all settings except if profiles setting exists in src
                 elif(k != 'profiles'):
                     #log.info("Overloading "+next_level+"...")
@@ -221,32 +221,32 @@ class Profile:
                 shutil.rmtree(apt.HIDDEN+"template/",onerror=apt.rmReadOnly)
                 shutil.copytree(self.getProfileDir()+"template/", apt.HIDDEN+"template/")
             pass
-        #copy in scripts
-        if(self.hasScripts()):
-            act = (ask == False) or apt.confirmation("Import scripts?", warning=False)
+        #copy in plugins
+        if(self.hasPlugins()):
+            act = (ask == False) or apt.confirmation("Import plugins?", warning=False)
             if(act):
-                log.info('Importing scripts...')
-                scripts = os.listdir(self.getProfileDir()+'scripts/')
-                for scp in scripts:
-                    log.info("Copying "+scp+" to built-in scripts folder...")
-                    if(os.path.isfile(self.getProfileDir()+'scripts/'+scp)):
-                        #copy contents into built-in script folder
-                        prfl_script = open(self.getProfileDir()+'scripts/'+scp, 'r')
-                        copied_script = open(apt.HIDDEN+'scripts/'+scp, 'w')
+                log.info('Importing plugins...')
+                plugins = os.listdir(self.getProfileDir()+'plugins/')
+                for scp in plugins:
+                    log.info("Copying "+scp+" to built-in plugins folder...")
+                    if(os.path.isfile(self.getProfileDir()+'plugins/'+scp)):
+                        #copy contents into built-in plugin folder
+                        prfl_plugin = open(self.getProfileDir()+'plugins/'+scp, 'r')
+                        copied_plugin = open(apt.HIDDEN+'plugins/'+scp, 'w')
                         #transfer file data via writing it to file
-                        script_data = prfl_script.readlines()
-                        copied_script.writelines(script_data)
+                        plugin_data = prfl_plugin.readlines()
+                        copied_plugin.writelines(plugin_data)
                         #close files
-                        prfl_script.close()
-                        copied_script.close()
+                        prfl_plugin.close()
+                        copied_plugin.close()
                         pass
                     pass
                 if(self.hasSettings()):
-                    log.info('Overloading scripts in '+apt.SETTINGS_FILE+'...')
+                    log.info('Overloading plugins in '+apt.SETTINGS_FILE+'...')
                     with open(self.getProfileDir()+apt.SETTINGS_FILE, 'r') as f:
                         prfl_settings = cfg.load(f)
                         dest_settings = copy.deepcopy(apt.SETTINGS)
-                        dest_settings = deepMerge(prfl_settings, dest_settings, scripts_only=True)
+                        dest_settings = deepMerge(prfl_settings, dest_settings, plugins_only=True)
                         apt.SETTINGS = dest_settings
             pass
         #write to log file
@@ -308,9 +308,9 @@ class Profile:
         default = Profile("default")
 
         def_settings = dict()
-        def_settings['script'] = \
+        def_settings['plugin'] = \
         {
-            'hello'  : 'python '+apt.ENV_NAME+'/scripts/hello_world.py',
+            'hello'  : 'python '+apt.ENV_NAME+'/plugins/hello_world.py',
         }
         def_settings['workspace'] = dict()
         def_settings['workspace']['primary'] = {'path' : None, 'vendors' : None}
@@ -338,9 +338,9 @@ class Profile:
             f.write('-- code here')
             pass
 
-        #create default scripts
-        os.makedirs(default.getProfileDir()+"scripts/")
-        shutil.copyfile(apt.getProgramPath()+"data/hello.py", default.getProfileDir()+"scripts/hello.py")
+        #create default plugins
+        os.makedirs(default.getProfileDir()+"plugins/")
+        shutil.copyfile(apt.getProgramPath()+"data/hello.py", default.getProfileDir()+"plugins/hello.py")
 
         if(importing):
             default.importLoadout()
@@ -465,7 +465,7 @@ class Profile:
         '''
         last_prfl = cls.ReadLastImport()
         # :todo: also indicate if an update is available
-        print('{:<16}'.format("Profile"),'{:<12}'.format("Last Import"),'{:<16}'.format(apt.SETTINGS_FILE),'{:<12}'.format("template/"),'{:<12}'.format("scripts/"))
+        print('{:<16}'.format("Profile"),'{:<12}'.format("Last Import"),'{:<16}'.format(apt.SETTINGS_FILE),'{:<12}'.format("template/"),'{:<12}'.format("plugins/"))
         print("-"*16+" "+"-"*12+" "+"-"*16+" "+"-"*12+" "+"-"*12)
         for prfl in cls.Jar.values():
             #check remote repository if it is the latest commits locally
@@ -475,10 +475,10 @@ class Profile:
             #collect information about each profile
             last_import = 'yes' if(last_prfl == prfl) else '-'
             has_template = 'yes' if(prfl.hasTemplate()) else '-'
-            has_scripts = 'yes' if(prfl.hasScripts()) else '-'
+            has_plugins = 'yes' if(prfl.hasPlugins()) else '-'
             has_settings = 'yes' if(prfl.hasSettings()) else '-'   
             #print the information in a nice format to the console            
-            print('{:<16}'.format(prfl.getName()),'{:<12}'.format(last_import),'{:<16}'.format(has_settings),'{:<12}'.format(has_template),'{:<12}'.format(has_scripts))
+            print('{:<16}'.format(prfl.getName()),'{:<12}'.format(last_import),'{:<16}'.format(has_settings),'{:<12}'.format(has_template),'{:<12}'.format(has_plugins))
             pass
 
 
@@ -517,8 +517,8 @@ class Profile:
         return os.path.exists(self.getProfileDir()+"template/")
 
 
-    def hasScripts(self):
-        return os.path.exists(self.getProfileDir()+"scripts/")
+    def hasPlugins(self):
+        return os.path.exists(self.getProfileDir()+"plugins/")
 
 
     def hasSettings(self):
@@ -537,7 +537,7 @@ class Profile:
     #     Imported Last: {self.isLastImport()}
     #     settings: {self.hasSettings()}
     #     template: {self.hasTemplate()}
-    #     scripts: {self.hasScripts()}
+    #     plugins: {self.hasPlugins()}
     #         repo: {self._repo}
     #     '''
 

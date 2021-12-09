@@ -10,7 +10,7 @@ import shutil,os
 
 from legohdl.language import Language
 
-from .script import Script
+from .plugin import Plugin
 from .map import Map
 from .git import Git
 from .profile import Profile
@@ -29,24 +29,24 @@ def main():
 
     if(False):
         print("\n--- SCRIPT.PY ---")
-        s = Script("superScript","make -f /Users/chase/Develop/HDL/SimpleCircuit/makefile alyze")
+        s = Plugin("superPlugin","make -f /Users/chase/Develop/HDL/SimpleCircuit/makefile alyze")
         print(s)
         m = Map()
         m['KEY'] = 2
         print(m.keys())
 
-        print(Script.Jar)
-        print(Script.Jar['superscript'])
-        s.setAlias('scriptII')
-        Script.Jar['SCRIPTII'].setCommand("echo \"hello world!\"")
-        print(Script.Jar['scriptII'])
-        Script.Jar['SCRIPTII'].setCommand("")
-        Script("SCRIPTX", "\n")
-        print(Script.Jar['scriptII'])
+        print(Plugin.Jar)
+        print(Plugin.Jar['superplugin'])
+        s.setAlias('pluginII')
+        Plugin.Jar['SCRIPTII'].setCommand("echo \"hello world!\"")
+        print(Plugin.Jar['pluginII'])
+        Plugin.Jar['SCRIPTII'].setCommand("")
+        Plugin("SCRIPTX", "\n")
+        print(Plugin.Jar['pluginII'])
         print("Dictionary:")
-        print(Script.Jar)
-        print(Script.Jar.__instancecheck__(Map))
-        print(isinstance(Script.Jar, dict))
+        print(Plugin.Jar)
+        print(Plugin.Jar.__instancecheck__(Map))
+        print(isinstance(Plugin.Jar, dict))
         pass
 
     if(False):

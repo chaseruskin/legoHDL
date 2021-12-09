@@ -70,10 +70,10 @@ for in every dependent block. An @ symbol will be automatically prepended to the
 Special default labels for *.vhd and *.vhdl are @VHDL-LIB, @VHDL-SRC, @VHDL-SIM, @VHDL-SIM-TOP, @VHDL-SRC-TOP, and for *.v and *.sv are @VLOG-LIB, @VLOG-SRC, \
 @VLOG-SIM, @VLOG-SIM-TOP, @VLOG-SRC-TOP.",
 
-        'script' : 
-"User-defined aliases to execute backend scripts/tools. The command field is what will be executed \
+        'plugin' : 
+"User-defined aliases to execute plugins (scripts/programs). The command field is what will be executed \
 as-if through the terminal. Enter the alias to legoHDL during the build command prepended with a + symbol. \
-Use scripts to read a block's exported blueprint file and perform custom actions on the collected data.",
+Use plugins to read a block's exported blueprint file and perform custom actions on the collected data.",
 
         'workspace' : 
 "User-defined spaces for working with blocks. Blocks must appear in the workspace's path to be \
@@ -88,8 +88,8 @@ to a remote repository, its remote connection is empty. Vendors identified by re
 be renamed. Vendors have a .vndr file at the root of their directory.",
 
         'profiles' : 
-"A list of profiles to import settings, templates, and/or scripts. Add a template by creating a template/ folder \
-at the root of a profile. Add scripts into a scripts/ folder to be available for import. Add a legohdl.cfg file to configure \
+"A list of profiles to import settings, templates, and/or plugins. Add a template by creating a template/ folder \
+at the root of a profile. Add plugins into a plugins/ folder to be available for import. Add a legohdl.cfg file to configure \
 settings that will be merged in when importing that profile. A profile directory is indicated by having a .prfl file.",
     }
 
@@ -214,9 +214,9 @@ settings that will be merged in when importing that profile. A profile directory
                         #do not save getting an error on field.get() (NaN)
                         pass
                     pass
-                # --- SCRIPTS and MARKETS ---
-                elif(key == 'script' or key == 'vendor'):
-                    #load records directly from table for scripts
+                # --- PLUG-INS and MARKETS ---
+                elif(key == 'plugin' or key == 'vendor'):
+                    #load records directly from table for plugins
                     self._tk_vars[key] = {}
                     for record in self._tb.getAllValues():
                         self._tk_vars[key][record[0]] = record[1]
@@ -428,7 +428,7 @@ settings that will be merged in when importing that profile. A profile directory
             self._comments.grid(row=i, column=0, columnspan=10, padx=10, pady=2, sticky='w')
             i = -1
             pass
-        elif(section == 'script'):
+        elif(section == 'plugin'):
             self._tk_vars[section] = apt.SETTINGS[section].copy()
             #create the table object
             self._tb = Table(self._field_frame, 'alias', 'command', row=0, col=0)
@@ -516,7 +516,7 @@ class Table:
         '''
         Create an editable tkinter treeview object as a table containing records.
         '''
-         #create a new frame for the scripts table
+         #create a new frame for the plugins table
         tb_frame = tk.Frame(tk_frame)
         tb_frame.grid(row=row, column=col, sticky='nsew')
         self._initial_row = row

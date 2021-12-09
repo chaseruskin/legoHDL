@@ -28,7 +28,7 @@ from .test import main as test
 from .vendor import Vendor
 from .workspace import Workspace
 from .profile import Profile
-from .script import Script
+from .plugin import Plugin
 from .label import Label
 from .git import Git
 
@@ -264,7 +264,7 @@ class legoHDL:
     def runSetup(self):
         is_select = apt.confirmation("This looks like your first time running \
 legoHDL! Would you like to use a profile (import settings, template, and \
-scripts)?", warning=False)
+plugins)?", warning=False)
         if(is_select):
             #give user options to proceeding to load a profile
             resp = input("""Enter:
@@ -323,26 +323,26 @@ scripts)?", warning=False)
         cur_block = Block(os.getcwd(), self.WS())
         #make sure within a valid block directory
         if(cur_block.isValid() == False):
-            log.error("Cannot call a script from outside a block directory!")
+            log.error("Cannot call a plugin from outside a block directory!")
             return
-        #initialize all Scripts
-        Script.load()
-        #get the script name
-        script = self.getItem()
-        #make sure a valid script title is passed
-        if(script == None or script[0] != '+'):
-            log.error("Calling a script must begin with a '+'!")
+        #initialize all plugins
+        Plugin.load()
+        #get the plugin name
+        plug_in = self.getItem()
+        #make sure a valid plugin title is passed
+        if(plug_in == None or plug_in[0] != '+'):
+            log.error("Calling a plugin must begin with a '+'!")
             return
-        #make sure the script exists
-        elif(script[1:].lower() not in Script.Jar.keys()):
-            log.error("Script "+script[1:]+" does not exist!")
+        #make sure the plugin exists
+        elif(plug_in[1:].lower() not in Plugin.Jar.keys()):
+            log.error("Plugin "+plug_in[1:]+" does not exist!")
             return
-        #find index where build script name was called
-        script_i = sys.argv.index(script)
-        #all arguments after script name are passed to the script
-        script_args = sys.argv[script_i+1:]
+        #find index where build plugin name was called
+        plugin_i = sys.argv.index(plug_in)
+        #all arguments after plugin name are passed to the plugin
+        plugin_args = sys.argv[plugin_i+1:]
 
-        Script.Jar[script[1:]].execute(script_args)
+        Plugin.Jar[plug_in[1:]].execute(plugin_args)
         pass
 
 
@@ -922,27 +922,27 @@ scripts)?", warning=False)
             #split the variable into two components (if applicable)
             var_key, var_val = self.splitVar(v)
             #print(var_key, var_val)
-            #modify script
-            if(k == 'script'):
-                #load in script
-                Script.load()
+            #modify plugin
+            if(k == 'plugin'):
+                #load in plugin
+                Plugin.load()
                 #verify proper format is passed in
                 if(var_key == ''):
-                    log.error("Must provide a script alias.")
+                    log.error("Must provide a plugin alias.")
                     continue
 
                 #check if the value has the ENV word in it to replace
                 var_val = var_val.replace(apt.ENV_NAME, apt.HIDDEN)
 
-                #modify existing script
-                if(var_key.lower() in Script.Jar.keys()):
-                    Script.Jar[var_key].setCommand(var_val)
-                #create a new script
+                #modify existing plugins
+                if(var_key.lower() in Plugin.Jar.keys()):
+                    Plugin.Jar[var_key].setCommand(var_val)
+                #create a new plugin
                 else:
-                    Script(var_key, var_val)
+                    Plugin(var_key, var_val)
 
-                #save script modifications
-                Script.save()
+                #save plugin modifications
+                Plugin.save()
                 pass
             #modify label
             elif(k == 'label'):
@@ -1198,10 +1198,10 @@ scripts)?", warning=False)
     def _list(self):
         '''Run 'list' command.'''
 
-        if(self.hasFlag("script")):
-            #initialize all Scripts
-            Script.load()
-            Script.printList()
+        if(self.hasFlag("plugin")):
+            #initialize all plugins
+            Plugin.load()
+            Plugin.printList()
         elif(self.hasFlag("label")):
             #load labels
             Label.load()
@@ -1270,8 +1270,8 @@ scripts)?", warning=False)
             if(gui_mode):
                 #load labels
                 Label.load()
-                #load scripts
-                Script.load()
+                #load plugin
+                Plugin.load()
                 #enable GUI
                 settings_gui = GUI()
                 #adjust success if initialization failed
@@ -1292,26 +1292,26 @@ scripts)?", warning=False)
             log.info("Opening block template folder at... "+apt.fs(apt.TEMPLATE))
             apt.execute(apt.getEditor(), apt.fs(apt.TEMPLATE))
             pass
-        #open scripts
-        elif(self.hasFlag("script")):
-            #boot-up scripts
-            Script.load()
-            #want to open the specified script?
-            script_path = apt.fs(apt.HIDDEN+"scripts")
+        #open plugin
+        elif(self.hasFlag("plugin")):
+            #boot-up plugins
+            Plugin.load()
+            #want to open the specified plugin?
+            plugin_path = apt.fs(apt.HIDDEN+"plugin")
 
-            #maybe open up the script file directly if given a value
-            if(self._item.lower() in Script.Jar.keys()):
-                #able to open script?
-                scpt = Script.Jar[self._item.lower()]
+            #maybe open up the plugin file directly if given a value
+            if(self._item.lower() in Plugin.Jar.keys()):
+                #able to open plugin?
+                scpt = Plugin.Jar[self._item.lower()]
                 if(scpt.hasPath()):
-                    script_path = scpt.getPath()
-                    log.info("Opening script "+self._item+" at... "+script_path)
+                    plugin_path = scpt.getPath()
+                    log.info("Opening plugin "+self._item+" at... "+plugin_path)
                 else:
-                    exit(log.error("Script "+self._item+" has no path to open."))
+                    exit(log.error("Plugin "+self._item+" has no path to open."))
             elif(self.getItem() == None):
-                exit(log.error("Script "+self._item+" does not exist."))
+                exit(log.error("Plugin "+self._item+" does not exist."))
 
-            apt.execute(apt.getEditor(),script_path)
+            apt.execute(apt.getEditor(),plugin_path)
             pass
         #open profile
         elif(self.hasFlag("profile")):
@@ -1402,7 +1402,7 @@ scripts)?", warning=False)
         formatHelp("get","print instantiation code for an HDL unit")
         formatHelp("graph","visualize HDL dependency graph")
         formatHelp("export","generate a blueprint file")
-        formatHelp("build","execute a custom configured script")
+        formatHelp("build","execute a custom configured plugin")
         formatHelp("release","set a newer version for the current block")
         formatHelp("del","delete a block from the local workspace path")
         print()
