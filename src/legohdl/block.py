@@ -608,7 +608,7 @@ class Block:
 
         #synch changes with remote repository
         if(dry_run == False):
-            print(self._repo.push())
+            self._repo.push()
 
         #7. install latest version to the cache
         if(no_install == False and dry_run == False):
