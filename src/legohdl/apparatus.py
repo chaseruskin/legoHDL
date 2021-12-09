@@ -99,8 +99,8 @@ class Apparatus:
     MIN_RATE = -1
 
     #types of accepted HDL files to parse and interpret
-    VHDL_CODE = ["*.vhd", "*.vhdl", "*.VHD", "*.VHDL"]
-    VERILOG_CODE = ["*.v", "*.sv", "*.V", "*.SV"]
+    VHDL_CODE = ["*.vhd", "*.vhdl"]
+    VERILOG_CODE = ["*.v", "*.sv"]
 
     SRC_CODE = VHDL_CODE + VERILOG_CODE
 

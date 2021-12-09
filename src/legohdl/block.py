@@ -8,7 +8,7 @@
 #   root folder.
 # ------------------------------------------------------------------------------
 
-import os, shutil, stat, glob
+import os, shutil, stat, glob, re, fnmatch
 import logging as log
 from datetime import date
 from enum import Enum
@@ -2082,14 +2082,17 @@ class Block:
             path = self.getPath()
 
         srcs = []
-        #todo: find new method for ignoring build folder
-        #todo: use case insentivity on glob by using fnmatch and re modules
+        #ignores build folder with filter
+        bd = apt.getBuildDirectory()
+        #automatically does case insensitivity on glob for windows os
         for e in ext:
-            srcs = srcs + glob.glob(path+"[!build]*/**/"+e, recursive=True)
-            srcs = srcs + glob.glob(path+e)
+            srcs = srcs + glob.glob(path+"/**/*"+e, recursive=True)
             pass
         
-        srcs = set(srcs)
+        #omit build/ files
+        srcs = list(filter(lambda p : apt.fs(p).count(path+bd) == 0, srcs))
+        #print(srcs)
+
         return srcs
 
 
