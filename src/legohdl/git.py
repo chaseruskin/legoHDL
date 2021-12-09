@@ -207,15 +207,20 @@ class Git:
             None
         Returns:
             (bool): true if current branch is up-to-date or ahead of remote
+            (bool): true if connection was established
         '''
+        connected = True
         #sync with remote repository for any branch changes
         if(self.remoteExists()):
-            self.git('remote','update')
+            _,err = self.git('remote','update')
+            if(err.startswith("fatal:")):
+                log.error("Unable to access "+self._remote_url)
+                connected = False
             st,_ = self.git('status')
-            return (bool)(st.count('Your branch is up to date with') or st.count('Your branch is ahead of'))
+            return (bool)(st.count('Your branch is up to date with') or st.count('Your branch is ahead of')), connected
         #always is latest if no remote to sync with
         else:
-            return True
+            return True, connected
         
 
     @classmethod

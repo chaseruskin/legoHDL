@@ -214,7 +214,10 @@ class Vendor:
         if(self._repo.remoteExists()):
             log.info("Refreshing vendor "+self.getName()+"...")
             #check status from remote
-            if(self._repo.isLatest() == False):
+            up2date, connected = self._repo.isLatest()
+            if(connected == False):
+                return
+            if(up2date == False):
                 log.info('Pulling new updates...')
                 self._repo.pull()
                 log.info("success")

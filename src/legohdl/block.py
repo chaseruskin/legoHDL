@@ -505,9 +505,13 @@ class Block:
 
         #make sure the repository is up to date
         log.info("Verifying repository is up-to-date...")
-        if(self._repo.isLatest() == False):
+        up2date, connected = self._repo.isLatest()
+        if(connected == False):
+            return
+        if(up2date == False):
             log.error("Verify the repository is up-to-date before releasing.")
             return
+        
 
         highest_ver = self.getHighestTaggedVersion()
         p_maj,p_min,p_fix = Block.sepVer(highest_ver)

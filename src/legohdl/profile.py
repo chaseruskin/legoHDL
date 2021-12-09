@@ -286,7 +286,10 @@ class Profile:
         if(self._repo.remoteExists()):
             log.info("Refreshing profile "+self.getName()+"...")
             #check status from remote
-            if(self._repo.isLatest() == False):
+            up2date, connected = self._repo.isLatest()
+            if(connected == False):
+                return
+            if(up2date == False):
                 log.info('Pulling new updates...')
                 self._repo.pull()
                 log.info("success")
@@ -468,7 +471,7 @@ class Profile:
             #check remote repository if it is the latest commits locally
             if(check_updates):
                 print(prfl.getName()+" has update? ",end='')
-                print(str(not prfl._repo.isLatest()))
+                print(str(not prfl._repo.isLatest()[0]))
             #collect information about each profile
             last_import = 'yes' if(last_prfl == prfl) else '-'
             has_template = 'yes' if(prfl.hasTemplate()) else '-'
