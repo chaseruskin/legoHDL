@@ -2086,9 +2086,9 @@ class Block:
         bd = apt.getBuildDirectory()
         #automatically does case insensitivity on glob for windows os
         for e in ext:
-            srcs = srcs + glob.glob(path+"/**/*"+e, recursive=True)
+            srcs = srcs + glob.glob(path+"/**/"+e, recursive=True)
             pass
-        
+
         #omit build/ files
         srcs = list(filter(lambda p : apt.fs(p).count(path+bd) == 0, srcs))
         #print(srcs)
