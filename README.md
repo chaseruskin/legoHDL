@@ -120,9 +120,9 @@ When a developer is ready to build their project, whether it's for linting, simu
 ```
 
 ### __Write any workflow, for any tool.__
-Developers set up custom workflows by writing a build __script__ in any language as simple or as complex only once for their backend tool to be reused with all projects. No more copying makefiles or tcl scripts into every project.
+Developers set up custom workflows by writing and using __plugins__ for their backend tool to be reused with all projects. No more copying makefiles or tcl scripts into every project.
 ``` python
-# --A simple build script to run a VHDL simulation using GHDL--
+# --A simple plugin script to run a VHDL simulation using GHDL--
 import os
 #blueprint file is located in 'build/' directory
 os.chdir('build') 
@@ -158,7 +158,7 @@ if(tb_entity != None):
 ```
 
 ### __Roll solo or in teams.__
-legoHDL is designed to benefit the individual developer as well as those working together. Set up a __vendor__ to centralize IPs for you or your team to use and collaborate. Easily share scripts, settings, and templates across your team by setting up __profiles__.
+legoHDL is designed to benefit the individual developer as well as those working together. Set up a __vendor__ to centralize IPs for you or your team to use and collaborate. Easily share plugins, settings, and templates across your team by setting up __profiles__.
 
 ### __Completely customizable.__
 legoHDL has configurable aspects, such as custom labels, multiple workspaces, and vendor repositories, that can be easily changed through its integrated GUI.
@@ -226,7 +226,7 @@ Development
    get          print instantiation code for an HDL entity
    graph        visualize HDL dependency graph
    export       generate a blueprint file
-   build        execute a custom configured script
+   build        execute a custom configured plugin
    release      set a newer version for the current block
    del          delete a block from the local workspace path
 

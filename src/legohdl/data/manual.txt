@@ -127,7 +127,7 @@ NAME:
 
 SYNOPSIS:
         legohdl open <block>
-        legohdl open [<script-alias>] -script
+        legohdl open [<plugin-alias>] -plugin
         legohdl open <profile-name> -profile
         legohdl open (-template | -settings[=<mode>])
 
@@ -138,15 +138,15 @@ OPTIONS:
         <block>
                 :ref:
 
-        <script-alias>
-            The alias for the saved custom script within legoHDL. It is a 
-            user-defined key in settings under "scripts". If the alias's value 
+        <plugin-alias>
+            The alias for the saved custom plugin within legoHDL. It is a 
+            user-defined key in settings under "plugins". If the alias's value 
             is a command that references a real existing file, that file will be
             opened.
 
-        -script
-            The flag to indicate a script is trying to be opened. If no 
-            <script-alias> value is given with this flag, the built-in scripts 
+        -plugin
+            The flag to indicate a plugin is trying to be opened. If no 
+            <plugin-alias> value is given with this flag, the built-in plugins 
             folder will be opened.
 
         <profile-name>
@@ -339,22 +339,22 @@ OPTIONS:
 
 * build
 NAME:
-        build - Execute a custom backend script/tool command
+        build - Execute a custom backend plugin/tool command
 
 SYNOPSIS:
-        legohdl [build] +<script-alias> [<script-args...>]
+        legohdl [build] +<plugin-alias> [<plugin-args...>]
 
 DESCRIPTION:
         :todo:
 
 OPTIONS:
-        <script-alias>
-                The alias for the saved custom script within legoHDL. It will 
+        <plugin-alias>
+                The alias for the saved custom plugin within legoHDL. It will 
                 execute the command as if it was called through the terminal.
 
-        <script-args...>
+        <plugin-args...>
                 Any additonal arguments to pass directly to the called command.
-                All arguments after <script-alias> will be passed to the 
+                All arguments after <plugin-alias> will be passed to the 
                 executed command.
 
 
@@ -420,7 +420,7 @@ NAME:
 
 SYNOPSIS:
         legohdl list [<search>] [[-unit [-all]] | [-D] [-I] [-A]] [-alpha]
-        legohdl list [-script | -label | -vendor | -workspace | -profile | 
+        legohdl list [-plugin | -label | -vendor | -workspace | -profile | 
                 -template]
 
 DESCRIPTION:
@@ -452,8 +452,8 @@ OPTIONS:
                 Display all units, regardless if they are usable or not
                 according to what 'multi-develop' is set to.
         
-        -script
-                Return the list of scripts. Fields are alias and command.
+        -plugin
+                Return the list of plugins. Fields are alias and command.
 
         -label
                 Return the list of labels. Fields are label, extensions,
@@ -469,7 +469,7 @@ OPTIONS:
 
         -profile
                 Return the list of profiles. Fields are profile, last import, 
-                legohdl.cfg, template/, and scripts/.
+                legohdl.cfg, template/, and plugins/.
 
         -template
                 Return the list of all availble files from the current template.
@@ -666,7 +666,7 @@ SYNOPSIS:
                 [-active-workspace=<ws>] [-author=<name>] [-template=<dir>] 
                 [-multi-develop=<bool>] [-overlap-global=<bool>]
                 [-refresh-rate=<rt>] [-profile=<profile-name>] 
-                [-script=<alias>:<cmd>] [-workspace=<ws>:<path>] 
+                [-plugin=<alias>:<cmd>] [-workspace=<ws>:<path>] 
                 [-vendor=<vndr>[:<url>] [-link | -unlink]] [-auto-fit=<bool>]
                 [-newline-maps=<bool>] [-alignment=<int>] [-hanging-end=<bool>]
                 [default-language=<lang>] [-instance-name=<inst>] 
@@ -682,7 +682,7 @@ OPTIONS:
         
         -ask
                 Prompts the user before each import step (settings, template, 
-                scripts) if the following should be imported and overloaded.
+                plugins) if the following should be imported and overloaded.
 
         :todo:
 
