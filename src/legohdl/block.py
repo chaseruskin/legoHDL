@@ -8,7 +8,7 @@
 #   root folder.
 # ------------------------------------------------------------------------------
 
-import os, shutil, stat, glob, re, fnmatch
+import os, shutil, stat, glob
 import logging as log
 from datetime import date
 from enum import Enum
