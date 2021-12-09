@@ -55,9 +55,9 @@ class Block:
         'vlog-units']
 
     #metadata that must be written in [block] else the block is seen as corrupted
-    REQ_FIELDS = ['name', 'library', 'version', 'vendor', 'requires']
+    REQ_FIELDS = ['name', 'library', 'version', 'remote', 'vendor', 'requires']
 
-    #metadata that gets added as block loses detail (at AVAILABLE level)
+    #metadata that gets added as block loses detail (at AVAIL or VERS level)
     EXTRA_FIELDS = ['versions', 'size', 'vhdl-units', 'vlog-units']
 
     #supported files to be identified as "changelogs"
@@ -665,6 +665,10 @@ class Block:
 
         #merge skeleton metadata and custom configured user-defined metadata
         meta = apt.merge(self.LAYOUT,custom_meta)
+
+        #filter out omitted optional fields
+        for omit_field in apt.getDisabledlBlockFields():
+            del meta['block'][omit_field.lower()]
 
         #write new metadata file
         with open(self.getPath()+apt.MARKER, 'w') as mdf:
