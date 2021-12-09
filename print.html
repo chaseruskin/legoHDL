@@ -237,7 +237,7 @@ settings.</p>
 <pre><code>$ legohdl
 INFO:	This looks like your first time running legoHDL!
 Would you like to use a profile (import settings, template,
-and scripts)? [y/n]
+and plugins)? [y/n]
 </code></pre>
 <p>Returning <code>y</code> gives the user 3 choices.</p>
 <pre><code>$ y
@@ -255,10 +255,10 @@ INFO:	Overloading legohdl.cfg...
 INFO:	[workspace] [primary] path = 
 INFO:	[workspace] [primary] vendors = 
 INFO:	Importing template...
-INFO:	Importing scripts...
-INFO:	Copying hello.py to built-in scripts folder...
-INFO:	Overloading scripts in legohdl.cfg...
-INFO:	[script] hello = python /Users/chase/.legohdl/scripts/hello_world.py
+INFO:	Importing plugins...
+INFO:	Copying hello.py to built-in plugins folder...
+INFO:	Overloading plugins in legohdl.cfg...
+INFO:	[plugin] hello = python /Users/chase/.legohdl/plugins/hello_world.py
 </code></pre>
 <p>legoHDL then asks for your name</p>
 <pre><code>Enter your name:
@@ -285,7 +285,7 @@ Development
    get          print instantiation code for an HDL unit
    graph        visualize HDL dependency graph
    export       generate a blueprint file
-   build        execute a custom configured script
+   build        execute a custom configured plugin
    release      set a newer version for the current block
    del          delete a block from the local workspace path
 
@@ -310,23 +310,21 @@ Type 'legohdl help &lt;command&gt;' to read about the entered command.
 <h2 id="blocks"><a class="header" href="#blocks">Blocks</a></h2>
 <p>In the first tutorial, you will create your first block for the infamous full adder design. In the second tutorial, you will then make a new block containing a ripple-carry adder to use the full adder block.</p>
 <h2 id="vendors"><a class="header" href="#vendors">Vendors</a></h2>
-<p>In the first tutorial, you will create a new vendor. In the second tutorial, you will create a block for a mux design
-and publish it to the created vendor.</p>
+<p>In the first tutorial, you will create a new vendor. In the second tutorial, you will create a block for a mux design and publish it to the created vendor.</p>
 <h2 id="template"><a class="header" href="#template">Template</a></h2>
 <p>In the first tutorial, you will open the template and create a basic structure. In the second tutorial, you will use hidden files to create new files within an already created block.</p>
-<h2 id="scripts"><a class="header" href="#scripts">Scripts</a></h2>
-<p>In the first tutorial, you will open the scripts folder and design a simple script. In the second tutorial, you will use this script to build a block's design. In the third tutorial, you will create a more complex script to handle command-line arguments and custom labels.</p>
+<h2 id="plugins"><a class="header" href="#plugins">Plugins</a></h2>
+<p>In the first tutorial, you will open the plugins folder and design a simple plugin. In the second tutorial, you will use this plugin to build a block's design. In the third tutorial, you will create a more complex plugin to handle command-line arguments and custom labels.</p>
 <h2 id="workspaces"><a class="header" href="#workspaces">Workspaces</a></h2>
 <p>In the first tutorial, you will create a new workspace and switch between it and the previous workspace.</p>
 <h2 id="profiles"><a class="header" href="#profiles">Profiles</a></h2>
-<p>In the first tutorial, you will create a new profile to save a template layout. In the second tutorial, you will add settings, a script, and then import the existing profile.</p>
+<p>In the first tutorial, you will create a new profile to save a template layout. In the second tutorial, you will add settings, a plugin, and then import the existing profile.</p>
 <div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><h1 id="user-guide"><a class="header" href="#user-guide">User Guide</a></h1>
 <p>In this chapter, you will learn how to use legoHDL for common problems and scenarios.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="topic-guide"><a class="header" href="#topic-guide">Topic Guide</a></h1>
 <p>In this chapter, we go in-depth explaining legoHDL and its major concepts.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="reference"><a class="header" href="#reference">Reference</a></h1>
-<p>In this chapter, relevant technical information is supplied for thorough review
-of certain concepts.</p>
+<p>In this chapter, relevant technical information is supplied for thorough review of certain concepts.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
 <!-- Alternate quote: “Now I am the ruler of all the ocean! The waves obey my every whim!” -Ursula, The Little Mermaid -->
 <p>In this chapter, reference is provided for how to interface with legoHDL. The commands are loosely divided into two main categories: development and management.</p>
@@ -446,14 +444,14 @@ of certain concepts.</p>
 <h3 id="package-manager"><a class="header" href="#package-manager">Package Manager</a></h3>
 <p>A <em>package manager</em> is a software program used to automate the finding, installing, and uninstalling of modular groups of related files (&quot;packages&quot;).</p>
 <h3 id="partial-version"><a class="header" href="#partial-version">Partial version</a></h3>
-<p>A <em>partial</em> <em>version</em> consists of either 1 or 2 of the most significant parts of a semantic version (version X or version X.X). </p>
+<p>A <em>partial</em> <em>version</em> consists of either 1 or 2 of the most significant parts of a semantic version (version X or version X.X).</p>
+<h3 id="plugin"><a class="header" href="#plugin">Plugin</a></h3>
+<p>A <em>plugin</em> is a custom program to build the current block's design. It can consist of an executable or script written in any language to call any desired tool to perform any task such as linting, simulation, synthesis, generating a bitstream, or programming a bitfile to a target FPGA.</p>
+<p>In general, every plugin should read the <a href="./glossary.html#blueprint">blueprint</a> file to collect necessary data such as the VHDL and Verilog files used for the current design. It is up to the developer to do what they want with the blueprint's collected information.</p>
 <h3 id="profile"><a class="header" href="#profile">Profile</a></h3>
-<p>A <em>profile</em> is a folder/repository that is a combination of settings defined in a <code>legohdl.cfg</code> file, a template defined in a <code>template/</code> folder, and/or a set of scripts defined in a <code>scripts/</code> folder. Profiles are used to share or save certain configurations.</p>
+<p>A <em>profile</em> is a folder/repository that is a combination of settings defined in a <code>legohdl.cfg</code> file, a template defined in a <code>template/</code> folder, and/or a set of plugins defined in a <code>plugins/</code> folder. Profiles are used to share or save certain configurations.</p>
 <h3 id="project"><a class="header" href="#project">Project</a></h3>
 <p>A <em>project</em> is a folder containing HDL source code and any supporting files. The only difference between it and a block is it does not have the special Block.cfg file.</p>
-<h3 id="script"><a class="header" href="#script">Script</a></h3>
-<p>A <em>script</em> is a set of instructions to be determine how to build the current block's design. It can be a file written in any language and call any desired tool to perform anything such as linting, simulation, synthesis, generating a bitstream, or programming a bitfile to a target FPGA.</p>
-<p>In general, every script should read the <a href="./glossary.html#blueprint">blueprint</a> file to collect necessary data such as the VHDL and Verilog files used for the current design. It is up to the developer to do what they want with the blueprint's collected information.</p>
 <h3 id="semantic-versioning"><a class="header" href="#semantic-versioning">Semantic Versioning</a></h3>
 <p><em>Semantic</em> <em>Versioning</em> is a popular versioning scheme consisting of 3 different levels of numerical significance: major, minor, and patch.</p>
 <h3 id="shortcutting"><a class="header" href="#shortcutting">Shortcutting</a></h3>
@@ -471,7 +469,7 @@ of certain concepts.</p>
 <p>VHSIC Hardware Description Language, or <em>VHDL</em>, is a hardware description langauge used to model and structure digital circuits. It is one of the major languages legoHDL supports.</p>
 <h3 id="workflow"><a class="header" href="#workflow">Workflow</a></h3>
 <p>A <em>workflow</em> is a developer's particular needs and actions required on HDL source files. The typical HDL workflow consists of linting, synthesis, simulation, implementation, generating a bitstream, and programming a bitfile to a target FPGA.</p>
-<p>Developers define their own workflow by writing <a href="./glossary.html#script">scripts</a> based on their available tools, environments, and needs.</p>
+<p>Developers define their own workflow by writing <a href="./glossary.html#plugin">plugins</a> based on their available tools, environments, and needs.</p>
 <h3 id="workspaces-1"><a class="header" href="#workspaces-1">Workspaces</a></h3>
 <p><em>Workspaces</em> define what vendors to use and the local path to search under for downloaded blocks. Each workspace has its own cache for block installations, but can share vendors.</p>
 

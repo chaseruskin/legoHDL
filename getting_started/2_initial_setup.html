@@ -149,7 +149,7 @@
 <pre><code>$ legohdl
 INFO:	This looks like your first time running legoHDL!
 Would you like to use a profile (import settings, template,
-and scripts)? [y/n]
+and plugins)? [y/n]
 </code></pre>
 <p>Returning <code>y</code> gives the user 3 choices.</p>
 <pre><code>$ y
@@ -167,10 +167,10 @@ INFO:	Overloading legohdl.cfg...
 INFO:	[workspace] [primary] path = 
 INFO:	[workspace] [primary] vendors = 
 INFO:	Importing template...
-INFO:	Importing scripts...
-INFO:	Copying hello.py to built-in scripts folder...
-INFO:	Overloading scripts in legohdl.cfg...
-INFO:	[script] hello = python /Users/chase/.legohdl/scripts/hello_world.py
+INFO:	Importing plugins...
+INFO:	Copying hello.py to built-in plugins folder...
+INFO:	Overloading plugins in legohdl.cfg...
+INFO:	[plugin] hello = python /Users/chase/.legohdl/plugins/hello_world.py
 </code></pre>
 <p>legoHDL then asks for your name</p>
 <pre><code>Enter your name:
@@ -197,7 +197,7 @@ Development
    get          print instantiation code for an HDL unit
    graph        visualize HDL dependency graph
    export       generate a blueprint file
-   build        execute a custom configured script
+   build        execute a custom configured plugin
    release      set a newer version for the current block
    del          delete a block from the local workspace path
 

@@ -190,14 +190,14 @@
 <h3 id="package-manager"><a class="header" href="#package-manager">Package Manager</a></h3>
 <p>A <em>package manager</em> is a software program used to automate the finding, installing, and uninstalling of modular groups of related files (&quot;packages&quot;).</p>
 <h3 id="partial-version"><a class="header" href="#partial-version">Partial version</a></h3>
-<p>A <em>partial</em> <em>version</em> consists of either 1 or 2 of the most significant parts of a semantic version (version X or version X.X). </p>
+<p>A <em>partial</em> <em>version</em> consists of either 1 or 2 of the most significant parts of a semantic version (version X or version X.X).</p>
+<h3 id="plugin"><a class="header" href="#plugin">Plugin</a></h3>
+<p>A <em>plugin</em> is a custom program to build the current block's design. It can consist of an executable or script written in any language to call any desired tool to perform any task such as linting, simulation, synthesis, generating a bitstream, or programming a bitfile to a target FPGA.</p>
+<p>In general, every plugin should read the <a href="./glossary.html#blueprint">blueprint</a> file to collect necessary data such as the VHDL and Verilog files used for the current design. It is up to the developer to do what they want with the blueprint's collected information.</p>
 <h3 id="profile"><a class="header" href="#profile">Profile</a></h3>
-<p>A <em>profile</em> is a folder/repository that is a combination of settings defined in a <code>legohdl.cfg</code> file, a template defined in a <code>template/</code> folder, and/or a set of scripts defined in a <code>scripts/</code> folder. Profiles are used to share or save certain configurations.</p>
+<p>A <em>profile</em> is a folder/repository that is a combination of settings defined in a <code>legohdl.cfg</code> file, a template defined in a <code>template/</code> folder, and/or a set of plugins defined in a <code>plugins/</code> folder. Profiles are used to share or save certain configurations.</p>
 <h3 id="project"><a class="header" href="#project">Project</a></h3>
 <p>A <em>project</em> is a folder containing HDL source code and any supporting files. The only difference between it and a block is it does not have the special Block.cfg file.</p>
-<h3 id="script"><a class="header" href="#script">Script</a></h3>
-<p>A <em>script</em> is a set of instructions to be determine how to build the current block's design. It can be a file written in any language and call any desired tool to perform anything such as linting, simulation, synthesis, generating a bitstream, or programming a bitfile to a target FPGA.</p>
-<p>In general, every script should read the <a href="./glossary.html#blueprint">blueprint</a> file to collect necessary data such as the VHDL and Verilog files used for the current design. It is up to the developer to do what they want with the blueprint's collected information.</p>
 <h3 id="semantic-versioning"><a class="header" href="#semantic-versioning">Semantic Versioning</a></h3>
 <p><em>Semantic</em> <em>Versioning</em> is a popular versioning scheme consisting of 3 different levels of numerical significance: major, minor, and patch.</p>
 <h3 id="shortcutting"><a class="header" href="#shortcutting">Shortcutting</a></h3>
@@ -215,7 +215,7 @@
 <p>VHSIC Hardware Description Language, or <em>VHDL</em>, is a hardware description langauge used to model and structure digital circuits. It is one of the major languages legoHDL supports.</p>
 <h3 id="workflow"><a class="header" href="#workflow">Workflow</a></h3>
 <p>A <em>workflow</em> is a developer's particular needs and actions required on HDL source files. The typical HDL workflow consists of linting, synthesis, simulation, implementation, generating a bitstream, and programming a bitfile to a target FPGA.</p>
-<p>Developers define their own workflow by writing <a href="./glossary.html#script">scripts</a> based on their available tools, environments, and needs.</p>
+<p>Developers define their own workflow by writing <a href="./glossary.html#plugin">plugins</a> based on their available tools, environments, and needs.</p>
 <h3 id="workspaces"><a class="header" href="#workspaces">Workspaces</a></h3>
 <p><em>Workspaces</em> define what vendors to use and the local path to search under for downloaded blocks. Each workspace has its own cache for block installations, but can share vendors.</p>
 
