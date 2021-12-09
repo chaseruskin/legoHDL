@@ -703,7 +703,7 @@ class Apparatus:
 
     
     @classmethod
-    def getDisabledlBlockFields(cls):
+    def getDisabledBlockFields(cls):
         '''
         Returns a list of optionally disabled metadata fields for newly created
         blocks.

@@ -667,8 +667,10 @@ class Block:
         meta = apt.merge(self.LAYOUT,custom_meta)
 
         #filter out omitted optional fields
-        for omit_field in apt.getDisabledlBlockFields():
-            del meta['block'][omit_field.lower()]
+        for omit_field in apt.getDisabledBlockFields():
+            #verify the field to delete is in the data structure
+            if(omit_field.lower() in meta['block'].keys()):
+                del meta['block'][omit_field.lower()]
 
         #write new metadata file
         with open(self.getPath()+apt.MARKER, 'w') as mdf:
