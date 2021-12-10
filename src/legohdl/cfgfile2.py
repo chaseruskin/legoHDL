@@ -17,6 +17,8 @@ class cfg:
     S_END = ']'
     S_PARENT_DEC = ']-'
 
+    TAB = ' '*4
+
     #key/value tokens
     KEY_ASSIGNMENT = '='
     NULL = ''
@@ -75,7 +77,7 @@ class cfg:
                 v_i = l.find(cls.KEY_ASSIGNMENT)
                 
                 #skip if not in a valid key (must have a '=' on same line as key declaration)
-                if(len(key_l.split()) > 1 or key_l == '=' or v_i == -1):
+                if(len(key_l.split()) > 1 or key_l == '=' or v_i <= 0):
                     #else update
                     if(cur_key != None):
                         spacer = ' '
@@ -192,6 +194,42 @@ class cfg:
 
         pass
 
+    
+    @classmethod
+    def castStr(cls, val, tab_cnt=0, frmt_list=True):
+        '''
+        Return a string representation of a value.
+
+        Parameters:
+            val (*): any dtype value
+            tab_cnt (int): number of tabs to place before value
+            frmt_list (bool): determine if to use list symbols if val is list
+        Returns:
+            (str): conversion to string
+        '''
+        if(val == None):
+            return ''
+        if(isinstance(val, (int, str, bool))):
+            return (tab_cnt*cls.TAB) + str(val)
+        if(isinstance(val, list)):
+            #add beginning list symbol
+            returnee = ''
+            if(frmt_list):
+                returnee = (tab_cnt*cls.TAB)+cls.L_BEGIN+'\n'
+            #iterate through every value and add as a string
+            for x in val:
+                returnee = returnee + cls.castStr(x, (tab_cnt+1)*(frmt_list))
+                if(x != val[-1]):
+                    if(frmt_list):
+                        returnee = returnee+cls.L_SEP+'\n'
+                    else:
+                        returnee = returnee+' '
+                pass
+            #close the list with ending list symbol
+            if(frmt_list):
+                returnee = returnee + '\n'+(tab_cnt*cls.TAB)+cls.L_END
+            return returnee
+
 
     @classmethod
     def castBool(cls, val):
@@ -276,7 +314,9 @@ class cfg:
         e_i = val.rfind(')')
         elements = val[b_i+1:e_i].strip()
         #separate according to the list separator and trim any trailiing/leading whitespace
-        return [e.strip() for e in elements.split(cls.L_SEP)]
+        elements = [e.strip() for e in elements.split(cls.L_SEP)]
+        #filter out any blank elements
+        return list(filter(lambda a: len(a), elements))
 
 
     pass
@@ -286,4 +326,8 @@ data = {}
 cfg.read('./input.cfg', data)
 print(data)
 
-print(cfg.castList(data['block']['requires']))
+req = cfg.castList(data['block']['requires'])
+
+print(cfg.castStr(False))
+print(req)
+print(cfg.castStr(req, frmt_list=True))
