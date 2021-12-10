@@ -12,10 +12,10 @@ class cfg:
 
     #section tokens
     S_BEGIN = '['
-    S_CHILD_DEC = '>['
+    S_CHILD_DEC = '[:'
 
     S_END = ']'
-    S_PARENT_DEC = ']-'
+    S_PARENT_DEC = ':]'
 
     TAB = ' '*4
 
@@ -161,7 +161,10 @@ class cfg:
 
         #find string between section tokens and convert to lower-case
         b_i = line.find('[')
+        #trim scope operator from beginning
+        b_i = b_i+1 if(line[:b_i+2] == cls.S_CHILD_DEC) else b_i
         e_i = line.rfind(']')
+        e_i = e_i-1 if(line[e_i-1:] == cls.S_PARENT_DEC) else e_i
         new_key = line[b_i+1:e_i].lower()
 
         #clear the chain if new node is indicated by not being a child
@@ -179,7 +182,7 @@ class cfg:
         deeper_data[new_key] = {}
 
         #continue deeper down the tree
-        if(line.endswith(cls.S_PARENT_DEC)):
+        if(line.endswith(cls.S_PARENT_DEC) or (line.startswith(cls.S_CHILD_DEC) == False)):
             prev_parents += [new_key]
             pass
         
