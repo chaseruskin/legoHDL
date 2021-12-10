@@ -8,14 +8,16 @@
 # ------------------------------------------------------------------------------
 
 
-class cfg:
+class Cfg:
 
     #section tokens
+    S_DELIM = '.'
+
     S_BEGIN = '['
-    S_CHILD_DEC = '[:'
+    S_CHILD_DEC = '['+S_DELIM
 
     S_END = ']'
-    S_PARENT_DEC = ':]'
+    S_PARENT_DEC = S_DELIM+']'
 
     TAB = ' '*4
 
@@ -28,11 +30,33 @@ class cfg:
     L_END = ')'
     L_SEP = ','
 
-    @classmethod
-    def read(cls, filepath: str, data: dict):
+
+    def __init__(self, filepath, data=dict(), comments=dict(), en_mult_lvl=True):
+        '''
+        Create a CFG file object.
+
+        The _data attr stores all values as str and uses lower-case names
+        for sections/keys.
+
+        Parameters:
+            filepath (str): path to the cfg file
+            data (dict): initial data contents
+            comments (dict): optional comments for each data section/key
+            en_mult_lvl (bool): determine if to nest sections
+        Returns:    
+            None
+        '''
+        self._filepath = filepath
+        self._data = data
+        self._comments = comments
+        self._multi_level = en_mult_lvl
+        pass
+
+
+    def read(self):
         '''
         Opens the specified file and reads its contents to a dictionary
-        according to the spec.
+        according to the spec. Loads the _data attribute
 
         Parameters:
             filepath (str): path to the cfg file
@@ -46,12 +70,12 @@ class cfg:
         cur_sect = {}
         cur_key = None
         #open the file
-        with open(filepath, 'r') as ini:
+        with open(self._filepath, 'r') as ini:
             lines = ini.readlines()
             for l in lines:
                 in_str = next_in_str
                 #clean up any comments from the file line
-                l, next_in_str = cls._trimComments(l, in_str=in_str)
+                l, next_in_str = self._trimComments(l, in_str=in_str)
                 #trim off new lines and white space
                 l = l.strip()
                 #print(next_in_str)
@@ -65,19 +89,19 @@ class cfg:
                     continue
                 
                 #check for section
-                new_sect, prev_parents, cur_sect = cls._addSection(l, data, prev_parents, cur_sect)
+                new_sect, prev_parents, cur_sect = self._addSection(l, prev_parents, cur_sect)
                 if(new_sect):
                     continue
 
                 #check for new keys (properties)
-                key_l,_ = cls._trimComments(l, in_str=in_str, c_token='=')
+                key_l,_ = self._trimComments(l, in_str=in_str, c_token='=')
                 key_l = key_l.strip().lower()
 
                 #find first '='
-                v_i = l.find(cls.KEY_ASSIGNMENT)
+                v_i = l.find(Cfg.KEY_ASSIGNMENT)
                 
                 #skip if not in a valid key (must have a '=' on same line as key declaration)
-                if(len(key_l.split()) > 1 or key_l == '=' or v_i <= 0):
+                if(len(key_l.split()) > 1 or key_l == Cfg.KEY_ASSIGNMENT or v_i <= 0):
                     #else update
                     if(cur_key != None):
                         spacer = ' '
@@ -100,100 +124,96 @@ class cfg:
         return True
 
 
-    @classmethod
-    def _trimComments(cls, line, c_token=';', in_str=''):
+    def get(self, key, dtype=str):
         '''
-        Finds valid comments (outside of strings) and returns
-        the trimmed version of a line from a cfg file.
+        Returns the value behind the given key. 
         
+        Each key is converted to lower-case for comparison. Returns None if DNE.
+        Will return a copy of dictionary level if not enough components were given for
+        key (dtype must be set to dict to avoid None return). An empty key
+        will return the entire _data attr.
+
         Parameters:
-            line (str): line to parse
-            c_token (chr): character that is a comment symbol
-            in_str (chr): determine if to start off inside a string or not (the quote character)
+            key (str): sections/keys to traverse dictionary separated by delimiter
         Returns:
-            short_line (str): line without comments
-            in_str (bool): if the next line will be within a string
+            (dtype): str, int, bool, list
         '''
-        #store where invalid comments are in the line
-        invalid_comments = []
-        for i in range(len(line)):
-            #grab current character
-            ch = line[i]
-            #toggle upon encountering a quote
-            if((ch == '\'' or ch == '\"') and not len(in_str)):
-                in_str = ch
-            elif(len(in_str) and ch == in_str):
-                in_str = ''
-            elif(len(in_str) and ch == c_token):
-                invalid_comments += [i]
-        #trim off comments
-        c = line.find(c_token)
-        #continue scanning line to find where a valid comment starts
-        while(c > -1 and c in invalid_comments):
-            c = line[c+1:].find(c_token)
+        #split key into components
+        keys = [k.lower() for k in key.split(Cfg.S_DELIM)]
 
-        if(c > -1):
-            line = line[:c]
-        return line, in_str
+        #traverse through the dictionary structure to the requested key
+        node = self._data
+        #verify an empty key was not entered
+        if(keys != ['']):
+            for k in keys:
+                if(isinstance(node, dict) and k in node.keys()):
+                    node = node[k]
+                else:
+                    return None
+        #if the end result is still a dictionary then return None
+        if(isinstance(node, dict)):
+            if(dtype == dict):
+                return node.copy()
+            else:
+                return None
+
+        #perform proper cast
+        if(dtype == bool):
+            return Cfg.castBool(node)
+        elif(dtype == int):
+            return Cfg.castInt(node)
+        elif(dtype == list):
+            return Cfg.castList(node)
+        #default is to return str
+        return str(node)
 
 
-    @classmethod
-    def _addSection(cls, line, data, prev_parents, cur_sect):
+    def set(self, key, val, override=True):
         '''
-        Determines if the current line contains a valid section and adds to the dictionary
-        if so. Updates prev_parent if the new section is a parent type.
-        
+        Writes the value behind the given key. Each key is converted to lower-case
+        for comparison. Will make new key if DNE.
+
+        Will only overwrite a dictionary if val is a dtype dict and override is True.
+        Copies contents of dictionary to store.
+
         Parameters:
-            line (str): line to parse
-            data (dict): dictionary to fill and add new key
-            prev_parents ([str]): previous sections that may be stemming from this new section
-            cur_sect (dict): current inner-level of data dictionary
+            key (str): sections/keys to traverse dictionary separated by delimiter
+            val (any): any datatype value to be converted to string for dictionary entry
+            override (bool): determine if to override existing value if key exists
         Returns:
-            success (bool): if a new section was added
-            prev_parents ([str]): the previous parents
+            None
         '''
-        #skip if invalid beginning tokens
-        if(line[0] != cls.S_BEGIN and line.startswith(cls.S_CHILD_DEC) == False):
-            return False, prev_parents, cur_sect
-        #skip if invalid ending tokens
-        if(line[-1] != cls.S_END and line.endswith(cls.S_PARENT_DEC) == False):
-            return False, prev_parents, cur_sect
+        #split key into components as lower-case
+        keys = [k.lower() for k in key.split(Cfg.S_DELIM)]
 
-        #find string between section tokens and convert to lower-case
-        b_i = line.find('[')
-        #trim scope operator from beginning
-        b_i = b_i+1 if(line[:b_i+2] == cls.S_CHILD_DEC) else b_i
-        e_i = line.rfind(']')
-        e_i = e_i-1 if(line[e_i-1:] == cls.S_PARENT_DEC) else e_i
-        new_key = line[b_i+1:e_i].lower()
+        #traverse through the dictionary structure to the requested key
+        node = self._data
+        for k in keys[:len(keys)-1]:
+            if(isinstance(node, dict)):
+                if(k not in node.keys()):
+                    node[k] = dict()
+                node = node[k]
+            else:
+                return
 
-        #clear the chain if new node is indicated by not being a child
-        if(line.startswith(cls.S_CHILD_DEC) == False):
-            prev_parents = []
+        #if the end result is not a dictionary then return None
+        if(isinstance(node, dict) == False):
+            return
 
-        #traverse through tree to assign new dictionary
-        deeper_data = data
-        if(len(prev_parents)):
-            deeper_data = data[prev_parents[0]]
-            for p in prev_parents[1:]:
-                deeper_data = deeper_data[p]
+        #do not override the exisiting value if the key already exists
+        if(override == False and keys[-1] in node.keys()):
+            return
 
-        #create new key (overwrites any existing)
-        deeper_data[new_key] = {}
+        #write new value as string
+        node[keys[-1]] = Cfg.castStr(val)
 
-        #continue deeper down the tree
-        if(line.endswith(cls.S_PARENT_DEC) or (line.startswith(cls.S_CHILD_DEC) == False)):
-            prev_parents += [new_key]
-            pass
-        
-        #update current section dictionary
-        cur_sect = deeper_data[new_key]
-
-        return True, prev_parents, cur_sect
+        #overwrite entire dictionary and copy if val is a dtype dict
+        if(isinstance(val, dict)):
+            node[keys[-1]] = val.copy()
+        pass
 
 
-    @classmethod
-    def write(cls, filepath: str, data: dict):
+    def write(self):
 
         pass
 
@@ -204,7 +224,7 @@ class cfg:
         Return a string representation of a value.
 
         Parameters:
-            val (*): any dtype value
+            val (any): any dtype value
             tab_cnt (int): number of tabs to place before value
             frmt_list (bool): determine if to use list symbols if val is list
         Returns:
@@ -322,15 +342,110 @@ class cfg:
         return list(filter(lambda a: len(a), elements))
 
 
+    def _trimComments(self, line, c_token=';', in_str=''):
+        '''
+        Finds valid comments (outside of strings) and returns
+        the trimmed version of a line from a cfg file.
+        
+        Parameters:
+            line (str): line to parse
+            c_token (chr): character that is a comment symbol
+            in_str (chr): determine if to start off inside a string or not (the quote character)
+        Returns:
+            short_line (str): line without comments
+            in_str (bool): if the next line will be within a string
+        '''
+        #store where invalid comments are in the line
+        invalid_comments = []
+        for i in range(len(line)):
+            #grab current character
+            ch = line[i]
+            #toggle upon encountering a quote
+            if((ch == '\'' or ch == '\"') and not len(in_str)):
+                in_str = ch
+            elif(len(in_str) and ch == in_str):
+                in_str = ''
+            elif(len(in_str) and ch == c_token):
+                invalid_comments += [i]
+        #trim off comments
+        c = line.find(c_token)
+        #continue scanning line to find where a valid comment starts
+        while(c > -1 and c in invalid_comments):
+            c = line[c+1:].find(c_token)
+
+        if(c > -1):
+            line = line[:c]
+        return line, in_str
+
+
+    def _addSection(self, line, prev_parents, cur_sect):
+        '''
+        Determines if the current line contains a valid section and adds to the dictionary
+        if so. Updates prev_parent if the new section is a parent type.
+        
+        Parameters:
+            line (str): line to parse
+            prev_parents ([str]): previous sections that may be stemming from this new section
+            cur_sect (dict): current inner-level of data dictionary
+        Returns:
+            success (bool): if a new section was added
+            prev_parents ([str]): the previous parents
+        '''
+        #skip if invalid beginning tokens
+        if(line[0] != Cfg.S_BEGIN and line.startswith(Cfg.S_CHILD_DEC) == False):
+            return False, prev_parents, cur_sect
+        #skip if invalid ending tokens
+        if(line[-1] != Cfg.S_END and line.endswith(Cfg.S_PARENT_DEC) == False):
+            return False, prev_parents, cur_sect
+
+        #find string between section tokens and convert to lower-case
+        b_i = line.find(Cfg.S_BEGIN)
+        #trim scope operator from beginning
+        b_i = b_i+1 if(line[:b_i+2] == Cfg.S_CHILD_DEC) else b_i
+        e_i = line.rfind(Cfg.S_END)
+        e_i = e_i-1 if(line[e_i-1:] == Cfg.S_PARENT_DEC) else e_i
+        new_key = line[b_i+1:e_i].lower()
+
+        #clear the chain if new node is indicated by not being a child
+        if((line.startswith(Cfg.S_CHILD_DEC) == False) or (self._multi_level == False)):
+            prev_parents = []
+
+        #traverse through tree to assign new dictionary
+        nested_data = self._data
+        if(len(prev_parents)):
+            nested_data = self._data[prev_parents[0]]
+            for p in prev_parents[1:]:
+                nested_data = nested_data[p]
+
+        #create new key (overwrites any existing)
+        nested_data[new_key] = {}
+
+        #continue deeper down the tree
+        if(line.endswith(Cfg.S_PARENT_DEC) or (line.startswith(Cfg.S_CHILD_DEC) == False)):
+            prev_parents += [new_key]
+            pass
+        
+        #update current section dictionary
+        cur_sect = nested_data[new_key]
+
+        return True, prev_parents, cur_sect
+
+
     pass
 
 
-data = {}
-cfg.read('./input.cfg', data)
-print(data)
+c = Cfg('./input.cfg')
+c.read()
+print(c.get('general.key2', dtype=str))
 
-req = cfg.castList(data['block']['requires'])
+print(Cfg.castStr(c.get('BLOCK.requires', dtype=list), frmt_list=True))
 
-print(cfg.castStr(False))
-print(req)
-print(cfg.castStr(req, frmt_list=True))
+print(c.get('block.REQUIRES', dtype=list))
+
+b = c.get('block', dtype=dict)
+
+b['vendor'] = 'OTHER'
+
+c.set('block', b)
+
+print(c.get('general', dtype=dict))
