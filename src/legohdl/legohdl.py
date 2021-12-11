@@ -51,6 +51,9 @@ class legoHDL:
         #load the logging format
         log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.INFO)
 
+        #create environment variables
+        os.environ["LEGOHDL"] = apt.HIDDEN[:len(apt.HIDDEN)-1]
+
         #parse arguments
         self._command = self._item = ""
         #store args accordingly from command-line

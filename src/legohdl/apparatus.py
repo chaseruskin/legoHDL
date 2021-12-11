@@ -46,9 +46,6 @@ class Apparatus:
     #path to workspaces within legohdl
     WORKSPACE = HIDDEN+"workspaces/"
 
-    #replace this name with HIDDEN path to the tool when found in paths
-    ENV_NAME = "%LEGOHDL%"
-
     #all available options allowed to be edited within the legohdl.cfg
     #append all non-field options here (editable dictionaries)
     OPTIONS = ['label', 'plugin', 'workspace', 'vendor', 'placeholders', 'metadata']
@@ -559,9 +556,9 @@ class Apparatus:
             path.lower().startswith('git@')):
             return path
 
-        #replace 'environment' name with the hidden directory
-        path = path.replace(cls.ENV_NAME, cls.HIDDEN)
-        #expand the user variable
+        #expand the env variables
+        #path = os.path.expandvars(path)
+
         path = os.path.expanduser(path)
         #replace all backward slashes
         path = path.replace('\\','/')
@@ -721,7 +718,7 @@ class Apparatus:
     @classmethod
     def getEditor(cls):
         '''Returns the editor to the settings data-structure.'''
-        return cls.SETTINGS['general']['editor']
+        return os.path.expandvars(cls.SETTINGS['general']['editor'])
 
 
     @classmethod

@@ -100,7 +100,7 @@ class Plugin:
 
         #from the remaining words try to guess which is plugin path (if exists)
         for word in cmd_parts[1:]:
-            if(os.path.exists(word)):
+            if(os.path.exists(os.path.expandvars(word))):
                 self._path = word
                 break
         else:

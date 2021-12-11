@@ -191,7 +191,7 @@ class Profile:
                     #otherwise normal overwrite
                     else:
                         if(isinstance(v,str)):
-                            v = v.replace(apt.ENV_NAME, apt.HIDDEN[:len(apt.HIDDEN)-1])
+                            v = os.path.expandvars(v)
                         #do not allow a null value to overwrite an already established value
                         if(k in dest.keys() and v == cfg.NULL):
                             continue
@@ -199,6 +199,9 @@ class Profile:
                     #print to console the overloaded settings
                     log.info(next_level+" = "+str(v))
             return dest
+
+        #set env variable
+        os.environ["LEGOHDL_PRFL"] = self.getProfileDir()[:len(self.getProfileDir())-1]
 
         log.info("Importing profile "+self.getName()+"...")
         #overload available settings
