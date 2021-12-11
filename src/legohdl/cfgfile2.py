@@ -41,7 +41,7 @@ class Cfg:
         Parameters:
             filepath (str): path to the cfg file
             data (dict): initial data contents
-            comments (dict): optional comments for each data section/key
+            comments (dict): optional comments for each data section/key (single-level)
             en_mult_lvl (bool): determine if to nest sections
         Returns:    
             None
@@ -213,11 +213,144 @@ class Cfg:
         pass
 
 
-    def write(self):
+    def write(self, f=None, data=None, lvl=0, cur_key='', auto_indent=True, neat_keys=True):
+        '''
+        Saves the _data attr to a .cfg file.
+
+        Parameters:
+            None
+        Returns:
+            None 
+        '''
+        if(f == None):
+            f = self._filepath
+        if(data == None):
+            data = self._data
+
+        contents = ''
+        #compute number of spaces for nice formatting
+        T = Cfg.TAB*int(lvl)*int(auto_indent)
+
+        #compute longest key name
+        keys = list(filter(lambda a: isinstance(data[a], dict) == False, list(data.keys())))
+        longest_key = 0
+        for k in keys:
+            longest_key = len(k) if(len(k) > longest_key) else longest_key
+
+        #traverse through the data
+        for sect in list(data.keys()):
+            #write comments for the section or key
+            next_cur_key = cur_key+'.'+sect
+            if(len(cur_key) == 0):
+                next_cur_key = sect
+
+            cmt = self._writeComment(next_cur_key, newline=T+'; ')
+            contents = contents + T + cmt
+            if(len(cmt)):
+                contents = contents + T
+
+            #write section
+            if(isinstance(data[sect], dict)):
+                if(lvl > 0):
+                    contents = contents + Cfg.S_CHILD_DEC
+                else:
+                    contents = contents + Cfg.S_BEGIN
+                contents = contents + sect+Cfg.S_END+'\n'
+
+                #recursive call to proceed into the nested section
+                contents = contents + self.write(f, data[sect], lvl=(lvl+1), cur_key=next_cur_key)
+
+            #write the key/value pair
+            else:
+                print(sect,data[sect])
+                #write extra spacing for key assignments to align if trying to be neat
+                diff = (longest_key+1)-len(sect)
+                diff = diff if(neat_keys) else 1
+                spacer = len(T) + len(sect) + diff + len(Cfg.KEY_ASSIGNMENT) + 1
+                #write "<key> = "
+                contents = contents + sect + ' '*diff + Cfg.KEY_ASSIGNMENT + ' '
+                #obtain the string value
+                val = data[sect]
+                #check if it is a list hidden in dtype str
+                is_list = (len(val) > 1 and val[0] == Cfg.L_BEGIN and val[-1] == Cfg.L_END)
+                #determine number of spaces for a new line if rolling over text
+                if(is_list or neat_keys == False):
+                    spacer = 0
+                #write the value
+                contents = contents + self._writeWithRollOver(val,newline=' '*spacer)+'\n'
+            pass
+
+        if(lvl != 0):
+            return contents
+
+        with open(f, 'w') as ini:
+            contents = self._writeComment(cur_key) + contents
+            ini.write(contents)
 
         pass
 
+
+    def _writeComment(self, key, newline='; '):
+        key = key.lower()
+        if(key not in self._comments.keys()):
+            return ''
+        
+        cmt = '; '+self._comments[key]
+        #cmt = cmt.replace('\n',' ')+'\n'
+        return self._writeWithRollOver(cmt, newline=newline)+'\n'
+
     
+    def _writeWithRollOver(self, txt, newline='', limit=80):
+        frmt_txt = ''
+        limit = limit-len(newline)
+        #chop word
+        real_limit = limit
+        while(len(txt)):
+            next_line = txt[:limit]
+
+            entr = next_line.find('\n')
+            if(entr > -1 and entr <= limit):
+                print(next_line)
+                limit = entr
+                next_line = txt[:limit]
+                txt = next_line + ' ' + txt[limit+1:]
+            else:
+                #check if in middle of a word
+                if(len(next_line) > limit-1 and next_line[limit-1] != ' '):
+                    #check if next character is a space
+                    if(len(txt) > limit and txt[limit] != ' '):
+                        crsr = limit-1
+                        #find closest previous space
+                        sp_i = next_line.find(' ')
+                        #backtrack
+                        if(sp_i > -1):
+                            while(crsr > 0 and txt[crsr] != ' '):
+                                crsr -= 1
+                            #crsr -= 1
+                        #forward track
+                        else:
+                            while(crsr < len(txt) and txt[crsr] != ' '):
+                                crsr += 1
+                        limit = crsr
+                    pass
+            if(limit < 1):
+                limit = 1
+
+            frmt_txt = frmt_txt + txt[:limit]
+            if(limit < len(txt)):
+                frmt_txt = frmt_txt + '\n'+newline
+
+            if(limit < len(txt)-1 and txt[limit] == ' '):
+                limit = limit+1
+            txt = txt[limit:]
+            print(txt)
+            limit = real_limit
+            pass
+        print(frmt_txt)
+        return frmt_txt
+
+    
+
     @classmethod
     def castStr(cls, val, tab_cnt=0, frmt_list=True):
         '''
@@ -232,13 +365,15 @@ class Cfg:
         '''
         if(val == None):
             return ''
+        if(tab_cnt < 0):
+            tab_cnt = 0
         if(isinstance(val, (int, str, bool))):
             return (tab_cnt*cls.TAB) + str(val)
         if(isinstance(val, list)):
             #add beginning list symbol
             returnee = ''
             if(frmt_list):
-                returnee = (tab_cnt*cls.TAB)+cls.L_BEGIN+'\n'
+                returnee = cls.L_BEGIN+'\n'
             #iterate through every value and add as a string
             for x in val:
                 returnee = returnee + cls.castStr(x, (tab_cnt+1)*(frmt_list))
@@ -434,7 +569,15 @@ class Cfg:
     pass
 
 
-c = Cfg('./input.cfg')
+comments = {
+    '' : 'CFG file header',
+    'general' : '-'*78+''' -general section
+This is a multiline summary easily presented to the user so that all can be understood visually and within syntax.
+'''+'-'*78,
+    'general.key2' : 'some special key'
+
+}
+c = Cfg('./input.cfg', comments=comments)
 c.read()
 print(c.get('general.key2', dtype=str))
 
@@ -449,3 +592,8 @@ b['vendor'] = 'OTHER'
 c.set('block', b)
 
 print(c.get('general', dtype=dict))
+
+c.set('block.requires', Cfg.castStr(c.get('BLOCK.requires', dtype=list), tab_cnt=1, frmt_list=True))
+
+
+c.write('./output.cfg')
