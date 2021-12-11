@@ -474,6 +474,8 @@ class Block:
 
         if(dry_run):
             log.info("Performing dry-run...")
+        #variable to store details about the dry-run
+        release_report = '--- RELEASE REPORT ---\n'
 
         #check which command-line argument was used
         inc_major = next_ver.lower() == 'major'
@@ -546,9 +548,8 @@ class Block:
             log.error("Invalid next version given as "+next_ver+'.')
             return
 
-        if(dry_run):
-            print("Release point:",next_ver+".")
-        else:
+        release_report = release_report + "Release point: "+ next_ver+".\n"
+        if(dry_run == False):
             log.info("Saving block release point "+next_ver+"...")
 
         #ensure version has a 'v' in prepended
@@ -563,7 +564,14 @@ class Block:
         self._tags += [next_ver]
 
         self.setMeta('version', next_ver[1:])
-        self.updateRequires(dry_run=dry_run)
+        #check updates on block requirements
+        block_reqs = self.updateRequires(dry_run=dry_run)
+        release_report = release_report + 'Block Requirements:\n'
+        req_txt = '    N/A'
+        if(len(block_reqs)):
+            req_txt = '    '+apt.listToStr(block_reqs, delim='\n    ')
+        release_report = release_report + req_txt + '\n'
+
         #save changes if the real deal
         if(dry_run == False):
             self.save(force=True)
@@ -571,12 +579,11 @@ class Block:
         #check to write updates to changelog
         changelog_altered = False
         if(skip_changelog == False):
-            if(dry_run):
-                if(self.getChangelog() != None):
-                    print("Identified CHANGELOG",self.getChangelog(returnname=True),"to edit.")
-                else:
-                    print("Identified no CHANGELOG to edit.")
-            else:
+            cl_txt = "Identified no CHANGELOG to edit."
+            if(self.getChangelog() != None):
+                cl_txt = "Identified CHANGELOG "+self.getChangelog(returnname=True)+" to edit."
+            release_report = release_report + cl_txt+"\n"
+            if(dry_run == False):
                 changelog_altered = self.waitOnChangelog()
 
         #4. Make a new git commit
@@ -592,16 +599,14 @@ class Block:
         if(msg == None):
             msg = "Releases legohdl version "+next_ver
 
-        if(dry_run):
-            print("Commit message:",msg)
-        else:
+        release_report = release_report + "Commit message: "+msg+"\n"
+        if(dry_run == False):
             self._repo.commit(msg)
 
         #5. Create a new git tag
         
-        if(dry_run):
-            print("Git tag:",next_ver+apt.TAG_ID)
-        else:
+        release_report = release_report + "Git tag: "+next_ver+apt.TAG_ID+"\n"
+        if(dry_run == False):
             self._repo.git('tag',next_ver+apt.TAG_ID)
 
         #6. Push to remote and to vendor if applicable
@@ -617,8 +622,11 @@ class Block:
 
         #no vendor to publish to then release algorithm is complete
         if(len(self.getMeta('vendor')) == 0):
+            #complete dry-run and print report
             if(dry_run):
                 log.info("Dry run complete.")
+                release_report = release_report + 'Publish to vendor: False\n'
+                print(release_report)
             return
 
         publish = True
@@ -632,9 +640,12 @@ class Block:
         if(self._repo.remoteExists() == False):
             log.warning("Unable to publish to vendor "+vndr.getName()+" because a remote repository is not configured.")
             publish = False
-        
+
+        release_report = release_report + 'Publish to vendor: '+str(publish)+'\n'
+        #complete dry-run and print report
         if(dry_run):
             log.info("Dry run complete.")
+            print(release_report)
         #publish to the vendor
         elif(publish):
             vndr.publish(self)
@@ -2011,7 +2022,7 @@ class Block:
             quiet (bool): determine if to display messages to the user
             dry_run (bool): determine if to save any changes (False)
         Returns:
-            None
+            [(str)] : list of block requirements
         '''
         if(not quiet):
             log.info("Updating block's requirements...")
@@ -2072,20 +2083,9 @@ class Block:
             if(b not in block_requires.keys()):
                 update = True
                 break
-        #display requirements to user on dry run for informational purposes
-        if(dry_run):
-            spacer = '\n    '
-            if(not quiet):
-                #default is to show 'no requirements'
-                reqs_str = 'N/A'
-                #override default assignment with list of block identifiers
-                if(len(block_ids)):
-                    reqs_str = apt.listToStr(list(block_ids.values()),delim=spacer)
-                #print list to console
-                print("Identified Requirements:"+spacer+reqs_str)
-            pass
+
         #update the metadata for requirements
-        elif(update):
+        if(update and dry_run == False):
             if(not quiet):
                 log.info("Saving new requirements to metadata...")
             #save the changes for the real deal
@@ -2093,10 +2093,14 @@ class Block:
             self.save()
             pass
         #inform user that no changes to metadata occurred for block requirements
-        elif(not quiet):
-            log.info("No change in requirements found.")
+        elif(quiet == False):
+            if(update):
+                log.info("Detected changes in block requirements.")
+            else:
+                log.info("No change in block requirements found.")
             pass
-        pass
+        #return list of block requirements
+        return list(block_ids.values())
 
 
     def gatherSources(self, ext=apt.SRC_CODE, path=None):

@@ -200,6 +200,7 @@ class Unit:
             pkg_name = pkg_parts[1]
             
             dsgn_pkg = Unit.ICR(pkg_name, lang=self.getLang(), lib=lib_name)
+            
             #add the package object if its been found
             if(dsgn_pkg != None):
                 dsgn_pkgs += [dsgn_pkg] 
@@ -514,7 +515,9 @@ class Unit:
         i = 0
         for j in range(len(scores)):
             #calculate percentage based on computed score and number of possible points to get
-            percentage = round(scores[j]/(len(ports)+len(gens))*100,2)
+            percentage = scores[j]
+            if(len(ports)+len(gens) > 0):
+                percentage = round(scores[j]/(len(ports)+len(gens))*100,2)
             #format report to the console
             if(verbose):
                 print('{:<1}'.format(' '),'{:<40}'.format(potentials[j].getTitle()),'{:<4}'.format('='),'{:<5}'.format(percentage),"%")

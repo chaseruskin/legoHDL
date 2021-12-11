@@ -377,7 +377,7 @@ plugins)?", warning=False)
         
         unit_order,block_order = hierarchy.topologicalSort()
 
-        print('---  BLOCK ORDER   ---')
+        print('--- BLOCK ORDER ---')
         block_order.reverse()
         for i in range(0, len(block_order)):
             b = block_order[i]
