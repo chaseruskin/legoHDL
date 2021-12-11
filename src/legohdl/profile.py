@@ -184,14 +184,14 @@ class Profile:
                         if(isinstance(dest[k], list)):   
                             for i in v:
                                 #find replace all parts of string with ENV_NAME
-                                if(isinstance(v,str)):
-                                    v = os.path.expandvars(v)
+                                #if(isinstance(v,str)):
+                                    #v = os.path.expandvars(v)
                                 if(i not in dest[k]):
                                     dest[k] += [i]
                     #otherwise normal overwrite
                     else:
-                        if(isinstance(v,str)):
-                            v = os.path.expandvars(v)
+                        #if(isinstance(v,str)):
+                            #v = os.path.expandvars(v)
                         #do not allow a null value to overwrite an already established value
                         if(k in dest.keys() and v == cfg.NULL):
                             continue
@@ -200,8 +200,6 @@ class Profile:
                     log.info(next_level+" = "+str(v))
             return dest
 
-        #set env variable
-        os.environ["LEGOHDL_PRFL"] = self.getProfileDir()[:len(self.getProfileDir())-1]
 
         log.info("Importing profile "+self.getName()+"...")
         #overload available settings

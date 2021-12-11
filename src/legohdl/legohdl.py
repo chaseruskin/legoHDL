@@ -1300,7 +1300,7 @@ plugins)?", warning=False)
             #boot-up plugins
             Plugin.load()
             #want to open the specified plugin?
-            plugin_path = apt.fs(apt.HIDDEN+"plugin")
+            plugin_path = apt.fs(apt.HIDDEN+"plugins/")
 
             #maybe open up the plugin file directly if given a value
             if(self._item.lower() in Plugin.Jar.keys()):
@@ -1311,9 +1311,9 @@ plugins)?", warning=False)
                     log.info("Opening plugin "+self._item+" at... "+plugin_path)
                 else:
                     exit(log.error("Plugin "+self._item+" has no path to open."))
-            elif(self.getItem() == None):
+            elif(self.getItem() != None):
                 exit(log.error("Plugin "+self._item+" does not exist."))
-
+            log.info("Opening built-in plugins folder at... "+plugin_path)
             apt.execute(apt.getEditor(),plugin_path)
             pass
         #open profile
