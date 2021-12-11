@@ -185,7 +185,7 @@ class Profile:
                             for i in v:
                                 #find replace all parts of string with ENV_NAME
                                 if(isinstance(v,str)):
-                                    v = v.replace(apt.ENV_NAME, apt.HIDDEN[:len(apt.HIDDEN)-1])
+                                    v = os.path.expandvars(v)
                                 if(i not in dest[k]):
                                     dest[k] += [i]
                     #otherwise normal overwrite
@@ -313,7 +313,7 @@ class Profile:
         def_settings = dict()
         def_settings['plugin'] = \
         {
-            'hello'  : 'python '+apt.ENV_NAME+'/plugins/hello_world.py',
+            'hello'  : 'python $LEGOHDL/plugins/hello_world.py',
         }
         def_settings['workspace'] = dict()
         def_settings['workspace']['primary'] = {'path' : None, 'vendors' : None}
