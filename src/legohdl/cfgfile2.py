@@ -113,8 +113,8 @@ class Cfg:
                         cur_sect[cur_key] = cur_sect[cur_key] + spacer + l.strip()
                     continue
 
-                #assign to the key location in the data structure
-                cur_sect[key_l] = l[v_i+1:].strip()
+                #assign to the key location in the data structure (and expand tabs)
+                cur_sect[key_l] = l[v_i+1:].strip().replace('\t', Cfg.TAB)
                 #update which key is the current
                 cur_key = key_l
 
@@ -245,7 +245,12 @@ class Cfg:
                 next_cur_key = sect
 
             cmt = self._writeComment(next_cur_key, newline=T+'; ')
+            #write a new line if comment exists for a section
+            if((lvl != 0 or len(contents) or ('' in self._comments.keys())) and isinstance(data[sect], dict)):
+                contents = contents + '\n'
+            #write the comment (will be blank if not found)
             contents = contents + T + cmt
+            #add tab after the new newline from the comment
             if(len(cmt)):
                 contents = contents + T
 
@@ -259,25 +264,24 @@ class Cfg:
 
                 #recursive call to proceed into the nested section
                 contents = contents + self.write(f, data[sect], lvl=(lvl+1), cur_key=next_cur_key)
-
+                continue
             #write the key/value pair
-            else:
-                print(sect,data[sect])
-                #write extra spacing for key assignments to align if trying to be neat
-                diff = (longest_key+1)-len(sect)
-                diff = diff if(neat_keys) else 1
-                spacer = len(T) + len(sect) + diff + len(Cfg.KEY_ASSIGNMENT) + 1
-                #write "<key> = "
-                contents = contents + sect + ' '*diff + Cfg.KEY_ASSIGNMENT + ' '
-                #obtain the string value
-                val = data[sect]
-                #check if it is a list hidden in dtype str
-                is_list = (len(val) > 1 and val[0] == Cfg.L_BEGIN and val[-1] == Cfg.L_END)
-                #determine number of spaces for a new line if rolling over text
-                if(is_list or neat_keys == False):
-                    spacer = 0
-                #write the value
-                contents = contents + self._writeWithRollOver(val,newline=' '*spacer)+'\n'
+            print(sect,data[sect])
+            #write extra spacing for key assignments to align if trying to be neat
+            diff = (longest_key+1)-len(sect)
+            diff = diff if(neat_keys) else 1
+            spacer = len(T) + len(sect) + diff + len(Cfg.KEY_ASSIGNMENT) + 1
+            #write "<key> = "
+            contents = contents + sect + ' '*diff + Cfg.KEY_ASSIGNMENT + ' '
+            #obtain the string value
+            val = data[sect]
+            #check if it is a list hidden in dtype str
+            is_list = (len(val) > 1 and val[0] == Cfg.L_BEGIN and val[-1] == Cfg.L_END)
+            #determine number of spaces for a new line if rolling over text
+            if(is_list or neat_keys == False):
+                spacer = 0
+            #write the value
+            contents = contents + self._writeWithRollOver(val,newline=' '*spacer)+'\n'
             pass
 
         if(lvl != 0):
@@ -295,22 +299,22 @@ class Cfg:
         if(key not in self._comments.keys()):
             return ''
         
-        cmt = '; '+self._comments[key]
+        cmt = '; '+self._comments[key].replace('\t', Cfg.TAB)
         #cmt = cmt.replace('\n',' ')+'\n'
         return self._writeWithRollOver(cmt, newline=newline)+'\n'
 
     
     def _writeWithRollOver(self, txt, newline='', limit=80):
         frmt_txt = ''
-        limit = limit-len(newline)
-        #chop word
-        real_limit = limit
+        #use real limit after first line
+        real_limit = limit-len(newline)
+        #chop up words
         while(len(txt)):
             next_line = txt[:limit]
 
             entr = next_line.find('\n')
             if(entr > -1 and entr <= limit):
-                print(next_line)
+                #print(next_line)
                 limit = entr
                 next_line = txt[:limit]
                 txt = next_line + ' ' + txt[limit+1:]
@@ -319,6 +323,8 @@ class Cfg:
                 if(len(next_line) > limit-1 and next_line[limit-1] != ' '):
                     #check if next character is a space
                     if(len(txt) > limit and txt[limit] != ' '):
+                        #print(txt[limit])
+                        #print(limit)
                         crsr = limit-1
                         #find closest previous space
                         sp_i = next_line.find(' ')
@@ -335,18 +341,23 @@ class Cfg:
                     pass
             if(limit < 1):
                 limit = 1
-
+            #print(limit)
+            #add newly formatted line
             frmt_txt = frmt_txt + txt[:limit]
+            #print(txt[:limit])
+            #add newline characters
             if(limit < len(txt)):
                 frmt_txt = frmt_txt + '\n'+newline
 
-            if(limit < len(txt)-1 and txt[limit] == ' '):
+            if(limit < len(txt)-1 and (txt[limit] == ' ' or txt[limit] == '\n')):
                 limit = limit+1
+            #shrink the remaining text left to format
             txt = txt[limit:]
-            print(txt)
+            #print(txt)
+            #return to the actual limit
             limit = real_limit
             pass
-        print(frmt_txt)
+        #print(frmt_txt)
         return frmt_txt
 
     
@@ -365,6 +376,8 @@ class Cfg:
         '''
         if(val == None):
             return ''
+        hanging_end = False
+        #make sure tab is never negative
         if(tab_cnt < 0):
             tab_cnt = 0
         if(isinstance(val, (int, str, bool))):
@@ -385,7 +398,10 @@ class Cfg:
                 pass
             #close the list with ending list symbol
             if(frmt_list):
-                returnee = returnee + '\n'+(tab_cnt*cls.TAB)+cls.L_END
+                #drop closing list symbol onto newline
+                if(hanging_end):
+                    returnee = returnee + '\n'+(tab_cnt*cls.TAB)
+                returnee = returnee + cls.L_END
             return returnee
 
 
@@ -569,14 +585,39 @@ class Cfg:
     pass
 
 
-comments = {
-    '' : 'CFG file header',
-    'general' : '-'*78+''' -general section
-This is a multiline summary easily presented to the user so that all can be understood visually and within syntax.
-'''+'-'*78,
-    'general.key2' : 'some special key'
+comments = {}
 
-}
+#open the info.txt
+with open('./src/legohdl/data/info.txt', 'r') as info:
+    txt = info.readlines()
+    disp = False
+    key = ''
+    for line in txt:
+        sep = line.split()
+        #skip comments and empty lines
+        if(len(sep) == 0):
+            if(disp == True):
+                print()
+            continue
+        if(sep[0].startswith(';')):
+            continue
+        #find where to start
+        if(len(sep) > 1 and sep[0] == '*'):
+            key = sep[1].lower()
+            if(key == 'settings-header'):
+                key = ''
+            comments[key] = ''
+            disp = True
+        elif(disp == True):
+            if(sep[0] == '*'):
+                break
+            else:
+                end = line.rfind('\\')
+                if(end > -1):
+                    line = line[:end]
+                comments[key] = comments[key] + line
+    pass
+
 c = Cfg('./input.cfg', comments=comments)
 c.read()
 print(c.get('general.key2', dtype=str))

@@ -1,0 +1,81 @@
+; File: legoHDL Info
+; Author: Chase Ruskin
+; Modified: 12/10/2021
+; Created: 12/10/2021
+; Description:
+;   The informational text used in file comments, the gui, and other various
+;   things where lots of text is required.
+; Usage:
+;   All lines with ';' are skipped. Each line beginning with an '*' is evaluated
+;   to see what key the following text belongs to. Reads all the way up
+;   to the next '*'. Use a '\' to carry same text onto next line without a newline
+; Notes:
+;   title delimiter = '.' - separates a title into subsections
+;   explicit version = 'v1.0.0' or 'v1_0_0'
+;   block = title in M.L.N form
+;   Throughout the document, word entity/unit is used. This is synonymous with 
+;   the Verilog keyword module. any reference to entity also means module. Using
+;   the word entity may be replaced with a better term like: unit, part, chip.
+
+
+* settings-header
+------------------------------------------------------------------------------ \
+File: legohdl.cfg
+Description:
+    A properties file to configure the package manager and development tool,\
+    legoHDL.
+Help:
+    For more information on how to edit this file, read the documentation at 
+___.
+------------------------------------------------------------------------------\
+* end
+
+
+* general
+--- General settings ---
+Description:
+    Various assignments related to the tool in general.\
+* end
+
+
+* general.key2
+some special key!\
+* end
+
+
+* label
+--- Label settings ---
+Description:
+    User-defined groupings of filetypes, to be collected and written to the \
+blueprint file on export. Labels help bridge a custom workflow with the user's \
+backend tool.\
+* end
+
+
+* label.global
+Description:
+    Find these files throughout all blocks used in the current design.
+Value:
+    assignments of string\
+* end
+
+
+* label.local
+Description:
+  Find these files only throughout the current block.
+Value:
+  assignments of string\
+* end
+
+
+* workspace
+--- Workspace settings ---
+Description:
+  User-defined spaces for working with blocks. Blocks must appear in the \ 
+workspace's path to be recognized as downloaded. Multiple vendors can be configured \
+to one workspace and vendors can be shared across workspaces. Block downloads and \
+installations in one workspace are separate from those of another workspace.
+Value:
+    headers with 'path' assignment of string and 'vendor' assignment of list \
+of strings\
+* end
