@@ -532,7 +532,7 @@ plugins)?", warning=False)
             log.info("Blueprint found at: "+blueprint_path)
 
         #update block's dependencies
-        block.updateRequires(quiet=(verbose == False))
+        block.updateRequires(quiet=(not verbose))
         pass
 
 

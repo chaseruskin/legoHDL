@@ -1477,6 +1477,20 @@ class Block:
         '''Return the path to the marker file.'''
         return self.getPath()+apt.MARKER
 
+    
+    def getRequiresCode(self):
+        '''Returns a (str) representing how this block was used.'''
+        if(self.getLvl() == Block.Level.DNLD):
+            return 'unstable'
+        elif(self.getLvl() == Block.Level.INSTL):
+            return 'latest'
+        elif(self.getLvl() == Block.Level.VER):
+            #extract partial version
+            path,partial = os.path.split(self.getPath()[:len(self.getPath())-1])
+            return partial
+        else:
+            return 'v'+self.getVersion()
+
 
     def getPlaceholders(self, tmp_val):
         '''
@@ -1577,7 +1591,14 @@ class Block:
             #update what blocks have been identified for installation
             tracking += [title.lower()]
             #break titles into discrete sections
+            #print(title)
             M,L,N,V = Block.snapTitle(title)
+            #snap version
+            at_sym = V.find('@')
+            spec_ver = V[at_sym+1:]
+            v_ref = V[:at_sym-1].split('-')
+            V = spec_ver
+            #print(v_ref)
             #get the block associated with the title
             b = self.getWorkspace().shortcut(M+'.'+L+'.'+N, visibility=False)
             #check if the block was found in the current workspace
@@ -2007,7 +2028,7 @@ class Block:
         for dr in direct_reqs:
             if(dr.getLanguageFile().getOwner() not in block_reqs):
                 block_reqs += [dr.getLanguageFile().getOwner()]
-
+        #print(block_reqs)
         #store block titles in a map to compare without case sense
         block_titles = Map()
 
@@ -2020,23 +2041,34 @@ class Block:
             #skip listing itself as block dependency
             if(b == self):
                 continue
-            block_titles[b.getFull(inc_ver=True)] = b.getFull(inc_ver=True)
+            #add how it was used (latest, unstable, v1, etc.)
+            #print(b.getRequiresCode())
+            if(b.getFull(inc_ver=True).lower() not in block_titles.keys()):
+                block_titles[b.getFull(inc_ver=True)] = [b, []]
+            block_titles[b.getFull(inc_ver=True)][1] += [b.getRequiresCode()]
             pass
+
+        #formulate each block identifier into a complete str
+        block_ids = Map()
+        for b,parts in block_titles.items():
+            b_obj = parts[0]
+            identifier = b_obj.getFull(inc_ver=True, vers=parts[1])
+            block_ids[identifier] = identifier
 
         update = False
         
         #update if the length of the dependencies has changed
-        if(len(block_requires) != len(block_titles)):
+        if(len(block_requires) != len(block_ids)):
             update = True
 
         #iterate through every already-listed block derivative
         for b in block_requires.keys():
-            if(b not in block_titles.keys()):
+            if(b not in block_ids.keys()):
                 update = True
                 break
 
         #iterate through every found block requirement
-        for b in block_titles.keys():
+        for b in block_ids.keys():
             if(b not in block_requires.keys()):
                 update = True
                 break
@@ -2047,8 +2079,8 @@ class Block:
                 #default is to show 'no requirements'
                 reqs_str = 'N/A'
                 #override default assignment with list of block identifiers
-                if(len(block_titles)):
-                    reqs_str = apt.listToStr(list(block_titles.values()),delim=spacer)
+                if(len(block_ids)):
+                    reqs_str = apt.listToStr(list(block_ids.values()),delim=spacer)
                 #print list to console
                 print("Identified Requirements:"+spacer+reqs_str)
             pass
@@ -2057,7 +2089,7 @@ class Block:
             if(not quiet):
                 log.info("Saving new requirements to metadata...")
             #save the changes for the real deal
-            self.setMeta('requires', list(block_titles.values()))
+            self.setMeta('requires', list(block_ids.values()))
             self.save()
             pass
         #inform user that no changes to metadata occurred for block requirements
@@ -2119,7 +2151,7 @@ class Block:
         V = ''
         #:todo: will not work if (v1.0.0):adder (version and entity together)
         #find version label if possible
-        v_index = title.find('(v')
+        v_index = title.rfind('(')
         if(v_index > -1):
             V = cls.stdVer(title[v_index+1:-1])
             title = title[:v_index]
@@ -2346,8 +2378,16 @@ class Block:
         return top_dog,top_dsgn,top_tb
 
 
-    def getFull(self, inc_ver=False):
-        '''Returns nicely formatted block title (str).'''
+    def getFull(self, inc_ver=False, vers=[]):
+        '''
+        Returns nicely formatted block title (str).
+        
+        Parameters:
+            inc_ver (bool): determine if to include the version
+            vers ([str]): list of version to add as chain when including versions
+        Returns:
+            (str): formatted block identifier
+        '''
         # :todo: store MLNV as tuple and use single function for full-access
         title = ''
         #prepend vendor if not blank
@@ -2357,7 +2397,16 @@ class Block:
         title = title+self.L()+'.'+self.N()
         #append version if requested
         if(inc_ver):
-            title = title+"("+self.V()+")"
+            #describe which versions were based from specific version
+            v_chain = '@'+self.V()
+            #sort versions
+            vers = self.sortVersions(vers)
+            for v in vers:
+                v_chain = v + '-' + v_chain
+            # ignore chain when only a single version was used
+            # if(vers = [self.V()]):
+            #     v_chain = self.V()
+            title = title+"("+v_chain+")"
         return title
 
 
