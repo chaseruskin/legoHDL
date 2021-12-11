@@ -56,26 +56,39 @@ backend tool.\
 Description:
     Find these files throughout all blocks used in the current design.
 Value:
-    assignments of string\
+    <label> = <file-extension>\
 * end
 
 
 * label.local
 Description:
-  Find these files only throughout the current block.
+    Find these files only throughout the current block.
 Value:
-  assignments of string\
+    <label> = <file-extension>\
+* end
+
+
+* plugin
+--- Plugin settings ---
+Description:
+    User-defined aliases to execute plugins (scripts/tools/commands). \
+Assignments can be either a string or list of strings separated by \
+commas.
+Value:
+    <alias> = <command>\
 * end
 
 
 * workspace
 --- Workspace settings ---
 Description:
-  User-defined spaces for working with blocks. Blocks must appear in the \ 
-workspace's path to be recognized as downloaded. Multiple vendors can be configured \
-to one workspace and vendors can be shared across workspaces. Block downloads and \
-installations in one workspace are separate from those of another workspace.
+    User-defined spaces for working with blocks. Blocks must appear in the \
+workspace's path to be recognized as downloaded. Multiple vendors can be \
+configured to one workspace and vendors can be shared across workspaces. \
+Block downloads and installations in one workspace are separate from those \ 
+of another workspace.
 Value:
-    headers with 'path' assignment of string and 'vendor' assignment of list \
-of strings\
+    [.<workspace>]
+        path = <path>
+        vendors = (<vndr0>, <vndr1>, ...)\
 * end
