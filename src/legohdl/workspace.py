@@ -518,11 +518,14 @@ class Workspace:
         #[!] load the necessary blocks
         self.loadBlocks()
 
+        #collect if multi-develop is on
+        mult_dev = apt.getMultiDevelop()
+
         #split the title into parts
         M,L,N,_ = Block.snapTitle(title, inc_ent=False)
 
         #get all blocks from inventory
-        print('{:<16}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"+("(M)"*int(apt.getMultiDevelop()))),'{:<10}'.format("Version"),'{:<16}'.format("Vendor"))
+        print('{:<16}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"+("(M)"*int(mult_dev))),'{:<10}'.format("Version"),'{:<16}'.format("Vendor"))
         print("-"*16+" "+"-"*20+" "+"-"*8+" "+"-"*10+" "+"-"*16)
         #iterate through every vendor
         for vndr_k,vndrs in Block.Inventory.items():
@@ -555,6 +558,9 @@ class Workspace:
                         if(dnld):
                             bk = lvls[Block.Level.DNLD.value]
                         downloaded = 'D'
+                        # if(mult_dev):
+                        #     downloaded = 'D'
+                        #     installed = installed.lower()
                         disp_d = True
                     #one condition pair must be true to display the block
                     if((disp_a and avail) or (disp_i and instl) or (disp_d and dnld)):
@@ -572,7 +578,7 @@ class Workspace:
                     #check if can be updated
                     #prioritize installation level for checking updates
                     instllr = bk.getLvlBlock(Block.Level.INSTL)
-                    cmp_v = instllr.getVersion() if(instllr != None and apt.getMultiDevelop() == False) else bk.getVersion()
+                    cmp_v = instllr.getVersion() if(instllr != None and mult_dev == False) else bk.getVersion()
                     #a '^' is an update symbol indicating the latest referenced version (dnld or instl) is not the actually the latest version found
                     if(Block.cmpVer(bk.getHighestAvailVersion(), cmp_v) != cmp_v):
                         sts = sts+'  ^'
