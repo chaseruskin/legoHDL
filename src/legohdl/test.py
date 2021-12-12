@@ -355,11 +355,11 @@ def main():
 
         b = c.get('block', dtype=dict)
 
-        b['vendor'] = 'OTHER'
+        b['VENDOR'] = 'uf-ece'
 
         c.set('block', b)
-        b['VeRSIONS'] = 11
-        c.set('block', b)
+        c.set('block.VeRSIONS', 11)
+        #c.set('block', b)
 
         print(c.get('general', dtype=dict))
 
@@ -372,9 +372,10 @@ def main():
         print(k)
         print(k._name)
 
-        levels = c.get('general.level2c', dtype=dict, returnname=True)
-        #for i in levels.values():
-            #print(i._name, i)
+        levels = c.get('general.level2c', dtype=dict, returnkey=True)
+        print(levels._name)
+        for i in levels.keys():
+            print(levels[i]._name)
 
 
         d = Section(name="Block")
@@ -396,4 +397,6 @@ def main():
 
         c.set('workspace', ws, override=True)
         print(c.get('workspace', dtype=dict))
+
+        print(c.get('general.key', dtype=int) == 10)
     pass

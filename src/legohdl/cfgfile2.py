@@ -151,7 +151,7 @@ class Cfg:
         return True
 
 
-    def get(self, key, dtype=str, returnname=False):
+    def get(self, key, dtype=str, returnkey=False):
         '''
         Returns the value behind the given key. 
         
@@ -162,10 +162,10 @@ class Cfg:
 
         Parameters:
             key (str): sections/keys to traverse dictionary separated by delimiter
-            returname (bool): determine if to return the true key name and val
+            returnkey (bool): determine if to return just the str or Key object
         Returns:
             (dtype): str, int, bool, list or
-            ((str, dtype)) : true key name and converted datatype
+            (Key) : true key name and its converted datatype
         '''
         #split key into components
         keys = [k.lower() for k in key.split(Cfg.S_DELIM)]
@@ -184,7 +184,7 @@ class Cfg:
             if(dtype == dict or dtype == Section):
                 cp = Section(name=node._name)
                 for k in node.keys():
-                    cp[k] = self.get(key+'.'+k, dtype=dict)
+                    cp[k] = self.get(key+'.'+k, dtype=dict, returnkey=returnkey)
                 return cp
             else:
                 return None
@@ -203,8 +203,10 @@ class Cfg:
         else:
             val = str(node)
 
-        if(returnname):
-            return true_key, val
+        #return Key object with its value (converted) and true name
+        if(returnkey):
+            return Key(true_key, val)
+        #return just the converted value
         return val
 
 
@@ -292,8 +294,7 @@ class Cfg:
             if((lvl != 0 or len(contents) or ('' in self._comments.keys())) and isinstance(data[sect], Cfg.SECT)):
                 contents = contents + '\n'
             #write the comment (will be blank if not found)
-            if(len(cmt)):
-                contents = contents + T + cmt
+            contents = contents + cmt
 
             #write section
             if(isinstance(data[sect], Cfg.SECT)):
@@ -342,6 +343,7 @@ class Cfg:
         key = key.lower()
         if(key not in self._comments.keys()):
             return ''
+        print(newline)
         
         cmt = newline+self._comments[key].replace('\t', Cfg.TAB)
         return self._writeWithRollOver(cmt, newline=newline)+'\n'
@@ -544,9 +546,17 @@ class Cfg:
         Returns:
             [(str)] : list of strings divided from val
         '''
+        if(isinstance(val, Key)):
+            val = val._val
         #return empty list
         if(val == Cfg.NULL or val == None):
             return []
+
+        #replace square brackets with new smooth brackets
+        if(val[0] == '['):
+            val = Cfg.L_BEGIN + val[1:]
+        if(val[-1] == ']'):
+            val = val[:len(val)-1] + Cfg.L_END
 
         #check if using list tokens
         if(val[0] != Cfg.L_BEGIN or val[-1] != Cfg.L_END):
