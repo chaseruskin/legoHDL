@@ -345,7 +345,7 @@ class Cfg:
             return ''
         print(newline)
         
-        cmt = newline+self._comments[key].replace('\t', Cfg.TAB)
+        cmt = newline+self._comments[key].strip()
         return self._writeWithRollOver(cmt, newline=newline)+'\n'
 
     
@@ -365,6 +365,9 @@ class Cfg:
         frmt_txt = ''
         #use real limit after first line
         real_limit = limit-len(newline)
+
+        #expand tabs
+        txt = txt.replace('\t', Cfg.TAB)
 
         #chop up words
         while(len(txt)):
@@ -442,6 +445,12 @@ class Cfg:
         #cast with built-in conversion
         if(isinstance(val, (int, str, bool))):
             return (tab_cnt*cls.TAB) + str(val)
+        #use 'on' and 'off' for bools rather than 'true' and 'false'
+        elif(isinstance(val, bool)):
+            if(val):
+                return (tab_cnt*cls.TAB) + 'on'
+            else:
+                return  (tab_cnt*cls.TAB) + 'off'
 
         #cast using special string conversion format
         if(isinstance(val, list)):

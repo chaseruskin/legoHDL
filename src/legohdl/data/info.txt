@@ -1,6 +1,7 @@
+; ------------------------------------------------------------------------------
 ; File: legoHDL Info
 ; Author: Chase Ruskin
-; Modified: 12/10/2021
+; Modified: 12/12/2021
 ; Created: 12/10/2021
 ; Description:
 ;   The informational text used in file comments, the gui, and other various
@@ -9,13 +10,7 @@
 ;   All lines with ';' are skipped. Each line beginning with an '*' is evaluated
 ;   to see what key the following text belongs to. Reads all the way up
 ;   to the next '*'. Use a '\' to carry same text onto next line without a newline
-; Notes:
-;   title delimiter = '.' - separates a title into subsections
-;   explicit version = 'v1.0.0' or 'v1_0_0'
-;   block = title in M.L.N form
-;   Throughout the document, word entity/unit is used. This is synonymous with 
-;   the Verilog keyword module. any reference to entity also means module. Using
-;   the word entity may be replaced with a better term like: unit, part, chip.
+; ------------------------------------------------------------------------------
 
 
 * settings-header
@@ -27,68 +22,194 @@ Description:
 Help:
     For more information on how to edit this file, read the documentation at 
 ___.
-------------------------------------------------------------------------------\
+------------------------------------------------------------------------------
 * end
 
 
 * general
 --- General settings ---
-Description:
-    Various assignments related to the tool in general.\
+DESCRIPTION:
+Various assignments related to the tool in general.
+* end
+
+* general.active-workspace
+A workspace listed under [workspace] to be in current use. If an empty \
+assignment, a lot of functionality will be unavailable.
+* end
+
+* general.active-workspace.value
+<workspace>
+* end
+
+* general.author
+Your name! (or code-name, code-names are cool too).
+* end
+
+* general.author.value
+<name>
+* end
+
+* general.editor
+The command to call your preferred text editor.
+* end
+
+* general.editor.value
+<command>
+* end
+
+* general.template
+The path from where to copy a template folder for creating a new block project. \
+If an empty assignment, it will use the built-in template folder.
+* end
+
+* general.profiles
+A list of profiles to import settings, templates, and/or plugins. Profiles are \
+stored in the built-in profiles folder.
+* end
+
+* general.multi-develop
+When enabled, it will reference blocks found in the workspace path over blocks \
+found in the cache. This is beneficial for simulataneously working on multiple \
+related blocks. When disabled, it will only allow blocks to be used from the cache. \
+Write 'on' to enable or 'off' to disable.
 * end
 
 
-* general.key2
-some special key!\
+
+* general.refresh-rate 
+How often to synchronize vendors with their remote every day. Set to -1 to refresh \
+on every call to legoHDL. Maximum accepted value is 1440 (every minute). Evenly divides \
+the refresh points throughout the 24-hour day. This settings is the automation of the \
+'refresh' command.
+* end
+
+* general.mixed-language
+When enabled, instantiated units found in code will be checked across languages \
+VHDL and Verilog. When disabled, determining what component is instantiated is filtered \
+to only search through units written in the same language.
 * end
 
 
 * label
 --- Label settings ---
-Description:
-    User-defined groupings of filetypes, to be collected and written to the \
-blueprint file on export. Labels help bridge a custom workflow with the user's \
-backend tool.\
+DESCRIPTION:
+User-defined groupings of filetypes to be collected and written to the blueprint \
+file during export. Labels help bridge a custom workflow with any plugin by adding \
+support for additional files.
 * end
-
 
 * label.global
-Description:
-    Find these files throughout all blocks used in the current design.
-Value:
-    <label> = <file-extension>\
+DESCRIPTION:
+Find these files throughout all blocks used in the current design.
+KEYS:
+<label> = <file-extension>
 * end
 
-
 * label.local
-Description:
-    Find these files only throughout the current block.
-Value:
-    <label> = <file-extension>\
+DESCRIPTION:
+Find these files only throughout the current block.
+KEYS:
+<label> = <file-extension>
 * end
 
 
 * plugin
 --- Plugin settings ---
-Description:
-    User-defined aliases to execute plugins (scripts/tools/commands). \
-Assignments can be either a string or list of strings separated by \
-commas.
-Value:
-    <alias> = <command>\
+DESCRIPTION:
+User-defined aliases to execute plugins (scripts/tools/commands).
+KEYS:
+<alias> = <command>
 * end
 
 
 * workspace
 --- Workspace settings ---
-Description:
-    User-defined spaces for working with blocks. Blocks must appear in the \
+DESCRIPTION:
+User-defined spaces for working with blocks. Blocks must appear in the \
 workspace's path to be recognized as downloaded. Multiple vendors can be \
 configured to one workspace and vendors can be shared across workspaces. \
 Block downloads and installations in one workspace are separate from those \ 
 of another workspace.
-Value:
-    [.<workspace>]
-        path = <path>
-        vendors = (<vndr0>, <vndr1>, ...)\
+SECTIONS:
+[.<workspace>]
+    path = <path>
+    vendors = (<vndr0>, <vndr1>, ...)
+* end
+
+
+* vendor
+--- Vendor settings ---
+DESCRIPTION:
+Available vendors to be linked to workspaces. A vendor allows blocks to be visible \
+from remote repositories and downloaded/installed across machines. If a vendor is \
+not configured to a remote repository, its value is empty.
+KEYS:
+<vendor-name> = <remote-repository-url>
+* end
+
+
+* placeholders
+--- Placeholder settings ---
+DESCRIPTION:
+User-defined values to be replaced when referenced within '%' symbols in files \
+created by legoHDL.
+KEYS:
+<placeholder> = <value>
+* end
+
+
+* HDL-styling
+--- HDL-styling settings ---
+DESCRIPTION:
+Configure how to print compatible HDL code.
+* end
+
+* HDL-styling.alignment
+Determine the number of spaces (0 to 80) to proceed an identifier. Used in conjunction with \
+the 'auto-fit' key.
+* end
+
+* HDL-styling.newline-maps
+Determine if the indication code for a 'map' begins on a new line.
+* end
+
+* HDL-styling.default-language
+Select which HDL language (vhdl, verilog, or auto) is default to print compatible code. \
+If 'auto' is selected, then the code is printed in the originally written language.
+* end
+
+* HDL-styling.auto-fit
+Determine if the proceeding character/symbol after identifiers should all align \
+together based on the longest identifier name. Used in conjunction with the 'alignment' \
+key.
+* end
+
+* HDL-styling.hanging-end
+Determine if the closing ')' in component/instantiation code should be placed on its \
+own line.
+* end
+
+* HDL-styling.instance-name
+The default instantiation name for a unit. Placeholders are supported.
+* end
+
+* HDL-styling.port-modifier
+The signal/wire identifier name to connect to the instantiated ports. Wildcard '*' \
+will be replaced with each port's original identifier.
+* end
+
+* HDL-styling.generic-modifier
+The constant/parameter identifier name to connect to the instantiated generics/parameters. \
+Wildcard '*' will be replaced with each generics' original identifiers.
+* end
+
+
+* metadata
+--- Metadata settings ---
+DESCRIPTION:
+User-defined fields for Block.cfg files. These fields will be automatically copied \
+into new Block.cfg files. Supports using placholders for key values.
+SECTIONS:
+[.<section>]
+    <key> = <value>
 * end
