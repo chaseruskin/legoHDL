@@ -12,6 +12,7 @@ import os, shutil, stat, glob
 import logging as log
 from datetime import date
 from enum import Enum
+from typing import ValuesView
 
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
@@ -721,6 +722,29 @@ class Block:
             return mergeSort(self.sortVersions(l1), self.sortVersions(r1))
         else:
             return unsorted_vers
+
+
+    def getHighestAvailVersion(self):
+        '''
+        Returns highest available version from the AVAIL level. Will return '0.0.0'
+        if DNE.
+
+        Parameters:
+            None
+        Returns:
+            avail_ver (str): highest available version
+        '''
+        avail_ver = '0.0.0'
+        #check if block has AVAIL status
+        b = self.getLvlBlock(Block.Level.AVAIL)
+        #return '0.0.0' if not available
+        if(b == None):
+            return avail_ver
+        #return first version of already-sorted list
+        if(len(b.getMeta('versions'))):
+            avail_ver = b.getMeta('versions')[0]
+        return avail_ver
+
 
 
     def getTaggedVersions(self):

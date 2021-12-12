@@ -565,8 +565,15 @@ class Workspace:
                     sts = downloaded + spacer + installed + spacer + available
                     #leave version empty if its been unreleased
                     v = '' if(bk.getVersion() == '0.0.0') else bk.getVersion()
+                    #check if can be updated
+                    updt_symbol = ''
+                    #prioritize installation level for checking updates
+                    instllr = bk.getLvlBlock(Block.Level.INSTL)
+                    cmp_v = instllr.getVersion() if(instllr != None) else bk.getVersion()
+                    if(Block.cmpVer(bk.getHighestAvailVersion(), cmp_v) != cmp_v):
+                        updt_symbol = '^'
                     #format the data to print to the console
-                    print('{:<16}'.format(bk.L()),'{:<20}'.format(bk.N()),'{:<8}'.format(sts),'{:<10}'.format(v),'{:<16}'.format(bk.M()))
+                    print('{:<16}'.format(bk.L()),'{:<20}'.format(bk.N()),'{:<8}'.format(sts),'{:<7}'.format(v),'{:<2}'.format(updt_symbol),'{:<16}'.format(bk.M()))
                     pass
         pass
 
