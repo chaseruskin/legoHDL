@@ -15,6 +15,9 @@ class Map(MutableMapping):
     
 
     def __init__(self, *args, **kwargs):
+        '''
+        Creates a Map object.
+        '''
         self._inventory = dict()
         self.update(dict(*args, **kwargs))
         pass

@@ -7,6 +7,29 @@
 #   files used for settings and blocks.
 # ------------------------------------------------------------------------------
 
+from .map import Map
+
+
+class Key:
+
+    def __init__(self, name, val):
+        self._name = name
+        self._val = val
+
+    def __repr__(self):
+        return self._val
+
+    pass
+
+
+class Section(Map):
+
+    def __init__(self, *args, name='', **kwargs):
+        super().__init__(*args, **kwargs)
+        self._name = name
+
+    pass
+
 
 class Cfg:
 
@@ -30,8 +53,11 @@ class Cfg:
     L_END = ')'
     L_SEP = ','
 
+    #instance checking
+    SECT = (dict, Section)
 
-    def __init__(self, filepath, data=dict(), comments=dict(), en_mult_lvl=True):
+
+    def __init__(self, filepath, data=Section(), comments=Section(), en_mult_lvl=True):
         '''
         Create a CFG file object.
 
@@ -82,7 +108,7 @@ class Cfg:
 
                 #add newlines if empty line and within a key's value
                 if(len(in_str) and cur_key != None and len(l) == 0):
-                    cur_sect[cur_key] = cur_sect[cur_key] + '\n'
+                    cur_sect[cur_key]._val = cur_sect[cur_key]._val + '\n'
 
                 #skip empty lines
                 if(len(l) == 0):
@@ -95,6 +121,7 @@ class Cfg:
 
                 #check for new keys (properties)
                 key_l,_ = self._trimComments(l, in_str=in_str, c_token='=')
+                key_true = key_l.strip()
                 key_l = key_l.strip().lower()
 
                 #find first '='
@@ -108,13 +135,13 @@ class Cfg:
                         #check what the previous status was
                         if(len(in_str)):
                             spacer = '\n'
-                        if(len(cur_sect[cur_key]) == 0):
+                        if(len(cur_sect[cur_key]._val) == 0):
                             spacer = ''
-                        cur_sect[cur_key] = cur_sect[cur_key] + spacer + l.strip()
+                        cur_sect[cur_key]._val = cur_sect[cur_key]._val + spacer + l.strip()
                     continue
 
                 #assign to the key location in the data structure (and expand tabs)
-                cur_sect[key_l] = l[v_i+1:].strip().replace('\t', Cfg.TAB)
+                cur_sect[key_l] = Key(key_true, l[v_i+1:].strip().replace('\t', Cfg.TAB))
                 #update which key is the current
                 cur_key = key_l
 
@@ -124,7 +151,7 @@ class Cfg:
         return True
 
 
-    def get(self, key, dtype=str):
+    def get(self, key, dtype=str, returnname=False):
         '''
         Returns the value behind the given key. 
         
@@ -135,8 +162,10 @@ class Cfg:
 
         Parameters:
             key (str): sections/keys to traverse dictionary separated by delimiter
+            returname (bool): determine if to return the true key name and val
         Returns:
-            (dtype): str, int, bool, list
+            (dtype): str, int, bool, list or
+            ((str, dtype)) : true key name and converted datatype
         '''
         #split key into components
         keys = [k.lower() for k in key.split(Cfg.S_DELIM)]
@@ -146,26 +175,37 @@ class Cfg:
         #verify an empty key was not entered
         if(keys != ['']):
             for k in keys:
-                if(isinstance(node, dict) and k in node.keys()):
+                if(isinstance(node, Cfg.SECT) and k in node.keys()):
                     node = node[k]
                 else:
                     return None
         #if the end result is still a dictionary then return None
-        if(isinstance(node, dict)):
-            if(dtype == dict):
-                return node.copy()
+        if(isinstance(node, Cfg.SECT)):
+            if(dtype == dict or dtype == Section):
+                cp = Section(name=node._name)
+                for k in node.keys():
+                    cp[k] = self.get(key+'.'+k, dtype=dict)
+                return cp
             else:
                 return None
 
+        true_key = node._name
+        node = node._val
+
         #perform proper cast
         if(dtype == bool):
-            return Cfg.castBool(node)
+            val = Cfg.castBool(node)
         elif(dtype == int):
-            return Cfg.castInt(node)
+            val = Cfg.castInt(node)
         elif(dtype == list):
-            return Cfg.castList(node)
+            val = Cfg.castList(node)
         #default is to return str
-        return str(node)
+        else:
+            val = str(node)
+
+        if(returnname):
+            return true_key, val
+        return val
 
 
     def set(self, key, val, override=True):
@@ -185,31 +225,34 @@ class Cfg:
         '''
         #split key into components as lower-case
         keys = [k.lower() for k in key.split(Cfg.S_DELIM)]
+        true_key = key.split(Cfg.S_DELIM)[-1]
 
         #traverse through the dictionary structure to the requested key
         node = self._data
         for k in keys[:len(keys)-1]:
-            if(isinstance(node, dict)):
+            if(isinstance(node, Cfg.SECT)):
                 if(k not in node.keys()):
-                    node[k] = dict()
+                    node[k] = Section(name=k)
                 node = node[k]
             else:
                 return
 
         #if the end result is not a dictionary then return None
-        if(isinstance(node, dict) == False):
+        if(isinstance(node, Cfg.SECT) == False):
             return
 
         #do not override the exisiting value if the key already exists
         if(override == False and keys[-1] in node.keys()):
             return
 
-        #write new value as string
-        node[keys[-1]] = Cfg.castStr(val)
-
         #overwrite entire dictionary and copy if val is a dtype dict
-        if(isinstance(val, dict)):
-            node[keys[-1]] = val.copy()
+        if(isinstance(val, Cfg.SECT)):
+            #recursive call
+            for k in val.keys():
+                self.set(key+'.'+k, val[k], override=True)
+        #write new value as string
+        else:
+            node[keys[-1]] = Key(true_key, Cfg.castStr(val))
         pass
 
 
@@ -232,7 +275,7 @@ class Cfg:
         T = Cfg.TAB*int(lvl)*int(auto_indent)
 
         #compute longest key name
-        keys = list(filter(lambda a: isinstance(data[a], dict) == False, list(data.keys())))
+        keys = list(filter(lambda a: isinstance(data[a], Cfg.SECT) == False, list(data.keys())))
         longest_key = 0
         for k in keys:
             longest_key = len(k) if(len(k) > longest_key) else longest_key
@@ -246,42 +289,43 @@ class Cfg:
 
             cmt = self._writeComment(next_cur_key, newline=T+'; ')
             #write a new line if comment exists for a section
-            if((lvl != 0 or len(contents) or ('' in self._comments.keys())) and isinstance(data[sect], dict)):
+            if((lvl != 0 or len(contents) or ('' in self._comments.keys())) and isinstance(data[sect], Cfg.SECT)):
                 contents = contents + '\n'
             #write the comment (will be blank if not found)
-            contents = contents + T + cmt
-            #add tab after the new newline from the comment
             if(len(cmt)):
-                contents = contents + T
+                contents = contents + T + cmt
 
             #write section
-            if(isinstance(data[sect], dict)):
+            if(isinstance(data[sect], Cfg.SECT)):
+                contents = contents + T
                 if(lvl > 0):
                     contents = contents + Cfg.S_CHILD_DEC
                 else:
                     contents = contents + Cfg.S_BEGIN
-                contents = contents + sect+Cfg.S_END+'\n'
+                print(type(data[sect]))
+                print(data[sect]._name)
+                contents = contents + data[sect]._name +Cfg.S_END+'\n'
 
                 #recursive call to proceed into the nested section
-                contents = contents + self.write(f, data[sect], lvl=(lvl+1), cur_key=next_cur_key)
+                contents = contents + self.write(f, data[sect], lvl=(lvl+1), cur_key=next_cur_key, auto_indent=auto_indent, neat_keys=neat_keys)
                 continue
             #write the key/value pair
-            print(sect,data[sect])
+            print(data[sect]._name,data[sect])
             #write extra spacing for key assignments to align if trying to be neat
             diff = (longest_key+1)-len(sect)
             diff = diff if(neat_keys) else 1
             spacer = len(T) + len(sect) + diff + len(Cfg.KEY_ASSIGNMENT) + 1
             #write "<key> = "
-            contents = contents + sect + ' '*diff + Cfg.KEY_ASSIGNMENT + ' '
+            key_var = data[sect]._name + ' '*diff + Cfg.KEY_ASSIGNMENT + ' '
             #obtain the string value
-            val = data[sect]
+            val = data[sect]._val
             #check if it is a list hidden in dtype str
             is_list = (len(val) > 1 and val[0] == Cfg.L_BEGIN and val[-1] == Cfg.L_END)
             #determine number of spaces for a new line if rolling over text
             if(is_list or neat_keys == False):
                 spacer = 0
             #write the value
-            contents = contents + self._writeWithRollOver(val,newline=' '*spacer)+'\n'
+            contents = contents + self._writeWithRollOver(T+key_var+val,newline=' '*spacer)+'\n'
             pass
 
         if(lvl != 0):
@@ -299,15 +343,27 @@ class Cfg:
         if(key not in self._comments.keys()):
             return ''
         
-        cmt = '; '+self._comments[key].replace('\t', Cfg.TAB)
-        #cmt = cmt.replace('\n',' ')+'\n'
+        cmt = newline+self._comments[key].replace('\t', Cfg.TAB)
         return self._writeWithRollOver(cmt, newline=newline)+'\n'
 
     
     def _writeWithRollOver(self, txt, newline='', limit=80):
+        '''
+        Formats text in a clean fashion without splitting words when crossing a
+        newline. Breaks a string into sections split by newlines no greater than
+        length 'limit'.
+
+        Parameters:
+            txt (str):
+            newline (str):
+            limit (int):
+        Returns:
+            frmt_txt (str):
+        '''
         frmt_txt = ''
         #use real limit after first line
         real_limit = limit-len(newline)
+
         #chop up words
         while(len(txt)):
             next_line = txt[:limit]
@@ -319,12 +375,10 @@ class Cfg:
                 next_line = txt[:limit]
                 txt = next_line + ' ' + txt[limit+1:]
             else:
-                #check if in middle of a word
-                if(len(next_line) > limit-1 and next_line[limit-1] != ' '):
-                    #check if next character is a space
+                #check if in middle of a word (lhs)
+                if(len(txt) > limit-1 and txt[limit-1] != ' '):
+                    #check if next character is a space (rhs)
                     if(len(txt) > limit and txt[limit] != ' '):
-                        #print(txt[limit])
-                        #print(limit)
                         crsr = limit-1
                         #find closest previous space
                         sp_i = next_line.find(' ')
@@ -332,7 +386,6 @@ class Cfg:
                         if(sp_i > -1):
                             while(crsr > 0 and txt[crsr] != ' '):
                                 crsr -= 1
-                            #crsr -= 1
                         #forward track
                         else:
                             while(crsr < len(txt) and txt[crsr] != ' '):
@@ -341,10 +394,8 @@ class Cfg:
                     pass
             if(limit < 1):
                 limit = 1
-            #print(limit)
             #add newly formatted line
             frmt_txt = frmt_txt + txt[:limit]
-            #print(txt[:limit])
             #add newline characters
             if(limit < len(txt)):
                 frmt_txt = frmt_txt + '\n'+newline
@@ -357,10 +408,10 @@ class Cfg:
             #return to the actual limit
             limit = real_limit
             pass
+
         #print(frmt_txt)
         return frmt_txt
 
-    
 
     @classmethod
     def castStr(cls, val, tab_cnt=0, frmt_list=True):
@@ -374,19 +425,29 @@ class Cfg:
         Returns:
             (str): conversion to string
         '''
+        #get the str if a Key object was passed in
+        if(isinstance(val, Key)):
+            val = val._val
+        #return blank string if None
         if(val == None):
             return ''
+
         hanging_end = False
         #make sure tab is never negative
         if(tab_cnt < 0):
             tab_cnt = 0
+
+        #cast with built-in conversion
         if(isinstance(val, (int, str, bool))):
             return (tab_cnt*cls.TAB) + str(val)
+
+        #cast using special string conversion format
         if(isinstance(val, list)):
             #add beginning list symbol
             returnee = ''
             if(frmt_list):
                 returnee = cls.L_BEGIN+'\n'
+
             #iterate through every value and add as a string
             for x in val:
                 returnee = returnee + cls.castStr(x, (tab_cnt+1)*(frmt_list))
@@ -396,13 +457,18 @@ class Cfg:
                     else:
                         returnee = returnee+' '
                 pass
+
             #close the list with ending list symbol
             if(frmt_list):
                 #drop closing list symbol onto newline
                 if(hanging_end):
                     returnee = returnee + '\n'+(tab_cnt*cls.TAB)
                 returnee = returnee + cls.L_END
+
             return returnee
+
+        #default blank string
+        return ''
 
 
     @classmethod
@@ -453,6 +519,7 @@ class Cfg:
         '''
         if(isinstance(val, int)):
             return val
+        #handle negative sign by multiplying by -1
         mult = 1
         if(len(val) and val[0] == '-'):
             mult = -1
@@ -478,17 +545,21 @@ class Cfg:
             [(str)] : list of strings divided from val
         '''
         #return empty list
-        if(val == cls.NULL):
+        if(val == Cfg.NULL or val == None):
             return []
+
         #check if using list tokens
-        if(val[0] != cls.L_BEGIN or val[-1] != cls.L_END):
+        if(val[0] != Cfg.L_BEGIN or val[-1] != Cfg.L_END):
             #return list split by spaces
             return val.split()
-        b_i = val.find('(')
-        e_i = val.rfind(')')
+
+        #trim off list tokens
+        b_i = val.find(Cfg.L_BEGIN)
+        e_i = val.rfind(Cfg.L_END)
         elements = val[b_i+1:e_i].strip()
+
         #separate according to the list separator and trim any trailiing/leading whitespace
-        elements = [e.strip() for e in elements.split(cls.L_SEP)]
+        elements = [e.strip() for e in elements.split(Cfg.L_SEP)]
         #filter out any blank elements
         return list(filter(lambda a: len(a), elements))
 
@@ -508,6 +579,7 @@ class Cfg:
         '''
         #store where invalid comments are in the line
         invalid_comments = []
+
         for i in range(len(line)):
             #grab current character
             ch = line[i]
@@ -518,6 +590,8 @@ class Cfg:
                 in_str = ''
             elif(len(in_str) and ch == c_token):
                 invalid_comments += [i]
+            pass
+
         #trim off comments
         c = line.find(c_token)
         #continue scanning line to find where a valid comment starts
@@ -550,12 +624,17 @@ class Cfg:
             return False, prev_parents, cur_sect
 
         #find string between section tokens and convert to lower-case
+
         b_i = line.find(Cfg.S_BEGIN)
         #trim scope operator from beginning
         b_i = b_i+1 if(line[:b_i+2] == Cfg.S_CHILD_DEC) else b_i
+
         e_i = line.rfind(Cfg.S_END)
+        #trim scope operator from end
         e_i = e_i-1 if(line[e_i-1:] == Cfg.S_PARENT_DEC) else e_i
-        new_key = line[b_i+1:e_i].lower()
+
+        true_key = line[b_i+1:e_i]
+        new_key = true_key.lower()
 
         #clear the chain if new node is indicated by not being a child
         if((line.startswith(Cfg.S_CHILD_DEC) == False) or (self._multi_level == False)):
@@ -569,7 +648,7 @@ class Cfg:
                 nested_data = nested_data[p]
 
         #create new key (overwrites any existing)
-        nested_data[new_key] = {}
+        nested_data[new_key] = Section(name=true_key)
 
         #continue deeper down the tree
         if(line.endswith(Cfg.S_PARENT_DEC) or (line.startswith(Cfg.S_CHILD_DEC) == False)):
@@ -583,58 +662,3 @@ class Cfg:
 
 
     pass
-
-
-comments = {}
-
-#open the info.txt
-with open('./src/legohdl/data/info.txt', 'r') as info:
-    txt = info.readlines()
-    disp = False
-    key = ''
-    for line in txt:
-        sep = line.split()
-        #skip comments and empty lines
-        if(len(sep) == 0):
-            if(disp == True):
-                print()
-            continue
-        if(sep[0].startswith(';')):
-            continue
-        #find where to start
-        if(len(sep) > 1 and sep[0] == '*'):
-            key = sep[1].lower()
-            if(key == 'settings-header'):
-                key = ''
-            comments[key] = ''
-            disp = True
-        elif(disp == True):
-            if(sep[0] == '*'):
-                break
-            else:
-                end = line.rfind('\\')
-                if(end > -1):
-                    line = line[:end]
-                comments[key] = comments[key] + line
-    pass
-
-c = Cfg('./input.cfg', comments=comments)
-c.read()
-print(c.get('general.key2', dtype=str))
-
-print(Cfg.castStr(c.get('BLOCK.requires', dtype=list), frmt_list=True))
-
-print(c.get('block.REQUIRES', dtype=list))
-
-b = c.get('block', dtype=dict)
-
-b['vendor'] = 'OTHER'
-
-c.set('block', b)
-
-print(c.get('general', dtype=dict))
-
-c.set('block.requires', Cfg.castStr(c.get('BLOCK.requires', dtype=list), tab_cnt=1, frmt_list=True))
-
-
-c.write('./output.cfg')

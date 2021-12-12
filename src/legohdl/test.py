@@ -22,6 +22,7 @@ from .vhdl import Vhdl
 from .verilog import Verilog
 from .unit import Unit
 from .block import Block
+from .cfgfile2 import Cfg, Key, Section
 
 
 def main():
@@ -311,5 +312,88 @@ def main():
         #clean up test block
         if(success):
             shutil.rmtree(test_path, onerror=apt.rmReadOnly)
+    if(True):
+        comments = {}
 
+        #open the info.txt
+        with open(apt.getProgramPath()+'./data/info.txt', 'r') as info:
+            txt = info.readlines()
+            disp = False
+            key = ''
+            for line in txt:
+                sep = line.split()
+                #skip comments and empty lines
+                if(len(sep) == 0):
+                    if(disp == True):
+                        print()
+                    continue
+                if(sep[0].startswith(';')):
+                    continue
+                #find where to start
+                if(len(sep) > 1 and sep[0] == '*'):
+                    key = sep[1].lower()
+                    if(key == 'settings-header'):
+                        key = ''
+                    comments[key] = ''
+                    disp = True
+                elif(disp == True):
+                    if(sep[0] == '*'):
+                        break
+                    else:
+                        end = line.rfind('\\')
+                        if(end > -1):
+                            line = line[:end]
+                        comments[key] = comments[key] + line
+            pass
+        c = Cfg('./input.cfg', comments=comments)
+        c.read()
+        print(c.get('general.key2', dtype=str))
+
+        print(Cfg.castStr(c.get('BLOCK.requires', dtype=list), frmt_list=True))
+
+        print(c.get('block.REQUIRES', dtype=list))
+
+        b = c.get('block', dtype=dict)
+
+        b['vendor'] = 'OTHER'
+
+        c.set('block', b)
+        b['VeRSIONS'] = 11
+        c.set('block', b)
+
+        print(c.get('general', dtype=dict))
+
+        c.set('block.requires', Cfg.castStr(c.get('BLOCK.requires', dtype=list), tab_cnt=1, frmt_list=True))
+
+        c.write('./output.cfg', auto_indent=True, neat_keys=True)
+
+        k = Key("KEY0", "0x3234ab")
+        k._val = k._val + "ce"
+        print(k)
+        print(k._name)
+
+        levels = c.get('general.level2c', dtype=dict, returnname=True)
+        #for i in levels.values():
+            #print(i._name, i)
+
+
+        d = Section(name="Block")
+
+        d['name'] = 'lab1'
+        print(d._name)
+        print(str(d))
+
+        ws = c.get('workspace', dtype=dict)
+        print(ws['eel4712c']._name)
+        print(ws)
+        ws['eel4712c']['path'] = '/other/way/'
+        print(ws)
+        print(c.get('workspace', dtype=dict))
+
+        #case-insensitive on accessing
+        print(c.get('BLOCK.VENDOR'))
+        print(c.get('BLoCK.veNdoR'))
+
+        c.set('workspace', ws, override=True)
+        print(c.get('workspace', dtype=dict))
     pass
