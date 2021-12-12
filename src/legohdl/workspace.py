@@ -8,6 +8,7 @@
 #   "organization".
 # ------------------------------------------------------------------------------
 
+from io import UnsupportedOperation
 import os, shutil, glob
 import logging as log
 from datetime import datetime
@@ -521,7 +522,7 @@ class Workspace:
         M,L,N,_ = Block.snapTitle(title, inc_ent=False)
 
         #get all blocks from inventory
-        print('{:<16}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"),'{:<10}'.format("Version"),'{:<16}'.format("Vendor"))
+        print('{:<16}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"+("(M)"*int(apt.getMultiDevelop()))),'{:<10}'.format("Version"),'{:<16}'.format("Vendor"))
         print("-"*16+" "+"-"*20+" "+"-"*8+" "+"-"*10+" "+"-"*16)
         #iterate through every vendor
         for vndr_k,vndrs in Block.Inventory.items():
@@ -551,7 +552,8 @@ class Workspace:
                         installed = 'I'
                         disp_i = True
                     if(lvls[Block.Level.DNLD.value] != None):
-                        bk = lvls[Block.Level.DNLD.value]
+                        if(dnld):
+                            bk = lvls[Block.Level.DNLD.value]
                         downloaded = 'D'
                         disp_d = True
                     #one condition pair must be true to display the block
@@ -559,21 +561,24 @@ class Workspace:
                         pass
                     else:
                         continue
+
                     #character to separate different status bits
                     spacer = ' '
                     #format the status column's data
                     sts = downloaded + spacer + installed + spacer + available
                     #leave version empty if its been unreleased
                     v = '' if(bk.getVersion() == '0.0.0') else bk.getVersion()
+
                     #check if can be updated
-                    updt_symbol = ''
                     #prioritize installation level for checking updates
                     instllr = bk.getLvlBlock(Block.Level.INSTL)
-                    cmp_v = instllr.getVersion() if(instllr != None) else bk.getVersion()
+                    cmp_v = instllr.getVersion() if(instllr != None and apt.getMultiDevelop() == False) else bk.getVersion()
+                    #a '^' is an update symbol indicating the latest referenced version (dnld or instl) is not the actually the latest version found
                     if(Block.cmpVer(bk.getHighestAvailVersion(), cmp_v) != cmp_v):
-                        updt_symbol = '^'
+                        sts = sts+'  ^'
+                        v = cmp_v
                     #format the data to print to the console
-                    print('{:<16}'.format(bk.L()),'{:<20}'.format(bk.N()),'{:<8}'.format(sts),'{:<7}'.format(v),'{:<2}'.format(updt_symbol),'{:<16}'.format(bk.M()))
+                    print('{:<16}'.format(bk.L()),'{:<20}'.format(bk.N()),'{:<8}'.format(sts),'{:<10}'.format(v),'{:<16}'.format(bk.M()))
                     pass
         pass
 

@@ -272,9 +272,7 @@ settings that will be merged in when importing that profile. A profile directory
                         #split to identify any paths and ENV_NAME
                         words = e.split()
                         for i in range(len(words)):
-                            if(words[i].count(apt.ENV_NAME)):
-                                words[i] = words[i].replace(apt.ENV_NAME, apt.HIDDEN)
-                            if(os.path.exists(os.path.expanduser(words[i]))):
+                            if(os.path.exists(os.path.expandvars(os.path.expanduser(words[i])))):
                                 words[i] = apt.fs(words[i])
                         #regroup into one string
                         e = ''

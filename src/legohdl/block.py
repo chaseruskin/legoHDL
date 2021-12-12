@@ -727,7 +727,8 @@ class Block:
     def getHighestAvailVersion(self):
         '''
         Returns highest available version from the AVAIL level. Will return '0.0.0'
-        if DNE.
+        if DNE. Will then return the download's current version if a block is
+        not found in the AVAIL level.
 
         Parameters:
             None
@@ -739,7 +740,14 @@ class Block:
         b = self.getLvlBlock(Block.Level.AVAIL)
         #return '0.0.0' if not available
         if(b == None):
-            return avail_ver
+            #check against downloads latest version
+            b = self.getLvlBlock(Block.Level.DNLD)
+            #not avail nor dnld, return '0.0.0'
+            if(b == None):
+                return avail_ver
+            #return dnld's version
+            return b.getVersion()
+
         #return first version of already-sorted list
         if(len(b.getMeta('versions'))):
             avail_ver = b.getMeta('versions')[0]
@@ -2897,7 +2905,16 @@ class Block:
             #sort the versions found on the self block
             if(len(all_versions) == 0):
                 all_versions = self.sortVersions(self.getTaggedVersions())
-            
+
+            #try to see if there are any available versions
+            avail = self.getLvlBlock(Block.Level.AVAIL)
+            if(avail != None):
+                avail_vers = avail.getMeta('versions')
+                if(isinstance(avail_vers, list)):
+                    all_versions += avail_vers
+                all_versions = self.sortVersions(list(set(all_versions)))
+                pass
+
             #track what partial versions have been identified
             logged_part_vers = []
             #iterate through all versions
