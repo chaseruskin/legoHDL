@@ -1601,6 +1601,7 @@ class Block:
                 continue
             #update what blocks have been identified for installation
             tracking += [title.lower()]
+
             #break titles into discrete sections
             #print(title)
             M,L,N,V = Block.snapTitle(title)
@@ -1610,21 +1611,46 @@ class Block:
             v_ref = V[:at_sym-1].split('-')
             V = spec_ver
             #print(v_ref)
+
             #get the block associated with the title
             b = self.getWorkspace().shortcut(M+'.'+L+'.'+N, visibility=False)
             #check if the block was found in the current workspace
             if(b == None):
                 log.error("Missing block requirement "+title+".")
                 continue
+
             #recursively install requirements
             b.installReqs(tracking)
+
             #check if an installation already exists
             instllr = b.getLvlBlock(Block.Level.INSTL)
             #install main cache block
             if(instllr == None):
                 instllr = b.install()
-            #install specific version block to cache
-            instllr.install(ver=V)
+            #check what versions are already installed
+            ready_vers = instllr.getInstalls()
+
+            #cross-compare against what version constraints are required by the design to avoid unnecessary installs
+            all_here = True
+            for temp_ver in v_ref:
+                #latest exists as it was installed if previously DNE
+                if(temp_ver.lower() == 'latest'):
+                    log.info("Found "+b.getFull()+"(@"+temp_ver+") already satisfied as v"+instllr.getVersion()+".")
+                    continue
+                #missing a used version and must fill the gap
+                if(temp_ver not in ready_vers.keys()):
+                    all_here = False
+                    log.info("Missing "+b.getFull()+"(@"+temp_ver+"). Using "+V+" to satisfy constraint.")
+                #the version constraint was found using a specific version
+                else:
+                    log.info("Found "+b.getFull()+"(@"+temp_ver+") already satisfied as v"+ready_vers[temp_ver].getVersion()+".")
+                pass
+
+            #install specific version block to cache if a constraint was missing
+            if(all_here == False):
+                instllr.install(ver=V)
+            else:
+                pass
             pass
         pass
 
