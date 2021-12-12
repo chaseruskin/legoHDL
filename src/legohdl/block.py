@@ -951,7 +951,7 @@ class Block:
         if(self.getMeta('vendor') != ''):
             m = self.getMeta('vendor')
             if(m.lower() not in self.getWorkspace().getVendors(returnnames=True)):
-                log.warning("Vendor "+m+" from "+self.getFull()+" is not available in this workspace.")
+                #log.warning("Vendor "+m+" from "+self.getFull()+" is not available in this workspace.")
                 pass
             pass
 
