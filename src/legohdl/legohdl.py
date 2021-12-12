@@ -834,11 +834,20 @@ plugins)?", warning=False)
         
         if(self.hasFlag('profile')):
             #make sure the requested profile exists to be read
-            if(self.getItem() not in Profile.Jar.keys()):
+            if(self.getItem().lower() not in Profile.Jar.keys()):
                 log.error("Profile "+self.getItem()+" does not exist!")
                 return
-            #print the profile's information
+            #print the profile's information/summary
             print('\n'+Profile.Jar[self.getItem()].readAbout()+'\n')
+            return
+        
+        if(self.hasFlag('vendor')):
+            #make sure the requested vendor exists to be read
+            if(self.getItem().lower() not in Vendor.Jar.keys()):
+                log.error("Vendor "+self.getItem()+" does not exist!")
+                return
+            #print the vendor's information/summary
+            print('\n'+Vendor.Jar[self.getItem()].readAbout()+'\n')
             return
 
         #get the block object from all possible blocks

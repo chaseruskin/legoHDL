@@ -200,6 +200,22 @@ class Vendor:
         log.info("Success.")
         pass
 
+    
+    def readAbout(self):
+        '''
+        Gets the text within the .vndr file to be printed to the console.
+
+        Parameters:
+            None
+        Returns:
+            (str): text from .vndr file
+        '''
+        about_txt = ''
+        with open(self.getVendorDir()+self.getName()+self.EXT, 'r') as vndr:
+            for line in vndr.readlines():
+                about_txt = about_txt + line
+        return about_txt
+
 
     def refresh(self, quiet=False):
         '''

@@ -607,6 +607,7 @@ SYNOPSIS:
         legohdl info <block> [-D | -I | -<version> | -A] [-stats] 
                 [-vers[=<range>]] [-changelog]
         legohdl info <profile> -profile
+        legohdl info <vendor> -vendor
 
 DESCRIPTION:
         By default, will print the metadata about the given block. 
@@ -654,6 +655,12 @@ OPTIONS:
 
         -profile
                 Indicate that a profile is to be searched for its information.
+
+        <vendor>
+                :ref:
+        
+        -vendor
+                Indicate that a vendor is to be searched for its information.
 
 
 * config
