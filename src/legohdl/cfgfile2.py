@@ -27,6 +27,20 @@ class Section(Map):
     def __init__(self, *args, name='', **kwargs):
         super().__init__(*args, **kwargs)
         self._name = name
+        #scan through arguments and covert dictionarys to Sections
+        for a in args:
+            #find a dictionary dtype
+            if(isinstance(a, dict)):
+                #iterate through its keys
+                for k in a.keys():
+                    #found nested dictionary recursively create Sections
+                    if(isinstance(a[k], dict)):
+                        self._inventory[k.lower()] = Section(a[k], name=k)
+                    #create Key dtype
+                    else:
+                        self._inventory[k.lower()] = Key(name=k, val=a[k])
+                    pass
+            pass
 
     pass
 
