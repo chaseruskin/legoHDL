@@ -1335,6 +1335,16 @@ plugins)?", warning=False)
             else:
                 log.error("Profile "+self.getItem(raw=True)+" does not exist.")
             pass
+        #open vendor
+        elif(self.hasFlag("vendor")):
+            #open the specified path to the vendor if it exists
+            if(self.getItem(raw=True).lower() in Vendor.Jar.keys()):
+                vndr_path = Vendor.Jar[self.getItem(raw=True)].getVendorDir()
+                log.info("Opening vendor "+self.getItem(raw=True)+" at... "+vndr_path)
+                apt.execute(apt.getEditor(), vndr_path)
+            else:
+                log.error("Vendor "+self.getItem(raw=True)+" does not exist.")
+            pass
         #open block
         else:
             #search all blocks (visibility off)

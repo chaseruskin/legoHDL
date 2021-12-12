@@ -197,6 +197,9 @@ class Vendor:
         #synchronize changes with its remote
         self._repo.push()
 
+        #freeze files as read-only access
+        block.modWritePermissions(enable=False, path=path)
+
         log.info("Success.")
         pass
 
@@ -227,6 +230,10 @@ class Vendor:
         Returns:
             None
         '''
+        #first remove any unsaved changes
+        self._repo.git('restore','--staged','.')
+        self._repo.git('restore','.')
+        #pull from remote location
         if(self._repo.remoteExists()):
             log.info("Refreshing vendor "+self.getName()+"...")
             #check status from remote

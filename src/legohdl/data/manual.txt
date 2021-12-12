@@ -130,6 +130,7 @@ SYNOPSIS:
         legohdl open [<plugin-alias>] -plugin
         legohdl open <profile-name> -profile
         legohdl open (-template | -settings[=<mode>])
+        legohdl open <vendor-name> -vendor
 
 DESCRIPTION:
         :todo:

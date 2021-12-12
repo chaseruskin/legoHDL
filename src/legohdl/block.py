@@ -2039,7 +2039,7 @@ class Block:
         return True
 
 
-    def modWritePermissions(self, enable):
+    def modWritePermissions(self, enable, path=None):
         '''
         Disable modification/write permissions of all files specified on this
         block's path.
@@ -2048,10 +2048,14 @@ class Block:
 
         Parameters:
             enable (bool): determine if files to have write permissions
+            path (str): optional path to override default path
         Returns:
             None
         '''
-        all_files = glob.glob(self.getPath()+"**/*.*", recursive=True)
+        if(path == None):
+            path = self.getPath()
+        
+        all_files = glob.glob(path+"**/*.*", recursive=True)
 
         for f in all_files:
             #get current file permissions
