@@ -667,14 +667,17 @@ class Block:
                 custom_meta[section][key._name] = Key(key._name, key._val)
                 pass
             pass
-
+        
+        #create block's metadata object
         self._meta = Cfg(self.getPath()+apt.MARKER, data=Section(self.LAYOUT))
         
         #merge skeleton metadata and custom configured user-defined metadata
         for sect in custom_meta.values():
             if(isinstance(custom_meta[sect._name], Key)):
                 continue
-            self._meta.set(sect._name, sect)
+            #unset override to prevent overwriting any required keys
+            self._meta.set(sect._name, sect, override=True)
+            pass
 
         #write new metadata file
         self._meta.write(auto_indent=False)
@@ -923,6 +926,9 @@ class Block:
         if(hasattr(self, "_is_secure")):
             return
 
+        if('block' not in self._meta._data.keys()):
+            self._meta.set('block', Section())
+
         #ensure all required fields from 'block' section exist
         for key in Block.REQ_KEYS:
             if(key not in self.getMeta().keys()):
@@ -1133,6 +1139,7 @@ class Block:
         self.setMeta('library', L)
         self.setMeta('name', N)
         self.setMeta('version', '0.0.0')
+        self.setMeta('requires', '()')
 
         #fill in placeholders
         if(cp_template):
