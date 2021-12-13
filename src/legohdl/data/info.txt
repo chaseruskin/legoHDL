@@ -31,7 +31,7 @@ Various assignments related to the tool in general.
 * end
 
 * general.active-workspace
-A workspace listed under [workspace] to be in current use. If an empty \
+A workspace from the 'workspace' section to be in current use. If an empty \
 assignment, a lot of functionality will be unavailable.
 * end
 
@@ -40,7 +40,7 @@ assignment, a lot of functionality will be unavailable.
 * end
 
 * general.author
-Your name! (or code-name, code-names are cool too).
+Your name. It can be accessed as one of the default placeholders using %AUTHOR%.
 * end
 
 * general.author.value
@@ -60,6 +60,10 @@ The path from where to copy a template folder for creating a new block project. 
 If an empty assignment, it will use the built-in template folder.
 * end
 
+* general.template.value
+<path>
+* end
+
 * general.profiles
 A list of profiles to import settings, templates, and/or plugins. Profiles are \
 stored in the built-in profiles folder.
@@ -74,6 +78,10 @@ Write 'on' to enable or 'off' to disable.
 
 * general.multi-develop.value
 'on' or 'off'
+* end
+
+* general.overlap-global
+depreciated
 * end
 
 * general.refresh-rate 
@@ -155,7 +163,8 @@ not configured to a remote repository, its value is empty.
 
 * placeholders
 User-defined values to be replaced when referenced within '%' symbols in files \
-created by legoHDL.
+created by legoHDL. Default placeholders include %AUTHOR% (name), %DATE% (date), \
+%BLOCK% (block's identifier), and TEMPLATE (file's name).
 * end
 
 * placeholders.keys
@@ -215,9 +224,17 @@ own line.
 The default instantiation name for a unit. Placeholders are supported.
 * end
 
+* HDL-styling.instance-name.value
+<instance>
+* end
+
 * HDL-styling.port-modifier
 The signal/wire identifier name to connect to the instantiated ports. Wildcard '*' \
 will be replaced with each port's original identifier.
+* end
+
+* HDL-styling.port-modifier.value
+<pattern>
 * end
 
 * HDL-styling.generic-modifier
@@ -225,6 +242,9 @@ The constant/parameter identifier name to connect to the instantiated generics/p
 Wildcard '*' will be replaced with each generics' original identifiers.
 * end
 
+* HDL-styling.generic-modifier.value
+<pattern>
+* end
 
 * metadata
 User-defined fields for Block.cfg files. These fields will be automatically copied \

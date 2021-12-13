@@ -72,7 +72,7 @@ class Cfg:
     SECT = (dict, Section)
 
 
-    def __init__(self, filepath, data=Section(), comments=Section(), en_mult_lvl=True):
+    def __init__(self, filepath, data=Section(), comments=dict(), en_mult_lvl=True):
         '''
         Create a CFG file object.
 
@@ -132,6 +132,8 @@ class Cfg:
                 #check for section
                 new_sect, prev_parents, cur_sect = self._addSection(l, prev_parents, cur_sect)
                 if(new_sect):
+                    #reset cur_key
+                    cur_key = None
                     continue
 
                 #check for new keys (properties)
@@ -248,28 +250,43 @@ class Cfg:
         node = self._data
         for k in keys[:len(keys)-1]:
             if(isinstance(node, Cfg.SECT)):
+                #create nested section if DNE
                 if(k not in node.keys()):
                     node[k] = Section(name=k)
                 node = node[k]
             else:
                 return
 
-        #if the end result is not a dictionary then return None
+        #if the end result is not a dictionary then return
         if(isinstance(node, Cfg.SECT) == False):
             return
 
-        #do not override the exisiting value if the key already exists
-        if(override == False and keys[-1] in node.keys()):
-            return
-
-        #overwrite entire dictionary and copy if val is a dtype dict
+        #create new nested section and recursively set its keys
         if(isinstance(val, Cfg.SECT)):
+            #create a nested level if section DNE
+            if(keys[-1] not in node.keys() and true_key != self._data._name):
+                node[keys[-1]] = Section(name=true_key)
+
+            search_key = key+'.'
+            #skip writing '' to set top _data section
+            if(self._data._name == true_key):
+                search_key = ''
+
             #recursive call
             for k in val.keys():
-                self.set(key+'.'+k, val[k], override=True)
-        #write new value as string
-        else:
+                self.set(search_key+k, val[k], override=override)
+            pass
+
+        #override existing key only when enabled
+        elif(keys[-1] in node.keys() and override == True):
             node[keys[-1]] = Key(true_key, Cfg.castStr(val))
+            pass
+
+        #write new value as string if DNE
+        elif(keys[-1] not in node.keys()):
+            #print('made new key',true_key, id(node))
+            node[keys[-1]] = Key(true_key, Cfg.castStr(val))
+            pass
         pass
 
 
@@ -322,8 +339,8 @@ class Cfg:
                     contents = contents + Cfg.S_CHILD_DEC
                 else:
                     contents = contents + Cfg.S_BEGIN
-                print(type(data[sect]))
-                print(data[sect]._name)
+                #print(type(data[sect]))
+                #print(data[sect]._name)
                 contents = contents + data[sect]._name +Cfg.S_END+'\n'
 
                 #recursive call to proceed into the nested section
@@ -337,7 +354,7 @@ class Cfg:
                 c_mark = ';'
     
             #write the key/value pair
-            print(data[sect]._name,data[sect])
+            #print(data[sect]._name,data[sect])
             #write extra spacing for key assignments to align if trying to be neat
             diff = (longest_key+1)-len(sect)
             diff = diff if(neat_keys) else 1
@@ -435,15 +452,15 @@ class Cfg:
                 next_line = txt[:limit]
                 txt = next_line + ' ' + txt[limit+1:]
             else:
-                #check if in middle of a word (lhs)
+                #check if in middle of a word (lhs is not a space)
                 if(len(txt) > limit-1 and txt[limit-1] != ' '):
-                    #check if next character is a space (rhs)
+                    #check if next character is not a space (rhs)
                     if(len(txt) > limit and txt[limit] != ' '):
                         crsr = limit-1
                         #find closest previous space
                         sp_i = next_line.find(' ')
                         #backtrack
-                        if(sp_i > -1):
+                        if(sp_i > -1 and sp_i < limit):
                             while(crsr > 0 and txt[crsr] != ' '):
                                 crsr -= 1
                         #forward track
@@ -512,7 +529,7 @@ class Cfg:
             #return empty list
             if(len(val) == 0):
                 return cls.L_BEGIN + cls.L_END
-                
+
             #add beginning list symbol
             returnee = ''
             if(frmt_list):
@@ -661,6 +678,9 @@ class Cfg:
         for i in range(len(line)):
             #grab current character
             ch = line[i]
+            #found a comment first must adhere to trimming to it
+            if(len(in_str) == 0 and ch == c_token):
+                break
             #toggle upon encountering a quote
             if((ch == '\'' or ch == '\"') and not len(in_str)):
                 in_str = ch

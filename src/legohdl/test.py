@@ -401,5 +401,19 @@ def main():
         print(c.get('general.key', dtype=int) == 10)
         newfile = {'Block': {'NAME' : '', 'library' : '', 'vendor' : '', 'version' : '0.0.0'}}
         meta = Cfg('./output2.cfg', data=Section(newfile))
-        meta.write(auto_indent=False)
+        meta.read()
+        #meta.write(auto_indent=False)
+
+        cfgsettings = Cfg('./output3.cfg', data=Section(), comments=comments)
+        #load settings
+        cfgsettings.read()
+        print(cfgsettings._filepath)
+        print(cfgsettings._data)
+        #reload any missing settings
+
+        print(Section(apt.LAYOUT))
+        cfgsettings.set('', Section(apt.LAYOUT), override=False)
+        print(cfgsettings._data)
+        #print(cfgsettings.get('', dtype=dict))
+        cfgsettings.write()
     pass
