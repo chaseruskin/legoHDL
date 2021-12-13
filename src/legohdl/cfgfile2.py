@@ -15,6 +15,7 @@ class Key:
     def __init__(self, name, val):
         self._name = name
         self._val = val
+        self._is_list = (len(val) > 1 and val[0] == Cfg.L_BEGIN and val[-1] == Cfg.L_END)
 
     def __repr__(self):
         return self._val
@@ -272,12 +273,18 @@ class Cfg:
         pass
 
 
-    def write(self, f=None, data=None, lvl=0, cur_key='', auto_indent=True, neat_keys=True):
+    def write(self, f=None, data=None, lvl=0, cur_key='', auto_indent=True, neat_keys=True, empty=False):
         '''
         Saves the _data attr to a .cfg file.
 
         Parameters:
-            None
+            f (str): output filepath
+            data (Section/dict): data to output if not outputting _data attr
+            lvl (int): internal use for recursion on nested sections
+            cur_key (str): internal use for recursion on nested sections
+            auto_indent (bool): determine if to indent keys/nested sections
+            neat_keys (bool): determine if to align key assignment token
+            empty (bool): determine if to comment out every key assignemnt
         Returns:
             None 
         '''
@@ -303,12 +310,10 @@ class Cfg:
             if(len(cur_key) == 0):
                 next_cur_key = sect
 
-            cmt = self._writeComment(next_cur_key, newline=T+'; ')
-            #write a new line if comment exists for a section
-            if((lvl != 0 or len(contents) or ('' in self._comments.keys())) and isinstance(data[sect], Cfg.SECT)):
-                contents = contents + '\n'
+            cmt = self._writeComment(next_cur_key, newline=T+'; ', is_section=isinstance(data[sect], Cfg.SECT))
             #write the comment (will be blank if not found)
-            contents = contents + cmt
+            if(cmt != '\n' or contents != ''):
+                contents = contents + cmt
 
             #write section
             if(isinstance(data[sect], Cfg.SECT)):
@@ -322,8 +327,15 @@ class Cfg:
                 contents = contents + data[sect]._name +Cfg.S_END+'\n'
 
                 #recursive call to proceed into the nested section
-                contents = contents + self.write(f, data[sect], lvl=(lvl+1), cur_key=next_cur_key, auto_indent=auto_indent, neat_keys=neat_keys)
+                contents = contents + self.write(f, data[sect], lvl=(lvl+1), 
+                    cur_key=next_cur_key, auto_indent=auto_indent, neat_keys=neat_keys, 
+                    empty=empty)
                 continue
+
+            c_mark = ''
+            if(empty):
+                c_mark = ';'
+    
             #write the key/value pair
             print(data[sect]._name,data[sect])
             #write extra spacing for key assignments to align if trying to be neat
@@ -334,13 +346,11 @@ class Cfg:
             key_var = data[sect]._name + ' '*diff + Cfg.KEY_ASSIGNMENT + ' '
             #obtain the string value
             val = data[sect]._val
-            #check if it is a list hidden in dtype str
-            is_list = (len(val) > 1 and val[0] == Cfg.L_BEGIN and val[-1] == Cfg.L_END)
             #determine number of spaces for a new line if rolling over text
-            if(is_list or neat_keys == False):
+            if(data[sect]._is_list or neat_keys == False):
                 spacer = 0
             #write the value
-            contents = contents + self._writeWithRollOver(T+key_var+val,newline=' '*spacer)+'\n'
+            contents = contents + self._writeWithRollOver(T+c_mark+key_var+val,newline=(' '*spacer)+c_mark)+'\n'
             pass
 
         if(lvl != 0):
@@ -353,14 +363,45 @@ class Cfg:
         pass
 
 
-    def _writeComment(self, key, newline='; '):
+    def _writeComment(self, key, newline='; ', is_section=False):
+        '''
+        Given a single-level key, generate the comment text for the given section/key.
+        Returns '\n' if the key is a section and does not have a comment
+
+        Parameters:
+            key (str): full-length key to write comments about
+            newline (str): how a newline should start
+            is_section (bool): determine if the comment is for a section or key
+        Returns:
+            cmt (str): text for comment, or '' if no comment found
+        '''
         key = key.lower()
         if(key not in self._comments.keys()):
+            if(is_section):
+                return '\n'
             return ''
-        print(newline)
-        
-        cmt = newline+self._comments[key].strip()
-        return self._writeWithRollOver(cmt, newline=newline)+'\n'
+
+        header = ''
+        if(is_section):
+            header = newline+'--- '+key+' settings --- \n'
+        description = newline+'DESCRIPTION:\n'
+                
+        cmt = newline + self._comments[key].strip()
+        cmt = self._writeWithRollOver(cmt, newline=newline)
+
+        #only return the file's header comment information
+        if(key == ''):
+            return cmt+'\n'
+
+        cmt = header + description + cmt
+
+        #add additional lines if found in comments dictionary
+        support = ['.sections', '.keys', '.value']
+        for s in support:
+            if(key+s in self._comments.keys()):
+                cmt = cmt + '\n'+newline+s[1:].upper()+':\n'+newline+self._writeWithRollOver(self._comments[key+s].strip(), newline=newline)
+
+        return '\n'+cmt+'\n'
 
     
     def _writeWithRollOver(self, txt, newline='', limit=80):
@@ -468,6 +509,10 @@ class Cfg:
 
         #cast using special string conversion format
         if(isinstance(val, list)):
+            #return empty list
+            if(len(val) == 0):
+                return cls.L_BEGIN + cls.L_END
+                
             #add beginning list symbol
             returnee = ''
             if(frmt_list):

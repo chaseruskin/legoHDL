@@ -15,20 +15,18 @@
 
 * settings-header
 ------------------------------------------------------------------------------ \
-File: legohdl.cfg
-Description:
-    A properties file to configure the package manager and development tool,\
-    legoHDL.
-Help:
-    For more information on how to edit this file, read the documentation at 
+FILE: legohdl.cfg
+DESCRIPTION:
+A properties file to configure the package manager and development tool, \
+legoHDL.
+HELP:
+For more information on how to edit this file, read the documentation at 
 ___.
 ------------------------------------------------------------------------------
 * end
 
 
 * general
---- General settings ---
-DESCRIPTION:
 Various assignments related to the tool in general.
 * end
 
@@ -74,7 +72,9 @@ related blocks. When disabled, it will only allow blocks to be used from the cac
 Write 'on' to enable or 'off' to disable.
 * end
 
-
+* general.multi-develop.value
+'on' or 'off'
+* end
 
 * general.refresh-rate 
 How often to synchronize vendors with their remote every day. Set to -1 to refresh \
@@ -83,54 +83,59 @@ the refresh points throughout the 24-hour day. This settings is the automation o
 'refresh' command.
 * end
 
+* general.refresh-rate.value
+-1 to 1440
+* end
+
 * general.mixed-language
 When enabled, instantiated units found in code will be checked across languages \
 VHDL and Verilog. When disabled, determining what component is instantiated is filtered \
 to only search through units written in the same language.
 * end
 
+* general.mixed-language.value
+'on' or 'off'
+* end
 
 * label
---- Label settings ---
-DESCRIPTION:
 User-defined groupings of filetypes to be collected and written to the blueprint \
 file during export. Labels help bridge a custom workflow with any plugin by adding \
 support for additional files.
 * end
 
 * label.global
-DESCRIPTION:
 Find these files throughout all blocks used in the current design.
-KEYS:
+* end
+
+* label.global.keys 
 <label> = <file-extension>
 * end
 
 * label.local
-DESCRIPTION:
 Find these files only throughout the current block.
-KEYS:
-<label> = <file-extension>
 * end
 
+* label.local.keys
+<label> = <file-extension>s
+* end
 
 * plugin
---- Plugin settings ---
-DESCRIPTION:
 User-defined aliases to execute plugins (scripts/tools/commands).
-KEYS:
+* end
+
+* plugin.keys 
 <alias> = <command>
 * end
 
-
 * workspace
---- Workspace settings ---
-DESCRIPTION:
 User-defined spaces for working with blocks. Blocks must appear in the \
 workspace's path to be recognized as downloaded. Multiple vendors can be \
 configured to one workspace and vendors can be shared across workspaces. \
 Block downloads and installations in one workspace are separate from those \ 
 of another workspace.
-SECTIONS:
+* end
+
+* workspace.sections 
 [.<workspace>]
     path = <path>
     vendors = (<vndr0>, <vndr1>, ...)
@@ -138,29 +143,27 @@ SECTIONS:
 
 
 * vendor
---- Vendor settings ---
-DESCRIPTION:
 Available vendors to be linked to workspaces. A vendor allows blocks to be visible \
 from remote repositories and downloaded/installed across machines. If a vendor is \
 not configured to a remote repository, its value is empty.
-KEYS:
+* end
+
+* vendor.keys
 <vendor-name> = <remote-repository-url>
 * end
 
 
 * placeholders
---- Placeholder settings ---
-DESCRIPTION:
 User-defined values to be replaced when referenced within '%' symbols in files \
 created by legoHDL.
-KEYS:
+* end
+
+* placeholders.keys
 <placeholder> = <value>
 * end
 
 
 * HDL-styling
---- HDL-styling settings ---
-DESCRIPTION:
 Configure how to print compatible HDL code.
 * end
 
@@ -169,8 +172,16 @@ Determine the number of spaces (0 to 80) to proceed an identifier. Used in conju
 the 'auto-fit' key.
 * end
 
+* HDL-styling.alignment.value
+0 to 80
+* end
+
 * HDL-styling.newline-maps
 Determine if the indication code for a 'map' begins on a new line.
+* end
+
+* HDL-styling.newline-maps.value
+'on' or 'off'
 * end
 
 * HDL-styling.default-language
@@ -178,15 +189,26 @@ Select which HDL language (vhdl, verilog, or auto) is default to print compatibl
 If 'auto' is selected, then the code is printed in the originally written language.
 * end
 
+* HDL-styling.default-language.value
+'vhdl', 'verilog', or 'auto'
+* end
+
 * HDL-styling.auto-fit
 Determine if the proceeding character/symbol after identifiers should all align \
-together based on the longest identifier name. Used in conjunction with the 'alignment' \
-key.
+together based on the longest identifier name. Used in conjunction with the 'alignment' key.
+* end
+
+* HDL-styling.auto-fit.value
+'on' or 'off'
 * end
 
 * HDL-styling.hanging-end
 Determine if the closing ')' in component/instantiation code should be placed on its \
 own line.
+* end
+
+* HDL-styling.hanging-end.value
+'on' or 'off'
 * end
 
 * HDL-styling.instance-name
@@ -205,11 +227,11 @@ Wildcard '*' will be replaced with each generics' original identifiers.
 
 
 * metadata
---- Metadata settings ---
-DESCRIPTION:
 User-defined fields for Block.cfg files. These fields will be automatically copied \
 into new Block.cfg files. Supports using placholders for key values.
-SECTIONS:
+* end
+
+* metadata.sections 
 [.<section>]
     <key> = <value>
 * end

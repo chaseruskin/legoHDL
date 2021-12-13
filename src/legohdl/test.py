@@ -401,5 +401,5 @@ def main():
         print(c.get('general.key', dtype=int) == 10)
         newfile = {'Block': {'NAME' : '', 'library' : '', 'vendor' : '', 'version' : '0.0.0'}}
         meta = Cfg('./output2.cfg', data=Section(newfile))
-        meta.write()
+        meta.write(auto_indent=False)
     pass
