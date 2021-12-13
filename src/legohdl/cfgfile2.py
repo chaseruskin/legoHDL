@@ -176,180 +176,6 @@ class Cfg:
         return True
 
 
-    def get(self, key, dtype=str):
-        '''
-        Returns the value behind the given key. 
-        
-        Each key is converted to lower-case for comparison. Returns None if DNE.
-        Will return a copy of dictionary level if not enough components were given for
-        key (dtype must be set to dict to avoid None return). 
-        
-        An empty key will return the entire _data attr (:fix:).
-
-        Return a Key by passing 'Key' to dtype.
-
-        Parameters:
-            key (str): sections/keys to traverse dictionary separated by delimiter
-        Returns:
-            (dtype): str, int, bool, list or
-            (Key) : true key name and its converted datatype
-        '''
-        #split key into components
-        keys = [k.lower() for k in key.split(Cfg.S_DELIM)]
-
-        #traverse through the dictionary structure to the requested key
-        node = self._data
-        #verify an empty key was not entered
-        if(keys != ['']):
-            for k in keys:
-                if(isinstance(node, Section) and k in node.keys()):
-                    node = node[k]
-                else:
-                    return None
-        #if the end result is still a dictionary then return None
-        if(isinstance(node, Section)):
-            if(dtype == Section):
-                cp = Section(name=node._name)
-                for k in node.keys():
-                    if(isinstance(node[k], Section)):
-                        cp[k] = self.get(key+'.'+k, dtype=Section)
-                    else:
-                        cp[k] = self.get(key+'.'+k, dtype=Key)
-                return cp
-            else:
-                return None
-
-        true_key = node._name
-        node = node._val
-
-        #perform proper cast
-        if(dtype == Key):
-            return Key(true_key, node)
-        elif(dtype == bool):
-            return Cfg.castBool(node)
-        elif(dtype == int):
-            return Cfg.castInt(node)
-        elif(dtype == list):
-            return Cfg.castList(node)
-        #default is to return str
-        return str(node)
-
-
-
-    def set(self, key, val, override=True, verbose=False):
-        '''
-        Writes the value behind the given key. Each key is converted to lower-case
-        for comparison. Will make new key if DNE and override is set.
-
-        Automatically creates Sections that DNE. If wanting to replace an entire section,
-        the val must be a Section/dict and overhaul must be set.
-
-        Will only overwrite a dictionary if val is a dtype dict and override is True.
-        Copies contents of dictionary to store.
-
-        Parameters:
-            key (str): sections/keys to traverse dictionary separated by delimiter
-            val (any): any datatype value to be converted to string for dictionary entry
-            override (bool): determine if to override existing value if key exists
-            verbose (bool): determine if to print out every key assignment
-        Returns:
-            None
-        '''
-        #split key into components as lower-case
-        keys = [k for k in key.split(Cfg.S_DELIM)]
-        true_key = key.split(Cfg.S_DELIM)[-1]
-
-        #traverse through the dictionary structure to the requested key
-        node = self._data
-        for k in keys[:len(keys)-1]:
-            if(isinstance(node, Section)):
-                #create nested section if DNE
-                if(k.lower() not in node.keys()):
-                    if(verbose):
-                        print("CREATED: "+Cfg.S_BEGIN+key+Cfg.S_END)
-                    self._modified = True
-                    node[k] = Section(name=k)
-                node = node[k]
-            else:
-                return
-        #cast to lower-case
-        keys = [k.lower() for k in keys]
-
-        #if the end result is not a dictionary then return
-        if(isinstance(node, Section) == False):
-            return
-
-        #create new nested section and recursively set its keys
-        if(isinstance(val, Section)):
-            #create a nested level if section DNE
-            if(keys[-1] not in node.keys() and true_key != self._data._name):
-                if(verbose):
-                    print("CREATED: "+Cfg.S_BEGIN+key+Cfg.S_END)
-                self._modified = True
-                node[keys[-1]] = Section(name=true_key)
-
-            search_key = key+'.'
-            #skip writing '' to set top _data section
-            if(self._data._name == true_key):
-                search_key = ''
-
-            #recursive call
-            for k in val.keys():
-                if(isinstance(val[k], Key)):
-                    k = val[k]._name
-                self.set(search_key+k, val[k], override=override, verbose=verbose)
-            pass
-
-        #override existing key only when enabled
-        elif(keys[-1] in node.keys() and override == True):
-            #tell user if the setting did actually change or just being observed
-            action = 'OBSERVE: '
-            if(node[keys[-1]]._val != Cfg.castStr(val)):
-                action = 'ALTERED: '
-                self._modified = True
-            #overwrite exsiting key
-            node[keys[-1]] = Key(true_key, Cfg.castStr(val))
-            if(verbose):
-                print(action+key+' '+Cfg.KEY_ASSIGNMENT+' '+Cfg.castStr(val))
-            pass
-
-        #write new value as string if DNE
-        elif(keys[-1] not in node.keys()):
-            #print('made new key',true_key, id(node))
-            node[keys[-1]] = Key(true_key, Cfg.castStr(val))
-            self._modified = True
-            if(verbose):
-                print("CREATED: "+key+' '+Cfg.KEY_ASSIGNMENT+' '+Cfg.castStr(val))
-            pass
-        pass
-
-    def remove(self, key):
-        '''
-        Removes a section/key from the _data attr. Sets _modified if successfully 
-        deletes a key/section. 
-
-        Parameters:
-            key (str):
-            dat (Section): used for internal recursive calls
-        Returns:
-            success (bool): determine if successfully deleted
-        '''
-        keys_l = [k.lower() for k in key.split(Cfg.S_DELIM)]
-        #check if the first component is in the data structure
-        i = 0
-        node = self._data
-        for i in range(0, len(keys_l)):
-            if(isinstance(node, Section) == False or keys_l[i] not in node.keys()):
-                return False
-            elif(i == len(keys_l)-1):
-                del node[keys_l[i]]
-                self._modified = True
-                return True
-            node = node[keys_l[i]]
-            pass
-        pass
-
-
     def write(self, data=None, lvl=0, cur_key='', auto_indent=True, neat_keys=True, empty=False):
         '''
         Saves the _data attr to a .cfg file.
@@ -439,6 +265,207 @@ class Cfg:
         #return modified state to false
         self._modified = False
         pass
+
+
+    def get(self, key, dtype=str):
+        '''
+        Returns the value behind the given key. 
+        
+        Each key is converted to lower-case for comparison. Returns None if DNE.
+        Will return a copy of dictionary level if not enough components were given for
+        key (dtype must be set to dict to avoid None return). 
+        
+        An empty key will return the entire _data attr (:fix:).
+
+        Return a Key by passing 'Key' to dtype.
+
+        Parameters:
+            key (str): sections/keys to traverse dictionary separated by delimiter
+        Returns:
+            (dtype): str, int, bool, list or
+            (Key) : true key name and its converted datatype
+        '''
+        #split key into components
+        keys = [k.lower() for k in key.split(Cfg.S_DELIM)]
+
+        #traverse through the dictionary structure to the requested key
+        node = self._data
+        #verify an empty key was not entered
+        if(keys != ['']):
+            for k in keys:
+                if(isinstance(node, Section) and k in node.keys()):
+                    node = node[k]
+                else:
+                    return None
+        #if the end result is still a dictionary then return None
+        if(isinstance(node, Section)):
+            if(dtype == Section):
+                cp = Section(name=node._name)
+                for k in node.keys():
+                    if(isinstance(node[k], Section)):
+                        cp[k] = self.get(key+'.'+k, dtype=Section)
+                    else:
+                        cp[k] = self.get(key+'.'+k, dtype=Key)
+                return cp
+            else:
+                return None
+
+        true_key = node._name
+        node = node._val
+
+        #perform proper cast
+        if(dtype == Key):
+            return Key(true_key, node)
+        elif(dtype == bool):
+            return Cfg.castBool(node)
+        elif(dtype == int):
+            return Cfg.castInt(node)
+        elif(dtype == list):
+            return Cfg.castList(node)
+        #default is to return str
+        return str(node)
+
+
+    def set(self, key, val, override=True, verbose=False):
+        '''
+        Writes the value behind the given key. Each key is converted to lower-case
+        for comparison. Will make new key if DNE and override is set.
+
+        Automatically creates Sections that DNE. If wanting to replace an entire section,
+        the val must be a Section/dict and overhaul must be set.
+
+        Will only overwrite a dictionary if val is a dtype dict and override is True.
+        Copies contents of dictionary to store.
+
+        Parameters:
+            key (str): sections/keys to traverse dictionary separated by delimiter
+            val (any): any datatype value to be converted to string for dictionary entry
+            override (bool): determine if to override existing value if key exists
+            verbose (bool): determine if to print out every key assignment
+        Returns:
+            None
+        '''
+        #split key into components as lower-case
+        keys = [k for k in key.split(Cfg.S_DELIM)]
+        true_key = key.split(Cfg.S_DELIM)[-1]
+
+        #traverse through the dictionary structure to the requested key
+        node = self._data
+        for k in keys[:len(keys)-1]:
+            if(isinstance(node, Section)):
+                #create nested section if DNE
+                if(k.lower() not in node.keys()):
+                    if(verbose):
+                        print("CREATED: "+Cfg.S_BEGIN+key+Cfg.S_END)
+                    self._modified = True
+                    node[k] = Section(name=k)
+                node = node[k]
+            else:
+                return
+        #cast to lower-case
+        keys = [k.lower() for k in keys]
+
+        #if the end result is not a dictionary then return
+        if(isinstance(node, Section) == False):
+            return
+
+        #create new nested section and recursively set its keys
+        if(isinstance(val, Section)):
+            #create a nested level if section DNE
+            if(keys[-1] not in node.keys() and true_key != self._data._name):
+                if(verbose):
+                    print("CREATED: "+Cfg.S_BEGIN+key+Cfg.S_END)
+                self._modified = True
+                node[keys[-1]] = Section(name=true_key)
+
+            search_key = key+'.'
+            #skip writing '' to set top _data section
+            if(self._data._name == true_key):
+                search_key = ''
+
+            #recursive call
+            for k in val.keys():
+                if(isinstance(val[k], Key)):
+                    k = val[k]._name
+                self.set(search_key+k, val[k], override=override, verbose=verbose)
+            pass
+
+        #override existing key only when enabled
+        elif(keys[-1] in node.keys() and override == True):
+            #tell user if the setting did actually change or just being observed
+            action = 'OBSERVE: '
+            if(node[keys[-1]]._val != Cfg.castStr(val)):
+                action = 'ALTERED: '
+                self._modified = True
+            #overwrite exsiting key
+            node[keys[-1]] = Key(true_key, Cfg.castStr(val))
+            if(verbose):
+                print(action+key+' '+Cfg.KEY_ASSIGNMENT+' '+Cfg.castStr(val))
+            pass
+
+        #write new value as string if DNE
+        elif(keys[-1] not in node.keys()):
+            #print('made new key',true_key, id(node))
+            node[keys[-1]] = Key(true_key, Cfg.castStr(val))
+            self._modified = True
+            if(verbose):
+                print("CREATED: "+key+' '+Cfg.KEY_ASSIGNMENT+' '+Cfg.castStr(val))
+            pass
+        pass
+
+
+    def remove(self, key):
+        '''
+        Removes a section/key from the _data attr. Sets _modified if successfully 
+        deletes a key/section. 
+
+        Parameters:
+            key (str):
+            dat (Section): used for internal recursive calls
+        Returns:
+            success (bool): determine if successfully deleted
+        '''
+        keys_l = [k.lower() for k in key.split(Cfg.S_DELIM)]
+        #check if the first component is in the data structure
+        i = 0
+        node = self._data
+        for i in range(0, len(keys_l)):
+            if(isinstance(node, Section) == False or keys_l[i] not in node.keys()):
+                return False
+            elif(i == len(keys_l)-1):
+                del node[keys_l[i]]
+                self._modified = True
+                return True
+            node = node[keys_l[i]]
+            pass
+        pass
+
+
+    def getAllKeys(self, keypath=''):
+        '''
+        Returns all full paths to keys, delimited by '.'.
+
+        Parameters:
+            None
+        Returns:
+            [(str)]: list of full key names, all lower-case
+        '''
+        keys = []
+        #get current section level
+        node = self._data
+        if(len(keypath)):
+            print(keypath)
+            node = self.get(keypath, dtype=Section)
+        #iterate through everything within the section
+        for k in node.keys():
+            if(isinstance(node[k], Section)):
+                #recursively call into nested section
+                sep = '.' if(len(keypath)) else ''
+                keys += self.getAllKeys(keypath+sep+k)
+            #add the key's full path
+            else:
+                keys += [keypath+'.'+k]
+        return keys
 
 
     def _writeComment(self, key, newline='; ', is_section=False):
