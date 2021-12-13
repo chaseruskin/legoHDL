@@ -2682,7 +2682,7 @@ class Block:
             log.error("Entity "+entity+" not found in block "+self.getFull()+"!")
             return False
 
-        def_lang = apt.getField(['HDL-styling', 'default-language']).lower()
+        def_lang = apt.CFG.get('HDL-styling.default-language').lower()
 
         #determine the language for outputting compatible code
         if(lang != None):
@@ -2702,14 +2702,14 @@ class Block:
         #grab the desired entity from the Map
         ent = units[entity]
 
-        hang_end = apt.getField(['HDL-styling', 'hanging-end'], bool)
-        auto_fit = apt.getField(['HDL-styling', 'auto-fit'], bool)
-        alignment = apt.getField(['HDL-styling', 'alignment'], int)
-        maps_on_newline = apt.getField(['HDL-styling', 'newline-maps'], int)
-        inst_name = apt.getField(['HDL-styling', 'instance-name'])
+        hang_end = apt.CFG.get('HDL-styling.hanging-end', dtype=bool)
+        auto_fit = apt.CFG.get('HDL-styling.auto-fit', dtype=bool)
+        alignment = apt.CFG.get('HDL-styling.alignment', dtype=int)
+        maps_on_newline = apt.CFG.get('HDL-styling.newline-maps', dtype=int)
+        inst_name = apt.CFG.get('HDL-styling.instance-name')
 
-        g_mod = apt.getField(['HDL-styling', 'generic-modifier'])
-        p_mod = apt.getField(['HDL-styling', 'port-modifier'])
+        g_mod = apt.CFG.get('HDL-styling.generic-modifier')
+        p_mod = apt.CFG.get('HDL-styling.port-modifier')
 
         #swap placeholders in inst name
         for ph in self.getPlaceholders(ent.E()):
