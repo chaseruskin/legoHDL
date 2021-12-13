@@ -293,7 +293,7 @@ plugins)?", warning=False)
                 resp = input()
                 pass
         #decided to not run setup prompt or we have no workspaces
-        if(not is_select or len(apt.SETTINGS['workspace'].keys()) == 0):
+        if(not is_select or len(apt.CFG.get('workspace', dtype=Section).keys()) == 0):
             #ask to create workspace
             ws_name = input("Enter a workspace name: ")
             while(len(ws_name) == 0 or ws_name.isalnum() == False):

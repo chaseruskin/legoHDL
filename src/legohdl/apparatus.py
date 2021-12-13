@@ -784,13 +784,13 @@ class Apparatus:
     @classmethod
     def getMixedLanguage(cls):
         '''Returns (bool) if all units from cross-languages should be included.'''
-        return cls.SETTINGS['general']['mixed-language']
+        return cls.CFG.get('general.mixed-language', dtype=bool)
 
 
     @classmethod
     def setEditor(cls, editor):
         '''Sets the editor to the settings data-structure.'''
-        cls.SETTINGS['general']['editor'] = editor
+        cls.CFG.set('general.editor', editor, verbose=True)
         pass
 
 
