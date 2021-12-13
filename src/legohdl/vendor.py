@@ -57,7 +57,7 @@ class Vendor:
                     return
                 #create vendor directory 
                 os.makedirs(self.getVendorDir())
-                # create .vndr file
+                #create .vndr file
                 open(self.getVendorDir()+self.getName()+self.EXT, 'w').close()
             pass
         
@@ -74,6 +74,8 @@ class Vendor:
             self._repo.commit("Initializes legohdl vendor")
             self._repo.push()
 
+        self._url = url
+
         #add to class container
         self.Jar[self.getName()] = self
         pass
@@ -82,7 +84,7 @@ class Vendor:
     def loadFromURL(self, url):
         '''
         Attempts to load/add a vendor from an external path/url. Will not add
-        if the path is not a non-empty git repository, does not have .vndr, or
+        if the path is an empty git repository, does not have .vndr, or
         the vendor name is already taken.
 
         Parameters:
@@ -97,7 +99,7 @@ class Vendor:
             return False
 
         #create temp dir
-        os.makedirs(apt.TMP)
+        apt.makeTmpDir()
 
         #clone from repository
         if(Git.isBlankRepo(url) == False):
@@ -133,7 +135,7 @@ class Vendor:
             success = False
 
         #clean up temp dir
-        shutil.rmtree(apt.TMP, onerror=apt.rmReadOnly)
+        apt.cleanTmpDir()
         return success
 
 
@@ -234,6 +236,12 @@ class Vendor:
         #first remove any unsaved changes
         self._repo.git('restore','--staged','.')
         self._repo.git('restore','.')
+        
+        #try to sync with a remote
+        if(self._url != '' or self._url != None):
+            self.setRemoteURL(self._url, exists_ok=True)
+            pass
+
         #pull from remote location
         if(self._repo.remoteExists()):
             log.info("Refreshing vendor "+self.getName()+"...")
@@ -252,20 +260,22 @@ class Vendor:
         pass
 
 
-    def setRemoteURL(self, url):
+    def setRemoteURL(self, url, exists_ok=False):
         '''
         Grants ability to set a remote url only if it is 1) valid 2) blank and 3) a remote
         url is not already set.
 
         Parameters:
             url (str): the url to try and set for the given vendor
+            exists_ok (bool): determine if to print error and return false if url is the same
         Returns:
             (bool): true if the url was successfully attached under the given constraints.
         '''
         #check if remote is already set
         if(self._repo.getRemoteURL() != ''):
-            log.error("Vendor "+self.getName()+" already has a remote URL.")
-            return False
+            if(exists_ok == False):
+                log.error("Vendor "+self.getName()+" already has a remote URL.")
+            return exists_ok
         #proceed
         #check if url is valid and blank
         if(Git.isValidRepo(url, remote=True) and Git.isBlankRepo(url)):
@@ -292,6 +302,7 @@ class Vendor:
         shutil.rmtree(self.getVendorDir(), onerror=apt.rmReadOnly)
         #remove from Jar
         del self.Jar[self.getName()]
+        pass
 
 
     @classmethod
@@ -311,11 +322,18 @@ class Vendor:
     def save(cls):
         '''Save vendors to settings.'''
 
-        serialize = {}
+        vndr_data = Section()
+        keys = apt.CFG.get('vendor', dtype=Section).keys()
         for vndr in cls.Jar.values():
-            serialize[vndr.getName()] = vndr._repo.getRemoteURL()
-        
-        apt.CFG.set('vendor', Section(serialize), override=True)
+            vndr_data[vndr.getName()] = Key(vndr.getName(), vndr._repo.getRemoteURL())
+            #remove all vendor keys found in meta but not in Jar
+            pass
+
+        for k in keys:
+            if(k not in cls.Jar.keys()):
+                apt.CFG.remove('vendor.'+k)
+
+        apt.CFG.set('vendor', vndr_data, override=True)
         apt.save()
         pass
 

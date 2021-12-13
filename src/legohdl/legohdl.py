@@ -98,6 +98,7 @@ class legoHDL:
         #save all legohdl.cfg changes
         apt.save()
         Workspace.save()
+        Vendor.save()
 
         #limit functionality if not in a workspace
         if(not Workspace.inWorkspace()):
@@ -943,10 +944,17 @@ plugins)?", warning=False)
 
         #generate list of all available keys/editable sections
         editable_keys = apt.CFG.getAllKeys()
+        create_keys = ['vendor', 'plugin', 'placeholders',]
         editable_sects = apt.OPTIONS
+
+        skip_flags = ['link', 'unlink']
+
 
         #set each setting listed in flags try to modify it
         for k in self.getFlags():
+            #make sure control-flow flags are skipped
+            if(k in skip_flags):
+                continue
             #get the value from the flag (if exists)
             v = self.getVar(k)
             
@@ -955,12 +963,14 @@ plugins)?", warning=False)
 
             #first attempt to edit the key
             edit_k = (k.lower() in editable_keys)
-            edit_s = (sect.lower() in editable_sects and (len(k.split('.')) > 1))
+            #allow user to create sections
+            edit_s = (sect.lower() in editable_sects and (len(k.split(Cfg.S_DELIM)) > 1))
+            crte_k = (sect.lower() in create_keys and (len(k.split(Cfg.S_DELIM)) > 1))
 
             #assign defaults to V if DNE
             if(v == None):
                 #requesting to make an empty new section
-                if(edit_s):
+                if(edit_s and crte_k == False):
                     v = Section(name=k)
                 else:
                     v = ''
@@ -976,6 +986,7 @@ plugins)?", warning=False)
                 if(edit_s == False):
                     log.error("Cannot edit section: "+sect)
                     continue
+
             if(edit_k):
                 apt.CFG.set(k, v, verbose=True, override=True)
             elif(edit_s):
@@ -989,17 +1000,19 @@ plugins)?", warning=False)
             if(sect == 'vendor' and (edit_k or edit_s)):
                 vndr = None
                 name = k.split('.')[-1]
-                
+                url = self.getVar(k)
                 #modify an existing vendor
                 if(name in Vendor.Jar.keys()):
                     vndr = Vendor.Jar[name]
+                    
                     #if its local and remote given try to set a remote
-                    if(vndr.isRemote() == False and v != Cfg.NULL):
-                        vndr.setRemoteURL(v)    
+                    if(vndr.isRemote() == False and url != Cfg.NULL):
+                        vndr.setRemoteURL(url)    
+                    elif(vndr.isRemote() and url == Cfg.NULL):
+                        vndr._repo.setRemoteURL(url, force=True)
                 #vendor name is not found
-                elif(v != Cfg.NULL):
-                    #try to create from the url
-                    vndr = Vendor(name, v)
+                else:
+                    vndr = Vendor(name, url)
 
                 #alter the workspace's connections to vendors
                 if(vndr != None and Workspace.inWorkspace()):
@@ -1008,6 +1021,7 @@ plugins)?", warning=False)
                     elif(self.hasFlag('link')):
                         self.WS().linkVendor(vndr.getName())
                     pass
+                Vendor.save()
                 Workspace.save()
             continue
 
