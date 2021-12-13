@@ -351,9 +351,9 @@ class Cfg:
         for comparison. Will make new key if DNE and override is set.
 
         Automatically creates Sections that DNE. If wanting to replace an entire section,
-        the val must be a Section/dict and overhaul must be set.
+        the val must be a Section and override must be set.
 
-        Will only overwrite a dictionary if val is a dtype dict and override is True.
+        Will only overwrite a dictionary if val is a dtype Section and override is True.
         Copies contents of dictionary to store.
 
         Parameters:
@@ -368,23 +368,30 @@ class Cfg:
         keys = [k for k in key.split(Cfg.S_DELIM)]
         true_key = key.split(Cfg.S_DELIM)[-1]
 
-        #traverse through the dictionary structure to the requested key
+        #traverse through the sections data structure to the requested key
         node = self._data
+        keypath = ''
         for k in keys[:len(keys)-1]:
-            if(isinstance(node, Section)):
-                #create nested section if DNE
-                if(k.lower() not in node.keys()):
-                    if(verbose):
-                        print("CREATED: "+Cfg.S_BEGIN+key+Cfg.S_END)
-                    self._modified = True
-                    node[k] = Section(name=k)
-                node = node[k]
-            else:
+            #must be traversing through sections
+            if(isinstance(node, Section) == False):
                 return
+            #update full keypath
+            keypath = keypath + k + '.'
+            #create nested section if DNE
+            if(k.lower() not in node.keys()):
+                if(verbose):
+                    print("CREATED: "+Cfg.S_BEGIN+keypath[:len(keypath)-1]+Cfg.S_END)
+                self._modified = True
+                node[k] = Section(name=k)
+                pass
+            #traverse into nested section
+            node = node[k]
+            pass
+
         #cast to lower-case
         keys = [k.lower() for k in keys]
 
-        #if the end result is not a dictionary then return
+        #if the end result is not a Section then return
         if(isinstance(node, Section) == False):
             return
 

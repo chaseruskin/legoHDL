@@ -217,6 +217,11 @@ class legoHDL:
         return it
 
 
+    def getFlags(self):
+        '''Returns ([str]) of all raised flags.'''
+        return self._flags
+
+
     def hasFlag(self, flag):
         '''
         See if the flag is found within _flags.
@@ -941,15 +946,27 @@ plugins)?", warning=False)
         editable_sects = apt.OPTIONS
 
         #set each setting listed in flags try to modify it
-        for k,v in self._vars.items():
+        for k in self.getFlags():
+            #get the value from the flag (if exists)
+            v = self.getVar(k)
+            
             #split the variable into two components (if applicable)
             sect = k.split('.')[0]
-            #print(k, v, 'section:',sect)
-            v = v.strip()
+
             #first attempt to edit the key
-            
             edit_k = (k.lower() in editable_keys)
             edit_s = (sect.lower() in editable_sects and (len(k.split('.')) > 1))
+
+            #assign defaults to V if DNE
+            if(v == None):
+                #requesting to make an empty new section
+                if(edit_s):
+                    v = Section(name=k)
+                else:
+                    v = ''
+
+            if(isinstance(v, str)):
+                v = v.strip()
 
             if(edit_k == False and edit_s == False):
                 if(edit_k == False):
