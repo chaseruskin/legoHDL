@@ -969,7 +969,7 @@ plugins)?", warning=False)
                 log.info("Updated settings.")
 
             #handle vendor configurations/editing
-            if(sect == 'vendor' and edit_k or edit_s):
+            if(sect == 'vendor' and (edit_k or edit_s)):
                 vndr = None
                 name = k.split('.')[-1]
                 

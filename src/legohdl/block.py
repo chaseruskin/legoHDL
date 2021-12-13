@@ -14,16 +14,13 @@ from datetime import date
 from enum import Enum
 
 from .apparatus import Apparatus as apt
-from .cfgfile import CfgFile as cfg
+from .cfgfile2 import Cfg, Section, Key
 from .git import Git
 from .map import Map
 from .graph import Graph
 from .vhdl import Vhdl
 from .verilog import Verilog
 from .unit import Unit
-
-from .cfgfile2 import Cfg, Section, Key
-
 
 
 #a Block is a package/module that is signified by having the marker file
@@ -40,27 +37,19 @@ class Block:
 
 
     LAYOUT = {'block' : {
-                'name' : cfg.NULL,
-                'library' : cfg.NULL,
-                'version' : cfg.NULL,
-                'summary' : cfg.NULL,
-                'toplevel' : cfg.NULL,
-                'bench' : cfg.NULL,
-                'remote' : cfg.NULL,
-                'vendor' : cfg.NULL,
+                'name' : Cfg.NULL,
+                'library' : Cfg.NULL,
+                'version' : Cfg.NULL,
+                'remote' : Cfg.NULL,
+                'vendor' : Cfg.NULL,
                 'requires' : '()'},
             }
 
-    #all possible metadata that may go under [block]
-    FIELDS = ['name', 'library', 'version', 'summary', 'toplevel', 'bench', \
-        'remote', 'vendor', 'requires', 'versions', 'size', 'vhdl-units', \
-        'vlog-units']
-
     #metadata that must be written in [block] else the block is seen as corrupted
-    REQ_FIELDS = ['name', 'library', 'version', 'remote', 'vendor', 'requires']
+    REQ_KEYS = ['name', 'library', 'version', 'remote', 'vendor', 'requires']
 
     #metadata that gets added as block loses detail (at AVAIL or VERS level)
-    EXTRA_FIELDS = ['versions', 'size', 'vhdl-units', 'vlog-units']
+    EXTRA_KEYS = ['versions', 'size', 'vhdl-units', 'vlog-units']
 
     #supported files to be identified as "changelogs"
     CHANGE_LOGS = ['changelog.md', 'change.log', 'changelog.txt']
@@ -387,7 +376,7 @@ class Block:
         if(cl == None):
             return False  
         #no editor available to open the changelog      
-        if(apt.getEditor() == cfg.NULL):
+        if(apt.getEditor() == Cfg.NULL):
             log.info("Skipping updating CHANGELOG due to no configured text-editor...")
             return False
 
@@ -657,7 +646,7 @@ class Block:
     def initMeta(self):
         '''
         Create basic metadata data structure. Fills in placeholders for all
-        fields outside of [block].
+        fields outside and inside of [block].
 
         Parameters:
             None
@@ -667,6 +656,10 @@ class Block:
         #fill in placeholders for metadata (two-level sections)
         custom_meta = apt.CFG.get('metadata', dtype=Section)
         for section,keys in custom_meta.items():
+            #skip immediate-level keys or add as global keys?
+            if(isinstance(keys, Key)):
+                continue
+            #iterate through all keys for the given section
             for key in keys.values():
                 for ph in self.getPlaceholders(tmp_val=''):
                     key._val = key._val.replace(ph[0],ph[1])
@@ -676,14 +669,11 @@ class Block:
             pass
 
         self._meta = Cfg(self.getPath()+apt.MARKER, data=Section(self.LAYOUT))
-        #filter out omitted optional fields
-        for omit_field in apt.getDisabledBlockFields():
-            #verify the field to delete is in the data structure
-            if(omit_field.lower() in self._meta.get('block').keys()):
-                self._meta.remove('block.'+omit_field.lower())
-
+        
         #merge skeleton metadata and custom configured user-defined metadata
         for sect in custom_meta.values():
+            if(isinstance(custom_meta[sect._name], Key)):
+                continue
             self._meta.set(sect._name, sect)
 
         #write new metadata file
@@ -933,21 +923,13 @@ class Block:
         if(hasattr(self, "_is_secure")):
             return
 
-        #remove any invalid fields from 'block' section
-        keys = list(self.getMeta().keys())
-
-        for key in keys:
-            if(key not in Block.FIELDS):
-                self._meta.remove('block.'+key)
-                pass
-
         #ensure all required fields from 'block' section exist
-        for key in Block.REQ_FIELDS:
+        for key in Block.REQ_KEYS:
             if(key not in self.getMeta().keys()):
-                self._meta.set('block.'+key, cfg.NULL)
+                self._meta.set('block.'+key, Cfg.NULL)
 
         #ensure requires is a proper list format
-        if(self._meta.get('block.requires') == cfg.NULL):
+        if(self._meta.get('block.requires') == Cfg.NULL):
             self._meta.set('block.requires', '()')
  
         self.save()
@@ -1587,12 +1569,13 @@ class Block:
             corrupt = True
         else:
             #check all required fields are in metadata
-            for f in Block.REQ_FIELDS:
-                if(self.getMeta(f) == None):
+            for f in Block.REQ_KEYS:
+                if(f not in self._meta.get('block', dtype=Section).keys()):
+                    log.error("Missing required metadata key: "+f)
                     corrupt = True
                     break
                 elif((f == 'name' or f == 'library') and self.getMeta(f) == ''):
-                    log.error("Cannot have empty "+f+" field!")
+                    log.error("Cannot have empty metadata key: "+f)
                     corrupt = True
                     break
                 pass
@@ -1602,7 +1585,7 @@ class Block:
             corrupt = True
 
         if(len(disp_err) and corrupt):
-            log.error("This block's version "+ver+" is corrupted and cannot be "+disp_err+".")
+            log.error("Block's version "+ver+" is corrupted and cannot be "+disp_err+".")
 
         return corrupt
 
@@ -2280,12 +2263,7 @@ class Block:
             self._top = units[top_contenders[0]]
             if(verbose):
                 log.info("Identified top-level unit: "+self._top.E())
-
-            #update metadata and will save if different
-            if(apt.autoFillUnitFields()):
-                if("toplevel" in self.getMeta().keys() and self._top.E() != self.getMeta("toplevel")):
-                    self.setMeta('toplevel', self._top.E())
-                    self.save()
+            pass
 
         return self._top
 
@@ -2352,15 +2330,6 @@ class Block:
                 log.info("Identified top-level testbench: "+self._bench.E())
             else:
                 log.warning("No testbench detected.")
-
-        #update the metadata is saving
-        if(apt.autoFillUnitFields()):
-            if("bench" in self.getMeta().keys()):
-                if(self._bench == None):
-                    self.setMeta('bench', None)
-                else:
-                    self.setMeta('bench', self._bench.E())
-                self.save()
 
         #return the Unit object
         return self._bench
@@ -2813,29 +2782,29 @@ class Block:
         #read the metadata by default
         info_txt = '--- METADATA ---\n'
         in_header = ''
-        in_field = ''
+        in_key = ''
         #open and dump the metadata contents into 'info_txt'
         with open(self.getMetaFile(), 'r') as file:
             for line in file:
                 if(len(line) > 1 and line.strip()[0] == '[' and line.strip()[-1] == ']'):
                     in_header = line.strip()
                 elif(line.count('=')):
-                    in_field = line[:line.find('=')].strip()
-                #print(in_header+'|'+in_field)
-                #avoid printing extra fields in metadata section
-                if(in_header.lower() == '[block]' and in_field.lower() in Block.EXTRA_FIELDS):
+                    in_key = line[:line.find('=')].strip()
+                #print(in_header+'|'+in_key)
+                #avoid printing extra keys in metadata section
+                if(in_header.lower() == '[block]' and in_key.lower() in Block.EXTRA_KEYS):
                     #capture available versions
-                    if(in_field.lower() == 'versions' and len(all_versions) == 0):
-                        all_versions = self.getMeta(in_field)
+                    if(in_key.lower() == 'versions' and len(all_versions) == 0):
+                        all_versions = self.getMeta(in_key)
                     #capture the block's size
-                    elif(in_field.lower() == 'size'):
-                        size = self.getMeta(in_field)
+                    elif(in_key.lower() == 'size'):
+                        size = self.getMeta(in_key)
                     #capture VHDL units
-                    elif(in_field.lower() == 'vhdl-units'):
-                        vhdl_units = self.getMeta(in_field)
+                    elif(in_key.lower() == 'vhdl-units'):
+                        vhdl_units = self.getMeta(in_key)
                     #capture VLOG units
-                    elif(in_field.lower() == 'vlog-units'):
-                        vlog_units = self.getMeta(in_field)
+                    elif(in_key.lower() == 'vlog-units'):
+                        vlog_units = self.getMeta(in_key)
                     #do not write to metadata section (but do write empty lines)
                     if(len(line.strip()) > 0):
                         continue

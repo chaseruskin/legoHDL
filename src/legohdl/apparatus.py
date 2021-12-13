@@ -698,21 +698,6 @@ class Apparatus:
 
     
     @classmethod
-    def getDisabledBlockFields(cls):
-        '''
-        Returns a list of optionally disabled metadata fields for newly created
-        blocks.
-
-        Parameters:
-            None
-        Returns:
-            ([str]): list of metadata fields to remove from block initialization
-        '''
-        all_fields = ['toplevel', 'bench', 'summary']
-        return []
-
-    
-    @classmethod
     def getEditor(cls):
         '''Returns the editor to the settings data-structure.'''
         return os.path.expandvars(cls.CFG.get('general.editor'))

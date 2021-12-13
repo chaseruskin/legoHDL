@@ -193,7 +193,7 @@ class Cfg:
         Returns:
             None 
         '''
-        contents = ''
+        contents = self._writeComment('')
 
         #store nested sections
         nested_sects = [('', self._data, '', 0)] 
@@ -201,8 +201,8 @@ class Cfg:
         #traverse through the data
         while(len(nested_sects)):
             #pop off latest section
-            cmt, data, cur_key, lvl = nested_sects.pop(-1)
-            print(cur_key)
+            cmt, data, cur_key, lvl = nested_sects.pop()
+            #print(cur_key)
             #write its comment
             contents = contents + cmt
 
@@ -215,7 +215,10 @@ class Cfg:
             #compute number of spaces for nice formatting
             T = Cfg.TAB*int(lvl)*int(auto_indent)
 
+            #track where to insert nested sections in stack
             nest_cnt = 0
+            #enable when to write comments 'as section'
+            en_sect = bool(len(contents))
 
             #iterate through every key in the section
             for sect in list(data.keys()):
@@ -226,7 +229,9 @@ class Cfg:
                     next_cur_key = sect
 
                 #generate the section/key comment
-                cmt = self._writeComment(next_cur_key, newline=T+'; ', is_section=isinstance(data[sect], Section))
+                cmt = self._writeComment(next_cur_key, newline=T+'; ', is_section=(isinstance(data[sect], Section) and en_sect))
+                #enable after first pass
+                en_sect = True
 
                 #write section
                 if(isinstance(data[sect], Section)):
@@ -274,7 +279,6 @@ class Cfg:
 
         #write contents to file
         with open(self._filepath, 'w') as ini:
-            contents = self._writeComment('') + contents
             ini.write(contents)
 
         #return modified state to false
