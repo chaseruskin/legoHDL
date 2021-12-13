@@ -116,7 +116,8 @@ class Cfg:
         in_str = ''
         next_in_str = ''
         prev_parents = []
-        cur_sect = {}
+        #begin on entire data
+        cur_sect = self._data
         cur_key = None
         #open the file
         with open(self._filepath, 'r') as ini:
@@ -139,8 +140,9 @@ class Cfg:
                 
                 #check for section
                 new_sect, prev_parents, cur_sect = self._addSection(l, prev_parents, cur_sect)
+
                 if(new_sect):
-                    #reset cur_key
+                    #reset current key
                     cur_key = None
                     continue
 
@@ -164,7 +166,7 @@ class Cfg:
                             spacer = ''
                         cur_sect[cur_key]._val = cur_sect[cur_key]._val + spacer + l.strip()
                     continue
-
+               
                 #assign to the key location in the data structure (and expand tabs)
                 cur_sect[key_l] = Key(key_true, l[v_i+1:].strip().replace('\t', Cfg.TAB))
                 #update which key is the current
@@ -199,7 +201,8 @@ class Cfg:
         #traverse through the data
         while(len(nested_sects)):
             #pop off latest section
-            cmt, data, cur_key, lvl = nested_sects.pop()
+            cmt, data, cur_key, lvl = nested_sects.pop(-1)
+            print(cur_key)
             #write its comment
             contents = contents + cmt
 
@@ -238,12 +241,9 @@ class Cfg:
                     #print(data[sect]._name)
                     section_line = section_line + data[sect]._name +Cfg.S_END+'\n'
 
-                    #add nested section to the stack
-                    if(nested):
-                        #nested_sects.insert(-2, (cmt+section_line, data[sect], next_cur_key, lvl+1))
-                        nested_sects = nested_sects + [(cmt+section_line, data[sect], next_cur_key, lvl+1)]
-                    else:
-                        nested_sects = [(cmt+section_line, data[sect], next_cur_key, lvl+1)] + nested_sects
+                    #add nested section to the stack (maintaining order)
+                    nested_sects.insert(len(nested_sects)-nest_cnt, (cmt+section_line, data[sect], next_cur_key, lvl+1))
+                    nest_cnt += 1
                     continue
 
                 #write the comment (will be blank if not found)
@@ -271,10 +271,10 @@ class Cfg:
                 #write the value
                 contents = contents + self._writeWithRollOver(T+c_mark+key_var+val,newline=(' '*spacer)+c_mark)+'\n'
                 pass
-            
+
         #write contents to file
         with open(self._filepath, 'w') as ini:
-            contents = self._writeComment(cur_key) + contents
+            contents = self._writeComment('') + contents
             ini.write(contents)
 
         #return modified state to false
@@ -819,10 +819,11 @@ class Cfg:
         Parameters:
             line (str): line to parse
             prev_parents ([str]): previous sections that may be stemming from this new section
-            cur_sect (dict): current inner-level of data dictionary
+            cur_sect (Section): current inner-level of data dictionary
         Returns:
             success (bool): if a new section was added
             prev_parents ([str]): the previous parents
+            cur_sect (Section): the nested direct level Section data structure
         '''
         #skip if invalid beginning tokens
         if(line[0] != Cfg.S_BEGIN and line.startswith(Cfg.S_CHILD_DEC) == False):
