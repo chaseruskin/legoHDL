@@ -186,6 +186,9 @@ class Workspace:
         shutil.rmtree(self.getDir(), onerror=apt.rmReadOnly)
         #remove from class Jar
         del self.Jar[self.getName()]
+        #remove from cfg file
+        apt.CFG.remove('workspace.'+self.getName())
+        apt.CFG.write()
         pass
 
 
@@ -809,7 +812,7 @@ class Workspace:
                 continue
             serialized[ws.getName()] = {}
             serialized[ws.getName()]['path'] = ws.getPath()
-            serialized[ws.getName()]['vendors'] = ws.getVendors(returnnames=True, lowercase=False)
+            serialized[ws.getName()]['vendors'] = Cfg.castStr(ws.getVendors(returnnames=True, lowercase=False), tab_cnt=2, drop_list=False)
         
         #update settings dictionary
         apt.CFG.set('workspace', Section(serialized), override=True)

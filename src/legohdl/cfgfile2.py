@@ -350,7 +350,7 @@ class Cfg:
         pass
 
 
-    def write(self, f=None, data=None, lvl=0, cur_key='', auto_indent=True, neat_keys=True, empty=False):
+    def write(self, data=None, lvl=0, cur_key='', auto_indent=True, neat_keys=True, empty=False):
         '''
         Saves the _data attr to a .cfg file.
 
@@ -365,8 +365,6 @@ class Cfg:
         Returns:
             None 
         '''
-        if(f == None):
-            f = self._filepath
         if(data == None):
             data = self._data
 
@@ -404,7 +402,7 @@ class Cfg:
                 contents = contents + data[sect]._name +Cfg.S_END+'\n'
 
                 #recursive call to proceed into the nested section
-                contents = contents + self.write(f, data[sect], lvl=(lvl+1), 
+                contents = contents + self.write(data[sect], lvl=(lvl+1), 
                     cur_key=next_cur_key, auto_indent=auto_indent, neat_keys=neat_keys, 
                     empty=empty)
                 continue
@@ -434,7 +432,7 @@ class Cfg:
         if(lvl != 0):
             return contents
 
-        with open(f, 'w') as ini:
+        with open(self._filepath, 'w') as ini:
             contents = self._writeComment(cur_key) + contents
             ini.write(contents)
 
@@ -554,7 +552,7 @@ class Cfg:
 
 
     @classmethod
-    def castStr(cls, val, tab_cnt=0, frmt_list=True):
+    def castStr(cls, val, tab_cnt=0, frmt_list=True, drop_list=True):
         '''
         Return a string representation of a value.
 
@@ -562,6 +560,7 @@ class Cfg:
             val (any): any dtype value
             tab_cnt (int): number of tabs to place before value
             frmt_list (bool): determine if to use list symbols if val is list
+            drop_list (bool): determine if to drop each elememnt onto newline
         Returns:
             (str): conversion to string
         '''
@@ -596,16 +595,23 @@ class Cfg:
             #add beginning list symbol
             returnee = ''
             if(frmt_list):
-                returnee = cls.L_BEGIN+'\n'
+                returnee = cls.L_BEGIN
+                if(drop_list):
+                    returnee = returnee + '\n'
 
             #iterate through every value and add as a string
             for x in val:
-                returnee = returnee + cls.castStr(x, (tab_cnt+1)*(frmt_list))
+                returnee = returnee + cls.castStr(x, (tab_cnt+1)*(frmt_list)*(drop_list))
                 if(x != val[-1]):
                     if(frmt_list):
-                        returnee = returnee+cls.L_SEP+'\n'
+                        returnee = returnee+cls.L_SEP
+                        if(drop_list):
+                            returnee = returnee + '\n'
+                        else:
+                            returnee = returnee + ' '
                     else:
                         returnee = returnee+' '
+
                 pass
 
             #close the list with ending list symbol

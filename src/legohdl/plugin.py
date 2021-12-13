@@ -184,7 +184,7 @@ class Plugin:
     def load(cls):
         '''Load plugins from settings.'''
         
-        plgns = apt.CFG.get('plugin', dtype=Section, returnkey=True)
+        plgns = apt.CFG.get('plugin', dtype=Section)
         for plgn in plgns.values():
             Plugin(plgn._name, plgn._val)
         pass
