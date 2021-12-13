@@ -365,7 +365,7 @@ def main():
 
         c.set('block.requires', Cfg.castStr(c.get('BLOCK.requires', dtype=list), tab_cnt=1, frmt_list=True))
 
-        c.write('./output.cfg', auto_indent=True, neat_keys=True)
+        c.write(auto_indent=True, neat_keys=True)
 
         k = Key("KEY0", "0x3234ab")
         k._val = k._val + "ce"

@@ -176,7 +176,7 @@ class Cfg:
         return True
 
 
-    def write(self, data=None, lvl=0, cur_key='', auto_indent=True, neat_keys=True, empty=False):
+    def write(self, auto_indent=True, neat_keys=True, empty=False):
         '''
         Saves the _data attr to a .cfg file.
 
@@ -191,73 +191,88 @@ class Cfg:
         Returns:
             None 
         '''
-        if(data == None):
-            data = self._data
-
         contents = ''
-        #compute number of spaces for nice formatting
-        T = Cfg.TAB*int(lvl)*int(auto_indent)
 
-        #compute longest key name
-        keys = list(filter(lambda a: isinstance(data[a], Section) == False, list(data.keys())))
-        longest_key = 0
-        for k in keys:
-            longest_key = len(k) if(len(k) > longest_key) else longest_key
+        #store nested sections
+        nested_sects = [('', self._data, '', 0)] 
 
         #traverse through the data
-        for sect in list(data.keys()):
-            #write comments for the section or key
-            next_cur_key = cur_key+'.'+sect
-            if(len(cur_key) == 0):
-                next_cur_key = sect
+        while(len(nested_sects)):
+            #pop off latest section
+            cmt, data, cur_key, lvl = nested_sects.pop()
+            #write its comment
+            contents = contents + cmt
 
-            cmt = self._writeComment(next_cur_key, newline=T+'; ', is_section=isinstance(data[sect], Section))
-            #write the comment (will be blank if not found)
-            if(cmt != '\n' or contents != ''):
-                contents = contents + cmt
+            #compute longest key name
+            keys = list(filter(lambda a: isinstance(data[a], Section) == False, list(data.keys())))
+            longest_key = 0
+            for k in keys:
+                longest_key = len(k) if(len(k) > longest_key) else longest_key
 
-            #write section
-            if(isinstance(data[sect], Section)):
-                contents = contents + T
-                if(lvl > 0):
-                    contents = contents + Cfg.S_CHILD_DEC
-                else:
-                    contents = contents + Cfg.S_BEGIN
-                #print(type(data[sect]))
-                #print(data[sect]._name)
-                contents = contents + data[sect]._name +Cfg.S_END+'\n'
+            #compute number of spaces for nice formatting
+            T = Cfg.TAB*int(lvl)*int(auto_indent)
 
-                #recursive call to proceed into the nested section
-                contents = contents + self.write(data[sect], lvl=(lvl+1), 
-                    cur_key=next_cur_key, auto_indent=auto_indent, neat_keys=neat_keys, 
-                    empty=empty)
-                continue
+            nest_cnt = 0
 
-            c_mark = ''
-            if(empty):
-                c_mark = ';'
-    
-            #write the key/value pair
-            #print(data[sect]._name,data[sect])
-            #write extra spacing for key assignments to align if trying to be neat
-            diff = (longest_key+1)-len(sect)
-            diff = diff if(neat_keys) else 1
-            spacer = len(T) + len(sect) + diff + len(Cfg.KEY_ASSIGNMENT) + 1
-            #write "<key> = "
-            key_var = data[sect]._name + ' '*diff + Cfg.KEY_ASSIGNMENT + ' '
-            #print(key_var)
-            #obtain the string value
-            val = data[sect]._val
-            #determine number of spaces for a new line if rolling over text
-            if(data[sect]._is_list or neat_keys == False):
-                spacer = 0
-            #write the value
-            contents = contents + self._writeWithRollOver(T+c_mark+key_var+val,newline=(' '*spacer)+c_mark)+'\n'
-            pass
+            #iterate through every key in the section
+            for sect in list(data.keys()):
+                #write comments for the section or key
+                next_cur_key = cur_key+'.'+sect
+                #initial key is blank
+                if(len(cur_key) == 0):
+                    next_cur_key = sect
 
-        if(lvl != 0):
-            return contents
+                #generate the section/key comment
+                cmt = self._writeComment(next_cur_key, newline=T+'; ', is_section=isinstance(data[sect], Section))
 
+                #write section
+                if(isinstance(data[sect], Section)):
+                    section_line = T
+                    nested = (lvl > 0)
+
+                    if(nested):
+                        section_line = section_line + Cfg.S_CHILD_DEC
+                    else:
+                        section_line = section_line + Cfg.S_BEGIN
+                    #print(type(data[sect]))
+                    #print(data[sect]._name)
+                    section_line = section_line + data[sect]._name +Cfg.S_END+'\n'
+
+                    #add nested section to the stack
+                    if(nested):
+                        #nested_sects.insert(-2, (cmt+section_line, data[sect], next_cur_key, lvl+1))
+                        nested_sects = nested_sects + [(cmt+section_line, data[sect], next_cur_key, lvl+1)]
+                    else:
+                        nested_sects = [(cmt+section_line, data[sect], next_cur_key, lvl+1)] + nested_sects
+                    continue
+
+                #write the comment (will be blank if not found)
+                if(cmt != '\n' or contents != ''):
+                    contents = contents + cmt
+
+                c_mark = ''
+                if(empty):
+                    c_mark = ';'
+        
+                #write the key/value pair
+                #print(data[sect]._name,data[sect])
+                #write extra spacing for key assignments to align if trying to be neat
+                diff = (longest_key+1)-len(sect)
+                diff = diff if(neat_keys) else 1
+                spacer = len(T) + len(sect) + diff + len(Cfg.KEY_ASSIGNMENT) + 1
+                #write "<key> = "
+                key_var = data[sect]._name + ' '*diff + Cfg.KEY_ASSIGNMENT + ' '
+                #print(key_var)
+                #obtain the string value
+                val = data[sect]._val
+                #determine number of spaces for a new line if rolling over text
+                if(data[sect]._is_list or neat_keys == False):
+                    spacer = 0
+                #write the value
+                contents = contents + self._writeWithRollOver(T+c_mark+key_var+val,newline=(' '*spacer)+c_mark)+'\n'
+                pass
+            
+        #write contents to file
         with open(self._filepath, 'w') as ini:
             contents = self._writeComment(cur_key) + contents
             ini.write(contents)
@@ -454,7 +469,6 @@ class Cfg:
         #get current section level
         node = self._data
         if(len(keypath)):
-            print(keypath)
             node = self.get(keypath, dtype=Section)
         #iterate through everything within the section
         for k in node.keys():

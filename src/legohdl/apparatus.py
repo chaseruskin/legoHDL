@@ -146,9 +146,6 @@ class Apparatus:
         if(os.path.isfile(cls.HIDDEN+"profiles/"+cls.PRFL_LOG) == False):
             open(cls.HIDDEN+"profiles/"+cls.PRFL_LOG, 'w').close()
 
-        #generate list of all available fields/options
-        cls.OPTIONS = cls.OPTIONS + cfg.getAllFields(cls.LAYOUT)
-
         #return if user was missing the legohdl hidden folder
         return ask_for_setup
 

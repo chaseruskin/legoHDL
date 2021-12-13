@@ -936,11 +936,64 @@ plugins)?", warning=False)
             Profile.Jar[self.getItem(raw=True)].importLoadout(ask=self.hasFlag('ask'))
             return
 
+        #generate list of all available keys/editable sections
+        editable_keys = apt.CFG.getAllKeys()
+        editable_sects = apt.OPTIONS
+
         #set each setting listed in flags try to modify it
         for k,v in self._vars.items():
             #split the variable into two components (if applicable)
-            var_key, var_val = self.splitVar(v)
-            #print(var_key, var_val)
+            sect = k.split('.')[0]
+            #print(k, v, 'section:',sect)
+            v = v.strip()
+            #first attempt to edit the key
+            
+            edit_k = (k.lower() in editable_keys)
+            edit_s = (sect.lower() in editable_sects and (len(k.split('.')) > 1))
+
+            if(edit_k == False and edit_s == False):
+                if(edit_k == False):
+                    log.error("Cannot edit key: "+k)
+                    continue
+                #second attempt is to edit a section
+                if(edit_s == False):
+                    log.error("Cannot edit section: "+sect)
+                    continue
+            if(edit_k):
+                apt.CFG.set(k, v, verbose=True, override=True)
+            elif(edit_s):
+                apt.CFG.set(k, v, verbose=True, override=True)
+
+            if(apt.CFG._modified):
+                apt.CFG.write()
+                log.info("Updated settings.")
+
+            #handle vendor configurations/editing
+            if(sect == 'vendor' and edit_k or edit_s):
+                vndr = None
+                name = k.split('.')[-1]
+                
+                #modify an existing vendor
+                if(name in Vendor.Jar.keys()):
+                    vndr = Vendor.Jar[name]
+                    #if its local and remote given try to set a remote
+                    if(vndr.isRemote() == False and v != Cfg.NULL):
+                        vndr.setRemoteURL(v)    
+                #vendor name is not found
+                elif(v != Cfg.NULL):
+                    #try to create from the url
+                    vndr = Vendor(name, v)
+
+                #alter the workspace's connections to vendors
+                if(vndr != None and Workspace.inWorkspace()):
+                    if(self.hasFlag('unlink')):
+                        self.WS().unlinkVendor(vndr.getName())
+                    elif(self.hasFlag('link')):
+                        self.WS().linkVendor(vndr.getName())
+                    pass
+                Workspace.save()
+            continue
+
             #modify plugin
             if(k == 'plugin'):
                 #load in plugin

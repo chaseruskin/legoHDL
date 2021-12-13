@@ -789,8 +789,27 @@ class Workspace:
         wspcs = apt.CFG.get('workspace', dtype=Section)
         
         for ws in wspcs.keys():
-            if('path' in wspcs[ws].keys() and 'vendors' in wspcs[ws].keys()):
-                Workspace(wspcs[ws]._name, wspcs[ws]['path']._val, Cfg.castList(wspcs[ws]['vendors']._val))
+            #skip over immediate keys
+            if(isinstance(wspcs[ws], Section) == False):
+                continue
+            path = ''
+            vendors = '()'
+            #verify that a path key and vendors key exists under each workspace
+            apt.CFG.set('workspace.'+ws+'.path', path, override=False)
+            apt.CFG.set('workspace.'+ws+'.vendors', vendors, override=False)
+
+            #retrieve path and vendors keys
+            if('path' in wspcs[ws].keys()):
+                path = wspcs[ws]['path']._val
+            if('vendors' in wspcs[ws].keys()):
+                vendors = Cfg.castList(wspcs[ws]['vendors']._val)
+            #create Workspace objects
+            Workspace(wspcs[ws]._name, path, vendors)
+            pass
+
+        #save if made any changes
+        if(apt.CFG._modified):
+            apt.CFG.write()
         pass
 
 
