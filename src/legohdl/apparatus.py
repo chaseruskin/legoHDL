@@ -13,12 +13,14 @@ import os,shutil,stat,subprocess
 import copy,platform
 import logging as log
 from .cfgfile import CfgFile as cfg
+from .cfgfile2 import Cfg, Section, Key
 
 
 class Apparatus:
 
     #legohdl settings data structure
     SETTINGS = dict()
+    CFG = Section()
 
     #path to hidden legohdl folder
     HIDDEN = os.path.expanduser("~/.legohdl/")
@@ -42,7 +44,7 @@ class Apparatus:
     #path to template within legohdl
     TEMPLATE = HIDDEN+"template/"
     #path to vendors within legohdl
-    MARKETS = HIDDEN+"vendors/"
+    VENDORS = HIDDEN+"vendors/"
     #path to workspaces within legohdl
     WORKSPACE = HIDDEN+"workspaces/"
 
@@ -55,11 +57,11 @@ class Apparatus:
                     'author' : cfg.NULL, 
                     'editor' : cfg.NULL,
                     'template' : cfg.NULL, 
-                    'profiles' : cfg.NULL,
-                    'mixed-language' : cfg.NULL, 
-                    'multi-develop' : cfg.NULL, 
-                    'refresh-rate' : cfg.NULL,
-                    'overlap-global' : cfg.NULL},
+                    'profiles' : '()',
+                    'mixed-language' : 'off', 
+                    'multi-develop' : 'off', 
+                    'refresh-rate' : '0',
+                    'overlap-global' : 'off'},
                 'label' : {
                     'local' : {}, 
                     'global' : {}},
@@ -68,14 +70,14 @@ class Apparatus:
                 'vendor' : {},
                 'placeholders' : {},
                 'HDL-styling' : {
-                    'hanging-end' : cfg.NULL,
-                    'auto-fit' : cfg.NULL,
-                    'alignment' : cfg.NULL,
-                    'newline-maps' : cfg.NULL,
-                    'default-language' : cfg.NULL,
-                    'instance-name' : cfg.NULL,
-                    'port-modifier' : cfg.NULL,
-                    'generic-modifier' : cfg.NULL
+                    'hanging-end' : 'off',
+                    'auto-fit' : 'on',
+                    'alignment' : '1',
+                    'newline-maps' : 'off',
+                    'default-language' : 'auto',
+                    'instance-name' : 'uX',
+                    'port-modifier' : '*',
+                    'generic-modifier' : '*'
                 },
                 'metadata' : {}
             }
@@ -110,23 +112,35 @@ class Apparatus:
 
     @classmethod
     def initialize(cls):
+        '''
+        Ensure all usable directories and files exist.
+        '''
         
         cls.HIDDEN = cls.fs(cls.HIDDEN)
+        #ask for 1st time user setup if the base directory does not exist
         ask_for_setup = (os.path.exists(cls.HIDDEN) == False)
         
+        #make sure directories exist
         os.makedirs(cls.HIDDEN, exist_ok=True)
         os.makedirs(cls.HIDDEN+"workspaces/", exist_ok=True)
         os.makedirs(cls.HIDDEN+"plugins/", exist_ok=True)
-        os.makedirs(cls.MARKETS, exist_ok=True)
+        os.makedirs(cls.VENDORS, exist_ok=True)
         os.makedirs(cls.TEMPLATE, exist_ok=True)
         os.makedirs(cls.HIDDEN+"profiles/", exist_ok=True)
 
-        #create bare legohdl.cfg if DNE
-        if(not os.path.isfile(cls.HIDDEN+cls.SETTINGS_FILE)):
-            settings_file = open(cls.HIDDEN+cls.SETTINGS_FILE, 'w')
-            #save default settings layout
-            cfg.save(cls.LAYOUT, settings_file)
-            settings_file.close()
+        #read legohd.cfg file
+    
+        #create empty legohdl.cfg file if DNE
+        if(os.path.isfile(cls.HIDDEN+cls.SETTINGS_FILE) == False):
+            open(cls.HIDDEN+cls.SETTINGS_FILE, 'w').close()
+        
+        cls.CFG = Cfg(cls.HIDDEN+cls.SETTINGS_FILE, data=Section(), comments=cls.getComments())
+
+        #load in contents
+        cls.CFG.read()
+
+        #ensure all sections/keys are present
+        cls.CFG.set('', Section(cls.LAYOUT), override=False)
 
         #create empty import.log file for profiles if DNE
         if(os.path.isfile(cls.HIDDEN+"profiles/"+cls.PRFL_LOG) == False):
@@ -134,16 +148,6 @@ class Apparatus:
 
         #generate list of all available fields/options
         cls.OPTIONS = cls.OPTIONS + cfg.getAllFields(cls.LAYOUT)
-
-        #load dictionary data in variable
-        with open(cls.HIDDEN+cls.SETTINGS_FILE, "r") as file:
-            cls.SETTINGS = cfg.load(file)
-        
-        #merge bare_settings into loaded settings to ensure all keys are present
-        cls.SETTINGS = cls.fullMerge(cls.SETTINGS, cls.LAYOUT)
-
-        #ensure all pieces of settings are correct
-        cls.secureSettings()
 
         #return if user was missing the legohdl hidden folder
         return ask_for_setup
@@ -159,16 +163,15 @@ class Apparatus:
         Returns:
             None
         '''
-        cls.generateDefault(dict,"local","global",header="label")
+        # cls.generateDefault(dict,"local","global",header="label") 
+        # cls.generateDefault(dict,"vendor","plugin","workspace","metadata","placeholders",header=None) 
+        # cls.generateDefault(bool,"multi-develop","overlap-global","mixed-language",header="general")
+        # cls.generateDefault(int,"refresh-rate",header="general")
+        # cls.generateDefault(list,"profiles",header="general")
 
-        cls.generateDefault(dict,"vendor","plugin","workspace","metadata","placeholders",header=None)
-
-        cls.generateDefault(bool,"multi-develop","overlap-global","mixed-language",header="general")
-        cls.generateDefault(int,"refresh-rate",header="general")
-        cls.generateDefault(list,"profiles",header="general")
-
-        cls.generateDefault(bool,"hanging-end","newline-maps","auto-fit",header="HDL-styling")
-        cls.generateDefault(int,"alignment",header="HDL-styling")
+        # cls.generateDefault(bool,"hanging-end","newline-maps","auto-fit",header="HDL-styling")
+        # cls.generateDefault(int,"alignment",header="HDL-styling")
+        return
 
         #validate that default-language is one of 3 options
         def_lang = cls.getField(['HDL-styling', 'default-language']).lower()
@@ -237,9 +240,11 @@ class Apparatus:
         #constrain the refresh-rate
         cls.setRefreshRate(cls.getRefreshRate())
 
-        if(cls.SETTINGS['general']['template'] != cfg.NULL and os.path.isdir(cls.SETTINGS['general']['template'])):
-            cls.SETTINGS['general']['template'] = cls.fs(cls.SETTINGS['general']['template'])
-            cls.TEMPLATE = cls.SETTINGS['general']['template']
+        tmplt_path = cls.CFG.get('general.template')
+
+        if(tmplt_path != cfg.NULL and os.path.isdir(os.path.expandvars(tmplt_path))):
+            cls.CFG.set('general.template', cls.fs(tmplt_path))
+            cls.TEMPLATE = tmplt_path
             pass
         
         #save all safety measures
@@ -321,24 +326,20 @@ class Apparatus:
     @classmethod
     def getAuthor(cls):
         '''Return the author (str) from the settings data structure.'''
-
-        author = cls.SETTINGS['general']['author']
-        if(author == None):
-            author = ''
-        return author
+        return cls.CFG.get('general.author')
 
 
     @classmethod
     def setAuthor(cls, author):
         '''Sets the author (str) to the settings data structure.'''
-        cls.SETTINGS['general']['author'] = author
+        cls.CFG.set('general.author', author)
         pass
 
 
     @classmethod
     def getMultiDevelop(cls):
         '''Return the multi-develop (bool) from the settings data structure.'''
-        return cls.SETTINGS['general']['multi-develop']
+        return cls.CFG.get('general.multi-develop', dtype=bool)
 
 
     @classmethod
@@ -485,8 +486,7 @@ class Apparatus:
         Returns:
             None
         '''
-        with open(cls.HIDDEN+cls.SETTINGS_FILE, "w") as file:
-            cfg.save(cls.SETTINGS, file, cls.getComments())
+        cls.CFG.write()
         pass
     
 
@@ -626,7 +626,7 @@ class Apparatus:
     @classmethod
     def getRefreshRate(cls):
         '''Returns the refresh-rate (int) from the settings data structure.'''
-        return cfg.castInt(cls.getField(['general', 'refresh-rate']))
+        return cls.CFG.get('general.refresh-rate', dtype=int)
 
 
     @classmethod
@@ -647,7 +647,7 @@ class Apparatus:
         elif(r < cls.MIN_RATE):
             r = cls.MIN_RATE
         #set in settings
-        cls.setField(r, ['general', 'refresh-rate'])
+        cls.CFG.set('general.refresh-rate', r)
         pass
 
 
@@ -664,11 +664,11 @@ class Apparatus:
             (str): path to template
         '''
         #load template path from settings
-        tmp = cls.SETTINGS['general']['template']
+        tmp = cls.CFG.get('general.template')
         #return built-in template folder if invalid folder in settings
         if(tmp == '' or os.path.exists(tmp) == False):
             tmp = cls.TEMPLATE
-        return cls.fs(tmp)
+        return cls.fs(os.path.expandvars(tmp))
 
     
     @classmethod
@@ -718,7 +718,7 @@ class Apparatus:
     @classmethod
     def getEditor(cls):
         '''Returns the editor to the settings data-structure.'''
-        return os.path.expandvars(cls.SETTINGS['general']['editor'])
+        return os.path.expandvars(cls.CFG.get('general.editor'))
 
 
     @classmethod
@@ -916,242 +916,39 @@ class Apparatus:
         if(hasattr(cls, "SETTINGS_COMMENTS")):
             return cls.SETTINGS_COMMENTS
 
-        cls.SETTINGS_COMMENTS = {
-    'general' : (cfg.HEADER,\
-'''; ---
-; legohdl.cfg
-; ---
-; description:
-;   A properties file to manually configure the packaging and development tool.
-; help:
-;   For more information, read the documentation at ___.
+        cls.SETTINGS_COMMENTS = {}
 
-; --- General settings ---
-; description:
-;   Various assignments related to the tool in general.'''),
-
-    'general|active-workspace' : (cfg.VAR,\
-'''
-; description:
-;   What workspace listed under [workspace] currently being used.
-;   If an empty assignment, a lot of functionality will be unavailable.
-; value: 
-;   string'''),
-
-    'general|author' : (cfg.VAR,\
-'''
-; description:
-;   Your name! (or code-name, code-names are cool too)
-; value: 
-;   string'''),
-
-    'general|editor' : (cfg.VAR,\
-'''
-; description:
-;   The command to call your preferred text editor.
-; value: 
-;   string'''),
-
-    'general|template' : (cfg.VAR,\
-'''
-; description:
-;   The path of where to copy a template folder from when making a new 
-;   block. If an empty assignment, it will use the built-in template folder.
-; value: 
-;   string'''),
-
-    'general|profiles' : (cfg.VAR,\
-'''
-; description:
-;   A list of profiles to import settings, templates, and/or plugins.
-; value: 
-;   list of strings'''),
-
-    'general|mixed-language' : (cfg.VAR,\
-'''
-; description:
-;   When enabled, units will be able to be identified as instantiated regardless
-;   what language it was written in (VHDL or Verilog). When disabled,
-;   determining what component is instantiated is filtered to only search
-;   through units written in the original language.
-; value: 
-;   boolean (true or false)'''),
-
-    'general|multi-develop' : (cfg.VAR,\
-'''
-; description:
-;   When enabled, it will reference blocks found in the workspace path over
-;   block's found in the cache. This would be beneficial for simulataneously 
-;   working on multiple related blocks. When done, be sure to release the
-;   block's as new versions so the modifications are in stone.
-; value: 
-;   boolean (true or false)'''),
-
-    'general|refresh-rate' : (cfg.VAR,\
-'''
-; description: 
-;   How often to synchronize vendors with their remote every day. set to 
-;   -1 to refresh on every call. Max value is 1440 (every minute). Evenly divides
-;   the refresh points throughout the 24-hour day. This setting simply
-;   is automation for the 'refresh' command.
-; value:
-;   integer (-1 to 1440)'''),
-
-    'general|overlap-global' : (cfg.VAR,\
-'''
-; description:
-;   When enabled, on export the labels to be gathered can be the same file
-;   from the same project even if they are different versions (overlap).
-;   If disabled, it will not write multiple labels for the same file, even
-;   across different versioned blocks.
-; value:
-;   boolean (true or false)'''),
-
-    'label' : (cfg.HEADER,\
-'''
-; --- Label settings ---
-; description:
-;   User-defined groupings of filetypes, to be collected and written to the
-;   blueprint file on export. Labels help bridge a custom workflow with the user's
-;   backend tool.'''),
-
-    'label|local' : (cfg.HEADER,\
-'''
-; description:
-;   Find these files only throughout the current block.
-; value:
-;   assignments of string'''),
-
-    'label|global' : (cfg.HEADER,\
-'''
-; description:
-;   Find these files throughout all blocks used in the current design.
-; value:
-;   assignments of string'''),
-
-    'plugin' : (cfg.HEADER,\
-'''
-; --- Plugin settings ---
-; description:
-;   User-defined aliases to execute plugins (scripts/tools/commands). 
-;   Assignments can be either a string or list of strings separated by 
-;   commas.
-; value:
-;   assignments of string'''),
-
-    'workspace' : (cfg.HEADER,\
-'''
-; --- Workspace settings ---
-; description:
-;   User-defined spaces for working with blocks. Blocks must appear in the 
-;   workspace's path to be recognized as downloaded. Multiple vendors can be
-;   configured to one workspace and vendors can be shared across workspaces.
-;   Block downloads and installations in one workspace are separate from those 
-;   of another workspace.
-; value:
-;   headers with 'path' assignment of string and 'vendor' assignment of list 
-;   of strings'''),
-
-    'placeholders' : (cfg.HEADER,\
-'''
-; --- Placeholder settings ---
-; description:
-;   User-defined values to be replaced when referenced within '%' symbols for
-;   files created through legoHDL.
-; value:
-;   assignments of string'''),
-
-    'metadata' : (cfg.HEADER,\
-'''
-; --- Metadata settings ---
-; description:
-;   User-defined fields for Block.cfg files. These fields will be automatically
-;   copied into new Block.cfg files. Supports using placeholders for field values.
-; value:
-;   headers with variable amount of assignments of string'''),
-
-    'hdl-styling' : (cfg.HEADER,\
-'''
-; --- HDL-styling settings ---
-; description:
-;   Configure how to print compatible HDL instantiation code.'''),
-
-    'hdl-styling|hanging-end' : (cfg.VAR,\
-'''
-; description:
-;   Determine if the last ')' in instantiation code should deserve its own line.
-; value:
-;   boolean (true or false)'''),
-
-    'hdl-styling|auto-fit' : (cfg.VAR,\
-'''
-; description:
-;   Determine if the proceeding character/symbol after identifiers should all
-;   align together based on the longest identifier name. Used in conjunction with
-;   the 'aligment' setting.
-; value:
-;   boolean (true or false)'''),
-
-    'hdl-styling|alignment' : (cfg.VAR,\
-'''
-; description:
-;   Determine the number of spaces to proceed an identifier. Used in conjunction
-;   with the 'auto-fit' setting.
-; value:
-;   int (0 to 80)'''),
-
-    'hdl-styling|newline-maps' : (cfg.VAR,\
-'''
-; description:
-;   Determine if the indication code for a 'map' begins on a newline.
-; value:
-;   bool (true or false)'''),
-
-    'hdl-styling|default-language' : (cfg.VAR,\
-'''
-; description:
-;   Determine which HDL language to by default print compatible instantiation
-;   code. If auto, then the language the unit was originally written in is used
-;   by default.
-; value:
-;   vhdl, verilog, or auto'''),
-
-    'hdl-styling|instance-name' : (cfg.VAR,\
-'''
-; description:
-;   Determine the default instantiation name given to a unit being used.
-;   Placeholders are supported.
-; value:
-;   assignment of string'''),
-
-    'hdl-styling|generic-modifier' : (cfg.VAR,\
-'''
-; description:
-;   Determine the constant/parameter identifier name to connect to 
-;   instantiation generics/parameters. Wildcard '*' will be replaced with 
-;   the generics' original identifiers.
-; value:
-;   assignment of string'''),
-
-    'hdl-styling|port-modifier' : (cfg.VAR,\
-'''
-; description:
-;   Determine the signal/wire identifier name to connect to instantiation ports.
-;   Wildcard '*' will be replaced with the ports' original identifiers.
-; value:
-;   assignment of string'''),
-
-    'vendor' : (cfg.HEADER,\
-'''
-; --- Vendor settings ---
-; description:
-;   The list of available vendors to be connected to workspaces. A vendor allows
-;   blocks to be visible from remote repositories and downloaded/installed 
-;   across machines. If a vendor is not configured to a remote repository, its
-;   assignment is empty.
-; value:
-;   assignments of string'''),
-        }
+        #open the info.txt
+        with open(cls.getProgramPath()+'data/info.txt', 'r') as info:
+            txt = info.readlines()
+            disp = False
+            key = ''
+            for line in txt:
+                sep = line.split()
+                #skip comments and empty lines
+                if(len(sep) and sep[0].startswith(';')):
+                    continue
+                if(len(sep) == 0):
+                    if(disp == True):
+                        cls.SETTINGS_COMMENTS[key] = cls.SETTINGS_COMMENTS[key] + '\n'
+                    continue
+                #find where to start
+                if(len(sep) > 1 and sep[0] == '*'):
+                    key = sep[1].lower()
+                    if(key == 'settings-header'):
+                        key = ''
+                    cls.SETTINGS_COMMENTS[key] = ''
+                    disp = True
+                elif(disp == True):
+                    if(sep[0] == '*'):
+                        break
+                    else:
+                        end = line.rfind('\\')
+                        if(end > -1):
+                            line = line[:end]
+                        cls.SETTINGS_COMMENTS[key] = cls.SETTINGS_COMMENTS[key] + line
+            pass
         return cls.SETTINGS_COMMENTS
+
 
     pass

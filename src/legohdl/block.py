@@ -12,7 +12,6 @@ import os, shutil, stat, glob
 import logging as log
 from datetime import date
 from enum import Enum
-from typing import ValuesView
 
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
@@ -22,6 +21,8 @@ from .graph import Graph
 from .vhdl import Vhdl
 from .verilog import Verilog
 from .unit import Unit
+
+from .cfgfile2 import Cfg, Section, Key
 
 
 
@@ -47,7 +48,7 @@ class Block:
                 'bench' : cfg.NULL,
                 'remote' : cfg.NULL,
                 'vendor' : cfg.NULL,
-                'requires' : []},
+                'requires' : '()'},
             }
 
     #all possible metadata that may go under [block]
@@ -173,7 +174,7 @@ class Block:
             else:
                 Block.Inventory[self.M()][self.L()][self.N()][lvl] = self
 
-        if(self.getMeta('requires') != None):
+        if(self.getMeta('requires') != Cfg.NULL):
             #update graph
             Block.Hierarchy.addVertex(self.getFull(inc_ver=True))
             for d in self.getMeta('requires'):
@@ -663,30 +664,30 @@ class Block:
         Returns:
             None
         '''
-        #fill in placeholders for metadata
-        custom_meta = apt.getField(['metadata']).copy()
-        for header,fields in custom_meta.items():
-            for f,v in fields.items():
+        #fill in placeholders for metadata (two-level sections)
+        custom_meta = apt.CFG.get('metadata', dtype=Section)
+        for section,keys in custom_meta.items():
+            for key in keys.values():
                 for ph in self.getPlaceholders(tmp_val=''):
-                    v = v.replace(ph[0],ph[1])
+                    key._val = key._val.replace(ph[0],ph[1])
                     pass
-                custom_meta[header][f] = v
+                custom_meta[section][key._name] = Key(key._name, key._val)
                 pass
             pass
-        #print(custom_meta)
 
-        #merge skeleton metadata and custom configured user-defined metadata
-        meta = apt.merge(self.LAYOUT,custom_meta)
-
+        self._meta = Cfg(self.getPath()+apt.MARKER, data=Section(self.LAYOUT))
         #filter out omitted optional fields
         for omit_field in apt.getDisabledBlockFields():
             #verify the field to delete is in the data structure
-            if(omit_field.lower() in meta['block'].keys()):
-                del meta['block'][omit_field.lower()]
+            if(omit_field.lower() in self._meta.get('block').keys()):
+                self._meta.remove('block.'+omit_field.lower())
+
+        #merge skeleton metadata and custom configured user-defined metadata
+        for sect in custom_meta.values():
+            self._meta.set(sect._name, sect)
 
         #write new metadata file
-        with open(self.getPath()+apt.MARKER, 'w') as mdf:
-            cfg.save(meta, mdf, ignore_depth=True, space_headers=True)
+        self._meta.write(auto_indent=False)
         pass
 
 
@@ -933,31 +934,23 @@ class Block:
             return
 
         #remove any invalid fields from 'block' section
-        fields = list(self.getMeta().keys())
-        for key in fields:
+        keys = list(self.getMeta().keys())
+
+        for key in keys:
             if(key not in Block.FIELDS):
-                #will force to write to save the changed file
-                self._meta_backup = self.getMeta().copy()
-                del self.getMeta()[key]
+                self._meta.remove('block.'+key)
                 pass
 
         #ensure all required fields from 'block' section exist
         for key in Block.REQ_FIELDS:
             if(key not in self.getMeta().keys()):
-                #will force to write to save the changed file
-                self._meta_backup = self.getMeta().copy()
-                self.setMeta(key, cfg.NULL)
- 
-        self.save()
-
-        #remember what the metadata looked like initially to compare for determining
-        #  if needing to write file for saving
-        if(hasattr(self, "_meta_backup") == False):
-            self._meta_backup = self.getMeta().copy()
+                self._meta.set('block.'+key, cfg.NULL)
 
         #ensure requires is a proper list format
-        if(self.getMeta('requires') == cfg.NULL):
-            self.setMeta('requires',list())
+        if(self._meta.get('block.requires') == cfg.NULL):
+            self._meta.set('block.requires', '()')
+ 
+        self.save()
 
         if(hasattr(self, "_repo")):
             #grab highest available version
@@ -967,20 +960,17 @@ class Block:
 
             #check value in metadata if a valid remote to set different than repo's data
             rem = self.getMeta('remote')
-            if(rem != None and rem != self._repo.getRemoteURL()):
+            if(rem != self._repo.getRemoteURL()):
                 #validate its remote connection
                 if(Git.isValidRepo(rem, remote=True)):
                     self._repo.setRemoteURL(rem)
-                #remove remote connection
-                elif(rem == cfg.NULL):
-                    self._repo.setRemoteURL('', force=True)
 
             #set the remote correctly
             self.setMeta('remote', self._repo.getRemoteURL())
             pass
 
         #ensure the vendor is valid
-        if(self.getMeta('vendor') != ''):
+        if(self.getMeta('vendor') != Cfg.NULL):
             m = self.getMeta('vendor')
             if(m.lower() not in self.getWorkspace().getVendors(returnnames=True)):
                 #log.warning("Vendor "+m+" from "+self.getFull()+" is not available in this workspace.")
@@ -1005,9 +995,11 @@ class Block:
         Returns:
             None
         '''
-        with open(self.getMetaFile(), "r") as file:
-            self._meta = cfg.load(file, ignore_depth=True)
-            file.close()
+        if(hasattr(self, '_meta')):
+            return self._meta
+
+        self._meta = Cfg(self.getMetaFile(), data=Section())
+        self._meta.read()
                 
         #performs safety checks only on the block that is current directory
         if(self == self.getCurrent(bypass=True)):
@@ -1467,11 +1459,13 @@ class Block:
 
     def getMeta(self, key=None, every=False, sect='block'):
         '''
-        Returns the value stored in the block metadata, else retuns None if
+        Returns the value stored in the block metadata, else retuns '' if
         DNE.
 
         Returns an empty string if a non-required block field is requested and
         does not exist for the metadata.
+
+        Returns a (list) for 'requires' key.
 
         Parameters:
             key (str): the case-sensitive key to the cfg dictionary
@@ -1482,17 +1476,15 @@ class Block:
         '''
         #return everything, even things outside the block: scope
         if(every):
-            return self._meta
+            return self._meta._data #note: returns obj reference
 
         if(key == None):
-            return self._meta[sect]
-        #check if the key is valid
-        elif(sect in self._meta.keys() and key in self._meta[sect].keys()):
-            return self._meta[sect][key]
-        elif(sect == 'block' and key.lower() not in Block.REQ_FIELDS):
-            return ''
-        else:
-            return None
+            return self._meta.get(sect, dtype=Section)
+        #access the key
+        dtype = str
+        if(key == 'requires'):
+            dtype = list
+        return self._meta.get(sect+'.'+key, dtype=dtype)
 
 
     def setMeta(self, key, value, sect='block'):
@@ -1507,7 +1499,7 @@ class Block:
         Returns:
             None
         '''
-        self._meta[sect][key] = value
+        self._meta.set(sect+'.'+key, value)
         pass
 
 
@@ -1558,13 +1550,13 @@ class Block:
                 ("%BLOCK%", self.getFull())
             ]
 
-        #get placeholders from settings
-        custom_phs = apt.getField(['placeholders'])
-        for ph,val in custom_phs.items():
+        #get placeholders from settings (one-level section)
+        custom_phs = apt.CFG.get('placeholders', dtype=Section)
+        for ph in custom_phs.values():
             #ensure no '%' first exist
-            ph = ph.replace('%','')
+            ph._name = ph._name.replace('%','')
             #add to list of placeholders
-            phs += [('%'+ph.upper()+'%', val)]
+            phs += [('%'+ph._name.upper()+'%', ph._val)]
         #print(phs)
         return phs
 
@@ -2022,20 +2014,13 @@ class Block:
             success (bool): returns True if the file was written and saved.
         '''
         #do no rewrite meta data if nothing has changed
-        if(force == False):
-            if(hasattr(self, "_meta_backup")):
-                #do not save if backup metadata is the same at the current metadata
-                if(self._meta_backup == self.getMeta()):
-                    return False
-            #do not save if no backup metadata was created (save not necessary)
-            else:
-                return False
+        if(force == False and self.loadMeta()._modified == False):
+            return False
 
-        #write back cfg values
-        with open(self.getMetaFile(), 'w') as file:
-            cfg.save(self.getMeta(every=True), file, ignore_depth=True, space_headers=True)
-            pass
-
+        #rewrite requirements
+        self._meta.set('block.requires', Cfg.castList(self._meta.get('block.requires')))
+        
+        self._meta.write(auto_indent=False)
         return True
 
 

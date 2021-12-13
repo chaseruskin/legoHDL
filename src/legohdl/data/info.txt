@@ -19,6 +19,7 @@ FILE: legohdl.cfg
 DESCRIPTION:
 A properties file to configure the package manager and development tool, \
 legoHDL.
+
 HELP:
 For more information on how to edit this file, read the documentation at 
 ___.
@@ -124,7 +125,7 @@ Find these files only throughout the current block.
 * end
 
 * label.local.keys
-<label> = <file-extension>s
+<label> = <file-extension>
 * end
 
 * plugin

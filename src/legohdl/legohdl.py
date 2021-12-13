@@ -31,6 +31,7 @@ from .profile import Profile
 from .plugin import Plugin
 from .label import Label
 from .git import Git
+from .cfgfile2 import Cfg, Section, Key
 
 
 class legoHDL:
@@ -88,7 +89,7 @@ class legoHDL:
         Vendor.tidy()
         #initialize all Workspaces
         Workspace.load()
-        Workspace.setActiveWorkspace(apt.SETTINGS['general']['active-workspace'])
+        Workspace.setActiveWorkspace(apt.CFG.get('general.active-workspace'))
         Workspace.tidy()
         #initialize all Profiles
         Profile.load()
@@ -341,7 +342,13 @@ plugins)?", warning=False)
             log.error("Plugin "+plug_in[1:]+" does not exist!")
             return
         #find index where build plugin name was called
-        plugin_i = sys.argv.index(plug_in)
+        plugin_i = 0
+        for i,arg in enumerate(sys.argv):
+            #find by special plugin symbol
+            if(arg.startswith('+')):
+                plugin_i = i
+                break
+            
         #all arguments after plugin name are passed to the plugin
         plugin_args = sys.argv[plugin_i+1:]
 
@@ -943,9 +950,6 @@ plugins)?", warning=False)
                     log.error("Must provide a plugin alias.")
                     continue
 
-                #check if the value has the ENV word in it to replace
-                var_val = var_val.replace(apt.ENV_NAME, apt.HIDDEN)
-
                 #modify existing plugins
                 if(var_key.lower() in Plugin.Jar.keys()):
                     Plugin.Jar[var_key].setCommand(var_val)
@@ -964,7 +968,7 @@ plugins)?", warning=False)
                 if(var_key == ''):
                     log.error("Must provide a label name.")
                     continue
-
+                print(var_key)
                 #modify existing label
                 if(var_key.lower() in Label.Jar.keys()):
                     Label.Jar[var_key].setExtensions(apt.strToList(var_val))
@@ -1056,11 +1060,12 @@ plugins)?", warning=False)
                 apt.setRefreshRate(v)
                 apt.save()
             else:
+                #:todo: make better/improve for more generic assigning
                 header = None
                 #try to find what section the setting is under
-                if(k.lower() in apt.SETTINGS['general'].keys()):
+                if(k.lower() in apt.CFG.get('general', dtype=Section).keys()):
                     header = 'general'
-                elif(k.lower() in apt.SETTINGS['HDL-styling'].keys()):
+                elif(k.lower() in apt.CFG.get('HDL-styling', dtype=Section).keys()):
                     header = 'HDL-styling'
                 #continue to write the value to the correct setting if found
                 if(header != None):
@@ -1068,9 +1073,9 @@ plugins)?", warning=False)
                     if(k == 'multi-develop' or k == 'overlap-global' or \
                         k == 'mixed-language' or k == 'newline-maps' or \
                         k == 'auto-fit' or k == 'hanging-end'):
-                            v = cfg.castBool(v)
+                            v = Cfg.castBool(v)
                     #write to setting
-                    apt.setField(v, [header, k])
+                    apt.CFG.set(header+'.'+k, v)
                 pass          
 
                 #save settings adjusments

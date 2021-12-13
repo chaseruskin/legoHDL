@@ -11,6 +11,7 @@ import os
 import logging as log
 from .apparatus import Apparatus as apt
 from .map import Map
+from .cfgfile2 import Cfg, Section, Key
 
 
 class Plugin:
@@ -183,9 +184,9 @@ class Plugin:
     def load(cls):
         '''Load plugins from settings.'''
         
-        scpts = apt.SETTINGS['plugin']
-        for alias,cmd in scpts.items():
-            Plugin(alias, cmd)
+        plgns = apt.CFG.get('plugin', dtype=Section, returnkey=True)
+        for plgn in plgns.values():
+            Plugin(plgn._name, plgn._val)
         pass
 
 
@@ -204,7 +205,7 @@ class Plugin:
         for scpt in cls.Jar.values():
             serialized[scpt.getAlias()] = scpt.getCommand()
         #update settings dictionary
-        apt.SETTINGS['plugin'] = serialized
+        apt.CFG.set('plugin', Section(serialized))
         apt.save()
         pass
 

@@ -14,6 +14,7 @@ from .map import Map
 from .git import Git
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
+from .cfgfile2 import Cfg, Section, Key
 
 
 class Vendor:
@@ -297,8 +298,10 @@ class Vendor:
     def load(cls):
         '''Load all vendors from settings.'''
 
-        vndrs = apt.SETTINGS['vendor']
-        for name,url in vndrs.items():
+        vndrs = apt.CFG.get('vendor', dtype=Section)
+        for vndr in vndrs.values():
+            name = vndr._name
+            url = vndr._val
             url = None if(url == cfg.NULL) else url
             Vendor(name, url=url)
         pass
@@ -311,8 +314,8 @@ class Vendor:
         serialize = {}
         for vndr in cls.Jar.values():
             serialize[vndr.getName()] = vndr._repo.getRemoteURL()
-            
-        apt.SETTINGS['vendor'] = serialize
+        
+        apt.CFG.set('vendor', Section(serialize), override=True)
         apt.save()
         pass
 

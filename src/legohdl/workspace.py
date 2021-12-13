@@ -8,13 +8,13 @@
 #   "organization".
 # ------------------------------------------------------------------------------
 
-from io import UnsupportedOperation
 import os, shutil, glob
 import logging as log
 from datetime import datetime
 
 from .vendor import Vendor
 from .apparatus import Apparatus as apt
+from .cfgfile2 import Cfg, Section, Key
 from .map import Map
 from .git import Git
 from .block import Block
@@ -66,6 +66,7 @@ class Workspace:
                 try:
                     path = input("Enter path for workspace "+self.getName()+": ")
                 except KeyboardInterrupt:
+                    apt.CFG.remove('workspace.'+self.getName())
                     Workspace.save(inc_active=False)
                     print()
                     exit(log.info("Workspace not created."))
@@ -73,6 +74,7 @@ class Workspace:
                     try:
                         path = input("Enter path for workspace "+self.getName()+": ")
                     except KeyboardInterrupt:
+                        apt.CFG.remove('workspace.'+self.getName())
                         Workspace.save(inc_active=False)
                         print()
                         exit(log.info("Workspace not created."))
@@ -781,11 +783,11 @@ class Workspace:
     def load(cls):
         '''Load all workspaces from settings.'''
 
-        wspcs = apt.SETTINGS['workspace']
+        wspcs = apt.CFG.get('workspace', dtype=Section)
         
         for ws in wspcs.keys():
             if('path' in wspcs[ws].keys() and 'vendors' in wspcs[ws].keys()):
-                Workspace(ws, wspcs[ws]['path'], wspcs[ws]['vendors'])
+                Workspace(wspcs[ws]._name, wspcs[ws]['path']._val, Cfg.castList(wspcs[ws]['vendors']._val))
         pass
 
 
@@ -810,14 +812,15 @@ class Workspace:
             serialized[ws.getName()]['vendors'] = ws.getVendors(returnnames=True, lowercase=False)
         
         #update settings dictionary
+        apt.CFG.set('workspace', Section(serialized), override=True)
         apt.SETTINGS['workspace'] = serialized
         
         #update active workspace
         if(inc_active):
             if(cls.getActive() != None):
-                apt.SETTINGS['general']['active-workspace'] = cls.getActive().getName()
+                apt.CFG.set('general.active-workspace', cls.getActive().getName())
             else:
-                apt.SETTINGS['general']['active-workspace'] = ''
+                apt.CFG.set('general.active-workspace', '')
 
         apt.save()
         pass

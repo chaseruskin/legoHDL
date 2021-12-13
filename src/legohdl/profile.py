@@ -15,6 +15,7 @@ from .git import Git
 from .map import Map
 from .apparatus import Apparatus as apt
 from .cfgfile import CfgFile as cfg
+from .cfgfile2 import Cfg, Section, Key
 
 
 class Profile:
@@ -135,85 +136,24 @@ class Profile:
         Returns:
             None
         '''
-
-
-        def deepMerge(src, dest, setting="", plugins_only=False):
-            '''
-            Merge all values found in src to override destination into a modified
-            dictionary.
-
-            Parameters:
-                src (dict): multi-level dictionary to grab values from
-                dest (dict): multi-level dictionary to append values in
-                plugins_only (bool): only add in plugin settings
-            Returns:
-                dest (dict): the modified dictionary with new overridden values
-            '''
-            for k,v in src.items():
-                next_level = setting
-                isHeader = isinstance(v, dict)
-                if(setting == ""):
-                    next_level = cfg.HEADER[0]+k+cfg.HEADER[1]+" " if(isHeader) else k
-                else:
-                    if(isHeader):
-                        next_level = next_level + cfg.HEADER[0] + k + cfg.HEADER[1]+" "
-                    else:
-                        next_level = next_level + k
-                #print(next_level)
-                #only proceed when importing just plugins
-                if(plugins_only and next_level.startswith(cfg.HEADER[0]+'plugin'+cfg.HEADER[1]) == 0):
-                    continue
-                #skip plugins if not explicitly set in argument
-                elif(plugins_only == False and next_level.startswith(cfg.HEADER[0]+'plugin'+cfg.HEADER[1]) == 1):
-                    continue
-                #go even deeper into the dictionary tree
-                if(isinstance(v, dict)):
-                    if(k not in dest.keys()):
-                        dest[k] = dict()
-                        #log.info("Creating new dictionary "+k+" under "+next_level+"...")
-                    deepMerge(v, dest[k], setting=next_level, plugins_only=plugins_only)
-                #combine all settings except if profiles setting exists in src
-                elif(k != 'profiles'):
-                    #log.info("Overloading "+next_level+"...")
-                    #append to list, don't overwrite
-                    if(isinstance(v, list)):
-                        #create new list if DNE
-                        if(k not in dest.keys()):
-                            #log.info("Creating new list "+k+" under "+next_level+"...")
-                            dest[k] = []
-                        if(isinstance(dest[k], list)):   
-                            for i in v:
-                                #find replace all parts of string with ENV_NAME
-                                #if(isinstance(v,str)):
-                                    #v = os.path.expandvars(v)
-                                if(i not in dest[k]):
-                                    dest[k] += [i]
-                    #otherwise normal overwrite
-                    else:
-                        #if(isinstance(v,str)):
-                            #v = os.path.expandvars(v)
-                        #do not allow a null value to overwrite an already established value
-                        if(k in dest.keys() and v == cfg.NULL):
-                            continue
-                        dest[k] = v
-                    #print to console the overloaded settings
-                    log.info(next_level+" = "+str(v))
-            return dest
-
-
         log.info("Importing profile "+self.getName()+"...")
+        s_file = self.getProfileDir()+apt.SETTINGS_FILE
+
+        prfl_settings = None
+        #load the profile's configured settings
+        if(self.hasSettings()):
+            prfl_settings = Cfg(s_file, data=Section())
+            prfl_settings.read()
+
         #overload available settings
         if(self.hasSettings()):
             act = (ask == False) or apt.confirmation("Import "+apt.SETTINGS_FILE+"?", warning=False)
             if(act):
                 log.info('Overloading '+apt.SETTINGS_FILE+'...')
-                with open(self.getProfileDir()+apt.SETTINGS_FILE, 'r') as f:
-                    prfl_settings = cfg.load(f)
-                    
-                    dest_settings = copy.deepcopy(apt.SETTINGS)
-                    dest_settings = deepMerge(prfl_settings, dest_settings)
-                    apt.SETTINGS = dest_settings
+                #update all keys
+                apt.CFG.set('', prfl_settings._data, verbose=True)
             pass
+
         #copy in template folder
         if(self.hasTemplate()):
             act = (ask == False) or apt.confirmation("Import template?", warning=False)
@@ -221,35 +161,46 @@ class Profile:
                 log.info('Importing template...')
                 shutil.rmtree(apt.HIDDEN+"template/",onerror=apt.rmReadOnly)
                 shutil.copytree(self.getProfileDir()+"template/", apt.HIDDEN+"template/")
+                #update template key
+                if(self.hasSettings()):
+                    log.info("Overloading template in "+apt.SETTINGS_FILE+"...")
+                    apt.CFG.set('general.template', prfl_settings.get('general.template', dtype=str), verbose=True)
+                pass
             pass
+
         #copy in plugins
         if(self.hasPlugins()):
             act = (ask == False) or apt.confirmation("Import plugins?", warning=False)
             if(act):
                 log.info('Importing plugins...')
                 plugins = os.listdir(self.getProfileDir()+'plugins/')
-                for scp in plugins:
-                    log.info("Copying "+scp+" to built-in plugins folder...")
-                    if(os.path.isfile(self.getProfileDir()+'plugins/'+scp)):
+
+                #iterate through everything found in the plugins/ folder
+                for plg in plugins:
+                    log.info("Copying "+plg+" to built-in plugins folder...")
+                    #make sure the plugin path is a file
+                    if(os.path.isfile(self.getProfileDir()+'plugins/'+plg)):
                         #copy contents into built-in plugin folder
-                        prfl_plugin = open(self.getProfileDir()+'plugins/'+scp, 'r')
-                        copied_plugin = open(apt.HIDDEN+'plugins/'+scp, 'w')
+                        prfl_plugin = open(self.getProfileDir()+'plugins/'+plg, 'r')
+                        copied_plugin = open(apt.HIDDEN+'plugins/'+plg, 'w')
+
                         #transfer file data via writing it to file
                         plugin_data = prfl_plugin.readlines()
                         copied_plugin.writelines(plugin_data)
+
                         #close files
                         prfl_plugin.close()
                         copied_plugin.close()
                         pass
                     pass
+                #update settings for plugins
                 if(self.hasSettings()):
                     log.info('Overloading plugins in '+apt.SETTINGS_FILE+'...')
-                    with open(self.getProfileDir()+apt.SETTINGS_FILE, 'r') as f:
-                        prfl_settings = cfg.load(f)
-                        dest_settings = copy.deepcopy(apt.SETTINGS)
-                        dest_settings = deepMerge(prfl_settings, dest_settings, plugins_only=True)
-                        apt.SETTINGS = dest_settings
+                    #update plugin section
+                    apt.CFG.set('plugin', prfl_settings.get('plugin', dtype=Section), verbose=True)
+                pass
             pass
+
         #write to log file
         with open(self.DIR+self.LOG_FILE, 'w') as f:
             f.write(self.getName())
@@ -308,17 +259,19 @@ class Profile:
         log.info("Reloading default profile...")
         default = Profile("default")
 
-        def_settings = dict()
-        def_settings['plugin'] = \
-        {
-            'hello'  : 'python $LEGOHDL/plugins/hello_world.py',
+        def_settings = {
+            'plugin' : {
+                'hello' : 'python $LEGOHDL/plugins/hello_world.py'
+            },
+            'workspace' : {
+                'primary' : {
+                    'path' : '',
+                    'vendors' : ''
+                }
+            }
         }
-        def_settings['workspace'] = dict()
-        def_settings['workspace']['primary'] = {'path' : None, 'vendors' : None}
-        #create default legohdl.cfg
-        with open(default.getProfileDir()+apt.SETTINGS_FILE, 'w') as f:
-            cfg.save(def_settings, f)
-            pass
+        def_cfg = Cfg(default.getProfileDir()+apt.SETTINGS_FILE, data=Section(def_settings), comments=apt.getComments())
+        def_cfg.write()
 
         #create default template
         os.makedirs(default.getProfileDir()+"template/")
@@ -436,9 +389,9 @@ class Profile:
     def load(cls):
         '''Load profiles from settings.'''
 
-        prfls = apt.SETTINGS['general']['profiles']
-        for p in prfls:
-            Profile(p)
+        prfls = apt.CFG.get('general.profiles', dtype=list)
+        #create profiles from list of profile names
+        [Profile(p) for p in prfls]
         pass
 
 
@@ -449,7 +402,7 @@ class Profile:
         serialize = []
         for prfl in cls.Jar.values():
             serialize += [prfl.getName()]
-        apt.SETTINGS['general']['profiles'] = serialize
+        apt.CFG.set('general.profiles', Cfg.castStr(serialize, tab_cnt=1, frmt_list=True))
         apt.save()
         pass
 

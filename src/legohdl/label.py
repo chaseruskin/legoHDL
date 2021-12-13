@@ -11,6 +11,7 @@
 import logging as log
 from .map import Map
 from .apparatus import Apparatus as apt
+from .cfgfile2 import Cfg, Section, Key
 
 
 class Label:
@@ -73,13 +74,14 @@ class Label:
         '''Load local and global labels from settings.'''
 
         #load local labels
-        local_lbls = apt.SETTINGS['label']['local']
+        local_lbls = apt.CFG.get('label.local', dtype=Section)
         for lbl,exts in local_lbls.items():
-            Label(lbl, apt.strToList(exts), is_global=False)
+            Label(lbl.upper(), Cfg.castList(exts), is_global=False)
+
         #load global labels
-        global_lbls = apt.SETTINGS['label']['global']
+        global_lbls = apt.CFG.get('label.global', dtype=Section)
         for lbl,exts in global_lbls.items():
-            Label(lbl, apt.strToList(exts), is_global=True)
+            Label(lbl.upper(), Cfg.castList(exts), is_global=True)
         pass
 
 
@@ -96,12 +98,14 @@ class Label:
         serialized = {'global' : {}, 'local' : {}}
         #serialize the Workspace objects into dictionary format for settings
         for lbl in cls.Jar.values():
+            print(lbl.getName())
             if(lbl.isGlobal()):
-                serialized['global'][lbl.getName()] = apt.listToStr(lbl.getExtensions())
+                serialized['global'][lbl.getName()] = Cfg.castStr(lbl.getExtensions(), frmt_list=False)
             else:
-                serialized['local'][lbl.getName()] = apt.listToStr(lbl.getExtensions())
-        #update settings dictionary
-        apt.SETTINGS['label'] = serialized
+                serialized['local'][lbl.getName()] = Cfg.castStr(lbl.getExtensions(), frmt_list=False)
+
+        #update settings
+        apt.CFG.set('label', Section(serialized))
         apt.save()
         pass
 
