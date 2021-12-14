@@ -48,11 +48,24 @@ class Profile:
             #set profile's name
             self._name = name
 
+            new = (os.path.exists(self.getProfileDir()) == False)
+
             #create profile directory if DNE
             os.makedirs(self.getProfileDir(), exist_ok=True)
             #create profile marker file if DNE
             if(os.path.exists(self.getProfileDir()+self.getName()+self.EXT) == False):
                 open(self.getProfileDir()+self.getName()+self.EXT, 'w').close()
+
+            #create blanks for new profiles
+            if(new):
+                #add plugins folder
+                os.makedirs(self.getProfileDir()+'plugins/', exist_ok=True)
+                #add templates folder
+                os.makedirs(self.getProfileDir()+'template/')
+                #add commented out legohdl.cfg file
+                c = Cfg(self.getProfileDir()+'legohdl.cfg', data=Section(apt.LAYOUT), comments=apt.getComments())
+                c.write(empty=True)
+                pass
             
             #create git repository
             self._repo = Git(self.getProfileDir())
@@ -468,14 +481,17 @@ class Profile:
 
 
     def hasTemplate(self):
+        '''Returns (bool) if a template folder exists.'''
         return os.path.exists(self.getProfileDir()+"template/")
 
 
     def hasPlugins(self):
+        '''Returns (bool) if a plugins folder exists and has at least one file.'''
         return os.path.exists(self.getProfileDir()+"plugins/")
 
 
     def hasSettings(self):
+        '''Returns (bool) if a legohdl.cfg file exists and has data to import'''
         return os.path.exists(self.getProfileDir()+apt.SETTINGS_FILE)
 
     
