@@ -740,8 +740,16 @@ class Block:
             ver = ver[1:]
             #guaranteed to be from cache because checked for 'unstables' beforehand
 
-            #access the block from installation at the specific version 
-            reqs = Block.Inventory[V][L][N][Block.Level.INSTL.value].getInstalls()[ver].getMeta('requires')
+            #access the block from installation at the specific version
+            if(V in Block.Inventory.keys() and L in Block.Inventory[V].keys() and N in Block.Inventory[V][L].keys()):
+                if(Block.Inventory[V][L][N][Block.Level.INSTL.value] != None):
+                    reqs = Block.Inventory[V][L][N][Block.Level.INSTL.value].getInstalls()[ver].getMeta('requires')
+                else:
+                    log.error("Block requirement "+b_id+" not found in the cache.")
+                    return False
+            else:
+                log.error("Unknown block requirement: "+b_id)
+                return False
 
             #check the requirements in metadata
             for r in reqs:

@@ -1359,6 +1359,8 @@ plugins)?", warning=False)
         #identify current block
         block = Block.getCurrent()
 
+        #note: run export before release to make sure requirements are up-to-date?
+
         block.release(self.getItem(), msg=self.getVar("msg"), \
             dry_run=self.hasFlag('dry-run'), \
             only_meta=self.hasFlag('strict'), \
