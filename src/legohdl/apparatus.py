@@ -188,7 +188,7 @@ class Apparatus:
 
         if(tmplt_path != Cfg.NULL and os.path.isdir(os.path.expandvars(tmplt_path))):
             cls.CFG.set('general.template', cls.fs(tmplt_path))
-            cls.TEMPLATE = tmplt_path
+            cls.TEMPLATE = os.path.expandvars(tmplt_path)
             pass
         
         #save all safety measures

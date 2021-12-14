@@ -151,7 +151,7 @@ class Plugin:
         Returns:
             None
         '''
-        cmd = [self.getCommand()] + args
+        cmd = [self.getCommand(exp_vars=True)] + args
         apt.execute(*cmd,quiet=False)
         pass
 
@@ -164,12 +164,12 @@ class Plugin:
     def getPath(self):
         '''Returns the _path (str) that is in the command, or None if DNE.'''
         if(self.hasPath()):
-            return self._path
+            return os.path.expandvars(self._path)
         else:
             return None
 
 
-    def getCommand(self):
+    def getCommand(self, exp_vars=False):
         '''
         Retrieve the command string.
         
@@ -178,6 +178,8 @@ class Plugin:
         Returns:
             self._cmd (str): the entire command for this plugin
         '''
+        if(exp_vars):
+            return os.path.expandvars(self._cmd)
         return self._cmd
 
 

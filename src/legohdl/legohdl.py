@@ -51,7 +51,7 @@ class legoHDL:
         log.basicConfig(format='%(levelname)s:\t%(message)s', level=log.INFO)
 
         #create environment variables
-        os.environ["LEGOHDL"] = apt.HIDDEN[:len(apt.HIDDEN)-1]
+        os.environ["LEGOHDL"] = apt.fs(apt.HIDDEN[:len(apt.HIDDEN)-1])
 
         #parse arguments
         self._command = self._item = ""
@@ -1405,15 +1405,16 @@ plugins)?", warning=False)
             #maybe open up the plugin file directly if given a value
             if(self._item.lower() in Plugin.Jar.keys()):
                 #able to open plugin?
-                scpt = Plugin.Jar[self._item.lower()]
-                if(scpt.hasPath()):
-                    plugin_path = scpt.getPath()
+                plgn = Plugin.Jar[self._item.lower()]
+                if(plgn.hasPath()):
+                    plugin_path = plgn.getPath()
                     log.info("Opening plugin "+self._item+" at... "+plugin_path)
                 else:
                     exit(log.error("Plugin "+self._item+" has no path to open."))
             elif(self.getItem() != None):
                 exit(log.error("Plugin "+self._item+" does not exist."))
-            log.info("Opening built-in plugins folder at... "+plugin_path)
+            else:
+                log.info("Opening built-in plugins folder at... "+plugin_path)
             apt.execute(apt.getEditor(),plugin_path)
             pass
         #open profile
