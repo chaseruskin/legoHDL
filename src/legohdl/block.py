@@ -552,8 +552,8 @@ class Block:
         stable = self.checkStability(block_reqs)
         if(stable == False):
             log.error("Unable to release block due to requiring unstable blocks.\n\
-        Release all unstable sub-blocks and disable 'general.multi-develop' before continuing\n\
-        or use stable versions of every block.")
+        Release all unstable sub-blocks and disable 'general.multi-develop' or use\n\
+        stable versions of every required block before continuing.")
             #exit if this is the real thing
             if(dry_run == False):
                 return
