@@ -10,11 +10,11 @@
 
 import os,shutil,glob
 import logging as log
+
+from .apparatus import Apparatus as apt
+from .cfgfile2 import Cfg, Section, Key
 from .map import Map
 from .git import Git
-from .apparatus import Apparatus as apt
-from .cfgfile import CfgFile as cfg
-from .cfgfile2 import Cfg, Section, Key
 
 
 class Vendor:
@@ -179,9 +179,8 @@ class Vendor:
             meta['block']['vlog-units'] = vlog_units
 
         #write metadata to marker file in vendor for this block
-        with open(meta_path, 'w') as meta_file:
-            cfg.save(meta, meta_file, ignore_depth=True, space_headers=True)
-            pass
+        c = Cfg(meta_path, data=Section(meta))
+        c.write(auto_indent=False)
 
         #write changelog in vendor for this block (if exists)
         if(block.getChangelog() != None):
@@ -313,7 +312,7 @@ class Vendor:
         for vndr in vndrs.values():
             name = vndr._name
             url = vndr._val
-            url = None if(url == cfg.NULL) else url
+            url = None if(url == Cfg.NULL) else url
             Vendor(name, url=url)
         pass
 

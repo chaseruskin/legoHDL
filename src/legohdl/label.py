@@ -9,9 +9,10 @@
 # ------------------------------------------------------------------------------
 
 import logging as log
-from .map import Map
+
 from .apparatus import Apparatus as apt
 from .cfgfile2 import Cfg, Section, Key
+from .map import Map
 
 
 class Label:

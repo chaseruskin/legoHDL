@@ -16,8 +16,8 @@ import os, re
 import logging as log
 from enum import Enum
 
-from .graph import Graph
 from .apparatus import Apparatus as apt
+from .graph import Graph
 from .map import Map
 
 

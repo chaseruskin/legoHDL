@@ -11,7 +11,6 @@ import os, webbrowser
 import logging as log
 from .apparatus import Apparatus as apt
 
-
 import_success = True
 try:
     import tkinter as tk

@@ -9,7 +9,6 @@
 import shutil,os
 
 from legohdl.language import Language
-
 from .plugin import Plugin
 from .map import Map
 from .git import Git

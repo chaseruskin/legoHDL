@@ -10,9 +10,9 @@
 # ------------------------------------------------------------------------------
 
 import os,shutil,stat,subprocess
-import copy,platform
+import platform
 import logging as log
-from .cfgfile import CfgFile as cfg
+
 from .cfgfile2 import Cfg, Section, Key
 
 
@@ -53,10 +53,10 @@ class Apparatus:
     OPTIONS = ['label', 'plugin', 'workspace', 'vendor', 'placeholders', 'metadata']
 
     LAYOUT = { 'general' : {
-                    'active-workspace' : cfg.NULL, 
-                    'author' : cfg.NULL, 
-                    'editor' : cfg.NULL,
-                    'template' : cfg.NULL, 
+                    'active-workspace' : Cfg.NULL, 
+                    'author' : Cfg.NULL, 
+                    'editor' : Cfg.NULL,
+                    'template' : Cfg.NULL, 
                     'profiles' : '()',
                     'mixed-language' : 'off', 
                     'multi-develop' : 'off', 
@@ -160,73 +160,20 @@ class Apparatus:
         Returns:
             None
         '''
-        # cls.generateDefault(dict,"local","global",header="label") 
-        # cls.generateDefault(dict,"vendor","plugin","workspace","metadata","placeholders",header=None) 
-        # cls.generateDefault(bool,"multi-develop","overlap-global","mixed-language",header="general")
-        # cls.generateDefault(int,"refresh-rate",header="general")
-        # cls.generateDefault(list,"profiles",header="general")
-
-        # cls.generateDefault(bool,"hanging-end","newline-maps","auto-fit",header="HDL-styling")
-        # cls.generateDefault(int,"alignment",header="HDL-styling")
-        return
-
         #validate that default-language is one of 3 options
-        def_lang = cls.getField(['HDL-styling', 'default-language']).lower()
-        if(def_lang != 'vhdl' and def_lang != 'verilog'):
-            cls.setField('auto', ['HDL-styling', 'default-language'])
-            pass
-
-        #validate an instance name exists
-        if(cls.getField(['HDL-styling', 'instance-name'], None) == None):
-            cls.setField('uX', ['HDL-styling', 'instance-name'])
-            pass
+        dl = cls.CFG.get('hdl-styling.default-language')
+        if(dl.lower() not in ['vhdl', 'verilog', 'auto']):
+            dl = cls.CFG.set('hdl-styling.default-language', 'auto')
 
         #ensure the alignment setting is constrained between 0 and 80
-        align = cls.getField(['HDL-styling', 'alignment'], int)
+        align = cls.CFG.get('hdl-styling.alignment', dtype=int)
         if(align < 0):
             align = 0
         elif(align > 80):
             align = 80
-        cls.setField(align, ['HDL-styling', 'alignment'])
-
-        #ensure the modifiers have a default value (wildcard)
-        if(cls.getField(['HDL-styling', 'generic-modifier']) == ''):
-            cls.setField('*', ['HDL-styling', 'generic-modifier'])
-
-        if(cls.getField(['HDL-styling', 'port-modifier']) == ''):
-            cls.setField('*', ['HDL-styling', 'port-modifier'])
-
+        cls.CFG.set('hdl-styling.alignment', align)
         pass
 
-
-    @classmethod
-    def generateDefault(cls, t, *args, header=None):
-        '''
-        Implements security check to make sure certain settings uphold a specific
-        datatype.
-
-        Parameters:
-            t (type): python datatype that should be here in settings
-            *args (*str): variable string (keys) requesting type t
-            header (str): optional first-level section where keys are located
-        Returns:
-            None
-        '''
-        for a in args:
-            if(header == None):
-                sett = cls.SETTINGS
-            else:
-                sett = cls.SETTINGS[header]
-            if(isinstance(sett[a], t) == False):
-                val = sett[a]
-                if(t == dict):
-                    sett[a] = {}
-                elif(t == bool):
-                    sett[a] = cfg.castBool(val)
-                elif(t == int):
-                    sett[a] = cfg.castInt(val)
-                elif(t == list):
-                    sett[a] = []
 
 
     @classmethod
@@ -239,7 +186,7 @@ class Apparatus:
 
         tmplt_path = cls.CFG.get('general.template')
 
-        if(tmplt_path != cfg.NULL and os.path.isdir(os.path.expandvars(tmplt_path))):
+        if(tmplt_path != Cfg.NULL and os.path.isdir(os.path.expandvars(tmplt_path))):
             cls.CFG.set('general.template', cls.fs(tmplt_path))
             cls.TEMPLATE = tmplt_path
             pass
@@ -476,7 +423,7 @@ class Apparatus:
     @classmethod
     def save(cls):
         '''
-        Saves the current multi-level dictionary cls.SETTINGS to the cfg file.
+        Saves the current multi-level Section CFG object its legohdl.cfg file.
 
         Parameters:
             None
@@ -570,55 +517,6 @@ class Apparatus:
         
         return path
 
-    
-    @classmethod
-    def fullMerge(cls, dest, src):
-        '''
-        Recursively moves keys/vals from src dictionary into destination
-        dictionary if they don't exist. Returns dest.
-
-        Parameters:
-            dest (dict): the dictionary to modify
-            src (dict): the dictionary to grab keys/values from
-        Returns:
-            dest (dict): modified dictionary with key/values from src
-        '''
-
-        for k,v in src.items():
-            #does the destination have this key?
-            if(k not in dest.keys()): 
-                dest[k] = v
-            if(isinstance(v, dict)):
-                dest[k] = cls.fullMerge(dest[k], src[k])
-
-        return dest
-
-
-    @classmethod
-    def merge(cls, place1, place2):
-        '''
-        Perform a 2-level python dictionary object merge. Any place2 key's and
-        values will be merged into place1's dictionary. Place2 has precedence
-        over Place1. Returns the final merged dictionary. 
-        
-        Parameters
-        ---
-        place1 : python dictionary object
-        place2 : python dictionary object
-        '''
-        tmp = copy.deepcopy(place1)
-        for lib in place1.keys(): #go through each current lib
-            if lib in place2.keys(): #is this lib already in merging lib?
-                for prj in place2[lib]:
-                    tmp[lib][prj] = place2[lib][prj]
-
-        for lib in place2.keys(): #go through all libs not in current lib
-            if not lib in place1.keys():
-                tmp[lib] = dict()
-                for prj in place2[lib]:
-                    tmp[lib][prj] = place2[lib][prj]
-        return tmp
-
 
     @classmethod
     def getRefreshRate(cls):
@@ -637,7 +535,7 @@ class Apparatus:
             None
         '''
         #convert to integer
-        r = cfg.castInt(r)
+        r = Cfg.castInt(r)
         #clamp upper and lower bounds
         if(r > cls.MAX_RATE):
             r = cls.MAX_RATE
@@ -682,79 +580,11 @@ class Apparatus:
         tail,_ = os.path.split(file_path)
         return cls.fs(tail)
 
-
-    @classmethod
-    def autoFillUnitFields(cls):
-        '''
-        Determines if to auto-set unit fields from export command.
-
-        Parameters:
-            None
-        Returns:
-            (bool): determine if to auto-fill "toplevel" and "bench" in
-                metadata, if exists.
-        '''
-        return False
-
     
     @classmethod
     def getEditor(cls):
         '''Returns the editor to the settings data-structure.'''
         return os.path.expandvars(cls.CFG.get('general.editor'))
-
-
-    @classmethod
-    def getField(cls, scope, dtype=str):
-        '''
-        Returns the value from the settings data structure passed in from
-        the scope ([str]) headers/fields (case-sensitive).
-
-        Parameters:
-            scope ([str]): list of keys to traverse
-            dtype (type): what datatype to cast from str to
-        Returns:
-            (bool | int | str | None): the value at the scoped field
-        
-        '''
-        #traverse down the dictionary
-        field = cls.SETTINGS
-        for i in scope:
-            field = field[i]
-        #case to specified datatype
-        if(dtype == bool):
-            return cfg.castBool(field)
-        elif(dtype == int):
-            return cfg.castInt(field)
-        elif(dtype == None):
-            return cfg.castNone(field)
-        return field
-
-
-    @classmethod
-    def setField(cls, val, scope, data=None):
-        '''
-        Sets the value for a generic field in the settings dictionary.
-        
-        Parameters:
-            val (str): the value to store
-            scope ([str]): the list of keys to traverse
-            data (None): leave None so for recursion to use cls.SETTINGS
-        Returns:
-            None
-        '''
-        #before entering recursion set the data to traverse
-        if(data == None):
-            data = cls.SETTINGS
-        
-        #traverse down the dictionary
-        if(len(scope) > 1):
-            cls.setField(val, scope[1:], data[scope[0]])
-        else:
-            #ensure the value is type string
-            val = '' if(val == None) else str(val)
-            #set the value here
-            data[scope[0]] = val
-        pass
 
 
     @classmethod

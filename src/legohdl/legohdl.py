@@ -16,22 +16,20 @@ import os, sys, shutil
 import logging as log
 
 from .__version__ import __version__
+from .test import main as test
 
 from .apparatus import Apparatus as apt
-from .cfgfile import CfgFile as cfg
-
-from .block import Block
-from .map import Map
-from .unit import Unit
-from .gui import GUI
-from .test import main as test
-from .vendor import Vendor
+from .cfgfile2 import Cfg, Section, Key
 from .workspace import Workspace
 from .profile import Profile
+from .block import Block
+from .vendor import Vendor
 from .plugin import Plugin
 from .label import Label
 from .git import Git
-from .cfgfile2 import Cfg, Section, Key
+from .map import Map
+from .unit import Unit
+from .gui import GUI
 
 
 class legoHDL:
@@ -311,7 +309,7 @@ plugins)?", warning=False)
             
         #ask for name to store in settings
         feedback = input("Enter your name: ")
-        if(feedback.strip() != cfg.NULL):
+        if(feedback.strip() != Cfg.NULL):
             apt.setAuthor(feedback.strip())
 
         alter_editor = True
@@ -322,7 +320,7 @@ plugins)?", warning=False)
         #ask for text-editor to store in settings
         if(alter_editor):
             feedback = input("Enter your text-editor: ")
-            if(feedback.strip() != cfg.NULL):
+            if(feedback.strip() != Cfg.NULL):
                 apt.setEditor(feedback.strip())
         pass
 
@@ -1361,7 +1359,7 @@ plugins)?", warning=False)
     def _open(self):
         '''Run 'open' command.'''
 
-        valid_editor = apt.getEditor() != cfg.NULL
+        valid_editor = apt.getEditor() != Cfg.NULL
         #open the settings (default is gui mode)
         if(self.hasFlag("settings")):
             gui_mode = True

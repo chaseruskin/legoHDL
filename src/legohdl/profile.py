@@ -9,13 +9,13 @@
 #   users.
 # ------------------------------------------------------------------------------
 
-import os,shutil,copy,glob
+import os,shutil,glob
 import logging as log
+
+from .apparatus import Apparatus as apt
+from .cfgfile2 import Cfg, Section, Key
 from .git import Git
 from .map import Map
-from .apparatus import Apparatus as apt
-from .cfgfile import CfgFile as cfg
-from .cfgfile2 import Cfg, Section, Key
 
 
 class Profile:
