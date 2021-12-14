@@ -152,34 +152,34 @@ class Vendor:
         log.info("Publishing "+block.getFull(inc_ver=True)+" to vendor "+self.getName()+"...")
         
         #make sure the vendor is up-to-date
-        self.refresh(quiet=True)
+        self.refresh(quiet=True, try_set=False)
 
         #make sure the path exists in vendor
         path = self.getVendorDir()+block.L()+'/'+block.N()+'/'
         os.makedirs(path, exist_ok=True)
 
         meta_path = path+apt.MARKER
+
+        #unfreeze files to write data
+        block.modWritePermissions(enable=True, path=path)
         
         #add more information to the metadata before publishing to vendor
-        meta = block.getMeta(every=True).copy()
-
+        c = Cfg(meta_path, data=Section(block._meta._data))
+        
         #add what versions are available
-        meta['block']['versions'] = block.sortVersions(block.getTaggedVersions())
+        c.set('block.versions', Cfg.castStr(block.sortVersions(block.getTaggedVersions())))
 
         #add the size of latest project (kilobytes)
-        meta['block']['size'] = block.getSize()
+        c.set('block.size', str(block.getSize()))
 
         #add VHDL units and Verilog units
         vhdl_units = block.loadHDL(lang='vhdl', returnnames=True)
         vlog_units = block.loadHDL(lang='vlog', returnnames=True)
 
-        if(len(vhdl_units)):
-            meta['block']['vhdl-units'] = vhdl_units
-        if(len(vlog_units)):
-            meta['block']['vlog-units'] = vlog_units
+        c.set('block.vhdl-units', Cfg.castStr(vhdl_units))
+        c.set('block.vlog-units', Cfg.castStr(vlog_units))
 
         #write metadata to marker file in vendor for this block
-        c = Cfg(meta_path, data=Section(meta))
         c.write(auto_indent=False)
 
         #write changelog in vendor for this block (if exists)
@@ -222,13 +222,14 @@ class Vendor:
         return about_txt
 
 
-    def refresh(self, quiet=False):
+    def refresh(self, quiet=False, try_set=True):
         '''
         If has a remote repository, checks with it to ensure the current branch
         is up-to-date and pulls any changes.
         
         Parameters:
             quiet (bool): determine if to display information to user or keep quiet
+            try_set (bool): determine if to try to set a remote url for the existing vendor
         Returns:
             None
         '''
@@ -237,7 +238,7 @@ class Vendor:
         self._repo.git('restore','.')
         
         #try to sync with a remote
-        if(self._url != '' or self._url != None):
+        if((self._url != '' or self._url != None) and try_set):
             self.setRemoteURL(self._url, exists_ok=True)
             pass
 

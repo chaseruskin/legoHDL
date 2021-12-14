@@ -163,7 +163,7 @@ class Block:
             else:
                 Block.Inventory[self.M()][self.L()][self.N()][lvl] = self
 
-        if(self.getMeta('requires') != Cfg.NULL):
+        if(self.getMeta('requires') != None):
             #update graph
             Block.Hierarchy.addVertex(self.getFull(inc_ver=True))
             for d in self.getMeta('requires'):
@@ -617,7 +617,7 @@ class Block:
             if(dry_run):
                 log.info("Dry run complete.")
                 release_report = release_report + 'Publish to vendor: False\n'
-                print(release_report)
+                print(release_report+"Dry run: PASSED\n")
             return
 
         publish = True
@@ -636,7 +636,7 @@ class Block:
         #complete dry-run and print report
         if(dry_run):
             log.info("Dry run complete.")
-            print(release_report)
+            print(release_report+"Dry run: PASSED\n")
         #publish to the vendor
         elif(publish):
             vndr.publish(self)
@@ -2750,7 +2750,7 @@ class Block:
         #return unknown value if the block is created from 'AVAILABLE' level
         if(self.getLvl() == Block.Level.AVAIL):
             return '?'
-        
+        #returns in terms of KILOBYTES
         return round(float(apt.getPathSize(self.getPath())/1000), 2)
 
 
@@ -2772,10 +2772,18 @@ class Block:
         #make sure the metadata is properly formatted
         self.secureMeta()
 
-        all_versions = []
-        size = self.getSize()
-        vhdl_units = []
-        vlog_units = []
+        all_versions = self._meta.get('block.versions', dtype=list)
+        if(all_versions == None):
+            all_versions = []
+
+        #try to find size from file
+        size = self._meta.get('block.size', dtype=str)
+        #get directory's size
+        if(size == None):
+            size = self.getSize()
+
+        vhdl_units = self._meta.get('block.vhdl-units', dtype=list)
+        vlog_units = self._meta.get('block.vlog-units', dtype=list)
 
         #only print changelog information if requested
         if(see_changelog):
@@ -2788,30 +2796,20 @@ class Block:
 
         #read the metadata by default
         info_txt = '--- METADATA ---\n'
-        in_header = ''
+        in_sect = ''
         in_key = ''
         #open and dump the metadata contents into 'info_txt'
         with open(self.getMetaFile(), 'r') as file:
             for line in file:
+                #detect when entering a section
                 if(len(line) > 1 and line.strip()[0] == '[' and line.strip()[-1] == ']'):
-                    in_header = line.strip()
+                    in_sect = line.strip()
+                #detect when finding a key
                 elif(line.count('=')):
                     in_key = line[:line.find('=')].strip()
                 #print(in_header+'|'+in_key)
                 #avoid printing extra keys in metadata section
-                if(in_header.lower() == '[block]' and in_key.lower() in Block.EXTRA_KEYS):
-                    #capture available versions
-                    if(in_key.lower() == 'versions' and len(all_versions) == 0):
-                        all_versions = self.getMeta(in_key)
-                    #capture the block's size
-                    elif(in_key.lower() == 'size'):
-                        size = self.getMeta(in_key)
-                    #capture VHDL units
-                    elif(in_key.lower() == 'vhdl-units'):
-                        vhdl_units = self.getMeta(in_key)
-                    #capture VLOG units
-                    elif(in_key.lower() == 'vlog-units'):
-                        vlog_units = self.getMeta(in_key)
+                if(in_sect.lower() == '[block]' and in_key.lower() in Block.EXTRA_KEYS):
                     #do not write to metadata section (but do write empty lines)
                     if(len(line.strip()) > 0):
                         continue
@@ -2834,17 +2832,17 @@ class Block:
 
             #read the units found in this block
             if(self.getLvl() == Block.Level.DNLD or self.getLvl() == Block.Level.INSTL):
-                if(len(vhdl_units) == 0):
+                if(vhdl_units == None):
                     vhdl_units = self.loadHDL(lang='vhdl', returnnames=True)
-                if(len(vlog_units) == 0):
+                if(vlog_units == None):
                     vlog_units = self.loadHDL(lang='vlog', returnnames=True)
 
-            if(len(vhdl_units) > 0):
+            if(vhdl_units != None and len(vhdl_units) > 0):
                 txt = '\nVHDL units:\n'
                 info_txt = info_txt + txt + apt.listToGrid(vhdl_units, cols=-1, \
                     limit=80, min_space=4, offset='\t')
                 
-            if(len(vlog_units) > 0):
+            if(vlog_units != None and len(vlog_units) > 0):
                 txt = '\nVERILOG units:\n'
                 info_txt = info_txt + txt + apt.listToGrid(vlog_units, cols=-1, \
                     limit=80, min_space=4, offset='\t')

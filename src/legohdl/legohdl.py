@@ -804,6 +804,8 @@ plugins)?", warning=False)
         #first check if the block is found in install
         instl = block.getLvlBlock(Block.Level.INSTL)
 
+        print(block.getFull(), instl)
+
         ver_num = self.getVerNum(places=[3])
 
         #install latest/controller for this block
