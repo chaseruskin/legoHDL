@@ -14,7 +14,7 @@ from datetime import date
 from enum import Enum
 
 from .apparatus import Apparatus as apt
-from .cfgfile2 import Cfg, Section, Key
+from .cfg import Cfg, Section, Key
 from .git import Git
 from .map import Map
 from .graph import Graph

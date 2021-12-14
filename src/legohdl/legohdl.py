@@ -19,7 +19,7 @@ from .__version__ import __version__
 from .test import main as test
 
 from .apparatus import Apparatus as apt
-from .cfgfile2 import Cfg, Section, Key
+from .cfg import Cfg, Section, Key
 from .workspace import Workspace
 from .profile import Profile
 from .block import Block

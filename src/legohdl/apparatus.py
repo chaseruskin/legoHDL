@@ -13,7 +13,7 @@ import os,shutil,stat,subprocess
 import platform
 import logging as log
 
-from .cfgfile2 import Cfg, Section, Key
+from .cfg import Cfg, Section, Key
 
 
 class Apparatus:

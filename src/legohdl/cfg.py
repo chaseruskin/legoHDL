@@ -48,6 +48,9 @@ class Section(Map):
 
 class Cfg:
 
+    #comment token
+    CMT = ';'
+
     #section tokens
     S_DELIM = '.'
 
@@ -125,7 +128,7 @@ class Cfg:
             for l in lines:
                 in_str = next_in_str
                 #clean up any comments from the file line
-                l, next_in_str = self._trimComments(l, in_str=in_str)
+                l, next_in_str = self._trimComments(l, in_str=in_str, c_token=Cfg.CMT)
                 #trim off new lines and white space
                 l = l.strip()
                 #print(next_in_str)
@@ -147,7 +150,7 @@ class Cfg:
                     continue
 
                 #check for new keys (properties)
-                key_l,_ = self._trimComments(l, in_str=in_str, c_token='=')
+                key_l,_ = self._trimComments(l, in_str=in_str, c_token=Cfg.KEY_ASSIGNMENT)
                 key_true = key_l.strip()
                 key_l = key_l.strip().lower()
 
@@ -193,7 +196,7 @@ class Cfg:
         Returns:
             None 
         '''
-        contents = self._writeComment('')
+        contents = self._writeComment('', Cfg.CMT+' ')
 
         #store nested sections
         nested_sects = [('', self._data, '', 0)] 
@@ -229,7 +232,7 @@ class Cfg:
                     next_cur_key = sect
 
                 #generate the section/key comment
-                cmt = self._writeComment(next_cur_key, newline=T+'; ', is_section=(isinstance(data[sect], Section) and en_sect))
+                cmt = self._writeComment(next_cur_key, newline=T+Cfg.CMT+' ', is_section=(isinstance(data[sect], Section) and en_sect))
                 #enable after first pass
                 en_sect = True
 
@@ -254,10 +257,10 @@ class Cfg:
                 #write the comment (will be blank if not found)
                 if(cmt != '\n' or contents != ''):
                     contents = contents + cmt
-
+                #will add a comment mark
                 c_mark = ''
                 if(empty):
-                    c_mark = ';'
+                    c_mark = Cfg.CMT
         
                 #write the key/value pair
                 #print(data[sect]._name,data[sect])
@@ -274,7 +277,7 @@ class Cfg:
                 if(data[sect]._is_list or neat_keys == False):
                     spacer = 0
                 #write the value
-                contents = contents + self._writeWithRollOver(T+c_mark+key_var+val,newline=(' '*spacer)+c_mark)+'\n'
+                contents = contents + self._writeWithRollOver(T+c_mark+key_var+val, newline=(' '*spacer)+c_mark) + '\n'
                 pass
 
         #write contents to file
@@ -493,7 +496,7 @@ class Cfg:
         return keys
 
 
-    def _writeComment(self, key, newline='; ', is_section=False):
+    def _writeComment(self, key, newline, is_section=False):
         '''
         Given a single-level key, generate the comment text for the given section/key.
         Returns '\n' if the key is a section and does not have a comment
@@ -529,7 +532,8 @@ class Cfg:
         support = ['.sections', '.keys', '.value']
         for s in support:
             if(key+s in self._comments.keys()):
-                cmt = cmt + '\n'+newline+s[1:].upper()+':\n'+newline+self._writeWithRollOver(self._comments[key+s].strip(), newline=newline)
+                cmt = cmt + '\n' + newline+s[1:].upper() + ':\n' + newline + \
+                    self._writeWithRollOver(self._comments[key+s].strip(), newline=newline)
 
         return '\n'+cmt+'\n'
 
@@ -663,7 +667,6 @@ class Cfg:
                             returnee = returnee + ' '
                     else:
                         returnee = returnee+' '
-
                 pass
 
             #close the list with ending list symbol
@@ -780,7 +783,7 @@ class Cfg:
         return list(filter(lambda a: len(a), elements))
 
 
-    def _trimComments(self, line, c_token=';', in_str=''):
+    def _trimComments(self, line, c_token, in_str=''):
         '''
         Finds valid comments (outside of strings) and returns
         the trimmed version of a line from a cfg file.

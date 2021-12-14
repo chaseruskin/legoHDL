@@ -21,7 +21,7 @@ from .vhdl import Vhdl
 from .verilog import Verilog
 from .unit import Unit
 from .block import Block
-from .cfgfile2 import Cfg, Key, Section
+from .cfg import Cfg, Key, Section
 
 
 def main():

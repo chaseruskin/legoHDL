@@ -14,7 +14,7 @@ from datetime import datetime
 
 from .vendor import Vendor
 from .apparatus import Apparatus as apt
-from .cfgfile2 import Cfg, Section, Key
+from .cfg import Cfg, Section, Key
 from .map import Map
 from .git import Git
 from .block import Block
