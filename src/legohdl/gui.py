@@ -9,7 +9,9 @@
 
 import os, webbrowser
 import logging as log
+from enum import Enum
 from .apparatus import Apparatus as apt
+from .cfg import Cfg, Section, Key
 
 import_success = True
 try:
@@ -22,6 +24,58 @@ except ModuleNotFoundError:
 
 
 class GUI:
+
+
+    class Mode(Enum):
+        KEYS = 0,
+        TABLE_KEYS = 1,
+        TABLE_SECTS = 2,
+        MIXED = 3,
+        TABLE = 4
+        pass
+
+
+    class WIDGET(Enum):
+        SWITCH = 0,
+        SELECT = 1,
+        ENTRY  = 2,
+        NUMBER = 3,
+        TABLE  = 4,
+        pass
+
+
+    SECTION_MODES = \
+    {
+        'general'      : Mode.KEYS,
+        'label'        : Mode.KEYS,
+        'label.local'  : Mode.TABLE_KEYS,
+        'label.global' : Mode.TABLE_KEYS,
+        'plugin'       : Mode.TABLE_KEYS,
+        'workspace'    : Mode.TABLE_SECTS,
+        'placeholders' : Mode.TABLE_KEYS,
+        'hdl-styling'  : Mode.KEYS,
+        'metadata'     : Mode.TABLE_SECTS,
+        'vendor'       : Mode.TABLE_KEYS,
+        'profiles'     : Mode.TABLE
+    }
+
+    KEY_MODES = \
+    {
+        #---gengeral section keys---
+        'general.active-workspace' : WIDGET.SELECT,
+        'general.author' : WIDGET.ENTRY,
+        'general.editor' : WIDGET.ENTRY,
+        'general.template' : WIDGET.ENTRY,
+        'general.mixed-language' : WIDGET.SWITCH,
+        'general.multi-develop' : WIDGET.SWITCH,
+        'general.refresh-rate' : WIDGET.NUMBER,
+        'general.overlap-global' : WIDGET.SWITCH,
+        #---label section keys---
+        'label.local' : WIDGET.TABLE,
+        'label.global' : WIDGET.TABLE,
+        #---hdl-styling section keys---
+
+    }
 
 
     COMMENTS = {
@@ -98,27 +152,30 @@ settings that will be merged in when importing that profile. A profile directory
         Create a Tkinter object.
         '''
         if(import_success == False):
-            log.error("Failed to open GUI for settings (unable to find tkinter).")
+            log.error("Failed to open GUI for settings (tkinter import failed).")
             return None
-
-        #create dictionary to store tk variables
-        self._tk_vars = dict()
 
         #create root window
         self._window = tk.Tk()
+
         #add icon
         img = tk.Image("photo", file=apt.getProgramPath()+'/data/icon.gif')
         self._window.tk.call('wm','iconphoto', self._window._w, img)
+
         #set the window size
         self._width,self._height = 800,600
         self._window.geometry(str(self.getW())+"x"+str(self.getH()))
+
         #constrain the window size
         self._window.wm_resizable(False, False)
         self._window.title("legoHDL settings")
+
         #center the window
         self._window = self.center(self._window)
 
+        #create main frames
         self.initFrames()
+
         #enter main loop
         try:
             self._window.mainloop()
@@ -128,10 +185,12 @@ settings that will be merged in when importing that profile. A profile directory
 
 
     def getW(self):
+        '''Returns window width (int).'''
         return self._width
 
 
     def getH(self):
+        '''Returns window height (int).'''
         return self._height
 
 
@@ -159,10 +218,12 @@ settings that will be merged in when importing that profile. A profile directory
         bar_frame.grid(row=2, sticky='nsew')
         self._field_frame.grid(row=1, sticky='nse')
         self._field_frame.grid_columnconfigure(0, weight=1)
-        
+
         # --- menu pane ---
         #configure side menu
-        items = tk.StringVar(value=list(list(apt.SETTINGS.keys()) + ['profiles']))
+        #only list 'global' 1st level sections
+        sects = [a._name for a in list(filter(lambda a: isinstance(a, Section), apt.CFG._data.values()))]
+        items = tk.StringVar(value=sects + ['profiles'])
         self._menu_list = tk.Listbox(self._window, listvariable=items, selectmode='single', relief=tk.RIDGE)
         #configure actions when pressing a menu item
         self._menu_list.bind('<Double-1>', self.select)
@@ -171,7 +232,7 @@ settings that will be merged in when importing that profile. A profile directory
 
         # --- field frame ---
         #configure field frame widgets
-        self.loadFields('general')
+        self.loadKeys('general')
 
         # --- bar frame ---
         #configure bar frame widgets
@@ -187,113 +248,13 @@ settings that will be merged in when importing that profile. A profile directory
 
 
     def clrFieldFrame(self):
+        '''Removes all widgets from the main key frame.'''
         for widgets in self._field_frame.winfo_children():
             widgets.destroy()
 
 
-    def save(self):
-        '''
-        Transfers all GUI-related fields/data into legohdl.cfg file and apt.SETTINGS
-        variable. Saves only affect the current field frame window variables/settings.
-        '''
-        #transfer all gui fields/data into legohdl.cfg
-        for key,sect in self._tk_vars.items():
-            for name,field in sect.items():
-                # --- ACTIVE-WORKSPACE ---
-                #save active-workspace if its a valid workspace available
-                if(name == 'active-workspace' and field.get() in apt.SETTINGS['workspace'].keys()):
-                    apt.SETTINGS[key][name] = field.get()
-                    pass
-                # --- REFRESH-RATE ---
-                #save refresh-rate only if its an integer being returned
-                elif(name == 'refresh-rate'):
-                    try:
-                        apt.SETTINGS[key][name] = field.get()
-                    except:
-                        #do not save getting an error on field.get() (NaN)
-                        pass
-                    pass
-                # --- PLUG-INS and MARKETS ---
-                elif(key == 'plugin' or key == 'vendor'):
-                    #load records directly from table for plugins
-                    self._tk_vars[key] = {}
-                    for record in self._tb.getAllValues():
-                        self._tk_vars[key][record[0]] = record[1]
-                    #copy dictionary back to settings
-                    apt.SETTINGS[key] = self._tk_vars[key].copy()
-                    pass
-                # --- PROFILES ---
-                elif(name == 'profiles'):
-                    #load records directly from table for profiles
-                    self._tk_vars[name][name] = []
-                    for record in self._tb.getAllValues():
-                        self._tk_vars[name][name] += [record[0]]
-                    #copy list back to settings
-                    apt.SETTINGS['general'][name] = self._tk_vars[name][name].copy()
-
-                    pass
-                # --- LABELS ----
-                elif(key == 'label'):
-                    #load records directly from table for global (tgl_label == 0)
-                    if(self._tgl_labels.get() == 0):
-                        self._tk_vars[key]['global'] = {}
-                        for record in self._tb.getAllValues():
-                            self._tk_vars[key]['global'][record[0].upper()] = record[1]
-                    #load records directly from table for local (tgl_label == 1)
-                    else:
-                        self._tk_vars[key]['local'] = {}
-                        for record in self._tb.getAllValues():
-                            self._tk_vars[key]['local'][record[0].upper()] = record[1]
-                    #copy dictionaries back to settings
-                    apt.SETTINGS[key]['local'] = self._tk_vars[key]['local'].copy()
-                    apt.SETTINGS[key]['global'] = self._tk_vars[key]['global'].copy()
-                    pass
-                # --- WORKSPACES ---
-                elif(key == 'workspace'):
-                    #load records directly from table
-                    self._tk_vars[key] = {}
-                    apt.SETTINGS[key] = {}
-                    for record in self._tb.getAllValues():
-                        #properly formart vendor list
-                        mkts = []
-                        for m in list(record[2].split(',')):
-                            if(m != ''):
-                                mkts += [m]
-                        #store the inner workspace dictionaries
-                        self._tk_vars[key][record[0]] = {'path' : record[1], 'vendor' : mkts}
-                        #copy dictionary back to settings
-                        apt.SETTINGS[key][record[0]] = self._tk_vars[key][record[0]].copy()
-                    pass
-                # --- OTHERS/SIMPLE STRING VARIABLES ---
-                elif(isinstance(field, dict) == False):
-                    e = field.get()
-                    if(isinstance(e, str)):
-                        #split to identify any paths and ENV_NAME
-                        words = e.split()
-                        for i in range(len(words)):
-                            if(os.path.exists(os.path.expandvars(os.path.expanduser(words[i])))):
-                                words[i] = apt.fs(words[i])
-                        #regroup into one string
-                        e = ''
-                        for c in words:
-                            e = e + c + ' '
-                        e.strip()
-                    field.set(e)
-                    apt.SETTINGS[key][name] = e
-                # --- ? ---
-                else:
-                    log.error("A saving error has occurred.")
-        #write back to legohdl.cfg
-        apt.save()
-        #inform the user
-        log.info("Settings saved successfully.")
-        pass
-
-
     def openDocs(self):
-        '''
-        Open the documentation website in default browser.
-        '''
+        '''Opens the documentation website in default browser.'''
         webbrowser.open(apt.DOCUMENTATION_URL)
 
 
@@ -305,22 +266,67 @@ settings that will be merged in when importing that profile. A profile directory
         i = self._menu_list.curselection()
         if i != ():
             sect = self._menu_list.get(i)  
-            self.loadFields(section=sect)
+            self.loadKeys(section=sect)
         pass
 
 
-    def loadFields(self, section):
+    def loadKeys(self, section):
+        '''
+        Load the keys/sections to edit.
+
+        Parameters:
+            section (str): 1st level section from menu
+        Returns:
+            None
+        '''
         ft = font.nametofont("TkSmallCaptionFont")
         comment_font = ft
         wrap_len = 500
-        #print('Loading',section+'...')
+        print('Loading', section+'...')
         #clear all widgets from the frame
         self.clrFieldFrame()
-        self._comments = tk.Label(self._field_frame, text='', font=comment_font, wraplength=wrap_len, justify="left")
-        #clear tk vars dictionary
-        self._tk_vars = {section : {}}
+
+        #grab a temp copy of the current settings for this section
+        self._tmp_data = apt.CFG.get(section, dtype=Section)
+
         #re-write section title widget
-        self._field_frame.config(text=section)        
+        self._field_frame.config(text=section)  
+
+        #iterate through the keys and add the correct widgets
+        for key in self._tmp_data.keys():
+            #print(Cfg.writeWithRollOver(apt.getComments()[section+'.'+key]))
+            pass
+
+        #get what type of settings mode
+        disp_mode = self.SECTION_MODES[section]
+
+        x = 0 #x
+        y = 0 #y
+
+        #create top-to-bottom list of keys to edit
+        if(disp_mode == GUI.Mode.KEYS):
+            #setup data/display
+            pady = 1
+            padx = 20
+            key_pos = 'w'
+            value_pos = 'e'
+            #create widgets
+            for key in self._tmp_data.keys():
+                keypath = section+'.'+key
+                #draw key name
+                widg = tk.Label(self._field_frame, text=key)
+                widg.grid(row=y, column=0, padx=padx, pady=pady, sticky=key_pos)  
+                y += 1
+                #draw comments below key
+                widg = tk.Label(self._field_frame, text=apt.getComments()[keypath], font=comment_font, wraplength=wrap_len, justify="left")
+                widg.grid(row=y, column=0, columnspan=10, padx=padx, pady=pady, sticky=key_pos)
+                y += 1
+                pass
+            print(self.KEY_MODES[keypath])
+            pass
+        return
+
+      
         # always start label section with local labels begin displayed
         self._tgl_labels = tk.IntVar(value=1)
 
@@ -349,7 +355,7 @@ settings that will be merged in when importing that profile. A profile directory
                     
                     #special case for 'active-workspace'
                     if(field == 'active-workspace'):
-                        entry = tk.ttk.Combobox(self._field_frame, textvariable=self._tk_vars[section][field], values=list(apt.SETTINGS['workspace'].keys()))
+                        entry = tk.ttk.Combobox(self._field_frame, textvariable=self._tk_vars[section][field], values=list(apt.CFG.get('workspace', dtype=Section).keys()))
                     else:
                         entry = tk.Entry(self._field_frame, width=40, textvariable=self._tk_vars[section][field])
 
@@ -380,7 +386,7 @@ settings that will be merged in when importing that profile. A profile directory
         i = 0 
         if(section == 'general'):
             #map widgets
-            display_fields(apt.SETTINGS[section])
+            display_fields(apt.CFG.get('general', dtype=Section))
             i = -1 #disable because we print comments in method
         elif(section == 'label'):
             #store 1-level dicionaries
@@ -476,6 +482,120 @@ settings that will be merged in when importing that profile. A profile directory
             self._comments.configure(text=self.COMMENTS[section])
             self._comments.grid(row=i, column=0, columnspan=10, padx=10, pady=2, sticky='w')
 
+    
+    def save(self):
+        '''
+        Transfers all GUI-related fields/data into legohdl.cfg file and apt.SETTINGS
+        variable. Saves only affect the current field frame window variables/settings.
+        '''
+        #get section name
+        section = self._tmp_data._name
+
+        #remove keys that DNE anymore
+        #:todo:
+
+        #copy back changes (transfer all gui fields/data into legohdl.cfg)
+        apt.CFG.set(section, self._tmp_data, verbose=True)
+
+        #write new changes to file
+        if(apt.CFG._modified):
+            apt.CFG.write()
+            log.info("Updated settings successfully.")
+        return
+
+        for key,sect in self._tk_vars.items():
+            for name,field in sect.items():
+                # --- ACTIVE-WORKSPACE ---
+                #save active-workspace if its a valid workspace available
+                if(name == 'active-workspace' and field.get() in apt.SETTINGS['workspace'].keys()):
+                    apt.SETTINGS[key][name] = field.get()
+                    pass
+                # --- REFRESH-RATE ---
+                #save refresh-rate only if its an integer being returned
+                elif(name == 'refresh-rate'):
+                    try:
+                        apt.SETTINGS[key][name] = field.get()
+                    except:
+                        #do not save getting an error on field.get() (NaN)
+                        pass
+                    pass
+                # --- PLUG-INS and MARKETS ---
+                elif(key == 'plugin' or key == 'vendor'):
+                    #load records directly from table for plugins
+                    self._tk_vars[key] = {}
+                    for record in self._tb.getAllValues():
+                        self._tk_vars[key][record[0]] = record[1]
+                    #copy dictionary back to settings
+                    apt.SETTINGS[key] = self._tk_vars[key].copy()
+                    pass
+                # --- PROFILES ---
+                elif(name == 'profiles'):
+                    #load records directly from table for profiles
+                    self._tk_vars[name][name] = []
+                    for record in self._tb.getAllValues():
+                        self._tk_vars[name][name] += [record[0]]
+                    #copy list back to settings
+                    apt.SETTINGS['general'][name] = self._tk_vars[name][name].copy()
+
+                    pass
+                # --- LABELS ----
+                elif(key == 'label'):
+                    #load records directly from table for global (tgl_label == 0)
+                    if(self._tgl_labels.get() == 0):
+                        self._tk_vars[key]['global'] = {}
+                        for record in self._tb.getAllValues():
+                            self._tk_vars[key]['global'][record[0].upper()] = record[1]
+                    #load records directly from table for local (tgl_label == 1)
+                    else:
+                        self._tk_vars[key]['local'] = {}
+                        for record in self._tb.getAllValues():
+                            self._tk_vars[key]['local'][record[0].upper()] = record[1]
+                    #copy dictionaries back to settings
+                    apt.SETTINGS[key]['local'] = self._tk_vars[key]['local'].copy()
+                    apt.SETTINGS[key]['global'] = self._tk_vars[key]['global'].copy()
+                    pass
+                # --- WORKSPACES ---
+                elif(key == 'workspace'):
+                    #load records directly from table
+                    self._tk_vars[key] = {}
+                    apt.SETTINGS[key] = {}
+                    for record in self._tb.getAllValues():
+                        #properly formart vendor list
+                        mkts = []
+                        for m in list(record[2].split(',')):
+                            if(m != ''):
+                                mkts += [m]
+                        #store the inner workspace dictionaries
+                        self._tk_vars[key][record[0]] = {'path' : record[1], 'vendor' : mkts}
+                        #copy dictionary back to settings
+                        apt.SETTINGS[key][record[0]] = self._tk_vars[key][record[0]].copy()
+                    pass
+                # --- OTHERS/SIMPLE STRING VARIABLES ---
+                elif(isinstance(field, dict) == False):
+                    e = field.get()
+                    if(isinstance(e, str)):
+                        #split to identify any paths and ENV_NAME
+                        words = e.split()
+                        for i in range(len(words)):
+                            if(os.path.exists(os.path.expandvars(os.path.expanduser(words[i])))):
+                                words[i] = apt.fs(words[i])
+                        #regroup into one string
+                        e = ''
+                        for c in words:
+                            e = e + c + ' '
+                        e.strip()
+                    field.set(e)
+                    apt.SETTINGS[key][name] = e
+                # --- ? ---
+                else:
+                    log.error("A saving error has occurred.")
+        #write back to legohdl.cfg
+        apt.save()
+        #inform the user
+        log.info("Settings saved successfully.")
+        pass
+
+
     def center(self, win):
         '''
         Center the tkinter window. Returns the modified tkinter object.
@@ -499,15 +619,33 @@ settings that will be merged in when importing that profile. A profile directory
 
     
     def initialized(self):
-        '''
-        Return true if the GUI object has a tkinter object.
-        '''
+        '''Return (bool) if the GUI object has a tkinter object.'''
         return hasattr(self, "_window")
+
+
     pass
 
 
-class Table:
 
+class SelectBox:
+    '''A combination box to select one of available choices in a drop-down.'''
+
+    def __init__(self, tk_frame, cur_sel, opts):
+        '''
+        Parameters:
+            tk_frame (tk.Frame) : frame to add widget
+            cur_sel (str): current selection value to display
+            opts ([str]): all possible choices to select from
+        Returns:
+            None
+        '''
+        self._cur_sel = cur_sel
+        self._entry = tk.ttk.Combobox(tk_frame, textvariable=self._cur_sel, values=opts)
+        pass
+
+
+class Table:
+    '''A table to store related data in rows.'''
 
     def __init__(self, tk_frame, *headers, row=0, col=0, rules=None):
         '''
@@ -639,11 +777,10 @@ class Table:
         '''
         Creates surrounding supportive widgets for a data table.
         
-        Parameters
-        ---
-        field_frame : master frame where the table is inputted
-        editable : boolean to determine if 'update' and 'edit' buttons exist
-        openCmd : method to set an 'open' button (no button if 'None')
+        Parameters:
+            field_frame (tk.Frame): master frame where the table is inputted
+            editable (bool) : determine if 'update' and 'edit' buttons exist
+            openCmd (method) : method to set an 'open' button (no button if 'None')
         '''
         #create frame for buttons to go into
         button_frame = tk.Frame(field_frame)
@@ -718,11 +855,12 @@ class Table:
         '''
         Extra rules for adding/updating a vendor record.
 
-        Parameters
-        ---
-        self : table object instance using this method
-        data : list of the new record
-        new  : boolean if the record is trying to be appended (True) or inserted
+        Parameters:
+            self (Table): table object instance using this method
+            data ([str]): list of the new record
+            new (bool): determine if the record is trying to be appended (True) or inserted
+        Returns:
+            (bool): if the table operation is valid
         '''
         rename_atmpt = False
         duplicate_remote = False
@@ -758,11 +896,12 @@ class Table:
         '''
         Extra rules for adding/updating a workspace record.
 
-        Parameters
-        ---
-        self : table object instance using this method
-        data : list of the new record
-        new  : boolean if the record is trying to be appended (True) or inserted
+        Parameters:
+        self (Table): table object instance using this method
+        data ([str]): list of the new record
+        new  (bool): determine if the record is trying to be appended (True) or inserted
+        Returns:
+            (bool): determine if the table operation is valid
         '''
         #must have a path
         valid_path = data[1] != ''
@@ -888,9 +1027,21 @@ class Table:
 
 
 class ToggleSwitch:
+    '''Creaes a bool widget for on/off settings.'''
 
 
     def __init__(self, tk_frame, on_txt, off_txt, row, col, state_var, onCmd=None, offCmd=None, padx=0, pady=0):
+        '''
+        Create a ToggleSwitch object.
+
+        Parameters:
+            tk_frame (tk.Frame): main frame to add widget
+            on_txt (str): text to display for ON state
+            off_txt (str): text to display for OFF state
+            row (int): y position
+            col (int): x position
+
+        '''
         self._state = state_var
 
         #create a new frame
@@ -898,8 +1049,8 @@ class ToggleSwitch:
         swt_frame.grid(row=row, column=col, columnspan=10, sticky='ew', padx=padx, pady=pady)
         
         # radio buttons toggle between global table and local table  
-        btn_on = tk.Radiobutton(swt_frame, indicatoron=0, text=on_txt, variable=state_var, value=1, width=8, command=onCmd)
-        btn_off = tk.Radiobutton(swt_frame, indicatoron=0, text=off_txt, variable=state_var, value=0, width=8, command=offCmd)
+        btn_on = tk.Radiobutton(swt_frame, indicatoron=0, text=on_txt, variable=self._state, value=1, width=8, command=onCmd)
+        btn_off = tk.Radiobutton(swt_frame, indicatoron=0, text=off_txt, variable=self._state, value=0, width=8, command=offCmd)
         btn_off.pack(side=tk.RIGHT)
         btn_on.pack(side=tk.RIGHT)
         pass

@@ -18,9 +18,8 @@ from .cfg import Cfg, Section, Key
 
 class Apparatus:
 
-    #legohdl settings data structure
-    SETTINGS = dict()
-    CFG = Section()
+    #legohdl settings file data object
+    CFG = None
 
     #path to hidden legohdl folder
     HIDDEN = os.path.expanduser("~/.legohdl/")

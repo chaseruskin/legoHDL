@@ -277,7 +277,7 @@ class Cfg:
                 if(data[sect]._is_list or neat_keys == False):
                     spacer = 0
                 #write the value
-                contents = contents + self._writeWithRollOver(T+c_mark+key_var+val, newline=(' '*spacer)+c_mark) + '\n'
+                contents = contents + self.writeWithRollOver(T+c_mark+key_var+val, newline=(' '*spacer)+c_mark) + '\n'
                 pass
 
         #write contents to file
@@ -520,7 +520,7 @@ class Cfg:
         description = newline+'DESCRIPTION:\n'
                 
         cmt = newline + self._comments[key].strip()
-        cmt = self._writeWithRollOver(cmt, newline=newline)
+        cmt = self.writeWithRollOver(cmt, newline=newline)
 
         #only return the file's header comment information
         if(key == ''):
@@ -533,12 +533,13 @@ class Cfg:
         for s in support:
             if(key+s in self._comments.keys()):
                 cmt = cmt + '\n' + newline+s[1:].upper() + ':\n' + newline + \
-                    self._writeWithRollOver(self._comments[key+s].strip(), newline=newline)
+                    self.writeWithRollOver(self._comments[key+s].strip(), newline=newline)
 
         return '\n'+cmt+'\n'
 
-    
-    def _writeWithRollOver(self, txt, newline='', limit=80):
+
+    @classmethod
+    def writeWithRollOver(cls, txt, newline='', limit=80):
         '''
         Formats text in a clean fashion without splitting words when crossing a
         newline. Breaks a string into sections split by newlines no greater than

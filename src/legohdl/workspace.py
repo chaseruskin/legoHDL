@@ -835,7 +835,6 @@ class Workspace:
         
         #update settings dictionary
         apt.CFG.set('workspace', Section(serialized), override=True)
-        apt.SETTINGS['workspace'] = serialized
         
         #update active workspace
         if(inc_active):
