@@ -166,8 +166,15 @@ class Block:
         if(self.getMeta('requires') != None):
             #update graph
             Block.Hierarchy.addVertex(self.getFull(inc_ver=True))
+            #print(self.getFull(inc_ver=True))
             for d in self.getMeta('requires'):
+                #remove any partial versions from identifier in requires
+                at_i = d.rfind('@')
+                v_i = d.rfind('(')
+                d = d[:v_i+1] + d[at_i:]
+                #add edge to graph
                 Block.Hierarchy.addEdge(self.getFull(inc_ver=True), d)
+                pass
 
         return True
 
@@ -362,14 +369,14 @@ class Block:
         return highest
 
 
-    def waitOnChangelog(self):
+    def waitOnChangelog(self, ver):
         '''
         Automatically opens the CHANGELOG in the configured editor to update.
 
         Parameters:
-            None
+            ver (str): version to write new line for
         Returns:
-            None
+            (bool): determine if the changelog was opened (release was paused)
         ''' 
         cl = self.getChangelog()
         #no changelog identified for this block.
@@ -384,7 +391,7 @@ class Block:
         with open(cl, 'r+') as f:
             data = f.read()
             f.seek(0)
-            f.write("v"+self.getVersion()+'\n\n'+data)
+            f.write(ver+'\n\n'+data)
             f.close()
 
         #open the changelog and wait for the developer to finish writing changes
@@ -504,7 +511,7 @@ class Block:
         if(up2date == False):
             log.error("Verify the repository is up-to-date before releasing.")
             return
-        
+        log.info("Success.")
 
         highest_ver = self.getHighestTaggedVersion()
         p_maj,p_min,p_fix = Block.sepVer(highest_ver)
@@ -539,6 +546,18 @@ class Block:
             log.error("Invalid next version given as "+next_ver+'.')
             return
 
+        #check updates on block requirements
+        block_reqs = self.updateRequires(dry_run=dry_run, quiet=True)
+        #make sure block does not require any 'unstable' blocks
+        stable = self.checkStability(block_reqs)
+        if(stable == False):
+            log.error("Unable to release block due to requiring unstable blocks.\n\
+        Release all unstable sub-blocks and disable 'general.multi-develop' before continuing\n\
+        or use stable versions of every block.")
+            #exit if this is the real thing
+            if(dry_run == False):
+                return
+
         release_report = release_report + "Release point: "+ next_ver+".\n"
         if(dry_run == False):
             log.info("Saving block release point "+next_ver+"...")
@@ -548,6 +567,16 @@ class Block:
         if(next_ver[0] != 'v'):
             next_ver = 'v'+next_ver
 
+        #check to write updates to changelog
+        changelog_altered = False
+        if(skip_changelog == False):
+            cl_txt = "Identified no CHANGELOG to edit."
+            if(self.getChangelog() != None):
+                cl_txt = "Identified CHANGELOG "+self.getChangelog(returnname=True)+" to edit."
+            release_report = release_report + cl_txt+"\n"
+            if(dry_run == False):
+                changelog_altered = self.waitOnChangelog(next_ver)
+
         #3. Make sure block dependencies/derivatives and metadata are up-to-date
 
         #update dynamic attributes
@@ -555,8 +584,10 @@ class Block:
         self._tags += [next_ver]
 
         self.setMeta('version', next_ver[1:])
+
         #check updates on block requirements
-        block_reqs = self.updateRequires(dry_run=dry_run)
+        block_reqs = self.updateRequires(dry_run=dry_run, quiet=True)
+        #add text for block requirements found
         release_report = release_report + 'Block Requirements:\n'
         req_txt = '    N/A'
         if(len(block_reqs)):
@@ -566,16 +597,6 @@ class Block:
         #save changes if the real deal
         if(dry_run == False):
             self.save(force=True)
-
-        #check to write updates to changelog
-        changelog_altered = False
-        if(skip_changelog == False):
-            cl_txt = "Identified no CHANGELOG to edit."
-            if(self.getChangelog() != None):
-                cl_txt = "Identified CHANGELOG "+self.getChangelog(returnname=True)+" to edit."
-            release_report = release_report + cl_txt+"\n"
-            if(dry_run == False):
-                changelog_altered = self.waitOnChangelog()
 
         #4. Make a new git commit
 
@@ -611,13 +632,15 @@ class Block:
             #reset inventory
             self.install()
 
+        outcome = 'PASSED' if(stable) else 'FAILED'
+
         #no vendor to publish to then release algorithm is complete
         if(len(self.getMeta('vendor')) == 0):
             #complete dry-run and print report
             if(dry_run):
                 log.info("Dry run complete.")
                 release_report = release_report + 'Publish to vendor: False\n'
-                print(release_report+"Dry run: PASSED\n")
+                print(release_report+"Dry run: "+outcome+"\n")
             return
 
         publish = True
@@ -636,7 +659,7 @@ class Block:
         #complete dry-run and print report
         if(dry_run):
             log.info("Dry run complete.")
-            print(release_report+"Dry run: PASSED\n")
+            print(release_report+"Dry run: "+outcome+"\n")
         #publish to the vendor
         elif(publish):
             vndr.publish(self)
@@ -682,6 +705,58 @@ class Block:
         #write new metadata file
         self._meta.write(auto_indent=False)
         pass
+
+
+    def checkStability(self, block_reqs):
+        '''
+        Return (bool) if any block in the block's requirements uses an 
+        'unstable' version (in-development). Non-recursive method to check under
+        all block requirements from graph.
+
+        Parameters: 
+            block_reqs ([str]): list of current block requirements
+        Returns:
+            (stable): determine if found zero counts of 'unstable' in all requirements
+        '''
+        #check current block's requirements first
+        #split identifier found in metadata
+        for r in block_reqs:
+            _,_,_,ver = Block.snapTitle(r)
+            #the block relies on a block from downloads -> unstable design
+            if(ver.lower().count('unstable')):
+                return False
+
+        #check requirements for neighboring vertices
+        neighbor_blocks = Block.Hierarchy.getNeighbors(self.getFull(inc_ver=True))     
+        while(len(neighbor_blocks)):
+            #get a block indentifier
+            b_id = neighbor_blocks.pop()
+            #print(b_id)
+
+            #access this block from its identifier
+            V,L,N,ver = Block.snapTitle(b_id)
+
+            #remove leading '@' symbol
+            ver = ver[1:]
+            #guaranteed to be from cache because checked for 'unstables' beforehand
+
+            #access the block from installation at the specific version 
+            reqs = Block.Inventory[V][L][N][Block.Level.INSTL.value].getInstalls()[ver].getMeta('requires')
+
+            #check the requirements in metadata
+            for r in reqs:
+                #split identifier found in metadata
+                _,_,_,ver = Block.snapTitle(r)
+                #print('reading:',ver)
+                #the block relies on a block from downloads -> unstable design
+                if(ver.lower().count('unstable')):
+                    return False
+
+            #add tihs block's requirements to stack
+            neighbor_blocks = Block.Hierarchy.getNeighbors(b_id) + neighbor_blocks
+            pass
+
+        return True
 
 
     def sortVersions(self, unsorted_vers):
@@ -1448,12 +1523,9 @@ class Block:
 
     def getMeta(self, key=None, every=False, sect='block'):
         '''
-        Returns the value stored in the block metadata, else retuns '' if
-        DNE.
-
-        Returns an empty string if a non-required block field is requested and
-        does not exist for the metadata.
-
+        Returns the value stored in the block metadata's requested key. 
+        
+        If the key DNE, then it retuns None.
         Returns a (list) for 'requires' key.
 
         Parameters:
@@ -1466,13 +1538,13 @@ class Block:
         #return everything, even things outside the block: scope
         if(every):
             return self._meta._data #note: returns obj reference
-
+        #return an entire section
         if(key == None):
             return self._meta.get(sect, dtype=Section)
+
+        #auto-cast requirements to list
+        dtype = list if(key == 'requires') else str
         #access the key
-        dtype = str
-        if(key == 'requires'):
-            dtype = list
         return self._meta.get(sect+'.'+key, dtype=dtype)
 
 
@@ -1898,9 +1970,9 @@ class Block:
 
         #alter fields for toplevel and bench
         for n in mod_unit_names:
-            if(n[0].lower() == b.getMeta('toplevel').lower()):
+            if(b.getMeta('toplevel') != None and n[0].lower() == b.getMeta('toplevel').lower()):
                 b.setMeta('toplevel', n[1])
-            if(n[0].lower() == b.getMeta('bench').lower()):
+            if(b.getMeta('bench') != None and n[0].lower() == b.getMeta('bench').lower()):
                 b.setMeta('bench', n[1])
 
         #add VHDL units and Verilog units to metadata
