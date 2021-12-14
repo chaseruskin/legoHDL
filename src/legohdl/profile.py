@@ -61,7 +61,7 @@ class Profile:
                 #add plugins folder
                 os.makedirs(self.getProfileDir()+'plugins/', exist_ok=True)
                 #add templates folder
-                os.makedirs(self.getProfileDir()+'template/')
+                os.makedirs(self.getProfileDir()+'template/', exist_ok=True)
                 #add commented out legohdl.cfg file
                 c = Cfg(self.getProfileDir()+'legohdl.cfg', data=Section(apt.LAYOUT), comments=apt.getComments())
                 c.write(empty=True)
@@ -267,11 +267,15 @@ class Profile:
 
     @classmethod
     def reloadDefault(cls, importing=False):
+        #remove default from jar to recreate
         if('default' in cls.Jar.keys()):
             cls.Jar['default'].remove()
+
+        #create new default profile
         log.info("Reloading default profile...")
         default = Profile("default")
 
+        #define cfg settings
         def_settings = {
             'plugin' : {
                 'hello' : 'python $LEGOHDL/plugins/hello_world.py'
@@ -283,18 +287,21 @@ class Profile:
                 }
             }
         }
+
+        #write simple cfg settings
         def_cfg = Cfg(default.getProfileDir()+apt.SETTINGS_FILE, data=Section(def_settings), comments=apt.getComments())
         def_cfg.write()
 
         #create default template
-        os.makedirs(default.getProfileDir()+"template/")
-        os.makedirs(default.getProfileDir()+"template/src")
-        os.makedirs(default.getProfileDir()+"template/test")
-        os.makedirs(default.getProfileDir()+"template/constr")
+        os.makedirs(default.getProfileDir()+"template/", exist_ok=True)
+        os.makedirs(default.getProfileDir()+"template/src", exist_ok=True)
+        os.makedirs(default.getProfileDir()+"template/test", exist_ok=True)
+
         #create readme
         with open(default.getProfileDir()+'template/README.md', 'w') as f:
-            f.write("# %BLOCK%")
+            f.write("# __%BLOCK%__")
             pass
+
         #create .gitignore
         with open(default.getProfileDir()+'template/.gitignore', 'w') as f:
             f.write("build/")
@@ -302,15 +309,23 @@ class Profile:
 
         #create template design
         with open(default.getProfileDir()+'template/src/TEMPLATE.vhd', 'w') as f:
-            f.write('-- code here')
+            f.write('-- design code here')
+            pass
+
+        #create template testbench
+        with open(default.getProfileDir()+'template/test/TEMPLATE_tb.vhd', 'w') as f:
+            f.write('-- testbench code here')
             pass
 
         #create default plugins
-        os.makedirs(default.getProfileDir()+"plugins/")
+        os.makedirs(default.getProfileDir()+"plugins/", exist_ok=True)
         shutil.copyfile(apt.getProgramPath()+"data/hello.py", default.getProfileDir()+"plugins/hello.py")
 
+        #check if to also import this profile
         if(importing):
             default.importLoadout()
+
+        #save changes to Profiles
         Profile.save()
         pass
 
