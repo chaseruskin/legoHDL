@@ -296,7 +296,7 @@ plugins)?", warning=False)
                         break
                 resp = input()
                 pass
-            
+
         #decided to not run setup prompt or we have no workspaces
         if(not is_select or len(apt.CFG.get('workspace', dtype=Section).keys()) == 0):
             #ask to create workspace
@@ -808,8 +808,6 @@ plugins)?", warning=False)
         #first check if the block is found in install
         instl = block.getLvlBlock(Block.Level.INSTL)
 
-        print(block.getFull(), instl)
-
         ver_num = self.getVerNum(places=[3])
 
         #install latest/controller for this block
@@ -929,7 +927,7 @@ plugins)?", warning=False)
                 ver_range[1] = '-'
             pass
 
-        print(block.readInfo(self.hasFlag('stats'),
+        print(block.readInfo(self.hasFlag('more'),
             versions=self.hasFlag('vers'),
             only_instls=self.hasFlag('i'), 
             only_avail=self.hasFlag('a'),

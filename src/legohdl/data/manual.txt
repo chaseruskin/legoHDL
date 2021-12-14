@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 11/27/2021
+; Modified: 12/13/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -605,7 +605,7 @@ NAME:
         info - Read detailed information about a block
 
 SYNOPSIS:
-        legohdl info <block> [-D | -I | -<version> | -A] [-stats] 
+        legohdl info <block> [-D | -I | -<version> | -A] [-more] 
                 [-vers[=<range>]] [-changelog]
         legohdl info <profile> -profile
         legohdl info <vendor> -vendor
@@ -639,7 +639,7 @@ OPTIONS:
         -A
                 Return data from the block at the available level.
         
-        -stats
+        -more
                 Get relevant stats about the block such as the path, project 
                 size, design units, and block integrations.
 

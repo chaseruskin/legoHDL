@@ -2820,14 +2820,18 @@ class Block:
             info_txt = info_txt + '\n--- STATS ---'
            
             #read location
-            info_txt = info_txt + '\nLocation: '+self.getPath()+'\n'
-            info_txt = info_txt + 'Size: '+str(size)+' KB\n'
-            info_txt = info_txt + 'Level: '+str(self.getLvl().name)+'\n'
+            info_txt = info_txt + '\nLocation = '+self.getPath()+'\n'
+            #read size
+            info_txt = info_txt + 'Size     = '+str(size)+' KB\n'
+            #read workspace level
+            info_txt = info_txt + 'Level    = '+str(self.getLvl().name)+'\n'
             
             #read what blocks require this block
-            info_txt = info_txt + '\nRequired by:\n'
-            info_txt = info_txt + apt.listToGrid(Block.Hierarchy.getNeighbors(self.getFull(inc_ver=True), upstream=True), \
-                cols=-1, limit=80, min_space=4, offset='\t')
+            info_txt = info_txt + 'Required by:\n'
+            block_up_reqs = Block.Hierarchy.getNeighbors(self.getFull(inc_ver=True), upstream=True)
+            info_txt = info_txt + apt.listToGrid(block_up_reqs, cols=-1, limit=80, min_space=4, offset='\t')
+            if(len(block_up_reqs) == 0):
+                info_txt = info_txt + ' '*4 + 'N/A'
             info_txt = info_txt + '\n'
 
             #read the units found in this block

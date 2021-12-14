@@ -39,6 +39,6 @@ jobs:
       #install the available block from uf-ece vendor
       - run: legohdl install sample.mux_2x1
       #collect data about mux_2x1 block and its design entity
-      - run: legohdl info uf-ece.sample.mux_2x1 -stats
+      - run: legohdl info uf-ece.sample.mux_2x1 -more
       - run: legohdl get sample.mux_2x1:mux_2x1 -inst
       - run: legohdl get mux_2x1 -arch
