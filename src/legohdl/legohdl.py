@@ -1293,8 +1293,15 @@ plugins)?", warning=False)
             log.info("Refreshing all workspace "+self.WS().getName()+" vendors...")
             for vndr in self.WS().getVendors():
                 vndr.refresh()
+        #make sure an item was entered
+        elif(self.getItem() == None):
+            log.error("Enter a known "+target[:len(target)-1]+".")
+        #check if item exists in its container
         elif(self.getItem() in jar.keys()):
             jar[self.getItem()].refresh()
+        #could not locate the target
+        else:
+            log.error("Unknown "+target[:len(target)-1]+" "+self.getItem()+".")
         pass
 
 
