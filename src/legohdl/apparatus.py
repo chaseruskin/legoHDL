@@ -276,7 +276,7 @@ class Apparatus:
     @classmethod
     def setAuthor(cls, author):
         '''Sets the author (str) to the settings data structure.'''
-        cls.CFG.set('general.author', author)
+        cls.CFG.set('general.author', author, verbose=True)
         pass
 
 

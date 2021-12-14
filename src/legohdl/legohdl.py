@@ -296,6 +296,7 @@ plugins)?", warning=False)
                         break
                 resp = input()
                 pass
+            
         #decided to not run setup prompt or we have no workspaces
         if(not is_select or len(apt.CFG.get('workspace', dtype=Section).keys()) == 0):
             #ask to create workspace
@@ -322,6 +323,9 @@ plugins)?", warning=False)
             feedback = input("Enter your text-editor: ")
             if(feedback.strip() != Cfg.NULL):
                 apt.setEditor(feedback.strip())
+
+        #save changes to legohdl.cfg settings
+        apt.save()
         pass
 
 
