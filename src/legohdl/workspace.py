@@ -514,7 +514,7 @@ class Workspace:
 
         Parameters:
             title (str): block title to be broken into parts for searching
-            alpha (bool): determine if to alphabetize the block list order
+            alpha (bool): determine if to alphabetize the block list order (L.N.V)
             instl (bool): determine if to capture only blocks that are installed
             dnld (bool): determine if to capture only blocks that are downloaded
             avail (bool): determine if to capture blocks available from vendor
@@ -530,9 +530,11 @@ class Workspace:
         #split the title into parts
         M,L,N,_ = Block.snapTitle(title, inc_ent=False)
 
-        #get all blocks from inventory
-        print('{:<16}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"+("(M)"*int(mult_dev))),'{:<10}'.format("Version"),'{:<16}'.format("Vendor"))
-        print("-"*16+" "+"-"*20+" "+"-"*8+" "+"-"*10+" "+"-"*16)
+        #get all blocks from the catalog
+
+        #store each block's text line in a map to sort keys for alpha flag
+        catalog = Map()
+
         #iterate through every vendor
         for vndr_k,vndrs in Block.Inventory.items():
             if(vndr_k.startswith(M.lower()) == False):
@@ -589,9 +591,23 @@ class Workspace:
                     if(Block.cmpVer(bk.getHighestAvailVersion(), cmp_v) != cmp_v):
                         sts = sts+'  ^'
                         v = cmp_v
-                    #format the data to print to the console
-                    print('{:<16}'.format(bk.L()),'{:<20}'.format(bk.N()),'{:<8}'.format(sts),'{:<10}'.format(v),'{:<16}'.format(bk.M()))
+                    #format the data to print to the console and store in catalog (L.N.V str format)
+                    catalog[bk.L()+'.'+bk.N()+'.'+bk.M()] = '{:<16}'.format(bk.L())+' '+'{:<20}'.format(bk.N())+' '+'{:<8}'.format(sts)+' '+'{:<10}'.format(v)+' '+'{:<16}'.format(bk.M())
                     pass
+            pass
+
+        keys = list(catalog.keys())
+        #check if to sort by alphabet           
+        if(alpha):
+            keys.sort()
+        print(keys)
+
+        print('{:<16}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"+("(M)"*int(mult_dev))),'{:<10}'.format("Version"),'{:<16}'.format("Vendor"))
+        print("-"*16+" "+"-"*20+" "+"-"*8+" "+"-"*10+" "+"-"*16)
+
+        #iterate through catalog and print each textline
+        for k in keys:
+            print(catalog[k])
         pass
 
 
@@ -601,7 +617,7 @@ class Workspace:
 
         Parameters:
             title (str): block title to be broken into parts for searching
-            alpha (bool): determine if to alphabetize the block list order
+            alpha (bool): determine if to alphabetize the block list order (E.V.L.N)
             usable (bool): determine if to display units that can be used
             ignore_tb (bool): determine if to ignore testbench files
         Returns:
