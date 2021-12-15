@@ -165,6 +165,7 @@ class Block:
 
         if(self.getMeta('requires') != None):
             #update graph
+            #print(self.getFull(inc_ver=True))
             Block.Hierarchy.addVertex(self.getFull(inc_ver=True))
             #print(self.getFull(inc_ver=True))
             for d in self.getMeta('requires'):
@@ -173,6 +174,7 @@ class Block:
                 v_i = d.rfind('(')
                 d = d[:v_i+1] + d[at_i:]
                 #add edge to graph
+                #print(d)
                 Block.Hierarchy.addEdge(self.getFull(inc_ver=True), d)
                 pass
 
@@ -720,48 +722,103 @@ class Block:
         '''
         #check current block's requirements first
         #split identifier found in metadata
+        spec_vers = []
+        #track what blocks to use latest
+        use_latest = []
         for r in block_reqs:
             _,_,_,ver = Block.snapTitle(r)
             #the block relies on a block from downloads -> unstable design
             if(ver.lower().count('unstable')):
                 return False
+            #add the title only as specific version
+            at_i = r.rfind('@')
+            v_i = r.rfind('(')
+            spec_v = r[:v_i+1].lower() + r[at_i:].lower()
+            spec_vers += [spec_v]
+            #remember which to use latest for
+            if(ver.lower().count('latest')):
+                use_latest += [spec_v]
+            pass
 
+        #print('specific versions:',spec_vers)
+        #print('latest:',use_latest)
         #check requirements for neighboring vertices
-        neighbor_blocks = Block.Hierarchy.getNeighbors(self.getFull(inc_ver=True))     
+        next_blocks = Block.Hierarchy.getNeighbors(self.getFull(inc_ver=True)) 
+        #ignore edges that aren't matched in requirements
+        next_blocks = list(filter(lambda a: a in spec_vers, next_blocks))
+        #create stack
+        neighbor_blocks = [(next_blocks, use_latest)]
+        #print(neighbor_blocks)
         while(len(neighbor_blocks)):
-            #get a block indentifier
-            b_id = neighbor_blocks.pop()
-            #print(b_id)
+            #grab a block's requirements and the use latest list
+            #get a block indentifier ([requirements], [use_latest])
+            gs, ul = neighbor_blocks.pop()
+            #iterate through every block
+            for b_id in gs:
+                #access this block from its identifier
+                V,L,N,ver = Block.snapTitle(b_id)
 
-            #access this block from its identifier
-            V,L,N,ver = Block.snapTitle(b_id)
+                #remove leading '@' symbol
+                ver = ver[1:]
+                #guaranteed to be from cache because checked for 'unstables' beforehand
 
-            #remove leading '@' symbol
-            ver = ver[1:]
-            #guaranteed to be from cache because checked for 'unstables' beforehand
-
-            #access the block from installation at the specific version
-            if(V in Block.Inventory.keys() and L in Block.Inventory[V].keys() and N in Block.Inventory[V][L].keys()):
-                if(Block.Inventory[V][L][N][Block.Level.INSTL.value] != None):
-                    reqs = Block.Inventory[V][L][N][Block.Level.INSTL.value].getInstalls()[ver].getMeta('requires')
+                #access the block from installation at the specific version
+                if(V in Block.Inventory.keys() and L in Block.Inventory[V].keys() and N in Block.Inventory[V][L].keys()):
+                    #print('block id:',b_id)
+                    #print("use-latest list:",ul)
+                    if(Block.Inventory[V][L][N][Block.Level.INSTL.value] != None):
+                        #get latest install block
+                        target_block = Block.Inventory[V][L][N][Block.Level.INSTL.value]
+                        #grab specific block if not using latest (the latest's specific version may not be installed)
+                        if(b_id.lower() not in ul):
+                            ver_blocks = Block.Inventory[V][L][N][Block.Level.INSTL.value].getInstalls()
+                            #print(ver_blocks)
+                            if(ver not in ver_blocks.keys()):
+                                #should not encounter this error
+                                log.error("Unidentified version '"+ver+"' from block requirement "+b_id)
+                                return False
+                            target_block = target_block.getInstalls()[ver]
+                            pass
+                        #access requirements from the target block
+                        reqs = target_block.getMeta('requires')
+                    else:
+                        log.error("Block requirement "+b_id+" not found in the cache.")
+                        return False
                 else:
-                    log.error("Block requirement "+b_id+" not found in the cache.")
-                    return False
-            else:
-                log.error("Unknown block requirement: "+b_id)
-                return False
-
-            #check the requirements in metadata
-            for r in reqs:
-                #split identifier found in metadata
-                _,_,_,ver = Block.snapTitle(r)
-                #print('reading:',ver)
-                #the block relies on a block from downloads -> unstable design
-                if(ver.lower().count('unstable')):
+                    log.error("Unknown block requirement: "+b_id)
                     return False
 
-            #add tihs block's requirements to stack
-            neighbor_blocks = Block.Hierarchy.getNeighbors(b_id) + neighbor_blocks
+                #reset spec_ver list
+                spec_vers = []
+                #reset use latest list
+                use_latest = []
+
+                #check the requirements in metadata
+                for r in reqs:
+                    #split identifier found in metadata
+                    _,_,_,ver = Block.snapTitle(r)
+                    #print('reading:',ver)
+                    #the block relies on a block from downloads -> unstable design
+                    if(ver.lower().count('unstable')):
+                        return False
+                    #add the title only as specific version
+                    at_i = r.rfind('@')
+                    v_i = r.rfind('(')
+                    spec_v = r[:v_i+1].lower() + r[at_i:].lower()
+                    spec_vers += [spec_v]
+                    #remember which to use latest for
+                    if(ver.lower().count('latest')):
+                        use_latest += [spec_v]
+                    pass
+
+                #add this block's requirements to stack
+                next_blocks = Block.Hierarchy.getNeighbors(b_id)
+                #ignore edges that aren't matched in requirements
+                next_blocks = list(filter(lambda a: a in spec_vers, next_blocks))
+                #add to the list
+                neighbor_blocks = [(next_blocks, use_latest)] + neighbor_blocks
+                pass
+
             pass
 
         return True
