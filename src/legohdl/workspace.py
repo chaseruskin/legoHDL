@@ -602,7 +602,7 @@ class Workspace:
             keys.sort()
         #print(keys)
 
-        print('{:<16}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"+("(M)"*int(mult_dev))),'{:<10}'.format("Version"),'{:<16}'.format("Vendor"))
+        print('{:<16}'.format("Library"),'{:<20}'.format("Block"),'{:<8}'.format("Status"+("*"*int(mult_dev))),'{:<10}'.format("Version"),'{:<16}'.format("Vendor"))
         print("-"*16+" "+"-"*20+" "+"-"*8+" "+"-"*10+" "+"-"*16)
 
         #iterate through catalog and print each textline
