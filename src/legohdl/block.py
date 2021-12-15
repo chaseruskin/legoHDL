@@ -505,15 +505,17 @@ class Block:
             log.error("Unable to release block to vendor "+vndr.getName()+" due to invalid write permissions for vendor's remote repository!")
             return
 
-        #make sure the repository is up to date
-        log.info("Verifying repository is up-to-date...")
+        #make sure the repository is up to date (silence print to console on none-remote repos to avoid confusion)
+        if(self._repo.remoteExists()):
+            log.info("Verifying repository is up-to-date...")
         up2date, connected = self._repo.isLatest()
         if(connected == False):
             return
         if(up2date == False):
             log.error("Verify the repository is up-to-date before releasing.")
             return
-        log.info("Success.")
+        if(self._repo.remoteExists()):
+            log.info("Success.")
 
         highest_ver = self.getHighestTaggedVersion()
         p_maj,p_min,p_fix = Block.sepVer(highest_ver)
@@ -613,6 +615,9 @@ class Block:
         if(msg == None):
             msg = "Releases legohdl version "+next_ver
 
+        #get what branch currently on
+        cur_branch = self._repo.getBranch()
+        release_report = release_report + "Branch: "+cur_branch+"\n"
         release_report = release_report + "Commit message: "+msg+"\n"
         if(dry_run == False):
             self._repo.commit(msg)
@@ -641,7 +646,7 @@ class Block:
             #complete dry-run and print report
             if(dry_run):
                 log.info("Dry run complete.")
-                release_report = release_report + 'Publish to vendor: False\n'
+                release_report = release_report + 'Publish to vendor: N/A\n'
                 print(release_report+"Dry run: "+outcome+"\n")
             return
 
@@ -657,7 +662,8 @@ class Block:
             log.warning("Unable to publish to vendor "+vndr.getName()+" because a remote repository is not configured.")
             publish = False
 
-        release_report = release_report + 'Publish to vendor: '+str(publish)+'\n'
+        publish_result = 'PASSED' if(publish) else 'FAILED'
+        release_report = release_report + 'Publish to vendor: '+publish_result+'\n'
         #complete dry-run and print report
         if(dry_run):
             log.info("Dry run complete.")
