@@ -69,7 +69,6 @@ class GUI:
         'general.mixed-language' : WIDGET.SWITCH,
         'general.multi-develop' : WIDGET.SWITCH,
         'general.refresh-rate' : WIDGET.NUMBER,
-        'general.overlap-global' : WIDGET.SWITCH,
         #---label section keys---
         'label.local' : WIDGET.TABLE,
         'label.global' : WIDGET.TABLE,

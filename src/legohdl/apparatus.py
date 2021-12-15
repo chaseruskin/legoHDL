@@ -60,8 +60,7 @@ class Apparatus:
                     'profiles' : '()',
                     'mixed-language' : 'off', 
                     'multi-develop' : 'off', 
-                    'refresh-rate' : '0',
-                    'overlap-global' : 'off'},
+                    'refresh-rate' : '0'},
                 'label' : {
                     'local' : {}, 
                     'global' : {}},

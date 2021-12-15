@@ -81,10 +81,6 @@ Write 'on' to enable or 'off' to disable.
 'on' or 'off'
 * end
 
-* general.overlap-global
-depreciated
-* end
-
 * general.refresh-rate 
 How often to synchronize vendors with their remote every day. Set to -1 to refresh \
 on every call to legoHDL. Maximum accepted value is 1440 (every minute). Evenly divides \
