@@ -13,6 +13,7 @@
 # ------------------------------------------------------------------------------
 
 import os, sys, shutil
+from posixpath import dirname
 import logging as log
 
 from .__version__ import __version__
@@ -382,6 +383,7 @@ Enter:
         '''Run the 'graph' command.'''
 
         inc_tb = (self.hasFlag('ignore-tb') == False)
+        disp_full = self.hasFlag('display-full')
 
         self.WS().loadBlocks(id_dsgns=True)
         block = Block.getCurrent()
@@ -401,7 +403,7 @@ Enter:
         hierarchy = Unit.Hierarchy
         
         #print the dependency tree
-        print(hierarchy.output(top_dog, compress=self.hasFlag('compress')))
+        print(hierarchy.output(top_dog, compress=self.hasFlag('compress'), disp_full=disp_full))
         print()
         
         unit_order,block_order = hierarchy.topologicalSort()
@@ -675,8 +677,8 @@ Enter:
 
             #add component declaration
             pkg_data += [dsgn.getInterface().writeDeclaration(form=Unit.Language.VHDL, \
-                align=apt.getField(['HDL-styling', 'auto-fit'], bool), \
-                hang_end=apt.getField(['HDL-styling', 'hanging-end'], bool), \
+                align=apt.CFG.get('HDL-styling.auto-fit', dtype=bool), \
+                hang_end=apt.CFG.get('HDL-styling.hanging-end', dtype=bool), \
                 tabs=1)]
             #add newline
             pkg_data += [' ']

@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 12/13/2021
+; Modified: 12/14/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -251,7 +251,7 @@ NAME:
         graph - Visualize the dependency tree for the design
 
 SYNOPSIS:
-        legohdl graph [<entity>] [-tb=<tb> | -ignore-tb] [-compress]
+        legohdl graph [<entity>] [-tb=<tb> | -ignore-tb] [-compress] [-display-full]
 
 DESCRIPTION:
         Create and view the dependency tree for the current block design. This 
@@ -277,6 +277,9 @@ OPTIONS:
 
         -compress
                 Compress duplicate branchs of the graph into reference points.
+
+        -display-full
+                Display full block identifiers for each unit.
 
 
 * export

@@ -256,7 +256,7 @@ class Graph:
                 next_leaf = next_leaf + reg_branch
 
             #recursive call
-            txt = txt + self.output(sub_entity, next_leaf, ref_points=ref_points, compress=compress)
+            txt = txt + self.output(sub_entity, next_leaf, ref_points=ref_points, compress=compress, disp_full=disp_full)
             pass
 
         #clean up the graph during compression
