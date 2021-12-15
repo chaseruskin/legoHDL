@@ -270,12 +270,26 @@ class legoHDL:
 
 
     def runSetup(self):
-        is_select = apt.confirmation("This looks like your first time running \
-legoHDL! Would you like to use a profile (import settings, template, and \
-plugins)?", warning=False)
+        '''
+        Prompt user to enter required preliminary information and/or enter a profile.
+
+        At the end, it saves changes to the legohdl.cfg file.
+
+        Parameters:
+            None
+        Returns:
+            None 
+        '''
+        #prompt user to setup or bypass
+        is_select = apt.confirmation("\
+This looks like your first time running legoHDL! Would you like to \
+use a profile (import settings, template, and plugins)?\
+", warning=False)
+
         if(is_select):
             #give user options to proceeding to load a profile
-            resp = input("""Enter:
+            resp = input("""\
+Enter:
 1) nothing for default profile
 2) a path or git repository to a profile
 3) 'exit' to cancel configuration
