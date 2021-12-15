@@ -13,6 +13,7 @@ import os,shutil,stat,subprocess
 import platform
 import logging as log
 
+from .map import Map
 from .cfg import Cfg, Section, Key
 
 
@@ -727,7 +728,7 @@ class Apparatus:
         if(hasattr(cls, "SETTINGS_COMMENTS")):
             return cls.SETTINGS_COMMENTS
 
-        cls.SETTINGS_COMMENTS = {}
+        cls.SETTINGS_COMMENTS = Map()
 
         #open the info.txt
         with open(cls.getProgramPath()+'data/info.txt', 'r') as info:

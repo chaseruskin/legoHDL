@@ -1,6 +1,6 @@
 ; File: legoHDL Manual
 ; Author: Chase Ruskin
-; Modified: 12/14/2021
+; Modified: 12/15/2021
 ; Created: 10/19/2021
 ; Description:
 ;   The help text for each legoHDL command. Provides the name, synopsis,
@@ -10,10 +10,12 @@
 ;   to see what command the following text belongs to. Reads all the way up
 ;   to the next '*'.
 ; Notes:
-;   title delimiter = '.' - separates a title into subsections
-;   explicit version = 'v1.0.0' or 'v1_0_0'
-;   block = title in M.L.N form
-;   Throughout the document, word entity/unit is used. This is synonymous with 
+;   specific version = 'v1.0.0' or 'v1_0_0'
+;   partial version = 'v1', v1.0'
+;   <block> = identifier in V.L.N form
+;   block identifier delimiter = '.' - separates an identifier into subsections
+;
+;   Throughout the document, the word entity/unit may be used. This is synonymous with 
 ;   the Verilog keyword module. any reference to entity also means module. Using
 ;   the word entity may be replaced with a better term like: unit, part, chip.
 
@@ -428,9 +430,11 @@ SYNOPSIS:
                 -template]
 
 DESCRIPTION:
-        When passing a value for <search>, each subsection of a block's title 
-        can be omitted. With each additionally provided title delimiter, the 
-        values shift left to the next subsection. See EXAMPLES for more 
+        Retrieves a requested data from the catalog.
+
+        When passing a value for <search>, each subsection of a block's
+        identifier can be omitted. With each additionally provided subsection,
+        the values shift left to the next subsection. See EXAMPLES for more 
         information.
 
 OPTIONS:
@@ -482,20 +486,20 @@ OPTIONS:
 
 EXAMPLES:
         legohdl list lab0
-                Since a vendor is omitted and a library is omitted, all block's 
+                Since a vendor is omitted and a library is omitted, all blocks 
                 starting with "lab0" in their name are returned.
 
         legohdl list eel4712c.  
-                Since a vendor is omitted and a name is omitted, all block's 
+                Since a vendor is omitted and a name is omitted, all blocks 
                 starting with "eel4712c" in their library are returned.
 
         legohdl list uf-ece..
-                Since a library is omitted and a name is omitted, all block's 
+                Since a library is omitted and a name is omitted, all blocks 
                 starting with "uf-ece" in their vendor are returned.
 
         legohdl list ..:mux_2x1 -unit
-                All M.L.N subsections are blank, so the entire database is 
-                searched to see if an unit exists with the name mux_2x1.
+                All V.L.N subsections are blank, so the entire catalog is 
+                searched to see if an unit exists with the name "mux_2x1".
 
 
 * refresh
@@ -673,16 +677,8 @@ NAME:
 
 SYNOPSIS:
         legohdl config <profile-name> [-ask]
-        legohdl config [-label=<label>:<extensions> [-global]] [-editor=<cmd>]  
-                [-active-workspace=<ws>] [-author=<name>] [-template=<dir>] 
-                [-multi-develop=<bool>] [-overlap-global=<bool>]
-                [-refresh-rate=<rt>] [-profile=<profile-name>] 
-                [-plugin=<alias>:<cmd>] [-workspace=<ws>:<path>] 
-                [-vendor=<vndr>[:<url>] [-link | -unlink]] [-auto-fit=<bool>]
-                [-newline-maps=<bool>] [-alignment=<int>] [-hanging-end=<bool>]
-                [default-language=<lang>] [-instance-name=<inst>] 
-                [-port-modifier=<mod>] [-generic-modifier=<mod>] 
-                [-placeholder=<ph>:<value>]           
+        legohdl config [-<keypath>=<value>] [(-link | -unlink) | -global]
+                [-<section>]
 
 DESCRIPTION:
         :todo:

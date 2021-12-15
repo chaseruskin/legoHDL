@@ -61,7 +61,7 @@ class GUI:
 
     KEY_MODES = \
     {
-        #---gengeral section keys---
+        #---general section keys---
         'general.active-workspace' : WIDGET.SELECT,
         'general.author' : WIDGET.ENTRY,
         'general.editor' : WIDGET.ENTRY,
@@ -74,7 +74,13 @@ class GUI:
         'label.local' : WIDGET.TABLE,
         'label.global' : WIDGET.TABLE,
         #---hdl-styling section keys---
-
+        'hdl-styling.generic-modifier' : WIDGET.ENTRY,
+        'hdl-styling.port-modifier' : WIDGET.ENTRY,
+        'hdl-styling.newline-maps' : WIDGET.SWITCH,
+        'hdl-styling.alignmnet' : WIDGET.NUMBER,
+        'hdl-styling.auto-fit' : WIDGET.SWITCH,
+        'hdl-styling.default-language' : WIDGET.ENTRY,
+        'hdl-styling.instance-name' : WIDGET.ENTRY,
     }
 
 
@@ -298,7 +304,7 @@ settings that will be merged in when importing that profile. A profile directory
             pass
 
         #get what type of settings mode
-        disp_mode = self.SECTION_MODES[section]
+        disp_mode = self.SECTION_MODES[section.lower()]
 
         x = 0 #x
         y = 0 #y
@@ -322,7 +328,7 @@ settings that will be merged in when importing that profile. A profile directory
                 widg.grid(row=y, column=0, columnspan=10, padx=padx, pady=pady, sticky=key_pos)
                 y += 1
                 pass
-            print(self.KEY_MODES[keypath])
+            print(self.KEY_MODES[keypath.lower()])
             pass
         return
 
