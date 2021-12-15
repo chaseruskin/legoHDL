@@ -425,7 +425,7 @@ NAME:
         list - View a variety of legoHDL-related things
 
 SYNOPSIS:
-        legohdl list [<search>] [[-unit [-all]] | [-D] [-I] [-A]] [-alpha]
+        legohdl list [<search>] [[-unit [-all] [-ignore-tb]] | [-D] [-I] [-A]] [-alpha]
         legohdl list [-plugin | -label | -vendor | -workspace | -profile | 
                 -template]
 

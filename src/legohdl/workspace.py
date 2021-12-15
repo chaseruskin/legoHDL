@@ -610,11 +610,14 @@ class Workspace:
         #[!] load blocks into inventory
         visible = self.loadBlocks()
 
+        #:todo: add flag to print 'variations' of an entity/unit (what specific version names exist)
+
         #todo: print status of the unit and which status is usable (D or I)
         M,L,N,V,E = Block.snapTitle(title, inc_ent=True)
-        print(M,L,N,V,E)
-        print('{:<22}'.format("Unit"),'{:<7}'.format("Usable"),'{:<9}'.format("Type"),'{:<39}'.format("Block"))
-        print("-"*22+" "+"-"*7+" "+"-"*9+" "+"-"*39)
+        #print(M,L,N,V,E)
+
+        #store each entity's print line in map (key = <unit>:<block-id>) to ensure uniqueness
+        catalog = Map()
         for bk in Block.getAllBlocks():
             #for lvl in Block.Inventory[bk.M()][bk.L()][bk.N()]:
             block_title = bk.getFull(inc_ver=False)
@@ -634,8 +637,6 @@ class Workspace:
             
             units = bk.loadHDL(returnnames=False).values()
 
-            #print each unit and its data
-            printed = False
             for u in units:
                 if(len(E) and u.E().lower().startswith(E.lower()) == False):
                     continue
@@ -649,13 +650,24 @@ class Workspace:
                 dsgn = u.getDesign().name.lower()
                 if(u.getLang() == u.Language.VERILOG and dsgn == 'entity'):
                     dsgn = 'module'
-                print('{:<22}'.format(u.E()),'{:<7}'.format(vis),'{:<9}'.format(dsgn),'{:<39}'.format(block_title))
-                block_title = ''
-                printed = True
+                catalog[u.E()+':'+block_title] = '{:<22}'.format(u.E())+' '+'{:<7}'.format(vis)+' '+'{:<10}'.format(dsgn)+' '+'{:<39}'.format(block_title)
                 pass
-            if(printed and bk != Block.getAllBlocks()[-1]):
-                print()
-                pass
+
+            pass
+
+        keys = list(catalog.keys())
+        #check if to sort by alphabet           
+        if(alpha):
+            keys.sort()
+
+        #print to console
+        print('{:<22}'.format("Unit"),'{:<7}'.format("Usable"),'{:<10}'.format("Type"),'{:<39}'.format("Block"))
+        print("-"*22+" "+"-"*7+" "+"-"*10+" "+"-"*39)
+        for k in keys:
+            print(catalog[k])
+            pass
+        pass
+
 
     @classmethod
     def tidy(cls):
