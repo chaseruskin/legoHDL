@@ -496,13 +496,13 @@ class Profile:
 
 
     def hasTemplate(self):
-        '''Returns (bool) if a template folder exists.'''
-        return os.path.exists(self.getProfileDir()+"template/")
+        '''Returns (bool) if a template folder exists and has at least one file.'''
+        return os.path.exists(self.getProfileDir()+"template/") and len(os.listdir(self.getProfileDir()+"template/"))
 
 
     def hasPlugins(self):
         '''Returns (bool) if a plugins folder exists and has at least one file.'''
-        return os.path.exists(self.getProfileDir()+"plugins/")
+        return os.path.exists(self.getProfileDir()+"plugins/") and len(os.listdir(self.getProfileDir()+"plugins/"))
 
 
     def hasSettings(self):
