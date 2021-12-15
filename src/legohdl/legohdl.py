@@ -746,7 +746,7 @@ Enter:
         '''Run the 'get' command.'''
 
         visibles = self.WS().loadBlocks(id_dsgns=False)
-
+        
         #make sure an entity is being requested
         if(self.getItem() == None):
             exit(log.error("Pass a unit name to get."))

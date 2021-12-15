@@ -1591,7 +1591,7 @@ class Block:
         Returns the value stored in the block metadata's requested key. 
         
         If the key DNE, then it retuns None.
-        Returns a (list) for 'requires' key.
+        Returns a (list) for 'requires', 'vhdl-units', 'vlog-units', and 'versions' key under sect='block'.
 
         Parameters:
             key (str): the case-sensitive key to the cfg dictionary
@@ -1608,7 +1608,7 @@ class Block:
             return self._meta.get(sect, dtype=Section)
 
         #auto-cast requirements to list
-        dtype = list if(key == 'requires') else str
+        dtype = list if(sect == 'block' and (key == 'requires' or key == 'vhdl-units' or key == 'vlog-units' or key == 'versions')) else str
         #access the key
         return self._meta.get(sect+'.'+key, dtype=dtype)
 
@@ -2655,9 +2655,9 @@ class Block:
         '''
         if(returnnames and self.getLvl() != Block.Level.DNLD and self.getLvl() != Block.Level.INSTL):
             unit_names = []
-            if(self.getMeta('vhdl-units') != ''):
+            if(self.getMeta('vhdl-units') != None):
                 unit_names += self.getMeta('vhdl-units')
-            if(self.getMeta('vlog-units') != ''):
+            if(self.getMeta('vlog-units') != None):
                 unit_names += self.getMeta('vlog-units')
             if(len(unit_names)):
                 return unit_names

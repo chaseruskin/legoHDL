@@ -388,6 +388,7 @@ class Workspace:
             for bk in blocks:
                 #get the entity names from this block
                 es = bk.loadHDL(returnnames=True)
+                #print(es)
                 #create mappings of entity names to their block owners
                 for e in es:
                     if(e.lower() not in reg.keys()):
