@@ -277,10 +277,18 @@ class Profile:
 
         #define cfg settings
         def_settings = {
+            #plugins
             'plugin' : {
                 'hello' : 'echo "hello world!"',
                 'demo' : 'python $LEGOHDL/plugins/demo.py'
             },
+            #hdl-styling
+            'hdl-styling' :{
+                'auto-fit' : 'on',
+                'alignment' : '1',
+                'port-modifier' : 'w_*',
+            },
+            #workspace
             'workspace' : {
                 'primary' : {
                     'path' : '',
@@ -295,7 +303,8 @@ class Profile:
 
         #create default template
         os.makedirs(default.getProfileDir()+"template/", exist_ok=True)
-        os.makedirs(default.getProfileDir()+"template/src", exist_ok=True)
+        os.makedirs(default.getProfileDir()+"template/src/", exist_ok=True)
+        os.makedirs(default.getProfileDir()+"template/.hidden/tb/", exist_ok=True)
 
         #create .gitignore
         with open(default.getProfileDir()+'template/.gitignore', 'w') as f:
@@ -306,6 +315,22 @@ class Profile:
         with open(default.getProfileDir()+'template/src/TEMPLATE.vhd', 'w') as f:
             f.write('-- design code here')
             pass
+
+        #create template testbench
+        with open(default.getProfileDir()+".hidden/tb/TEMPLATE.vhd", 'w') as f:
+            f.write('-'*80+'''
+-- Block     : %BLOCK%
+-- Author    : %AUTHOR%
+-- Created   : %DATE%
+-- Testbench : TEMPLATE
+'''+'-'*80+'\n\n')
+            f.write('library ieee;\nuse ieee.std_logic_1164.all;\n\n')
+            f.write('entity TEMPLATE is\nend entity;\n\n')
+            f.write('architecture bench of TEMPLATE is\n')
+            f.write('\t--declare DUT component\n\n\t--declare constants/signals\n')
+            f.write('\tconstant dly : time := 10 ns;\n\nbegin\n')
+            f.write('\t--instantiate DUT\n\n\t--verify design within process\n')
+            f.write('\tprocess begin\n\n\n\t\treport "SIMULATION COMPLETE";\n\t\twait;\n\tend process;\n\nend architecture;')
 
         #create default plugins
         os.makedirs(default.getProfileDir()+"plugins/", exist_ok=True)

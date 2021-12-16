@@ -626,7 +626,7 @@ Enter:
 
         #initially fill with comment header section
         pkg_data = ['-'*80] + \
-            ['-- Project: %BLOCK%'] + \
+            ['-- Block: %BLOCK%'] + \
             ['-- Created: %DATE%'] + \
             ['-- Package: TEMPLATE'] + \
             ['-- Description:'] + \
