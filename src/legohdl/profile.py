@@ -317,7 +317,7 @@ class Profile:
             pass
 
         #create template testbench
-        with open(default.getProfileDir()+".hidden/tb/TEMPLATE.vhd", 'w') as f:
+        with open(default.getProfileDir()+"template/.hidden/tb/TEMPLATE.vhd", 'w') as f:
             f.write('-'*80+'''
 -- Block     : %BLOCK%
 -- Author    : %AUTHOR%
