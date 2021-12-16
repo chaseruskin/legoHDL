@@ -30,7 +30,7 @@ jobs:
       - run: legohdl list
 
       #link this vendor to the active-workspace
-      - run: legohdl config -"vendor.uf-ece"=https://github.com/uf-eel4712c/uf-ece.git -link
+      - run: legohdl config -"vendor.uf-ece"=https://github.com/uf-eel4712c/uf-ece.git -"workspace.primary.vendors+=uf-ece"
       #view blocks
       - run: legohdl list
       #view vendors
