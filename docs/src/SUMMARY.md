@@ -7,9 +7,7 @@
     - [Initial Setup](./getting_started/2_initial_setup.md)
 
 - [Tutorials](./tutorials/tutorials.md)
-    - [Full Adder](./tutorials/full_adder.md)
-    - [Ripple-Carry Adder](./tutorials/ripple_carry_adder.md)
-    - [Full Adder II](./tutorials/full_adder_ii.md)
+    - [First Project: Gates](./tutorials/first_project_gates.md)
 
 - [User Guide](./user_guide/user_guide.md)
 
