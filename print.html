@@ -330,9 +330,9 @@ Type 'legohdl help &lt;command&gt;' to read about the entered command.
 -- Block: tutorials.gates
 -- Entity: nor_gate
 -- Description:
---  Takes two bits and performs the NOR operation. C = ~(A | B). 
+--  Takes two bits and performs the NOR operation. Q = ~(A | B). 
 --
---  Both A and B are a singular bit and must both be '0' for C to be '1'.
+--  Both A and B are a singular bit and must both be '0' for Q to be '1'.
 --------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -340,13 +340,13 @@ use ieee.std_logic_1164.all;
 entity nor_gate is
     port(
         a, b : in std_logic;
-        c : out std_logic);
+        q : out std_logic);
 end entity;
 
 architecture rtl of nor_gate is
 begin
-    --logic to drive 'C' output using 'NOR' keyword
-    c &lt;= a nor b;
+    --logic to drive 'Q' output using 'NOR' keyword
+    q &lt;= a nor b;
     
 end architecture;
 </code></pre>
@@ -354,7 +354,8 @@ end architecture;
 <p>Awesome, nothing too fancy going on here. Now its time to reuse our <a href="tutorials/./../glossary.html#intellectual-property-ip">IP</a> in other designs. </p>
 <h2 id="reusing-designs-and-gate"><a class="header" href="#reusing-designs-and-gate">Reusing designs: AND Gate</a></h2>
 <p>Reusing designs is at the core of what legoHDL is built to be. Not reinventing the wheel saves time and resources that can be spun into designing more innovation, faster. Our next task will be to create a logical AND gate using only NOR gates.</p>
-<p><img src="tutorials/./../images/and_from_nor.pdf" alt="and_from_nor" /></p>
+<p>Let's review the schematic for creating an AND gate from purely NOR gates.</p>
+<p><img src="tutorials/./../images/AND_from_NOR.svg.png" alt="and_from_nor" /></p>
 <p>The design requires 3 instances of a NOR gate.</p>
 <br>
 <p>Let's create another file <code>and_gate.vhd</code> using the <code>new</code> command like last time.</p>
@@ -365,9 +366,9 @@ end architecture;
 -- Block: tutorials.gates
 -- Entity: and_gate
 -- Description:
---  Takes two bits and performs the AND operation. C &lt;- A &amp; B. 
+--  Takes two bits and performs the AND operation. Q &lt;- A &amp; B. 
 --
---  Both A and B are a singular bit and each must be '1' for C to be '1'. Built
+--  Both A and B are a singular bit and each must be '1' for Q to be '1'. Built
 --  from 3 instances of logical NOR gates.
 --------------------------------------------------------------------------------
 library ieee;
@@ -376,7 +377,7 @@ use ieee.std_logic_1164.all;
 entity and_gate is
     port(
         a, b : in std_logic;
-        c : out std_logic);
+        q : out std_logic);
 end entity;
 
 architecture rtl of and_gate is
@@ -398,20 +399,20 @@ end architecture;
  Block: tutorials.gates
  Entity: nor_gate
  Description:
-  Takes two bits and performs the NOR operation. C = ~(A | B).
+  Takes two bits and performs the NOR operation. Q = ~(A | B).
 
-  Both A and B are a singular bit and must both be '0' for C to be '1'.
+  Both A and B are a singular bit and must both be '0' for Q to be '1'.
 ------------------------------------------------------------------------------
 
 --- CODE ---
 signal w_a : std_logic;
 signal w_b : std_logic;
-signal w_c : std_logic;
+signal w_q : std_logic;
 
 uX : entity work.nor_gate port map(
     a =&gt; w_a,
     b =&gt; w_b,
-    c =&gt; w_c);
+    q =&gt; w_q);
 
 </code></pre>
 <p>The <code>--- ABOUT ---</code> section returns the initial comments from the design's source file to potentially help inform the user.</p>
@@ -421,9 +422,9 @@ uX : entity work.nor_gate port map(
 -- Block: tutorials.gates
 -- Entity: and_gate
 -- Description:
---  Takes two bits and performs the AND operation. C = A &amp; B. 
+--  Takes two bits and performs the AND operation. Q = A &amp; B. 
 --
---  Both A and B are a singular bit and each must be '1' for C to be '1'. Built
+--  Both A and B are a singular bit and each must be '1' for Q to be '1'. Built
 --  from only NOR gates.
 --------------------------------------------------------------------------------
 library ieee;
@@ -432,36 +433,36 @@ use ieee.std_logic_1164.all;
 entity and_gate is
     port(
         a, b : in std_logic;
-        c : out std_logic);
+        q : out std_logic);
 end entity;
 
 architecture rtl of and_gate is
 
     signal w_a_not : std_logic;
     signal w_b_not : std_logic;
-    signal w_c : std_logic;
+    signal w_q : std_logic;
 
 begin
     --negate a
     u_A_NOT : entity work.nor_gate port map(
         a =&gt; a,
         b =&gt; a,
-        c =&gt; w_a_not);
+        q =&gt; w_a_not);
 
     --negate b
     u_B_NOT : entity work.nor_gate port map(
         a =&gt; b,
         b =&gt; b,
-        c =&gt; w_b_not);
+        q =&gt; w_b_not);
 
     --perform /a nor /b
     u_A_AND_B : entity work.nor_gate port map(
         a =&gt; w_a_not,
         b =&gt; w_b_not,
-        c =&gt; w_c);
+        q =&gt; w_q);
 
     --drive output
-    c &lt;= w_c;
+    q &lt;= w_q;
 
 end architecture;
 </code></pre>
@@ -491,6 +492,87 @@ INFO:   Generating dependency tree...
 <li>see a hierarchical view of the current design</li>
 </ul>
 <p>Next, we will create a testbench file from the template to test our <em>and_gate</em> as well as export our design for use with plugins.</p>
+<br>
+<h1 id="continued"><a class="header" href="#continued">Continued</a></h1>
+<p>The other half to hardware designing involves verification. We will create a testbench to verify our <em>and_gate</em> entity functions as its supposed to according to the following truth table.</p>
+<table><thead><tr><th>A</th><th>B</th><th>|</th><th>Q</th></tr></thead><tbody>
+<tr><td>0</td><td>0</td><td></td><td>0</td></tr>
+<tr><td>0</td><td>1</td><td></td><td>0</td></tr>
+<tr><td>1</td><td>0</td><td></td><td>0</td></tr>
+<tr><td>1</td><td>1</td><td></td><td>1</td></tr>
+</tbody></table>
+<p>Different types of HDL files can follow similiar code layouts, such as when designing a 2-process FSM or a testbench. For these situations, its beneficial to create a boilerplate template file for when that file is needed in a block.</p>
+<p>We can see what files exist in our legoHDL template by using the <code>list</code> command.</p>
+<pre><code>$ legohdl list -template
+</code></pre>
+<p>The console outputs the following:</p>
+<pre><code>INFO:   Files available within the selected template: C:/Users/chase/.legohdl/template/
+Relative Path                                                Hidden  
+------------------------------------------------------------ --------
+/.gitignore                                                  -
+/.hidden/tb/TEMPLATE.vhd                                     yes
+/src/TEMPLATE.vhd                                            -
+</code></pre>
+<p>We have a testbench template file <code>/.hidden/tb/TEMPLATE.vhd</code> available for use within our template, however, it wasn't automatically copied into our project when we created it because it is hidden.</p>
+<p>Let's reference this file for creating our testbench <code>and_gate_tb.vhd</code>.</p>
+<pre><code>$ legohdl new ./test/and_gate_tb.vhd -file=/.hidden/tb/TEMPLATE.vhd
+</code></pre>
+<p>The contents of <code>and_gate_tb.vhd</code> should resemble the following:</p>
+<pre><code class="language-VHDL">--------------------------------------------------------------------------------
+-- Block   : tutorials.gates
+-- Author  : Chase Ruskin
+-- Created : December 16, 2021
+-- Entity  : and_gate_tb
+--------------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity and_gate_tb is
+end entity;
+
+architecture bench of and_gate_tb is
+	--declare DUT component
+
+	--declare constants/signals
+	constant dly : time := 10 ns;
+
+begin
+	--instantiate DUT
+
+	--verify design within process
+	process begin
+
+
+		report &quot;SIMULATION COMPLETE&quot;;
+		wait;
+	end process;
+
+end architecture;
+</code></pre>
+<p>Now we need to instantiate our Design-Under-Test (DUT), which is <em>and_gate</em>, and run it through the previous truth table.</p>
+<p>Use the <code>get</code> command to return both the component declaration and instantiation code for the <em>and_gate</em> entity.</p>
+<pre><code>$ legohdl get and_gate -comp -inst
+</code></pre>
+<p>The console outputs the following:</p>
+<pre><code>TODO - show terminal output
+
+</code></pre>
+<p>Copy the component declaration under the line <code>--declare DUT component</code>. Copy the I/O connection signals under the line <code>--declare constants/signals</code>. Copy the instantiation code under the line <code>--instantiate DUT</code>.</p>
+<p>Now within our process we write a few lines of code to assert the DUT functions properly.</p>
+<p>The completed testbench <em>and_gate_tb</em> should now be complete.</p>
+<pre><code class="language-VHDL">TODO - show complete and_gate_tb.vhd
+
+</code></pre>
+<br>
+<br>
+<p>Our final design for the <em>gates</em> block will be an XOR gate.</p>
+<p>Let's review the schematic for an XOR gate from purely NOR gates.</p>
+<p><img src="tutorials/./../images/XOR_from_NOR.svg.png" alt="xor_from_nor" /></p>
+<p>Notice how the upper 3 NOR gates are the equivalent to the AND gate we previously designed. Rather than using 5 instances of a NOR gate, we will save time by using 1 AND gate instance and 2 instances of the NOR gate.</p>
+<p>Create a new file from our template called <code>xor_gate.vhd</code>.</p>
+<pre><code>$ legohdl new ./src/xor_gate.vhd -file=/.hidden/dsgn/TEMPLATE.vhd
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="user-guide"><a class="header" href="#user-guide">User Guide</a></h1>
 <p>In this chapter, you will learn how to use legoHDL for common problems and scenarios.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="topic-guide"><a class="header" href="#topic-guide">Topic Guide</a></h1>
