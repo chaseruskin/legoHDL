@@ -965,19 +965,28 @@ Enter:
         create_keys = ['vendor', 'plugin', 'placeholders',]
         editable_sects = apt.OPTIONS
 
-        skip_flags = ['link', 'unlink']
-
+        link = False
+        unlink = False
 
         #set each setting listed in flags try to modify it
         for k in self.getFlags():
-            #make sure control-flow flags are skipped
-            if(k in skip_flags):
-                continue
+            #check if using appending or removal operator
+            link   = k[-1] == '+'
+            unlink = k[-1] == '-'
+
             #get the value from the flag (if exists)
             v = self.getVar(k)
+
+            #remove operator from keypath
+            if(link or unlink):
+                k = k[:len(k)-1]
+
+            #print(k,v)
             
-            #split the variable into two components (if applicable)
-            sect = k.split('.')[0]
+            #split the keypath into components (if applicable)
+            parts = k.lower().split('.')
+            #first component is the section
+            sect = parts[0]
 
             #first attempt to edit the key
             edit_k = (k.lower() in editable_keys)
@@ -1005,19 +1014,99 @@ Enter:
                     log.error("Cannot edit section: "+sect)
                     continue
 
-            if(edit_k):
-                apt.CFG.set(k, v, verbose=True, override=True)
-            elif(edit_s):
-                apt.CFG.set(k, v, verbose=True, override=True)
+            #[!] handle plugins
+            if(sect == 'plugin' and (edit_k or crte_k)):
+                #make sure command is a string
+                if(isinstance(v, str) == False):
+                    continue
+                alias = parts[-1]
+                #load in plugins
+                Plugin.load()
 
-            if(apt.CFG._modified):
-                apt.CFG.write()
-                log.info("Updated settings.")
+                #modify existing plugins
+                if(alias in Plugin.Jar.keys()):
+                    Plugin.Jar[alias].setCommand(v)
+                #create a new plugin
+                else:
+                    Plugin(alias, v)
+                pass
 
-            #handle vendor configurations/editing
-            if(sect == 'vendor' and (edit_k or edit_s)):
+            #[!] handle labels
+            elif(sect == 'label' and (parts[1] == 'global' or parts[1] == 'local')):
+                #cannot create sections
+                if(isinstance(v, Section)):
+                    continue
+                #load labels
+                Label.load()
+                #verify proper format is passed in
+                if(parts[1] == parts[-1]):
+                    log.error("Must provide a label name to create/edit.")
+                    continue
+                lbl_name = parts[-1]
+                #get list of file search extensions
+                v = apt.strToList(v, delim=',')
+
+                #modify existing label
+                if(lbl_name in Label.Jar.keys()):
+                    Label.Jar[lbl_name].setExtensions(v)
+                    #get global attr
+                    isglbl = Label.Jar[lbl_name].isGlobal()
+
+                    #flip from global->local and vice versa depending on key
+                    if(isglbl and parts[1] == 'local'):
+                        apt.CFG.remove('label'+'.global.'+lbl_name, verbose=True)
+                    elif(parts[1] == 'global' and not isglbl):
+                        apt.CFG.remove('label'+'.local.'+lbl_name, verbose=True)
+
+                    #modify global attr
+                    Label.Jar[lbl_name].setGlobal((parts[1] == 'global'))
+                    pass
+                #create new label
+                else:
+                    Label(lbl_name, v, (parts[1] == 'global'))
+                    pass
+                #format to string without cfg list tokens
+                v = Cfg.castStr(v, frmt_list=False)
+                pass
+
+            #[!] handle updating active workspace
+            if(k == 'general.active-workspace'):
+                Workspace.setActiveWorkspace(v)
+
+            #[!] handle creating a workspace
+            elif(sect == 'workspace'):
+                #get the name of the workspace
+                ws_name = parts[1]
+                #check if also provided path name
+                path = v if(parts[-1] == 'path') else ''
+
+                #create new workspace!
+                if(ws_name not in Workspace.Jar.keys()):
+                    Workspace(ws_name, path)
+                pass
+
+            #[!] handle workspace's vendors
+            if(edit_k and sect == 'workspace' and parts[-1] == 'vendors' and isinstance(v, str)):
+                #get list of vendors passed by v
+                vndrs = apt.strToList(v, delim=',')
+                #iterate through all passed vendors
+                for vndr in vndrs:
+                    if(link):
+                        self.WS().linkVendor(vndr)
+                    elif(unlink):
+                        self.WS().unlinkVendor(vndr)
+                    pass
+                #set the entire vendors list
+                if((link or unlink) == False):
+                    self.WS().setVendors(vndrs)
+                #convert v to str from list for cfg write
+                v = Cfg.castStr(self.WS().getVendors(returnnames=True, lowercase=False), drop_list=False)
+                pass
+
+            #[!] handle vendor creations/editing
+            if(sect == 'vendor' and (edit_k or crte_k)):
+                name = parts[-1]
                 vndr = None
-                name = k.split('.')[-1]
                 url = self.getVar(k)
                 #modify an existing vendor
                 if(name in Vendor.Jar.keys()):
@@ -1028,160 +1117,60 @@ Enter:
                         vndr.setRemoteURL(url)    
                     elif(vndr.isRemote() and url == Cfg.NULL):
                         vndr._repo.setRemoteURL(url, force=True)
-                #vendor name is not found
+                #vendor name is not found create new one
                 else:
+                    if(url == Cfg.NULL):
+                        url = None
                     vndr = Vendor(name, url)
-
-                #alter the workspace's connections to vendors
-                if(vndr != None and Workspace.inWorkspace()):
-                    if(self.hasFlag('unlink')):
-                        self.WS().unlinkVendor(vndr.getName())
-                    elif(self.hasFlag('link')):
-                        self.WS().linkVendor(vndr.getName())
-                    pass
-                Vendor.save()
-                Workspace.save()
-            continue
-
-            #modify plugin
-            if(k == 'plugin'):
-                #load in plugin
-                Plugin.load()
-                #verify proper format is passed in
-                if(var_key == ''):
-                    log.error("Must provide a plugin alias.")
-                    continue
-
-                #modify existing plugins
-                if(var_key.lower() in Plugin.Jar.keys()):
-                    Plugin.Jar[var_key].setCommand(var_val)
-                #create a new plugin
-                else:
-                    Plugin(var_key, var_val)
-
-                #save plugin modifications
-                Plugin.save()
                 pass
-            #modify label
-            elif(k == 'label'):
-                #load labels
-                Label.load()
-                #verify proper format is passed in
-                if(var_key == ''):
-                    log.error("Must provide a label name.")
-                    continue
-                print(var_key)
-                #modify existing label
-                if(var_key.lower() in Label.Jar.keys()):
-                    Label.Jar[var_key].setExtensions(apt.strToList(var_val))
-                    Label.Jar[var_key].setGlobal(self.hasFlag('global'))
-                #create new label
-                else:
-                    Label(var_key, apt.listToStr(var_val), self.hasFlag('global'))
-                #save any changes
-                Label.save()
-                pass
-            #modify profile
-            elif(k == 'profile'):
-                #try to create a profile!
-                if(v != ''):
-                    #try url
-                    if(Git.isValidRepo(v, remote=True) or Git.isValidRepo(v, remote=False)):
-                        Profile('', url=v)
-                    #try just new name
-                    elif(v.lower() not in Profile.Jar.keys()):
-                        if(v.lower() == 'default'):
+
+            #[!] handle profiles
+            if(sect == 'general' and edit_k and parts[-1] == 'profiles'):
+                prfls = apt.strToList(v, delim=',')
+
+                avail_prfls = list(Profile.Jar.keys())
+                #remove all non-listed profiles when setting key
+                if((link or unlink) == False):
+                    for prfl in avail_prfls:
+                        #check if the profile is not listed
+                        if(prfl not in prfls):
+                            Profile.Jar[prfl].remove()
+                        pass
+
+                #iterate through all listed profiles from command-line
+                for prfl in prfls:
+                    #add new profiles when setting or adding
+                    if((link or not unlink) and prfl not in Profile.Jar.keys()):
+                        #reload default profile
+                        if(prfl == 'default'):
                             Profile.reloadDefault()
+                        elif(Git.isValidRepo(prfl) or Git.isValidRepo(prfl, remote=True)):
+                            Profile('', url=prfl)
                         else:
-                            log.info("Creating new empty profile "+v+"...")
-                            Profile(v)
-                    else:
-                        log.error("Profile "+v+" already exists.")
-                        continue
-                    
-                Profile.save()
-                pass
-            #modify vendor
-            elif(k == 'vendor'):
-                #ensure a vendor name is given
-                if(var_key == ''):
-                    log.error("Must provide a vendor name.")
-                    continue
-
-                vndr = None
-                #modify an existing vendor
-                if(var_key.lower() in Vendor.Jar.keys()):
-                    vndr = Vendor.Jar[var_key]
-
-                    #if its local and remote given try to set a remote
-                    if(vndr.isRemote() == False and var_val != ''):
-                        vndr.setRemoteURL(var_val)
-                #vendor name is not found
-                else:
-                    #try to create from the url
-                    if(var_val != ''):
-                        vndr = Vendor(var_key, var_val)
-               
-                #alter the workspace's connections to vendors
-                if(vndr != None and Workspace.inWorkspace()):
-                    if(self.hasFlag('unlink')):
-                        self.WS().unlinkVendor(vndr.getName())
-                    elif(self.hasFlag('link')):
-                        self.WS().linkVendor(vndr.getName())
+                            Profile(prfl)
+                    #remove profiles from existing list
+                    elif(unlink and prfl in Profile.Jar.keys()):
+                        Profile.Jar[prfl].remove()
                     pass
-                    Workspace.save()
-        
-                #save adjustments
-                Vendor.save()
-                pass
-            #modify workspace
-            elif(k == 'workspace'):
-                #verify proper format is passed in
-                if(var_key == ''):
-                    log.error("Must provide a workspace name.")
-                    continue
-                #modify existing workspace's path
-                if(var_key.lower() in Workspace.Jar.keys()):
-                    Workspace.Jar[var_key].setPath(var_val)
-                #create new workspace!
-                else:
-                    Workspace(var_key, var_val)
-                #save adjustments
-                Workspace.save()
-                pass
-            #modify placeholders
-            elif(k == 'placeholder'):
-                apt.setField(var_val, ['placeholders', var_key])
-                apt.save()
-            #modify active workspace setting
-            elif(k == 'active-workspace'):
-                Workspace.setActiveWorkspace(v)
-                Workspace.save()
-            #modify refresh-rate
-            elif(k == 'refresh-rate'):
-                apt.setRefreshRate(v)
-                apt.save()
-            else:
-                #:todo: make better/improve for more generic assigning
-                header = None
-                #try to find what section the setting is under
-                if(k.lower() in apt.CFG.get('general', dtype=Section).keys()):
-                    header = 'general'
-                elif(k.lower() in apt.CFG.get('HDL-styling', dtype=Section).keys()):
-                    header = 'HDL-styling'
-                #continue to write the value to the correct setting if found
-                if(header != None):
-                    #convert to booleans values for these settings
-                    if(k == 'multi-develop' or k == 'overlap-global' or \
-                        k == 'mixed-language' or k == 'newline-maps' or \
-                        k == 'auto-fit' or k == 'hanging-end'):
-                            v = Cfg.castBool(v)
-                    #write to setting
-                    apt.CFG.set(header+'.'+k, v)
-                pass          
 
-                #save settings adjusments
-                apt.save()
+                #cast v to be a string
+                v = Cfg.castStr(list(Profile.Jar.keys()), drop_list=False)
+                pass
+
+            #write to cfg
+            if(edit_k):
+                apt.CFG.set(k, v, verbose=True, override=True)
+            elif(edit_s):
+                apt.CFG.set(k, v, verbose=True, override=True)
+            #check if needing to resave cfg
+            if(apt.CFG._modified):
+                apt.CFG.write()
+                log.info("Updated settings.")
+
+            Vendor.save()
+            Workspace.save()
+            Label.save()
+            Plugin.save()
         pass
 
 

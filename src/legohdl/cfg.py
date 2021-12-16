@@ -443,14 +443,14 @@ class Cfg:
         pass
 
 
-    def remove(self, key):
+    def remove(self, key, verbose=False):
         '''
         Removes a section/key from the _data attr. Sets _modified if successfully 
         deletes a key/section. 
 
         Parameters:
             key (str):
-            dat (Section): used for internal recursive calls
+            verbose (bool): determine if to print out statement upon deletion
         Returns:
             success (bool): determine if successfully deleted
         '''
@@ -463,6 +463,8 @@ class Cfg:
                 return False
             elif(i == len(keys_l)-1):
                 del node[keys_l[i]]
+                if(verbose):
+                    print("DELETED: "+key)
                 self._modified = True
                 return True
             node = node[keys_l[i]]

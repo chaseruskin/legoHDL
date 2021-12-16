@@ -215,6 +215,36 @@ class Workspace:
             return False
 
 
+    def setVendors(self, vndrs):
+        '''
+        Overrides entire _vendors attr by setting it equal to 'vndrs'.
+
+        Parameters:
+            vndrs ([str]): list of vendors
+        Returns:
+            (bool): success if all vendors listed were added
+        '''
+        #reset vendors list
+        self._vendors = []
+        success = True
+        #iterate through every given vendor
+        for vndr in vndrs:
+            #verify the vendor exists
+            if(vndr.lower() in Vendor.Jar.keys()):
+                vndr_obj = Vendor.Jar[vndr]
+                #check if the vendor has already been linked
+                if(vndr_obj in self.getVendors()):
+                    log.info("Vendor "+vndr_obj.getName()+" is already linked to this workspace.")
+                #link the vendor to this workspace
+                else:
+                    log.info("Linking vendor "+vndr_obj.getName()+" to the workspace...")
+                    self._vendors += [vndr_obj]
+            else:
+                log.warning("Could not link unknown vendor "+vndr+" to "+self.getName()+".")
+                sucess = False
+        return success
+
+
     def unlinkVendor(self, vndr):
         '''
         Attempts to remove a vendor from the workspace's vendor list.

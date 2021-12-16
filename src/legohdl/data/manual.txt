@@ -677,8 +677,7 @@ NAME:
 
 SYNOPSIS:
         legohdl config <profile-name> [-ask]
-        legohdl config [-<keypath>=<value>] [(-link | -unlink) | -global]
-                [-<section>]
+        legohdl config [-<keypath>[(+ | -)]=<value>] [-<sectionpath>]
 
 DESCRIPTION:
         :todo:

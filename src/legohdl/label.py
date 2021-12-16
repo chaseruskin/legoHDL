@@ -99,7 +99,7 @@ class Label:
         serialized = {'global' : {}, 'local' : {}}
         #serialize the Workspace objects into dictionary format for settings
         for lbl in cls.Jar.values():
-            print(lbl.getName())
+            #print(lbl.getName())
             if(lbl.isGlobal()):
                 serialized['global'][lbl.getName()] = Cfg.castStr(lbl.getExtensions(), frmt_list=False)
             else:
