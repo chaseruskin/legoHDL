@@ -83,7 +83,7 @@ class Workspace:
         
         #ensure all workspace hidden directories exist
         if(os.path.isdir(self.getDir()) == False):
-            log.info("Creating hidden workspace directory for "+self.getName()+"...")
+            log.info("Setting up workspace "+self.getName()+"...")
             os.makedirs(self.getDir(), exist_ok=True)
         #create workspace's cache where installed blocks will be stored
         os.makedirs(self.getDir()+"cache", exist_ok=True)
@@ -730,7 +730,7 @@ class Workspace:
         hidden_dirs = os.listdir(cls.DIR)
         for hd in hidden_dirs:
             if(hd.lower() not in cls.Jar.keys()):
-                log.info("Removing stale hidden workspace directory for "+hd+"...") 
+                log.info("Removing stale workspace data for "+hd+"...") 
                 if(os.path.isdir(cls.DIR+hd)):
                     shutil.rmtree(cls.DIR+hd, onerror=apt.rmReadOnly)
                 #remove all files from workspace directory
