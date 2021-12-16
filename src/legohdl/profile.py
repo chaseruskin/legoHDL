@@ -319,10 +319,10 @@ class Profile:
         #create template testbench
         with open(default.getProfileDir()+"template/.hidden/tb/TEMPLATE.vhd", 'w') as f:
             f.write('-'*80+'''
--- Block     : %BLOCK%
--- Author    : %AUTHOR%
--- Created   : %DATE%
--- Testbench : TEMPLATE
+-- Block   : %BLOCK%
+-- Author  : %AUTHOR%
+-- Created : %DATE%
+-- Entity  : TEMPLATE
 '''+'-'*80+'\n\n')
             f.write('library ieee;\nuse ieee.std_logic_1164.all;\n\n')
             f.write('entity TEMPLATE is\nend entity;\n\n')
