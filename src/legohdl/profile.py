@@ -278,7 +278,8 @@ class Profile:
         #define cfg settings
         def_settings = {
             'plugin' : {
-                'hello' : 'python $LEGOHDL/plugins/hello_world.py'
+                'hello' : 'echo "hello world!"',
+                'demo' : 'python $LEGOHDL/plugins/demo.py'
             },
             'workspace' : {
                 'primary' : {
@@ -295,12 +296,6 @@ class Profile:
         #create default template
         os.makedirs(default.getProfileDir()+"template/", exist_ok=True)
         os.makedirs(default.getProfileDir()+"template/src", exist_ok=True)
-        os.makedirs(default.getProfileDir()+"template/test", exist_ok=True)
-
-        #create readme
-        with open(default.getProfileDir()+'template/README.md', 'w') as f:
-            f.write("# __%BLOCK%__")
-            pass
 
         #create .gitignore
         with open(default.getProfileDir()+'template/.gitignore', 'w') as f:
@@ -312,14 +307,9 @@ class Profile:
             f.write('-- design code here')
             pass
 
-        #create template testbench
-        with open(default.getProfileDir()+'template/test/TEMPLATE_tb.vhd', 'w') as f:
-            f.write('-- testbench code here')
-            pass
-
         #create default plugins
         os.makedirs(default.getProfileDir()+"plugins/", exist_ok=True)
-        shutil.copyfile(apt.getProgramPath()+"data/hello.py", default.getProfileDir()+"plugins/hello.py")
+        shutil.copyfile(apt.getProgramPath()+"data/demo.py", default.getProfileDir()+"plugins/demo.py")
 
         #check if to also import this profile
         if(importing):

@@ -1,38 +1,52 @@
-# Script: hello.py
+# ------------------------------------------------------------------------------
+# File: demo.py
 # Author: Chase Ruskin
-# Creation Date: 09.19.2021
+# Modified: 12/15/2021
+# Created: 09/19/2021
+# Plugin: demo
+# Usage:
+#   legohdl +demo (-lint | -synth | -route | -sim) [-gen <g1>=<val1> 
+#   <g2>=<val2> ...]
+#
 # Description:
-#   Backend script that uses no EDA tool but provides an outline for one way
-#   how to structure a script. A workflow is ran here by only printing related
-#   information to the console.
-# Default:
-#   Do nothing.
+#   A fake EDA tool script to be a plugin for legoHDL.
+#
+#   This script is used in the tutorials for legoHDL and can be an outline
+#   for how a developer can structure a plugin. In this plugin, workflows 
+#   are executed that only print related information to the console.
+#
 # Options:
-#   -lint        : lint the design
-#   -synth       : synthesis the design
-#   -route       : route/implement/fit the design (assign pins)
-#   -sim         : simulate the design
-#   -gen         : any arguments after this one are VHDL generics or verilog 
-#                  parameters and will be passed to the top-level design and to 
-#                  the test vector script, if available. An example of setting 
-#                  generics: -gen width=10 addr=32 trunc=2
-#   
-# To learn more about writing your own backend scripts for legohdl, visit:
-# https://hdl.notion.site/Writing-Scripts-f7fc7f75be104c4fa1640d2316f5d6ef
+#   -lint
+#       Simulate checking the syntax of HDL files.
+#   -synth
+#       Simulate synthesising the design.
+#   -route
+#       Simulate routing/assigning pins for the design.
+#   -sim
+#       Simulate a simulation is being performed with an HDL testbench.
+#   -gen <generic1>=<value1> <generic2>=<value2> ...       
+#       Any arguments proceeding '-gen' are VHDL generics or verilog 
+#       parameters passed to the top-level design.
+#
+# Help:
+#   https://c-rus.github.io/legoHDL/
+# ------------------------------------------------------------------------------
 
 import sys,os
 
 # === Define constants, important variables, helper methods ====================
-#   Identify any variables necessary for this script to work. Some examples
+#   Identify any variables necessary for this plugin to work. Some examples
 #   include tool path, device name, project name, device family name. 
 # ==============================================================================
 
 def execute(*code):
     '''
-    This method prints out the inputted command before executing it. The
-    parameter is a variable list of strings that will be separated by spaces
-    within the method. If a bad return code is seen on execution, this entire
-    script will exit with that error code.
+    Prints out the command before executing it. Exits script on bad return code.
+    
+    Parameters:
+        code (*str): parts of a command to call
+    Returns:
+        None
     '''
     #format the command with spaces between each passed-in string
     code_line = ''
@@ -47,13 +61,41 @@ def execute(*code):
         exit(rc)
 
 #path to the tool's executable (can be blank if the tool is already in the PATH)
-TOOL_PATH = ""
+TOOL_PATH = "echo"
 
 #fake device name, but can be useful to be defined or to be set in command-line
 DEVICE = "A2CG1099-1"
 
-#the project will reside in a folder the same name as this block's folder
+#the project will reside in a folder the same name as the current block's folder
 PROJECT = os.path.basename(os.getcwd())
+
+
+HELP_TXT = '''\
+Plugin: demo
+Usage:
+  legohdl +demo (-lint | -synth | -route | -sim) [-gen <g1>=<val1> 
+  <g2>=<val2> ...]
+
+Description:
+  A fake EDA tool script to be a plugin for legoHDL.
+
+  This script is used in the tutorials for legoHDL and can be an outline
+  for how a developer can structure a plugin. In this plugin, workflows 
+  are executed that only print related information to the console.
+
+Options:
+  -lint
+      Simulate checking the syntax of HDL files.
+  -synth
+      Simulate synthesising the design.
+  -route
+      Simulate routing/assigning pins for the design.
+  -sim
+      Simulate a simulation is being performed with an HDL testbench.
+  -gen <generic1>=<value1> <generic2>=<value2> ...       
+      Any arguments proceeding '-gen' are VHDL generics or verilog 
+      parameters passed to the top-level design.
+'''
 
 # === Handle command-line arguments ============================================
 #   Create custom command-line arguments to handle specific workflows and common
@@ -64,10 +106,10 @@ PROJECT = os.path.basename(os.getcwd())
 args = sys.argv[1:]
 
 #detect what workflow to perform
-lint = args.count('-lint')
+lint       = args.count('-lint')
 synthesize = args.count('-synth')
-simulate = args.count('-sim')
-route = args.count('-route')
+simulate   = args.count('-sim')
+route      = args.count('-route')
 
 #identify if there are any generics set on command-line
 generics = {}
@@ -80,20 +122,23 @@ if(args.count('-gen')):
             name,value = args[i].split('=')
             generics[name] = value
 
-# === Collect data from the blueprint file ========================================
-#   This part will gather the necessary data we want for our workflow so that
-#   we can act accordingly on that data to get the ouptut we want.
+
+# === Collect data from the blueprint file =====================================
+#   Gather the data available from the blueprint to be able to use it for some
+#   desirable task.
 # ==============================================================================
 
-#enter the 'build' directory for this is where the blueprint file is located
+#enter the 'build' directory; this is where the blueprint file is located
+if(os.path.exists('build') == False):
+    exit("Export a blueprint file before running this plugin!")
+
 os.chdir('build')
 
+#set up variables to store data from blueprint
 src_files = {'VHDL' : [], 'VLOG' : []}
 sim_files = {'VHDL' : [], 'VLOG' : []}
 lib_files = {'VHDL' : {}, 'VLOG' : {}}
 top_design = top_testbench = None
-python_vector_script = None
-pin_assignments = {}
 
 #read the contents of the blueprint file
 with open('blueprint', 'r') as blueprint:
@@ -147,51 +192,38 @@ with open('blueprint', 'r') as blueprint:
         elif(label == "@VLOG-SIM"):
             sim_files['VLOG'].append(filepath)
 
-        #custom label: capture information regarding pin assignments
-        elif(label == "@PIN-PLAN"):
-            #write a custom file parser for these special files we designed to
-            # extract pin information
-            with open(filepath) as pin_file:
-                locations = pin_file.readlines()
-                for spot in locations:
-                    #skip any comment lines indicated by '#'
-                    comment_index = spot.find('#')
-                    if(comment_index > -1):
-                        spot = spot[:comment_index]
-                    #separate by the comma
-                    if(spot.count(',') != 1):
-                        continue
-                    #organize into fpga pin and port name
-                    pin,name = spot.split(',')
-                    pin_assignments[pin.strip()] = name.strip()
+    pass
 
-        #custom label: capture the python test vector script if avaialable
-        elif(label == "@PY-MODEL"):
-            python_vector_script = filepath.strip()
-
-    #done collecting data for our workflow
-    blueprint.close()
 
 # === Act on the collected data ================================================
-#   Now that we have the 'ingredients', write some logic to call your tool
-#   based on the data we collected. One example could be to use the collected
-#   data to write a TCL script, and then call your EDA tool to use that TCL
-#   script.
+#   Now that we have the data, call your tool to perform a specific task with
+#   this data.
 # ==============================================================================
 
-#simulation
-if(simulate):    
+#[!] perform syntax checking
+if(lint):
+    execute(TOOL_PATH,"Checking design syntax...")
+    print("---FILES ANALYZED----")
+    #print souce files being analyzed
+    for l in src_files.keys():
+        for f in src_files[l]:
+            print(l,f)
+    #print simulation fies being analyzed
+    for l in sim_files.keys():
+        for f in sim_files[l]:
+            print(l,f)
+    pass
+
+#[!] perform simulation
+elif(simulate):    
     if(top_testbench == None):
         exit("Error: No top level testbench found.")
     #format generics for as a command-line argument for test vector script
     generics_command = ''
     for g,v in generics.items():
         generics_command += '-'+g+'='+v+' '
-    #call test vector generator first with passing generics into script
-    if(python_vector_script):
-        execute('python',python_vector_script,generics_command)
 
-    execute(TOOL_PATH+"echo","Simulating design with tesbench...")
+    execute(TOOL_PATH,"Simulating design with tesbench...")
     print('---RUNNING SIMULATION---')
     print('TOP:',top_testbench)
     #print out any generics we set on command-line
@@ -200,18 +232,12 @@ if(simulate):
         for g,v in generics.items():
             print(g,'=',v)
     pass
-#routing/fit/implementation
-elif(route):
-    execute(TOOL_PATH+"echo","Routing design to pins...")
-    print("----PINS ALLOCATED-----")
-    for pin,port in pin_assignments.items():
-        print(pin,'-->',port)
-    pass
-#synthesis
+
+#[!] perform synthesis
 elif(synthesize):
     if(top_design == None):
         exit("Error: No top level design found.")
-    execute(TOOL_PATH+"echo","Synthesizing design...")
+    execute(TOOL_PATH,"Synthesizing design...")
     print('---FILES SYNTHESIZED---')
     print("TOP:",top_design)
     #print out any generics we set on command-line
@@ -229,20 +255,16 @@ elif(synthesize):
             for f in lib_files[f_type][lib]:
                 print(f_type,lib,f)
     pass
-#syntax checking
-elif(lint):
-    execute(TOOL_PATH+"echo","Checking design syntax...")
-    print("---FILES ANALYZED----")
-    #print souce files being analyzed
-    for l in src_files.keys():
-        for f in src_files[l]:
-            print(l,f)
-    #print simulation fies being analyzed
-    for l in sim_files.keys():
-        for f in sim_files[l]:
-            print(l,f)
+
+#[!] perform routing/fitting
+elif(route):
+    execute(TOOL_PATH,"Routing design to pins...")
+    print("----PINS ALLOCATED-----")
+    pin_assignments = []
+    for pin,port in pin_assignments.items():
+        print(pin,'-->',port)
     pass
-#no action
+
+#[!] Perform no action
 else:
-    exit("Error: No flow was recognized! Try one of the following: -lint, \
--synth, -route, -sim.")
+    exit(HELP_TXT)
