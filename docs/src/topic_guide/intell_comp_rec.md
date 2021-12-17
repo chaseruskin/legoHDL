@@ -1,6 +1,6 @@
 # Intelligent Component Recognition (ICR)
 
-Both VHDL and Verilog have very limited levels of scopes: although VHDL has libraries for design units, Verilog has no such concept.
+Both VHDL and Verilog have limited levels of scopes; although VHDL has libraries for design units, Verilog has no such concept.
 
 This page describes how legoHDL handles _scope-overlapping_.
 
@@ -59,7 +59,7 @@ u_ADD : entity math.adder
         ... 
     ) port map ( 
         ... 
-    )
+    );
 ```
 The problem lies in that `math.adder` may refer to either entity.
 
@@ -67,11 +67,9 @@ As the developer, your latest project involves using the adder from the _counter
 
 ## The Solution: ICR
 
-ICR is a scoring algorithm ran when _scope-overlapping_ occurs in the design. 
+ICR is a scoring algorithm ran when _scope-overlapping_ occurs in the current design. It selects the unit with the highest computed score among its contenders. 
 
-ICR selects the unit with the highest computed score among its contenders. 
-
-We define a _contender_ to be those unique entities that share the same space in scope-overlapping. In the problem statement above, there are 2 contenders: the _adder_ from _ALU_ and the _adder_ from _counter_.
+We define a _contender_ to be those unique entities that share the same space a in _scope-overlapping_ problem. In the problem statement above, there are 2 contenders: the _adder_ from _math.ALU_ and the _adder_ from _math.counter_.
 
 We define an _interface_ as the collective combination of an entity's defined generics and ports.
 
@@ -85,7 +83,7 @@ Some rules are the following:
 - If a contender's interface does not define a default value for a generic or an input port, the instance must have that generic or input port mapped. Failure to have this mapping will cause the contender to be ineligible.
 - If any generic or port from the instance is not found in the contender's interface, the contender must be ruled inelgibile.
 
-## Solving the example problem
+## Solving the problem
 
 Using the `legohdl get` command, you as the developer would instantiate the _adder_ from _counter_ with the following output.
 
@@ -157,7 +155,7 @@ c_out    | c_out (OUT)            | c_out (OUT)
 
 > __Note:__ A '(G)' represents a generic defined, while '(IN)' and '(OUT)' represents input and output ports, respectively. Notice for the instance we are unable to determine the port directions from code. A '*' indicates it has a default value (and thus may be omitted from the instance code).
 
-Since both A and B have the generic N, we cannot determine yet which one the instance belongs to. We move on to the ports.
+Since both A and B have the generic N, we cannot determine which one the instance belongs to yet. We move on to the ports.
 
 contender A | contender B
 ------------|------------
@@ -169,13 +167,13 @@ contender A | contender B
 ------------|------------
 2           | 2 
 
-Contender A has an input port "input1", which matches with a piece of the instance. A's score gets +1. Contender B has no such port, and thus it is ineligible. At this point ICR knows which entity the instance belongs to. We will carry the remaining checks out for completeness.
+Contender A has an input port "input1", which matches with a name in the instance's interface. A's score gets +1. Contender B has no such port, and thus it is ineligible. At this point ICR knows which entity the instance belongs to. We will carry the remaining checks out for completeness.
 
 contender A | contender B
 ------------|------------
 3           | 0  
 
-Contender A has an input port "input2", which matches a piece of the instance and thus gets +1. Contender B no longer can check against the instance interface due to being previously ineligible/disqualified.
+Contender A has an input port "input2", which matches a name in the instance's interface and thus gets +1. Contender B no longer can check against the instance interface due to being previously ineligible/disqualified.
    
 contender A | contender B
 ------------|------------
