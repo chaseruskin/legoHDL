@@ -857,7 +857,7 @@ entity adder is
     );
 end entity;
 </code></pre>
-<p><em>Scope-overlapping</em> occurs between these two entities because they share the same entity name and library name.</p>
+<p><em>Scope-overlapping</em> occurs between these two entities because they share the same identifier, which consists of their entity name and library name.</p>
 <p>If taking a VHDL coding approach, both entities could be instantiated with the following code.</p>
 <pre><code class="language-VHDL">u_ADD : entity math.adder 
     generic map ( 
@@ -873,7 +873,7 @@ end entity;
 <p>ICR selects the unit with the highest computed score among its contenders. </p>
 <p>We define a <em>contender</em> to be those unique entities that share the same space in scope-overlapping. In the problem statement above, there are 2 contenders: the <em>adder</em> from <em>ALU</em> and the <em>adder</em> from <em>counter</em>.</p>
 <p>We define an <em>interface</em> as the collective combination of an entity's defined generics and ports.</p>
-<p>We define the <em>instance</em> as the code that could lead to multiple entity solutions based off its identifier (<code>math.adder</code> in our problem). </p>
+<p>We define the <em>instance</em> as the code that could lead to multiple entity solutions based off its identifier (<code>math.adder</code> in the problem stated). </p>
 <p>ICR gathers the interface data from all contenders as well as the interface data defined in the mapping of the instance. Based on this data and a set of known rules, it begins to calculate scores and rule out ineligible contenders.</p>
 <p>Some rules are the following:</p>
 <ul>
@@ -932,6 +932,56 @@ end architecture;
 </code></pre>
 <p>To build the latest design, we must export the blueprint file for our plugin to use.</p>
 <p>During export, ICR is ran to determine which contender the given instance should belong to in order to complete the design hierarchy tree.</p>
+<p>Data collected for contenders labeled as A and B:</p>
+<table><thead><tr><th>instance</th><th>math.counter:adder (A)</th><th>math.ALU:counter (B)</th></tr></thead><tbody>
+<tr><td>N (G)</td><td>N (G*)</td><td>N (G*)</td></tr>
+<tr><td>c_in</td><td>c_in (IN)</td><td>c_in (IN)</td></tr>
+<tr><td>input1</td><td>input1 (IN)</td><td>a (IN)</td></tr>
+<tr><td>input2</td><td>input2 (IN)</td><td>b (IN)</td></tr>
+<tr><td>sum</td><td>sum (OUT)</td><td>sum (OUT)</td></tr>
+<tr><td>c_out</td><td>c_out (OUT)</td><td>c_out (OUT)</td></tr>
+</tbody></table>
+<blockquote>
+<p><strong>Note:</strong> A '(G)' represents a generic defined, while '(IN)' and '(OUT)' represents input and output ports, respectively. Notice for the instance we are unable to determine the port directions from code. A '*' indicates it has a default value (and thus may be omitted from the instance code).</p>
+</blockquote>
+<p>Since both A and B have the generic N, we cannot determine yet which one the instance belongs to. We move on to the ports.</p>
+<table><thead><tr><th>contender A</th><th>contender B</th></tr></thead><tbody>
+<tr><td>1</td><td>1</td></tr>
+</tbody></table>
+<p>Both A and B have an input port &quot;c_in&quot;, and the instance must define this connection for either contender because there's no default value. However, this port gives no insight as the name is identical in both contenders.</p>
+<table><thead><tr><th>contender A</th><th>contender B</th></tr></thead><tbody>
+<tr><td>2</td><td>2</td></tr>
+</tbody></table>
+<p>Contender A has an input port &quot;input1&quot;, which matches with a piece of the instance. A's score gets +1. Contender B has no such port, and thus it is ineligible. At this point ICR knows which entity the instance belongs to. We will carry the remaining checks out for completeness.</p>
+<table><thead><tr><th>contender A</th><th>contender B</th></tr></thead><tbody>
+<tr><td>3</td><td>0</td></tr>
+</tbody></table>
+<p>Contender A has an input port &quot;input2&quot;, which matches a piece of the instance and thus gets +1. Contender B no longer can check against the instance interface due to being previously ineligible/disqualified.</p>
+<table><thead><tr><th>contender A</th><th>contender B</th></tr></thead><tbody>
+<tr><td>4</td><td>0</td></tr>
+</tbody></table>
+<p>Contender A's port &quot;sum&quot; matches with a port in the instance.</p>
+<table><thead><tr><th>contender A</th><th>contender B</th></tr></thead><tbody>
+<tr><td>5</td><td>0</td></tr>
+</tbody></table>
+<p>Contender A's port &quot;c_out&quot; matches with a port in the instance.</p>
+<table><thead><tr><th>contender A</th><th>contender B</th></tr></thead><tbody>
+<tr><td>6</td><td>0</td></tr>
+</tbody></table>
+<p>There are no more interface pieces in the instance to check. Scoring is done. Scores are transformed into a percentage.</p>
+<p><em>contender's %-score</em> = (<em>contender's score</em>) / (<em>total instance interface elements</em>)</p>
+<table><thead><tr><th>contender A</th><th>contender B</th></tr></thead><tbody>
+<tr><td>100%</td><td>0%</td></tr>
+</tbody></table>
+<p>ICR selected contender A, which was the <em>math.counter:adder</em> entity. This was what we wanted!</p>
+<h2 id="pitfalls"><a class="header" href="#pitfalls">Pitfalls</a></h2>
+<p>There are 2 methods to instantiating a unit in VHDL and Verilog: positional association and name association. Name association is generally recommended and is the format legoHDL outputs compatible code. However, positional association is still a synthesizable construct and based on the previous problem could hinder ICR.</p>
+<p>When positional association is used, legoHDL loses data on what the interface names are to cross-check with the contenders. The only data it can collect is on the number of connections in the instance's interface. See <a href="topic_guide/./intell_comp_rec.html#more-icr-examples">more examples</a> to see how ICR performs when encountering positional association.</p>
+<p>I don’t think there is a single synthesis tool that will support a design using more than one unique entity from the same <em>scope-overlapping</em> space, even though legoHDL can distinguish when each one is used in context from ICR. For this, a design may be limited to only using one of these unique entities for every <em>scope-overlapping</em> problem, yet all the entities are allowed to coexist through legoHDL.</p>
+<p>This means any time the same <em>scope-overlapping</em> problem appears in a design, it must select the same entity every time in order to be synthesizable.</p>
+<p>If a design would not select the same entity every time when running ICR, an extra layer of scope could be added to an entity’s name by prepending the block name to the entity name. For example, making <code>entity ALU_adder</code> and <code>entity counter_adder</code>. This would resolve the <em>scope-overlapping</em> problem and avoid running ICR entirely.</p>
+<h2 id="more-icr-examples"><a class="header" href="#more-icr-examples">More ICR examples</a></h2>
+<h3 id="positional-association"><a class="header" href="#positional-association">positional association</a></h3>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="reference"><a class="header" href="#reference">Reference</a></h1>
 <p>In this chapter, relevant technical information is supplied for thorough review of certain concepts.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg-files"><a class="header" href="#cfg-files">.cfg Files</a></h1>
