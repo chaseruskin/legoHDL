@@ -807,6 +807,131 @@ The <code>D</code> indicates the block is also downloaded/developing because it 
 <div style="break-before: page; page-break-before: always;"></div><h1 id="topic-guide"><a class="header" href="#topic-guide">Topic Guide</a></h1>
 <p>In this chapter, we go in-depth explaining legoHDL and its major concepts.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="intelligent-component-recognition-icr"><a class="header" href="#intelligent-component-recognition-icr">Intelligent Component Recognition (ICR)</a></h1>
+<p>Both VHDL and Verilog have very limited levels of scopes: although VHDL has libraries for design units, Verilog has no such concept.</p>
+<p>This page describes how legoHDL handles <em>scope-overlapping</em>.</p>
+<h3 id="what-is-scope-overlapping"><a class="header" href="#what-is-scope-overlapping">What is <em>scope-overlapping?</em></a></h3>
+<p>For this document, we define <em>scope-overlapping</em> to be when two unique design units share the same scope and identifier.</p>
+<h2 id="the-problem"><a class="header" href="#the-problem">The Problem</a></h2>
+<p>Take two design units available for use in your legoHDL workspace.</p>
+<ul>
+<li>math.ALU:adder
+<ul>
+<li>an entity named <em>adder</em> found in the block <em>ALU</em> under the library <em>math</em></li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-VHDL">-- Block: math.ALU
+-- Entity: adder
+entity adder is 
+    generic ( 
+        N : positive := 8 
+    );
+    port (
+        c_in  : in  std_logic; 
+        a     : in  std_logic_vector(N-1 downto 0);
+        b     : in  std_logic_vector(N-1 downto 0);
+        sum   : out std_logic_vector(N-1 downto 0);
+        c_out : out std_logic
+    );
+end entity;
+</code></pre>
+<ul>
+<li>math.counter:adder
+<ul>
+<li>an entity named <em>adder</em> found in the block <em>counter</em> under the library <em>math</em></li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-VHDL">-- Block: math.counter
+-- Entity: adder
+entity adder is
+    generic ( 
+        N : positive := 32
+    );
+    port (
+         c_in   : in  std_logic;
+         input1 : in  std_logic_vector(N-1 downto 0);
+         input2 : in  std_logic_vector(N-1 downto 0);
+         sum    : out std_logic_vector(N-1 downto 0);
+         c_out  : out std_logic
+    );
+end entity;
+</code></pre>
+<p><em>Scope-overlapping</em> occurs between these two entities because they share the same entity name and library name.</p>
+<p>If taking a VHDL coding approach, both entities could be instantiated with the following code.</p>
+<pre><code class="language-VHDL">u_ADD : entity math.adder 
+    generic map ( 
+        ... 
+    ) port map ( 
+        ... 
+    )
+</code></pre>
+<p>The problem lies in that <code>math.adder</code> may refer to either entity.</p>
+<p>As the developer, your latest project involves using the adder from the <em>counter</em> block, yet how would legoHDL know this when the identifiers to instantiate the unit is the same?</p>
+<h2 id="the-solution-icr"><a class="header" href="#the-solution-icr">The Solution: ICR</a></h2>
+<p>ICR is a scoring algorithm ran when <em>scope-overlapping</em> occurs in the design. </p>
+<p>ICR selects the unit with the highest computed score among its contenders. </p>
+<p>We define a <em>contender</em> to be those unique entities that share the same space in scope-overlapping. In the problem statement above, there are 2 contenders: the <em>adder</em> from <em>ALU</em> and the <em>adder</em> from <em>counter</em>.</p>
+<p>We define an <em>interface</em> as the collective combination of an entity's defined generics and ports.</p>
+<p>We define the <em>instance</em> as the code that could lead to multiple entity solutions based off its identifier (<code>math.adder</code> in our problem). </p>
+<p>ICR gathers the interface data from all contenders as well as the interface data defined in the mapping of the instance. Based on this data and a set of known rules, it begins to calculate scores and rule out ineligible contenders.</p>
+<p>Some rules are the following:</p>
+<ul>
+<li>+1 point is awarded to a contender for having a matching interface piece with the instance</li>
+<li>An output port can be omitted/left unconnected and a contender can still remain elgibile.</li>
+<li>If a contender's interface does not define a default value for a generic or an input port, the instance must have that generic or input port mapped. Failure to have this mapping will cause the contender to be ineligible.</li>
+<li>If any generic or port from the instance is not found in the contender's interface, the contender must be ruled inelgibile.</li>
+</ul>
+<h2 id="solving-the-example-problem"><a class="header" href="#solving-the-example-problem">Solving the example problem</a></h2>
+<p>Using the <code>legohdl get</code> command, you as the developer would instantiate the <em>adder</em> from <em>counter</em> with the following output.</p>
+<pre><code>$ legohdl get math.counter:adder -inst
+--- ABOUT ---
+------------------------------------------------------------------------------
+ Block: math.counter
+ Entity: adder
+ Description:
+  Instantiates N full adders to create a N-bit ripple carry adder
+  architecture.
+------------------------------------------------------------------------------
+
+--- CODE ---
+constant N : positive := 8;
+
+signal w_cin    : std_logic;
+signal w_input1 : std_logic_vector(N-1 downto 0);
+signal w_input1 : std_logic_vector(N-1 downto 0);
+signal w_sum    : std_logic_vector(N-1 downto 0);
+signal w_cout   : std_logic;
+
+uX : entity math.adder generic map(
+        N =&gt; N)
+    port map(
+        c_in   =&gt; w_c_in,
+        input1 =&gt; w_input1,
+        input2 =&gt; w_input2,
+        sum    =&gt; w_sum,
+        c_out  =&gt; w_cout);
+</code></pre>
+<p>Within your latest entity's architecture, you have instantiated the <code>math.adder</code> entity.</p>
+<pre><code class="language-VHDL">architecture ...
+begin
+    ...
+
+    --please use the adder from our counter block here!
+    u_ADD : entity math.adder generic map(
+            N =&gt; N)
+        port map(
+            c_in   =&gt; w_c_in,
+            input1 =&gt; w_input1,
+            input2 =&gt; w_input2,
+            sum    =&gt; w_sum,
+            c_out  =&gt; w_cout);
+
+    ...
+end architecture;
+</code></pre>
+<p>To build the latest design, we must export the blueprint file for our plugin to use.</p>
+<p>During export, ICR is ran to determine which contender the given instance should belong to in order to complete the design hierarchy tree.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="reference"><a class="header" href="#reference">Reference</a></h1>
 <p>In this chapter, relevant technical information is supplied for thorough review of certain concepts.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg-files"><a class="header" href="#cfg-files">.cfg Files</a></h1>
