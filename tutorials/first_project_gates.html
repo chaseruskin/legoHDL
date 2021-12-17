@@ -146,10 +146,14 @@
                         <h1 id="first-project-gates"><a class="header" href="#first-project-gates">First Project: Gates</a></h1>
 <p>legoHDL groups HDL code into <a href="./../glossary.html#block">blocks</a>. Blocks are essentially your projects, but identified by legoHDL due to a <a href="./../glossary.html#blockcfg">Block.cfg</a> existing at the project's root folder.</p>
 <br>
+<h1 id="1-creating-the-block"><a class="header" href="#1-creating-the-block">1. Creating the Block</a></h1>
 <p>Let's create our first block, under the name <em>gates</em>, which will be under the library <em>tutorials</em>. <em>Gates</em> will be a project involving various logical gates such as NOR, AND, and XOR.</p>
 <pre><code>$ legohdl new tutorials.gates -open
 </code></pre>
-<p>Our text-editor should have now opened at the block's root folder and a couple of files should be automatically added to our block. This is because we used the template loaded in by the default profile during <a href="./../getting_started/2_initial_setup.html">initial setup</a>.</p>
+<p>Our text-editor should have now opened at the block's root folder and a couple of files should be automatically added to our block. This is because we used the template loaded in by the default profile during <a href="./../getting_started/2_initial_setup.html">initial setup</a>. </p>
+<blockquote>
+<p><strong>Note:</strong> The commands presented in this tutorial assume they are ran from the block's root folder.</p>
+</blockquote>
 <h2 id="creating-a-new-design-nor-gate"><a class="header" href="#creating-a-new-design-nor-gate">Creating a new design: NOR Gate</a></h2>
 <p>Let's create our first HDL design, <em>nor_gate</em>.</p>
 <pre><code>$ legohdl new ./src/nor_gate.vhd -file
@@ -218,6 +222,7 @@ begin
 end architecture;
 </code></pre>
 <p>HDL languages support the use of a structural modelling technique, which will be applied here to create 3 instances of the NOR gate. </p>
+<h3 id="getting-nor-gate"><a class="header" href="#getting-nor-gate">Getting NOR gate</a></h3>
 <p>There is a specific syntax within HDL languages that must be followed to instantiate components within larger designs. Not only must a developer get the syntax correct, the developer must know all the I/O ports to list, which can get out of hand as designs become more complex.</p>
 <p>We introduce the <code>get</code> command.</p>
 <p>Let's generate the VHDL code required to create our NOR gates using our design written in <code>nor_gate.vhd</code>.</p>
@@ -284,7 +289,7 @@ begin
         a =&gt; b,
         b =&gt; b,
         q =&gt; w_b_not);
-
+    
     --perform /a nor /b
     u_A_AND_B : entity work.nor_gate port map(
         a =&gt; w_a_not,
@@ -322,16 +327,21 @@ INFO:   Generating dependency tree...
 <li>see a hierarchical view of the current design</li>
 </ul>
 <p>Next, we will create a testbench file from the template to test our <em>and_gate</em> as well as export our design for use with plugins.</p>
+<blockquote>
+<p><strong>Note:</strong> If at any point you want to stop the tutorial and continue later, you can always reopen your text editor and terminal at the block's root folder, or from anywhere run:
+<code>legohdl open tutorials.gates</code></p>
+</blockquote>
 <br>
-<h1 id="continued"><a class="header" href="#continued">Continued</a></h1>
-<p>The other half to hardware designing involves verification. We will create a testbench to verify our <em>and_gate</em> entity functions as its supposed to according to the following truth table.</p>
+<h1 id="2-building-the-block"><a class="header" href="#2-building-the-block">2. Building the Block</a></h1>
+<h2 id="creating-a-file-from-the-template-and-gate-testbench"><a class="header" href="#creating-a-file-from-the-template-and-gate-testbench">Creating a file from the template: AND Gate Testbench</a></h2>
+<p>The other half to hardware designing involves verification. We will create a testbench to verify the entity <em>and_gate</em> behaves according to the following truth table.</p>
 <table><thead><tr><th>A</th><th>B</th><th>|</th><th>Q</th></tr></thead><tbody>
 <tr><td>0</td><td>0</td><td></td><td>0</td></tr>
 <tr><td>0</td><td>1</td><td></td><td>0</td></tr>
 <tr><td>1</td><td>0</td><td></td><td>0</td></tr>
 <tr><td>1</td><td>1</td><td></td><td>1</td></tr>
 </tbody></table>
-<p>Different types of HDL files can follow similiar code layouts, such as when designing a 2-process FSM or a testbench. For these situations, its beneficial to create a boilerplate template file for when that file is needed in a block.</p>
+<p>Different types of HDL files can follow similiar code layouts, such as when designing a 2-process FSM or a testbench. For these situations, its beneficial to create a boilerplate template file for when that code-style is needed.</p>
 <p>We can see what files exist in our legoHDL template by using the <code>list</code> command.</p>
 <pre><code>$ legohdl list -template
 </code></pre>
@@ -345,7 +355,7 @@ Relative Path                                                Hidden
 </code></pre>
 <p>We have a testbench template file <code>/.hidden/tb/TEMPLATE.vhd</code> available for use within our template, however, it wasn't automatically copied into our project when we created it because it is hidden.</p>
 <p>Let's reference this file for creating our testbench <code>and_gate_tb.vhd</code>.</p>
-<pre><code>$ legohdl new ./test/and_gate_tb.vhd -file=/.hidden/tb/TEMPLATE.vhd
+<pre><code>$ legohdl new ./test/and_gate_tb.vhd -file=&quot;/.hidden/tb/TEMPLATE.vhd&quot;
 </code></pre>
 <p>The contents of <code>and_gate_tb.vhd</code> should resemble the following:</p>
 <pre><code class="language-VHDL">--------------------------------------------------------------------------------
@@ -362,21 +372,21 @@ entity and_gate_tb is
 end entity;
 
 architecture bench of and_gate_tb is
-	--declare DUT component
+    --declare DUT component
 
-	--declare constants/signals
-	constant dly : time := 10 ns;
+    --declare constants/signals
+    constant dly : time := 10 ns;
 
 begin
-	--instantiate DUT
+    --instantiate DUT
 
-	--verify design within process
-	process begin
+    --verify design within process
+    process begin
 
 
-		report &quot;SIMULATION COMPLETE&quot;;
-		wait;
-	end process;
+        report &quot;SIMULATION COMPLETE&quot;;
+        wait;
+    end process;
 
 end architecture;
 </code></pre>
@@ -385,17 +395,165 @@ end architecture;
 <pre><code>$ legohdl get and_gate -comp -inst
 </code></pre>
 <p>The console outputs the following:</p>
-<pre><code>TODO - show terminal output
+<pre><code>--- ABOUT ---
+------------------------------------------------------------------------------
+ Block: tutorials.gates
+ Entity: and_gate
+ Description:
+  Takes two bits and performs the AND operation. Q &lt;- A &amp; B.
+
+  Both A and B are a singular bit and each must be '1' for Q to be '1'. Built
+  from only NOR gates.
+------------------------------------------------------------------------------
+
+--- CODE ---
+component and_gate
+port(
+    a : in  std_logic;
+    b : in  std_logic;
+    q : out std_logic);
+end component;
+
+signal w_a : std_logic;
+signal w_b : std_logic;
+signal w_q : std_logic;
+
+uX : and_gate port map(
+    a =&gt; w_a,
+    b =&gt; w_b,
+    q =&gt; w_q);
 
 </code></pre>
-<p>Copy the component declaration under the line <code>--declare DUT component</code>. Copy the I/O connection signals under the line <code>--declare constants/signals</code>. Copy the instantiation code under the line <code>--instantiate DUT</code>.</p>
+<p>In <code>and_gate_tb.vhd</code>, perform the following:</p>
+<ol>
+<li>Below the line <code>--declare DUT component</code>, copy and paste the component declaration. </li>
+<li>Below the line <code>--declare constants/signals</code>, copy and paste the I/O connection signals. </li>
+<li>Below the line <code>--instantiate DUT</code>, copy and paste the instantiation code.</li>
+</ol>
 <p>Now within our process we write a few lines of code to assert the DUT functions properly.</p>
-<p>The completed testbench <em>and_gate_tb</em> should now be complete.</p>
-<pre><code class="language-VHDL">TODO - show complete and_gate_tb.vhd
+<p>The testbench <em>and_gate_tb</em> is now complete.</p>
+<pre><code class="language-VHDL">--------------------------------------------------------------------------------
+-- Block   : tutorials.gates
+-- Author  : Chase Ruskin
+-- Created : December 16, 2021
+-- Entity  : and_gate_tb
+--------------------------------------------------------------------------------
 
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity and_gate_tb is
+end entity;
+
+architecture bench of and_gate_tb is
+	--declare DUT component
+	component and_gate
+	port(
+		a : in  std_logic;
+		b : in  std_logic;
+		q : out std_logic);
+	end component;
+
+	--declare constants/signals
+	constant dly : time := 10 ns;
+	signal w_a : std_logic;
+	signal w_b : std_logic;
+	signal w_q : std_logic;
+
+begin
+	--instantiate DUT
+	DUT : and_gate port map(
+		a =&gt; w_a,
+		b =&gt; w_b,
+		q =&gt; w_q);
+
+	--verify design within process
+	process begin
+		--test 00
+		w_a &lt;= '0';
+		w_b &lt;= '0';
+		wait for dly;
+		assert w_q = '0' report &quot;(0 &amp; 0) /= 1&quot; severity error;
+		
+		--test 01
+		w_a &lt;= '0';
+		w_b &lt;= '1';
+		wait for dly;
+		assert w_q = '0' report &quot;(0 &amp; 1) /= 1&quot; severity error;
+
+		--test 10 
+		w_a &lt;= '1';
+		w_b &lt;= '0';
+		wait for dly;
+		assert w_q = '0' report &quot;(1 &amp; 0) /= 1&quot; severity error;
+
+		--test 11
+		w_a &lt;= '1';
+		w_b &lt;= '1';
+		wait for dly;
+		assert w_q = '1' report &quot;(1 &amp; 1) /= 0&quot; severity error;
+
+		report &quot;SIMULATION COMPLETE&quot;;
+		wait;
+	end process;
+
+end architecture;
+</code></pre>
+<p>Our testbench uses an instance of the entity <em>and_gate</em>. Let's verify this with the <code>graph</code> command like last time.</p>
+<pre><code>$ legohdl graph
+</code></pre>
+<h2 id="building-the-design"><a class="header" href="#building-the-design">Building the design</a></h2>
+<p>At this point in the design process, we want to verify that <em>and_gate</em> is performing correctly before we begin using it. We introduce 2 new commands to handle this: <code>export</code> and <code>build</code>.</p>
+<blockquote>
+<p><strong>Note:</strong> For the purposes of this tutorial trying to be as dependency-free as possible so that everyone may follow it, we will utilize a <em>pseudo-plugin</em> called <strong>demo</strong>. This is a legoHDL plugin that mainly just prints text to the console. We will use this to avoid assuming/forcing a backend EDA tool/simulator.</p>
+</blockquote>
+<p>From the <code>graph</code> command, we can see legoHDL knows how our designs are connected, yet our plugin does not. We need a way to tell our plugin what files we need to build our current design. We will create a <a href="./../glossary.html#blueprint">blueprint</a> for our plugin to understand what files are needed.</p>
+<pre><code>$ legohdl export
+</code></pre>
+<p>Now that the blueprint is created, we can build our project with a plugin. Let's look at what plugins we have available.</p>
+<pre><code>$ legohdl list -plugin
+Alias           Command     
+--------------- ----------------------------------------------------------------
+hello           echo &quot;hello world!&quot;
+demo            python $LEGOHDL/plugins/demo.py
+</code></pre>
+<p>We currently have 2 plugins at our disposal: <strong>hello</strong> and <strong>demo</strong>.
+The <strong>hello</strong> plugin will only output &quot;hello world!&quot; to our console; not helpful at all but demonstrates that plugins are at the most basic level: a command.</p>
+<pre><code>$ legohdl build +hello
+INFO:   echo &quot;hello world!&quot; 
+hello world!
+</code></pre>
+<p>Run the <strong>demo</strong> plugin.</p>
+<pre><code>$ legohdl build +demo
+</code></pre>
+<p>The plugin's help text will display due to the plugin defining this funcitonality. legoHDL's role in this situation is to only pass off the command <code>python $LEGOHDL/plugins/demo.py</code> to the terminal to execute.</p>
+<blockquote>
+<p><strong>Note:</strong> All arguments after the plugin's alias will be also passed down from legoHDL to the terminal when it executes the plugin's command.</p>
+</blockquote>
+<p>Run the <strong>demo</strong> plugin to perform a pseudo-simulation.</p>
+<pre><code>$ legohdl build +demo -sim
+INFO:   python $LEGOHDL/plugins/demo.py -sim 
+echo PSEUDO SIMULATOR 
+PSEUDO SIMULATOR
+Compiling files...
+VHDL /Users/chase/develop/primary/tutorials/gates/src/nor_gate.vhd
+VHDL /Users/chase/develop/primary/tutorials/gates/src/and_gate.vhd
+VHDL /Users/chase/develop/primary/tutorials/gates/test/and_gate_tb.vhd
+Running simulation using testbench and_gate_tb...
+Simulation complete.
 </code></pre>
 <br>
+<h1 id="review-1"><a class="header" href="#review-1">Review</a></h1>
+<p>Great job! We learned how to:</p>
+<ul>
+<li>create a file using the template</li>
+<li>export a blueprint file of the current design</li>
+<li>execute a plugin to perform an action using a blueprint</li>
+</ul>
+<p>In the final part of this chapter, we will make an XOR gate and complete our first project: <em>gates</em>.</p>
 <br>
+<h1 id="3-releasing-the-block"><a class="header" href="#3-releasing-the-block">3. Releasing the Block</a></h1>
+<h2 id="one-more-design-xor-gate"><a class="header" href="#one-more-design-xor-gate">One more design: XOR Gate</a></h2>
 <p>Our final design for the <em>gates</em> block will be an XOR gate.</p>
 <p>Let's review the schematic for an XOR gate from purely NOR gates.</p>
 <p><img src="./../images/XOR_from_NOR.svg.png" alt="xor_from_nor" /></p>
