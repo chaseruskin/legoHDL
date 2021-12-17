@@ -5,15 +5,15 @@
 # Created: 09/19/2021
 # Plugin: demo
 # Usage:
-#   legohdl +demo (-lint | -synth | -route | -sim) [-gen <g1>=<val1> 
-#   <g2>=<val2> ...]
+#   legohdl build +demo (-lint | -synth | -route | -sim)
 #
 # Description:
 #   A fake EDA tool script to be a plugin for legoHDL.
 #
 #   This script is used in the tutorials for legoHDL and can be an outline
 #   for how a developer can structure a plugin. In this plugin, workflows 
-#   are executed that only print related information to the console.
+#   are executed that only print related information to the console. Supports
+#   custom label PIN-MAP for reading .csv files during route stage.
 #
 # Options:
 #   -lint
@@ -24,9 +24,6 @@
 #       Simulate routing/assigning pins for the design.
 #   -sim
 #       Simulate a simulation is being performed with an HDL testbench.
-#   -gen <generic1>=<value1> <generic2>=<value2> ...       
-#       Any arguments proceeding '-gen' are VHDL generics or verilog 
-#       parameters passed to the top-level design.
 #
 # Help:
 #   https://c-rus.github.io/legoHDL/
@@ -69,12 +66,10 @@ DEVICE = "A2CG1099-1"
 #the project will reside in a folder the same name as the current block's folder
 PROJECT = os.path.basename(os.getcwd())
 
-
 HELP_TXT = '''\
 Plugin: demo
 Usage:
-  legohdl +demo (-lint | -synth | -route | -sim) [-gen <g1>=<val1> 
-  <g2>=<val2> ...]
+  legohdl build +demo (-lint | -synth | -route | -sim)
 
 Description:
   A fake EDA tool script to be a plugin for legoHDL.
@@ -92,9 +87,6 @@ Options:
       Simulate routing/assigning pins for the design.
   -sim
       Simulate a simulation is being performed with an HDL testbench.
-  -gen <generic1>=<value1> <generic2>=<value2> ...       
-      Any arguments proceeding '-gen' are VHDL generics or verilog 
-      parameters passed to the top-level design.
 '''
 
 # === Handle command-line arguments ============================================
@@ -111,26 +103,14 @@ synthesize = args.count('-synth')
 simulate   = args.count('-sim')
 route      = args.count('-route')
 
-#identify if there are any generics set on command-line
-generics = {}
-if(args.count('-gen')):
-    start_i = args.index('-gen')
-    #iterate through remaining arguments to capture generic value sets
-    for i in range(start_i+1, len(args)):
-        #split by '=' sign
-        if(args[i].count('=') == 1):
-            name,value = args[i].split('=')
-            generics[name] = value
-
-
 # === Collect data from the blueprint file =====================================
 #   Gather the data available from the blueprint to be able to use it for some
 #   desirable task.
 # ==============================================================================
 
 #enter the 'build' directory; this is where the blueprint file is located
-if(os.path.exists('build') == False):
-    exit("Export a blueprint file before running this plugin!")
+if(os.path.exists('build') == False or os.path.exists('build/blueprint') == False):
+    exit("Error: Export a blueprint file before running this plugin.")
 
 os.chdir('build')
 
@@ -139,6 +119,7 @@ src_files = {'VHDL' : [], 'VLOG' : []}
 sim_files = {'VHDL' : [], 'VLOG' : []}
 lib_files = {'VHDL' : {}, 'VLOG' : {}}
 top_design = top_testbench = None
+pin_file = None
 
 #read the contents of the blueprint file
 with open('blueprint', 'r') as blueprint:
@@ -192,6 +173,10 @@ with open('blueprint', 'r') as blueprint:
         elif(label == "@VLOG-SIM"):
             sim_files['VLOG'].append(filepath)
 
+        #add support for custom pin-assignment file using .csv
+        elif(label == "@PIN-MAP"):
+            pin_file = filepath
+
     pass
 
 
@@ -202,8 +187,8 @@ with open('blueprint', 'r') as blueprint:
 
 #[!] perform syntax checking
 if(lint):
-    execute(TOOL_PATH,"Checking design syntax...")
-    print("---FILES ANALYZED----")
+    execute(TOOL_PATH,"PSEUDO SYNTAX CHECKER")
+    print("Analyzing files...")
     #print souce files being analyzed
     for l in src_files.keys():
         for f in src_files[l]:
@@ -212,39 +197,39 @@ if(lint):
     for l in sim_files.keys():
         for f in sim_files[l]:
             print(l,f)
+    print('Analysis complete.')
     pass
 
 #[!] perform simulation
 elif(simulate):    
     if(top_testbench == None):
-        exit("Error: No top level testbench found.")
-    #format generics for as a command-line argument for test vector script
-    generics_command = ''
-    for g,v in generics.items():
-        generics_command += '-'+g+'='+v+' '
+        exit("Error: No toplevel testbench found.")
 
-    execute(TOOL_PATH,"Simulating design with tesbench...")
-    print('---RUNNING SIMULATION---')
-    print('TOP:',top_testbench)
-    #print out any generics we set on command-line
-    if(len(generics)):
-        print('GENERICS SET:',)
-        for g,v in generics.items():
-            print(g,'=',v)
+    #call our pseudo-tool
+    execute(TOOL_PATH,"PSEUDO SIMULATOR")
+
+    print('Compiling files...')
+    #print souce files being compiled
+    for l in src_files.keys():
+        for f in src_files[l]:
+            print(l,f)
+    #print simulation fies being compiled
+    for l in sim_files.keys():
+        for f in sim_files[l]:
+            print(l,f)
+    print('Running simulation using testbench '+top_testbench+'...')
+    print('Simulation complete.')
     pass
 
 #[!] perform synthesis
 elif(synthesize):
     if(top_design == None):
-        exit("Error: No top level design found.")
-    execute(TOOL_PATH,"Synthesizing design...")
-    print('---FILES SYNTHESIZED---')
-    print("TOP:",top_design)
-    #print out any generics we set on command-line
-    if(len(generics)):
-        print('GENERICS SET:',)
-        for g,v in generics.items():
-            print(g,'=',v)
+        exit("Error: No toplevel design found.")
+
+    #call our pseudo-tool
+    execute(TOOL_PATH,"PSEUDO SYNTHESIZER")
+
+    print('Synthesizing design for toplevel '+top_design+'...')
     #print all files being synthesized
     for l in src_files.keys():
         for f in src_files[l]:
@@ -254,15 +239,36 @@ elif(synthesize):
         for lib in lib_files[f_type].keys():
             for f in lib_files[f_type][lib]:
                 print(f_type,lib,f)
+    print('Synthesis complete.')
     pass
 
 #[!] perform routing/fitting
 elif(route):
-    execute(TOOL_PATH,"Routing design to pins...")
-    print("----PINS ALLOCATED-----")
+    if(pin_file == None):
+        exit("Error: no routing file (.csv) was found for label @PIN-MAP.")
+
     pin_assignments = []
-    for pin,port in pin_assignments.items():
-        print(pin,'-->',port)
+    #open and read data from pin mapping file
+    with open(pin_file, 'r') as f:
+        for line in f.readlines():
+            line = line.strip()
+            #skip empty lines
+            if(len(line) == 0):
+                continue
+            #split by comma
+            parts = line.split(',')
+            #add to pin assignments
+            if(len(parts) > 1):
+                pin_assignments += [(parts[0], parts[1])]
+            pass
+
+    #call our pseudo-tool
+    execute(TOOL_PATH,"PSEUDO PIN MAPPER")
+
+    print("Routing pins for device "+DEVICE+"...")
+    for grps in pin_assignments:
+        print(grps[0],'-->',grps[1])
+    print("Pin assignments complete.")
     pass
 
 #[!] Perform no action
