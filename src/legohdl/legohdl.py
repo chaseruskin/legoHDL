@@ -1519,7 +1519,7 @@ Enter:
             pass
 
         print('\nUsage: \
-        \n\tlegohdl <command> [argument] [flags]\
+        \n\tlegohdl <command> [entry] [<flags>] [-h]\
         \n')
         print("Commands:")
 
@@ -1543,7 +1543,7 @@ Enter:
         formatHelp("update","update an installed block to be its latest version")
         formatHelp("info","read further detail about a block")
         formatHelp("config","modify legohdl settings")
-        print("\nType \'legohdl help <command>\' to read about the entered command.")
+        print("\nType \'legohdl help <command>\' to read about that command.")
         pass
 
 

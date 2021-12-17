@@ -8,13 +8,16 @@
 
 - [Tutorials](./tutorials/tutorials.md)
     - [First Project: Gates](./tutorials/first_project_gates.md)
-    - [Referencing Blocks: Comparator](./tutorials/ref_blocks_comparator.md)
+    - [Using Blocks: Comparator](./tutorials/ref_blocks_comparator.md)
 
 - [User Guide](./user_guide/user_guide.md)
+    - [Managing Settings](./user_guide/managing_settings.md)
 
 - [Topic Guide](./topic_guide/topic_guide.md)
+    - [Intelligent Component Recognition](./topic_guide/intell_comp_rec.md)
 
 - [Reference](./reference/reference.md)
+    - [.cfg Files](./reference/cfg_files.md)
 
 - [Commands](./commands/commands.md)
     - [Development](./commands/development.md)

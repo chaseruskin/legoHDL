@@ -1,6 +1,10 @@
 # First Project: Gates
 
 On this page, we will go through the entire process for creating, building, and releasing a [block](./../glossary.md#block).
+1. [Creating](./first_project_gates.md#1-creating-the-block)
+2. [Building](./first_project_gates.md#2-building-the-block)
+3. [Releasing](./first_project_gates.md#3-releasing-the-block)
+
 <br>
 
 # 1. Creating the Block
