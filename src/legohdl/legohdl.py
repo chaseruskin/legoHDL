@@ -465,6 +465,9 @@ Enter:
                 print(Unit.Hierarchy.output(top_dog, compress=True))
             pass
 
+        #update block's requirements
+        block.updateRequires(quiet=(not verbose))
+
         build_dir = block.getPath()+apt.getBuildDirectory()
 
         #clean the build directory
@@ -564,9 +567,6 @@ Enter:
 
         if(verbose):
             log.info("Blueprint found at: "+blueprint_path)
-
-        #update block's dependencies
-        block.updateRequires(quiet=(not verbose))
         pass
 
 

@@ -8,6 +8,7 @@
 
 - [Tutorials](./tutorials/tutorials.md)
     - [First Project: Gates](./tutorials/first_project_gates.md)
+    - [Referencing Blocks: Comparator](./tutorials/ref_blocks_comparator.md)
 
 - [User Guide](./user_guide/user_guide.md)
 

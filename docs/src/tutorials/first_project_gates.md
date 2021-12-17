@@ -1,20 +1,23 @@
 # First Project: Gates
 
-legoHDL groups HDL code into [blocks](./../glossary.md#block). Blocks are essentially your projects, but identified by legoHDL due to a [Block.cfg](./../glossary.md#blockcfg) existing at the project's root folder.
-
+On this page, we will go through the entire process for creating, building, and releasing a [block](./../glossary.md#block).
 <br>
 
 # 1. Creating the Block
 
-Let's create our first block, under the name _gates_, which will be under the library _tutorials_. _Gates_ will be a project involving various logical gates such as NOR, AND, and XOR.
-
+Let's create our first block, under the name _gates_, which will be under the [library](./../glossary.md#library) _tutorials_. _Gates_ will be a project involving two logical gates: NOR and AND.
 ```
-$ legohdl new tutorials.gates -open
+$ legohdl new tutorials.gates
 ```
 
-Our text-editor should have now opened at the block's root folder and a couple of files should be automatically added to our block. This is because we used the template loaded in by the default profile during [initial setup](./../getting_started/2_initial_setup.md). 
+Open the block using your configued text-editor.
+```
+$ legohdl open tutorials.gates
+```
 
-> __Note:__ The commands presented in this tutorial assume they are ran from the block's root folder.
+Your text-editor should have opened the block's root folder and a couple of files should be automatically added in the block. This is because a template was used, which we loaded during [initial setup](./../getting_started/2_initial_setup.md).
+
+> __Note:__ The commands presented throughout the remainder of this page assume they are ran from the block's root folder.
 
 
 ## Creating a new design: NOR Gate
@@ -224,25 +227,12 @@ INFO:   Generating dependency tree...
 
 ```
 
-<br>
-
-# Review
-
-Nice work! We learned how to:
-- create a new block 
-- use legoHDL for basic interaction with your HDL code files
-- see a hierarchical view of the current design
-
-Next, we will create a testbench file from the template to test our _and_gate_ as well as export our design for use with plugins.
-
 > __Note:__ If at any point you want to stop the tutorial and continue later, you can always reopen your text editor and terminal at the block's root folder, or from anywhere run:
 ```legohdl open tutorials.gates```
 
 <br>
 
 # 2. Building the Block
-
-## Creating a file from the template: AND Gate Testbench
 
 The other half to hardware designing involves verification. We will create a testbench to verify the entity _and_gate_ behaves according to the following truth table.
 
@@ -253,15 +243,14 @@ The other half to hardware designing involves verification. We will create a tes
 | 1  | 0  |  | 0  |
 | 1  | 1  |  | 1  |
 
+## Creating a file from the template
+
 Different types of HDL files can follow similiar code layouts, such as when designing a 2-process FSM or a testbench. For these situations, its beneficial to create a boilerplate template file for when that code-style is needed.
 
 We can see what files exist in our legoHDL template by using the `list` command.
 
 ```
 $ legohdl list -template
-```
-The console outputs the following:
-```
 INFO:   Files available within the selected template: C:/Users/chase/.legohdl/template/
 Relative Path                                                Hidden  
 ------------------------------------------------------------ --------
@@ -272,14 +261,12 @@ Relative Path                                                Hidden
 
 We have a testbench template file `/.hidden/tb/TEMPLATE.vhd` available for use within our template, however, it wasn't automatically copied into our project when we created it because it is hidden.
 
-Let's reference this file for creating our testbench `and_gate_tb.vhd`.
-
+Reference this file for creating our testbench `and_gate_tb.vhd`.
 ```
 $ legohdl new ./test/and_gate_tb.vhd -file="/.hidden/tb/TEMPLATE.vhd"
 ```
 
 The contents of `and_gate_tb.vhd` should resemble the following:
-
 ```VHDL
 --------------------------------------------------------------------------------
 -- Block   : tutorials.gates
@@ -313,6 +300,8 @@ begin
 
 end architecture;
 ```
+
+## Getting a component declaration and instantiation
 
 Now we need to instantiate our Design-Under-Test (DUT), which is _and_gate_, and run it through the previous truth table.
 
@@ -436,7 +425,7 @@ Our testbench uses an instance of the entity _and_gate_. Let's verify this with 
 $ legohdl graph
 ```
 
-## Building the design
+## Generating a blueprint
 
 At this point in the design process, we want to verify that _and_gate_ is performing correctly before we begin using it. We introduce 2 new commands to handle this: `export` and `build`.
 
@@ -447,6 +436,12 @@ From the `graph` command, we can see legoHDL knows how our designs are connected
 ```
 $ legohdl export
 ```
+The last line from the console should say where the blueprint file is located:
+```
+INFO:   Blueprint found at: C:/Users/chase/develop/hdl/tutorials/gates/build/blueprint
+```
+
+## Building a design
 
 Now that the blueprint is created, we can build our project with a plugin. Let's look at what plugins we have available.
 
@@ -458,7 +453,7 @@ hello           echo "hello world!"
 demo            python $LEGOHDL/plugins/demo.py
 ```
 We currently have 2 plugins at our disposal: __hello__ and __demo__.
-The __hello__ plugin will only output "hello world!" to our console; not helpful at all but demonstrates that plugins are at the most basic level: a command.
+The __hello__ plugin will only output "hello world!" to our console; not helpful at all but demonstrates that plugins are at the most basic level a command.
 
 ```
 $ legohdl build +hello
@@ -466,54 +461,103 @@ INFO:   echo "hello world!"
 hello world!
 ```
 
-Run the __demo__ plugin.
+Build with the __demo__ plugin.
 ```
 $ legohdl build +demo
 ```
-The plugin's help text will display due to the plugin defining this funcitonality. legoHDL's role in this situation is to only pass off the command `python $LEGOHDL/plugins/demo.py` to the terminal to execute.
+The plugin's help text will display due to the plugin internally defining this functionality. legoHDL's role during `build` is to only pass off the command `python $LEGOHDL/plugins/demo.py` to the terminal to execute.
 
 > __Note:__ All arguments after the plugin's alias will be also passed down from legoHDL to the terminal when it executes the plugin's command.
 
-Run the __demo__ plugin to perform a pseudo-simulation.
+Build with the __demo__ plugin to perform a pseudo-simulation.
 ```
 $ legohdl build +demo -sim
 INFO:   python $LEGOHDL/plugins/demo.py -sim 
 echo PSEUDO SIMULATOR 
 PSEUDO SIMULATOR
 Compiling files...
-VHDL /Users/chase/develop/primary/tutorials/gates/src/nor_gate.vhd
-VHDL /Users/chase/develop/primary/tutorials/gates/src/and_gate.vhd
-VHDL /Users/chase/develop/primary/tutorials/gates/test/and_gate_tb.vhd
+VHDL C:/Users/chase/develop/hdl/tutorials/gates/src/nor_gate.vhd
+VHDL C:/Users/chase/develop/hdl/tutorials/gates/src/and_gate.vhd
+VHDL C:/Users/chase/develop/hdl/tutorials/gates/test/and_gate_tb.vhd
 Running simulation using testbench and_gate_tb...
 Simulation complete.
 ```
 
 <br>
 
-# Review
-Great job! We learned how to:
-- create a file using the template
-- export a blueprint file of the current design
-- execute a plugin to perform an action using a blueprint
-
-In the final part of this chapter, we will make an XOR gate and complete our first project: _gates_.
-
-<br>
-
 # 3. Releasing the Block
 
-## One more design: XOR Gate
 
-Our final design for the _gates_ block will be an XOR gate.
+## Creating a block-level VHDL package
 
-Let's review the schematic for an XOR gate from purely NOR gates.
+Before we release the first version, let's create a package file that consists of all the component declarations available within this block. A package is an optional but helpful VHDL unit that will allow easier reference to these components later. legoHDL automates this package file creation.
+```
+$ legohdl export -pack="./src/gates.vhd"
+```
 
-![xor_from_nor](./../images/XOR_from_NOR.svg.png)
+We specified the VHDL package file to be created at `./src/gates.vhd`. Opening the file shows the following contents.
 
-Notice how the upper 3 NOR gates are the equivalent to the AND gate we previously designed. Rather than using 5 instances of a NOR gate, we will save time by using 1 AND gate instance and 2 instances of the NOR gate.
-
-Create a new file from our template called `xor_gate.vhd`.
+```VHDL
+--------------------------------------------------------------------------------
+-- Block: tutorials.gates
+-- Created: December 16, 2021
+-- Package: gates
+-- Description:
+--  Auto-generated package file by legoHDL. Components declared:
+--      nor_gate    and_gate    
+--------------------------------------------------------------------------------
+ 
+library ieee;
+use ieee.std_logic_1164.all;
+ 
+package gates is
+ 
+    component nor_gate
+    port(
+        a : in  std_logic;
+        b : in  std_logic;
+        q : out std_logic);
+    end component;
+ 
+    component and_gate
+    port(
+        a : in  std_logic;
+        b : in  std_logic;
+        q : out std_logic);
+    end component;
+ 
+end package;
 
 ```
-$ legohdl new ./src/xor_gate.vhd -file=/.hidden/dsgn/TEMPLATE.vhd
+
+## Setting the first version
+
+We are done making changes and working with the HDL code within this block; it's time for release! We will call this version 1.0.0.
 ```
+$ legohdl release v1.0.0
+```
+
+We can check the status of all of our workspace's blocks in the catalog using the `list` command.
+
+```
+$ legohdl list
+Library          Block                Status   Version    Vendor          
+---------------- -------------------- -------- ---------- ----------------
+tutorials        gates                D I      1.0.0                             
+```
+
+Notice that the `release` command also installed the _gates_ block to the workspace cache, indicated by the `I` in status.
+The `D` indicates the block is also downloaded/developing because it is found in our workspace's local development path.
+
+# Page Review
+
+Woo-hoo! We learned how to:
+- create a new block and new files with `new`
+- view blocks, plugins, and template files with `list`
+- check how our design connects together with `graph`
+- generate a blueprint file of the current design with `export`
+- build with a plugin that will perform some desired action with `build`
+- create a VHDL package file consisting of the block's components with `export -pack`
+- release a completed block with a specified version with `release`
+
+On the next page, we will see how legoHDL handles using HDL designs from external blocks by making a new block _comparator_ that will require the _gates_ block.
