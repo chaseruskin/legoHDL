@@ -807,7 +807,7 @@ The <code>D</code> indicates the block is also downloaded/developing because it 
 <div style="break-before: page; page-break-before: always;"></div><h1 id="topic-guide"><a class="header" href="#topic-guide">Topic Guide</a></h1>
 <p>In this chapter, we go in-depth explaining legoHDL and its major concepts.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="intelligent-component-recognition-icr"><a class="header" href="#intelligent-component-recognition-icr">Intelligent Component Recognition (ICR)</a></h1>
-<p>Both VHDL and Verilog have very limited levels of scopes: although VHDL has libraries for design units, Verilog has no such concept.</p>
+<p>Both VHDL and Verilog have limited levels of scopes; although VHDL has libraries for design units, Verilog has no such concept.</p>
 <p>This page describes how legoHDL handles <em>scope-overlapping</em>.</p>
 <h3 id="what-is-scope-overlapping"><a class="header" href="#what-is-scope-overlapping">What is <em>scope-overlapping?</em></a></h3>
 <p>For this document, we define <em>scope-overlapping</em> to be when two unique design units share the same scope and identifier.</p>
@@ -864,14 +864,13 @@ end entity;
         ... 
     ) port map ( 
         ... 
-    )
+    );
 </code></pre>
 <p>The problem lies in that <code>math.adder</code> may refer to either entity.</p>
 <p>As the developer, your latest project involves using the adder from the <em>counter</em> block, yet how would legoHDL know this when the identifiers to instantiate the unit is the same?</p>
 <h2 id="the-solution-icr"><a class="header" href="#the-solution-icr">The Solution: ICR</a></h2>
-<p>ICR is a scoring algorithm ran when <em>scope-overlapping</em> occurs in the design. </p>
-<p>ICR selects the unit with the highest computed score among its contenders. </p>
-<p>We define a <em>contender</em> to be those unique entities that share the same space in scope-overlapping. In the problem statement above, there are 2 contenders: the <em>adder</em> from <em>ALU</em> and the <em>adder</em> from <em>counter</em>.</p>
+<p>ICR is a scoring algorithm ran when <em>scope-overlapping</em> occurs in the current design. It selects the unit with the highest computed score among its contenders. </p>
+<p>We define a <em>contender</em> to be those unique entities that share the same space a in <em>scope-overlapping</em> problem. In the problem statement above, there are 2 contenders: the <em>adder</em> from <em>math.ALU</em> and the <em>adder</em> from <em>math.counter</em>.</p>
 <p>We define an <em>interface</em> as the collective combination of an entity's defined generics and ports.</p>
 <p>We define the <em>instance</em> as the code that could lead to multiple entity solutions based off its identifier (<code>math.adder</code> in the problem stated). </p>
 <p>ICR gathers the interface data from all contenders as well as the interface data defined in the mapping of the instance. Based on this data and a set of known rules, it begins to calculate scores and rule out ineligible contenders.</p>
@@ -882,7 +881,7 @@ end entity;
 <li>If a contender's interface does not define a default value for a generic or an input port, the instance must have that generic or input port mapped. Failure to have this mapping will cause the contender to be ineligible.</li>
 <li>If any generic or port from the instance is not found in the contender's interface, the contender must be ruled inelgibile.</li>
 </ul>
-<h2 id="solving-the-example-problem"><a class="header" href="#solving-the-example-problem">Solving the example problem</a></h2>
+<h2 id="solving-the-problem"><a class="header" href="#solving-the-problem">Solving the problem</a></h2>
 <p>Using the <code>legohdl get</code> command, you as the developer would instantiate the <em>adder</em> from <em>counter</em> with the following output.</p>
 <pre><code>$ legohdl get math.counter:adder -inst
 --- ABOUT ---
@@ -944,7 +943,7 @@ end architecture;
 <blockquote>
 <p><strong>Note:</strong> A '(G)' represents a generic defined, while '(IN)' and '(OUT)' represents input and output ports, respectively. Notice for the instance we are unable to determine the port directions from code. A '*' indicates it has a default value (and thus may be omitted from the instance code).</p>
 </blockquote>
-<p>Since both A and B have the generic N, we cannot determine yet which one the instance belongs to. We move on to the ports.</p>
+<p>Since both A and B have the generic N, we cannot determine which one the instance belongs to yet. We move on to the ports.</p>
 <table><thead><tr><th>contender A</th><th>contender B</th></tr></thead><tbody>
 <tr><td>1</td><td>1</td></tr>
 </tbody></table>
@@ -952,11 +951,11 @@ end architecture;
 <table><thead><tr><th>contender A</th><th>contender B</th></tr></thead><tbody>
 <tr><td>2</td><td>2</td></tr>
 </tbody></table>
-<p>Contender A has an input port &quot;input1&quot;, which matches with a piece of the instance. A's score gets +1. Contender B has no such port, and thus it is ineligible. At this point ICR knows which entity the instance belongs to. We will carry the remaining checks out for completeness.</p>
+<p>Contender A has an input port &quot;input1&quot;, which matches with a name in the instance's interface. A's score gets +1. Contender B has no such port, and thus it is ineligible. At this point ICR knows which entity the instance belongs to. We will carry the remaining checks out for completeness.</p>
 <table><thead><tr><th>contender A</th><th>contender B</th></tr></thead><tbody>
 <tr><td>3</td><td>0</td></tr>
 </tbody></table>
-<p>Contender A has an input port &quot;input2&quot;, which matches a piece of the instance and thus gets +1. Contender B no longer can check against the instance interface due to being previously ineligible/disqualified.</p>
+<p>Contender A has an input port &quot;input2&quot;, which matches a name in the instance's interface and thus gets +1. Contender B no longer can check against the instance interface due to being previously ineligible/disqualified.</p>
 <table><thead><tr><th>contender A</th><th>contender B</th></tr></thead><tbody>
 <tr><td>4</td><td>0</td></tr>
 </tbody></table>
