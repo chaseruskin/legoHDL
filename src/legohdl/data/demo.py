@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 # File: demo.py
 # Author: Chase Ruskin
-# Modified: 12/15/2021
+# Modified: 12/16/2021
 # Created: 09/19/2021
 # Plugin: demo
 # Usage:
@@ -17,13 +17,13 @@
 #
 # Options:
 #   -lint
-#       Simulate checking the syntax of HDL files.
+#       Pseudo-check the syntax of HDL files.
 #   -synth
-#       Simulate synthesising the design.
+#       Pseudo-synthesize the toplevel design.
 #   -route
-#       Simulate routing/assigning pins for the design.
+#       Pseudo-route pins for the toplevel design to a fake FPGA device.
 #   -sim
-#       Simulate a simulation is being performed with an HDL testbench.
+#       Pseudo-simulate the toplevel testbench.
 #
 # Help:
 #   https://c-rus.github.io/legoHDL/
@@ -80,13 +80,13 @@ Description:
 
 Options:
   -lint
-      Simulate checking the syntax of HDL files.
+      Pseudo-check the syntax of HDL files.
   -synth
-      Simulate synthesising the design.
+      Pseudo-synthesize the toplevel design.
   -route
-      Simulate routing/assigning pins for the design.
+      Pseudo-route pins for the toplevel design to a fake FPGA device.
   -sim
-      Simulate a simulation is being performed with an HDL testbench.
+      Pseudo-simulate the toplevel testbench.
 '''
 
 # === Handle command-line arguments ============================================
@@ -180,9 +180,8 @@ with open('blueprint', 'r') as blueprint:
     pass
 
 
-# === Act on the collected data ================================================
-#   Now that we have the data, call your tool to perform a specific task with
-#   this data.
+# === Take action with the data collected ======================================
+#   Now that we have the data, call your tool to perform a specific task.
 # ==============================================================================
 
 #[!] perform syntax checking
