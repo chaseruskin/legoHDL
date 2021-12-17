@@ -138,7 +138,7 @@ begin
 end architecture;
 ```
 
-To build the latest design, we must export the blueprint file for our plugin to use.
+To build the latest design, we must export the [blueprint](./../glossary.md#blueprint) file for our [plugin](./../glossary.md#plugin) to use.
 
 During export, ICR is ran to determine which contender the given instance should belong to in order to complete the design hierarchy tree.
 
