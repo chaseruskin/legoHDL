@@ -499,13 +499,26 @@ end architecture;
 </code></pre>
 <p>Our testbench uses an instance of the entity <em>and_gate</em>. Let's verify this with the <code>graph</code> command like last time.</p>
 <pre><code>$ legohdl graph
+INFO:   Identified top-level unit: and_gate
+INFO:   Identified top-level testbench: and_gate_tb
+INFO:   Generating dependency tree...
+--- DEPENDENCY TREE ---
+\- tutorials.and_gate_tb 
+   \- tutorials.and_gate 
+      \- tutorials.nor_gate 
+
+
+--- BLOCK ORDER ---
+[1]^-   tutorials.gates(@v0.0.0)
+
 </code></pre>
 <h2 id="generating-a-blueprint"><a class="header" href="#generating-a-blueprint">Generating a blueprint</a></h2>
 <p>At this point in the design process, we want to verify that <em>and_gate</em> is performing correctly before we begin using it. We introduce 2 new commands to handle this: <code>export</code> and <code>build</code>.</p>
 <blockquote>
 <p><strong>Note:</strong> For the purposes of this tutorial trying to be as dependency-free as possible so that everyone may follow it, we will utilize a <em>pseudo-plugin</em> called <strong>demo</strong>. This is a legoHDL plugin that mainly just prints text to the console. We will use this to avoid assuming/forcing a backend EDA tool/simulator.</p>
 </blockquote>
-<p>From the <code>graph</code> command, we can see legoHDL knows how our designs are connected, yet our plugin does not. We need a way to tell our plugin what files we need to build our current design. We will create a <a href="./../glossary.html#blueprint">blueprint</a> for our plugin to understand what files are needed.</p>
+<p>From the <code>graph</code> command, we can see legoHDL knows how our designs are connected, yet our <a href="./../glossary.html#plugin">plugin</a> does not. We need a way to tell our plugin what files we need to build our current design.</p>
+<p>Create a <a href="./../glossary.html#blueprint">blueprint</a> so any plugin can know what files will be are needed.</p>
 <pre><code>$ legohdl export
 </code></pre>
 <p>The last line from the console should say where the blueprint file is located:</p>

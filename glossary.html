@@ -149,28 +149,30 @@
 <h3 id="available"><a class="header" href="#available">Available</a></h3>
 <p><em>Available</em> refers to a level at which the block is seen in the <a href="./glossary.html#catalog">catalog</a>. A block has available status (A) when the block is within a vendor that is linked to the active workspace. Blocks cannot be used nor opened from this level.</p>
 <h3 id="backend-tool"><a class="header" href="#backend-tool">Backend Tool</a></h3>
-<p>In this context, a <em>backend</em> <em>tool</em> is a software program capable of performing a specific task on HDL source files. Some examples are: Quartus, Vivado, and GHDL.</p>
+<p>In this context, a <em>backend</em> <em>tool</em> is a software program capable of performing a specific task on HDL files. Some examples are: Quartus, Vivado, and GHDL.</p>
 <h3 id="block"><a class="header" href="#block">Block</a></h3>
-<p>A legoHDL <em>block</em> is a folder containing HDL source code and any supporting files. Every block has a special <a href="./glossary.html#blockcfg">Block.cfg</a> metadata file. These are the &quot;packages&quot; that this package manager manages.</p>
-<p>Since a block contains the HDL source code, blocks therefore contain HDL <a href="./glossary.html#unit">units</a>.</p>
+<p>A legoHDL <em>block</em> is a <a href="./glossary.html#project">project</a> that contains a special <a href="./glossary.html#blockcfg">Block.cfg</a> metadata file at its root folder. These are the &quot;packages&quot; that this <a href="./glossary.html#package-manager">package manager</a> manages.</p>
+<p>Since a block contains the HDL code, blocks therefore contain HDL <a href="./glossary.html#unit">units</a>.</p>
 <h3 id="blockcfg"><a class="header" href="#blockcfg">Block.cfg</a></h3>
-<p>The <em>Block.cfg</em> file is a metadata configuration file that follows similiar syntax to that of an ini file. legoHDL uses this file to mark its directory as a block.</p>
+<p>The <em>Block.cfg</em> file is a metadata configuration file that follows similiar syntax to that of an ini file. legoHDL uses this file to mark that folder as a <a href="./glossary.html#block">block</a>.</p>
 <h3 id="block-identifier"><a class="header" href="#block-identifier">Block Identifier</a></h3>
 <p>A <em>block</em> <em>identifier</em> is a unique case-insensitive title for a block composed of 3 sections: <a href="./glossary.html#vendor">vendor</a>, <a href="./glossary.html#library">library</a>, and name. An identifier's sections are separated by a dot (<code>.</code>). The vendor section is optional and can be left blank.</p>
 <h3 id="blueprint"><a class="header" href="#blueprint">Blueprint</a></h3>
-<p>A <em>blueprint</em> is the outputted text file when a block is exported for building. It mainly consists of <a href="./glossary.html#label">labels</a> and their respective file paths. </p>
+<p>A <em>blueprint</em> is the outputted plain text file when a block is exported for building. It mainly consists of <a href="./glossary.html#label">labels</a> and their respective file paths. A blueprint is the &quot;glue&quot; between legoHDL and any <a href="./glossary.html#plugin">plugin</a>.</p>
 <p>This file is always created in the <code>build/</code> directory found at the root of the current block.</p>
 <h3 id="catalog"><a class="header" href="#catalog">Catalog</a></h3>
 <p>The <em>catalog</em> is the list of searchable blocks within the current active workspace. Blocks can exist at 3 levels within the catalog: <a href="./glossary.html#downloaded">downloaded</a> (D), <a href="./glossary.html#installed">installed</a> (I), and/or <a href="./glossary.html#available">available</a> (A).</p>
 <h3 id="development-tool"><a class="header" href="#development-tool">Development Tool</a></h3>
 <p>A <em>development tool</em> is a software program specialized for a particular language that automates specific tasks to developing new projects for that language.</p>
 <h3 id="downloaded"><a class="header" href="#downloaded">Downloaded</a></h3>
-<p><em>Downloaded</em> refers to a level at which the block is seen in the <a href="./glossary.html#catalog">catalog</a>. A block has download status (D) if the block is within the active workspace's local path. Blocks that are downloaded are said to be in-development. </p>
+<p><em>Downloaded</em> refers to a level at which the block is seen in the <a href="./glossary.html#catalog">catalog</a>. A block has download status (D) if the block is within the active workspace's local path. Blocks that are downloaded are said to be &quot;developing&quot; or &quot;in-development&quot;. </p>
 <p>Blocks can be used from this level within other blocks only if the <code>multi-develop</code> setting is enabled.</p>
 <h3 id="flag"><a class="header" href="#flag">Flag</a></h3>
 <p>A <em>flag</em> is a special type of <a href="./glossary.html#argument">argument</a> that controls or modifies how the specified command will function.</p>
-<h3 id="hardware-description-languages-hdl"><a class="header" href="#hardware-description-languages-hdl">Hardware Description Languages (HDL)</a></h3>
-<p><em>Hardware</em> <em>Description</em> <em>Languages</em> are a type of specialized computer language to describe electronic circuits.</p>
+<h3 id="full-version"><a class="header" href="#full-version">Full version</a></h3>
+<p>A <em>full version</em> contains all 3 parts of a semantic version (version X.X.X). Also related: <a href="./glossary.html#partial-version">partial version</a>.</p>
+<h3 id="hardware-description-languages-hdls"><a class="header" href="#hardware-description-languages-hdls">Hardware Description Languages (HDLs)</a></h3>
+<p><em>Hardware</em> <em>Description</em> <em>Languages</em> are a type of specialized computer language to describe electronic circuits. Two popular HDLs are <a href="./glossary.html#vhdl">VHDL</a> and <a href="./glossary.html#verilog">verilog</a>.</p>
 <h3 id="installed"><a class="header" href="#installed">Installed</a></h3>
 <p><em>Installed</em> refers to a level at which the block is seen in the <a href="./glossary.html#catalog">catalog</a>. A block has install status (I) when the block is within the active workspace's cache. </p>
 <p>Installed blocks are considered stable and are able to be used within blocks in-development.</p>
@@ -184,31 +186,30 @@
 <li><code>VLOG-SRC</code>, <code>VLOG-SIM</code>, <code>VLOG-LIB</code>, <code>VLOG-SRC-TOP</code>, <code>VLOG-SIM-TOP</code> for Verilog files</li>
 </ul>
 <h3 id="legohdlcfg"><a class="header" href="#legohdlcfg">legohdl.cfg</a></h3>
-<p>The <em>legohdl.cfg</em> file contains the system-wide configuration settings for legoHDL.</p>
+<p>The <em>legohdl.cfg</em> file contains the system-wide configuration settings for legoHDL. Its file format is based off of INI configuration files.</p>
 <h3 id="library"><a class="header" href="#library">Library</a></h3>
 <p>A <em>library</em> is the namespace that encapsulates <a href="./glossary.html#block">blocks</a>. When using VHDL entities or packages, this is also those respective library.</p>
 <h3 id="package-manager"><a class="header" href="#package-manager">Package Manager</a></h3>
-<p>A <em>package manager</em> is a software program used to automate the finding, installing, and uninstalling of modular groups of related files (&quot;packages&quot;).</p>
+<p>A <em>package manager</em> is a software program used to automate the finding, installing, and uninstalling of modular groups of related files (&quot;packages&quot;). </p>
+<p>The &quot;packages&quot; this package manager maintains are called <a href="./glossary.html#blocks">blocks</a>.</p>
 <h3 id="partial-version"><a class="header" href="#partial-version">Partial version</a></h3>
-<p>A <em>partial</em> <em>version</em> consists of either 1 or 2 of the most significant parts of a semantic version (version X or version X.X).</p>
+<p>A <em>partial</em> <em>version</em> consists of either 1 or 2 of the most significant parts of a semantic version (version X or version X.X). Also related: <a href="./glossary.html#full-version">full version</a>.</p>
 <h3 id="plugin"><a class="header" href="#plugin">Plugin</a></h3>
-<p>A <em>plugin</em> is a custom program to build the current block's design. It can consist of an executable or script written in any language to call any desired tool to perform any task such as linting, simulation, synthesis, generating a bitstream, or programming a bitfile to a target FPGA.</p>
-<p>In general, every plugin should read the <a href="./glossary.html#blueprint">blueprint</a> file to collect necessary data such as the VHDL and Verilog files used for the current design. It is up to the developer to do what they want with the blueprint's collected information.</p>
+<p>A <em>plugin</em> is a custom program to build the current block's design. It can consist of an executable or script written in any language to call any desired tool to perform any task such as linting, simulation, synthesis, generating a bitstream, or programming a bitfile to a target FPGA. A plugin commonly either wraps or directly is a <a href="./glossary.html#backend-tool">backend tool</a>.</p>
+<p>In general, a plugin should read the <a href="./glossary.html#blueprint">blueprint</a> file to collect necessary data regarding what files are used for the current design. It is up to the plugin's developer to do what they want with the blueprint's collected information.</p>
 <h3 id="profile"><a class="header" href="#profile">Profile</a></h3>
-<p>A <em>profile</em> is a folder/repository that is a combination of settings defined in a <code>legohdl.cfg</code> file, a template defined in a <code>template/</code> folder, and/or a set of plugins defined in a <code>plugins/</code> folder. Profiles are used to share or save certain configurations.</p>
+<p>A <em>profile</em> is a folder/repository that is a combination of settings defined in a <code>legohdl.cfg</code> file, a template defined in a <code>template/</code> folder, and/or a set of plugins defined in a <code>plugins/</code> folder. Profiles are used to share or save particular legoHDL configurations.</p>
 <h3 id="project"><a class="header" href="#project">Project</a></h3>
-<p>A <em>project</em> is a folder containing HDL source code and any supporting files. The only difference between it and a block is it does not have the special Block.cfg file.</p>
+<p>A <em>project</em> is a folder containing <a href="./glossary.html#hardware-description-languages-hdl">HDL</a> code and optionally any supporting files.</p>
 <h3 id="semantic-versioning"><a class="header" href="#semantic-versioning">Semantic Versioning</a></h3>
 <p><em>Semantic</em> <em>Versioning</em> is a popular versioning scheme consisting of 3 different levels of numerical significance: major, minor, and patch.</p>
 <h3 id="shortcutting"><a class="header" href="#shortcutting">Shortcutting</a></h3>
 <p><em>Shorcutting</em> refers to only giving legoHDL partial information about a block's identifier, given that it can logically deduct the rest of the identifier based on what identifier's exist.</p>
-<h3 id="specific-version"><a class="header" href="#specific-version">Specific version</a></h3>
-<p>A <em>specific</em> <em>version</em> consists of all 3 parts of a semantic version (version X.X.X).</p>
 <h3 id="unit"><a class="header" href="#unit">Unit</a></h3>
 <p>A <em>unit</em> is a &quot;piece of hardware&quot; described in HDL. This is called an <em>entity</em> in VHDL and a <em>module</em> in Verilog.</p>
 <h3 id="vendor"><a class="header" href="#vendor">Vendor</a></h3>
 <p>A <em>vendor</em> is the namespace that encapsulates <a href="./glossary.html#library">libraries</a>. Furthermore, a vendor can be a repository that tracks all of the blocks belonging to it by storing their metadata. </p>
-<p>A block does not have to belong to a vendor.</p>
+<p>A block does not have to belong to a vendor. If no vendor is specified for a block, then by default it belongs to the null vendor.</p>
 <h3 id="verilog"><a class="header" href="#verilog">Verilog</a></h3>
 <p><em>Verilog</em> is a hardware description language used to model and structure digital circuits. It is one of the major languages legoHDL supports.</p>
 <h3 id="vhdl"><a class="header" href="#vhdl">VHDL</a></h3>
@@ -217,7 +218,7 @@
 <p>A <em>workflow</em> is a developer's particular needs and actions required on HDL source files. The typical HDL workflow consists of linting, synthesis, simulation, implementation, generating a bitstream, and programming a bitfile to a target FPGA.</p>
 <p>Developers define their own workflow by writing <a href="./glossary.html#plugin">plugins</a> based on their available tools, environments, and needs.</p>
 <h3 id="workspaces"><a class="header" href="#workspaces">Workspaces</a></h3>
-<p><em>Workspaces</em> define what vendors to use and the local path to search under for downloaded blocks. Each workspace has its own cache for block installations, but can share vendors.</p>
+<p><em>Workspaces</em> define what vendors to use and the local path to search under for blocks that are downloaded/under-development. Each workspace has its own cache for block installations, but can share vendors.</p>
 
                     </main>
 
