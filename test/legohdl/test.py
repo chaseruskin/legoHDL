@@ -3,7 +3,7 @@
 # Script: test.py
 # Author: Chase Ruskin
 # Description:
-#   Runs tests for certain functions.
+#   Runs tests to verify certain functions within legoHDL.
 # ------------------------------------------------------------------------------
 
 import os, shutil, time
@@ -70,6 +70,8 @@ class Test:
     #file characters to separate sections
     DIVIDER = '-'*80+'\n'
 
+    #boolean to determine if to print log lines to console as well
+    DEBUG = True
 
     def __init__(self, name):
         '''
@@ -112,12 +114,12 @@ class Test:
 
         Parameters:
         '''
-        self._log.write(Test.DIVIDER)
-        self._log.write(title+'\n')
-        self._log.write(Test.DIVIDER)
-        self._log.write(details)
+        self.log(Test.DIVIDER)
+        self.log(title+'\n')
+        self.log(Test.DIVIDER)
+        self.log(details)
         if(len(details)):
-            self._log.write(Test.DIVIDER)
+            self.log(Test.DIVIDER)
 
 
     def summary(self):
@@ -129,6 +131,13 @@ class Test:
         txt = txt + "FAILS         | "+str(self._failures)+"\n"
         txt = txt + "SUCCESS RATE  | "+str(((self._testcases-self._failures)/self._testcases)*100)+" %\n"
         self.writeSection("SUMMARY", txt)
+        pass
+
+    
+    def log(self, txt):
+        if(Test.DEBUG):
+            print(txt,end='')
+        self._log.write(txt)
         pass
 
 
@@ -152,28 +161,30 @@ class Test:
         delta = (str)(round(delta*1000, 4))+ " ms"
 
         self._testcases += 1
-        self._log.write(self.timestamp(delta)+'"'+self._funct+'"\t')
+        self.log(self.timestamp(delta))
+
+        name = '  "'+self._funct+'"'
 
         #assign default report
         if(report == ''):
-            report = "EXPECTS: " + str(exp) + "\t" + "RECIEVED: " + str(got)
+            report = "EXPECTS: " + str(exp) + " " + "RECIEVED: " + str(got)
         #add tab
-        report = '\t -- ' + report
+        report = ' -- ' + report
         #add extra tab to align with others
         if(sev != Test.Severity.CRITICAL):
-            report = '\t' + report
+            name = '\t' + name
 
         if(got != exp):
             #count as a failure if worse than WARNING
             if(sev.value > 1):
                 self._failures += 1
             #print message to log file
-            self._log.write(str(sev.name)+report)
+            self.log(str(sev.name)+name+report)
         else:
-            self._log.write("SUCCESS")
+            self.log("SUCCESS"+name)
             pass
         
-        self._log.write("\n")
+        self.log("\n")
         pass
 
     
@@ -196,7 +207,7 @@ class Test:
 # example function to test
 def incBy1(input):
     '''Returns input + 1.''' 
-      
+
     return int(input)+1
 
 
