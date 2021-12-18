@@ -149,7 +149,7 @@ class Profile:
         Returns:
             None
         '''
-        log.info("Importing profile "+self.getName()+"...")
+        log.info("Importing "+self.getName()+" profile...")
         s_file = self.getProfileDir()+apt.SETTINGS_FILE
 
         prfl_settings = None

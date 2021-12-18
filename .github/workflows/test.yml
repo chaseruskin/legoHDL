@@ -1,0 +1,36 @@
+name: build
+on: [push]
+jobs:
+  setup:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.5', '3.x']
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      #setup python
+      - uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -c "import sys; print(sys.version)"
+
+      #install and configure legoHDL
+      - name: Install legoHDL
+        run: pip install .
+
+      #perform initial legoHDL setup
+      - name: Setup legoHDL
+        run: printf 'y\n\nchase\ngedit\n~/testworkspace/\ny\n' | legohdl
+
+      #run the testing script
+      - name: Test legoHDL
+        run: python ./test/legohdl/test.py
+
+      #collect testing data/results
+      - name: Archive test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: unit-test-report
+          path: output/

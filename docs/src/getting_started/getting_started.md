@@ -1,9 +1,5 @@
 # Getting Started
 
-> "A beginning is a very delicate time."  
->
-> —Princess Irulan, _Dune_
-
 In this chapter, we will install legoHDL onto our local machine using the terminal and set up some preliminary
 settings.
 
