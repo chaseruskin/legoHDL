@@ -696,7 +696,7 @@ class Workspace:
                 dsgn = u.getDesign().name.lower()
                 if(u.getLang() == u.Language.VERILOG and dsgn == 'entity'):
                     dsgn = 'module'
-                catalog[u.E()+':'+block_title] = '{:<22}'.format(u.E())+' '+'{:<7}'.format(vis)+' '+'{:<10}'.format(dsgn)+' '+'{:<39}'.format(block_title)
+                catalog[u.E()+':'+block_title] = '{:<22}'.format(u.E())+' '+'{:<7}'.format(vis)+' '+'{:<10}'.format(dsgn)+' '+'{:<38}'.format(block_title)
                 pass
 
             pass
@@ -707,8 +707,8 @@ class Workspace:
             keys.sort()
 
         #print to console
-        print('{:<22}'.format("Unit"),'{:<7}'.format("Usable"),'{:<10}'.format("Type"),'{:<39}'.format("Block"))
-        print("-"*22+" "+"-"*7+" "+"-"*10+" "+"-"*39)
+        print('{:<22}'.format("Unit"),'{:<7}'.format("Usable"),'{:<10}'.format("Type"),'{:<38}'.format("Block"))
+        print("-"*22+" "+"-"*7+" "+"-"*10+" "+"-"*38)
         for k in keys:
             print(catalog[k])
             pass
