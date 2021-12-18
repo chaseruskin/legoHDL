@@ -33,7 +33,7 @@ def main():
         exp=11)
 
     t.unit(t.run(incBy1, 1), \
-        exp=3, sev=ts.WARNING)
+        exp=3, sev=ts.FAILURE)
 
     t.unit(t.run(apt.computeLongestWord, ['abc', 'a', 'abcd', 'abc']), \
         exp=len('abcd'))
