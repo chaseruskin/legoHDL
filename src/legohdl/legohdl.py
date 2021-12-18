@@ -395,6 +395,7 @@ Enter:
         log.info("Generating dependency tree...")
 
         #start with top unit (returns all units if no top unit is found (packages case))
+        print(top_dog.E())
         block.getUnits(top_dog)
 
         hierarchy = Unit.Hierarchy

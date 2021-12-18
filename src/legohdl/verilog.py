@@ -29,9 +29,13 @@ class Verilog(Language):
         self._seps = [':', '=', '(', ')', '#', ',', '.', '[', ']', '"']
         self._dual_chars = ['<=', '==']
         self._comment = '//'
+        self._preprocessor = '`'
         self._atomics = ['end', 'endmodule', 'endtask', 'endcase', \
             'endfunction', 'endprimitive', 'endspecify', 'endtable', 'begin', \
-            'endgenerate', 'generate']
+            'endgenerate', 'generate', "`default_discipline", "`default_transition",
+            "`define", "`else", "`endif", "`ifdef", "`ifndef", "`include"
+            "`resetall", "`timescale", "`undef"]
+
         self._join_dots = False
 
         self.spinCode()
@@ -62,6 +66,7 @@ class Verilog(Language):
         self._designs = []
         #looking for design units in each statement
         for cseg in c_statements:
+            #print(cseg)
             if(cseg[0] == 'module'):
                 #log.info("Identified module "+cseg[1])
                 self._designs += [Unit(cseg[1], self.getPath(), Unit.Design.ENTITY, self)]
@@ -120,6 +125,9 @@ class Verilog(Language):
                     comp_name = cseg[2]
                 #get comp name from a case-generate statement
                 elif(in_case and cseg.count(':')):
+                    #skip if ':' is found at end of line
+                    if(cseg.index(':') >= len(cseg)-1):
+                        continue
                     comp_name = cseg[cseg.index(':')+1]
                     if(comp_name.isdigit()):
                         continue

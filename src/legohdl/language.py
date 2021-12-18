@@ -38,6 +38,7 @@ class Language(ABC):
         self._block = block
 
         self._multi = ('/*', '*/')
+        self._preprocessor = None
         pass
     
     
@@ -162,6 +163,12 @@ class Language(ABC):
 
                 # :todo: determine if inside a string to use '--' inside a string
 
+                #skip preprocessor directives
+                if(self._preprocessor != None):
+                    preproc_index = line.find(self._preprocessor)
+                    if(preproc_index > -1):
+                        line = line[:preproc_index]
+
                 #reduce down to valid code (non-comments)
                 c_index = line.find(self._comment)
                 if(c_index > -1):
@@ -238,6 +245,7 @@ class Language(ABC):
                     #make sure to add last item
                     if(statement[-1] != ''):
                             statement_final.append(statement[-1])
+
                     #separate special keywords into their own statement lists
                     for word in statement_final:
                         if(word.lower() in self._atomics):

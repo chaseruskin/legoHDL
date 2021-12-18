@@ -2661,9 +2661,9 @@ class Block:
         '''
         if(returnnames and self.getLvl() != Block.Level.DNLD and self.getLvl() != Block.Level.INSTL):
             unit_names = []
-            if(self.getMeta('vhdl-units') != None):
+            if(self.getMeta('vhdl-units') != None and (lang == '' or lang == 'vhdl')):
                 unit_names += self.getMeta('vhdl-units')
-            if(self.getMeta('vlog-units') != None):
+            if(self.getMeta('vlog-units') != None and (lang == '' or lang == 'vlog')):
                 unit_names += self.getMeta('vlog-units')
             if(len(unit_names)):
                 return unit_names
@@ -2672,7 +2672,7 @@ class Block:
             if(lang != ''):
                 #filter between vhdl or verilog units
                 tmp_fltr = []
-                if(lang.lower() == 'vhdl'):
+                if(lang.lower() == 'vhdl'):  
                     tmp_fltr = list(filter(lambda a: a[1].getLang() == Unit.Language.VHDL, self._units.items()))
                 elif(lang.lower() == 'vlog'):
                     tmp_fltr = list(filter(lambda a: a[1].getLang() == Unit.Language.VERILOG, self._units.items()))
@@ -2695,6 +2695,7 @@ class Block:
         vhd_files = self.gatherSources(apt.VHDL_CODE, path=self.getPath())
         for v in vhd_files:
             self._hdl_files += [Vhdl(v, self)]
+
         #load all VERILOG files
         verilog_files = self.gatherSources(apt.VERILOG_CODE, path=self.getPath())
         for v in verilog_files:
@@ -2706,8 +2707,8 @@ class Block:
         else:
             self._units = Map()
 
+        #filter between vhdl or verilog units
         if(lang != ''):
-            #filter between vhdl or verilog units
             tmp_fltr = []
             if(lang.lower() == 'vhdl'):
                 tmp_fltr = list(filter(lambda a: a[1].getLang() == Unit.Language.VHDL, self._units.items()))
@@ -2719,7 +2720,7 @@ class Block:
                 tmp[u[0]] = u[1]
             #only return the keys (names)
             if(returnnames):
-                return [u.E() for u in self._units.values()]
+                return [u.E() for u in tmp.values()]
             return tmp
             
         if(returnnames):
