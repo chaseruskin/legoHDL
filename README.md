@@ -216,10 +216,10 @@ Refer to the [documentation](https://c-rus.github.io/legoHDL/) for more details.
 Refer to the [manual](https://github.com/c-rus/legoHDL/blob/master/src/legohdl/data/manual.txt) for complete overview and explanations on every command and their relevant flags.
 
 ```
-USAGE:             
-        legohdl <command> [argument] [flags]            
+Usage:             
+        legohdl <command> [entry] [<flags>] [-h]          
 
-COMMANDS:
+Commands:
 Development
    new          create a new legohdl block (project)
    init         initialize existing code into a legohdl block
@@ -241,7 +241,7 @@ Management
    show         read further detail about a block
    config       modify legohdl settings
 
-Type 'legohdl help <command>' to read about the entered command.
+Type 'legohdl help <command>' to read about that command.
 
 ```
 
