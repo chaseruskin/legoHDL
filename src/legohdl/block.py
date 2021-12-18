@@ -2779,7 +2779,7 @@ class Block:
         return cls._all_blocks
 
 
-    def get(self, entity, no_about, list_arch, inst, comp, lang, edges):
+    def get(self, entity, no_about, list_arch, inst, comp, lang_str, edges):
         '''
         Get various pieces of information about a given entity as well as any
         compatible code for instantiations.
@@ -2790,7 +2790,7 @@ class Block:
             list_arch (bool): determine if to list the architectures
             inst (bool): determine if to print instantiation
             comp (bool): determine if to print component declaration
-            lang (str): VHDL or VLOG style language
+            lang_str (str): VHDL or VLOG style language
             edges (bool): determine if to print graph information
         Returns:
             success (bool): determine if operation was successful
@@ -2802,25 +2802,29 @@ class Block:
             log.error("Entity "+entity+" not found in block "+self.getFull()+"!")
             return False
 
-        def_lang = apt.CFG.get('HDL-styling.default-language').lower()
-
-        #determine the language for outputting compatible code
-        if(lang != None):
-            if(lang.lower() == 'vhdl'):
-                lang = Unit.Language.VHDL
-            elif(lang.lower() == 'vlog'):
-                lang = Unit.Language.VERILOG
-            pass
-        #see if a default language is set in settings
-        elif(def_lang == 'vhdl'):
-            lang = Unit.Language.VHDL
-        elif(def_lang == 'verilog'):
-            lang = Unit.Language.VERILOG
-
         #collect data about requested entity
         self.getUnits(top=units[entity])
         #grab the desired entity from the Map
         ent = units[entity]
+
+        #default language is the original written language ('auto')
+        lang = ent.getLang()
+
+        #see if a default language is set in settings
+        def_lang = apt.CFG.get('HDL-styling.default-language').lower()
+        if(def_lang == 'vhdl'):
+            lang = Unit.Language.VHDL
+        elif(def_lang == 'vlog'):
+            lang = Unit.Language.VERILOG
+
+        #override cfg value by cli value to determine the language
+        if(lang_str != None):
+            if(lang_str.lower() == 'vhdl'):
+                lang = Unit.Language.VHDL
+            elif(lang_str.lower() == 'vlog'):
+                lang = Unit.Language.VERILOG
+            pass
+
 
         hang_end = apt.CFG.get('HDL-styling.hanging-end', dtype=bool)
         auto_fit = apt.CFG.get('HDL-styling.auto-fit', dtype=bool)

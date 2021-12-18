@@ -55,17 +55,17 @@ class legoHDL:
         os.environ["LEGOHDL"] = apt.fs(apt.HIDDEN[:len(apt.HIDDEN)-1])
 
         #parse arguments
-        self._command = self._item = ""
+        self._command = self._entry = ""
         #store args accordingly from command-line
         for i, arg in enumerate(sys.argv[1:]):
             #first is the command
             if(i == 0):
                 self._command = arg.lower()
-            #first arg without a starting '-' is the "item" (may not be used for all commands)
+            #first arg without a starting '-' is the "entry" (may not be used for all commands)
             elif(arg[0] != '-'):
-                self._item = arg
+                self._entry = arg
 
-            if(self._item != ""):
+            if(self._entry != ""):
                 break
 
         #only display the program's version and exit
@@ -188,27 +188,27 @@ class legoHDL:
         return self._ver
 
     
-    def getItem(self, raw=False):
+    def getEntry(self, raw=False):
         '''
-        Get the value of the item argument. Returns None if item is empty
-        string or item is a flag.
+        Get the value of the entry argument. Returns None if entry is empty
+        string or entry is a flag.
 
         Parameters:
-            raw (bool): determine if to strictly return item
+            raw (bool): determine if to strictly return entry
         Returns:
-            (str): the item passed into legohdl
+            (str): the entry passed into legohdl
         '''
-        it = self._item
+        it = self._entry
         if(raw):
             return it
         #get the flag name if an '=' was used on the flag
         eq_i = len(it)
         if(it.count('=')):
             eq_i = it.find('=')
-        #make sure the item is not a flag
+        #make sure the entry is not a flag
         if(len(it) and it[1:eq_i].lower() in self._flags):
             it = None
-        #make sure the item is not a blank string
+        #make sure the entry is not a blank string
         if(it == ''):
             it = None
         return it
@@ -352,7 +352,7 @@ Enter:
         #initialize all plugins
         Plugin.load()
         #get the plugin name
-        plug_in = self.getItem()
+        plug_in = self.getEntry()
         #make sure a valid plugin title is passed
         if(plug_in == None or plug_in[0] != '+'):
             log.error("Calling a plugin must begin with a '+'!")
@@ -386,7 +386,7 @@ Enter:
         block = Block.getCurrent()
 
         #capture the passed-in entity name
-        top = self.getItem()
+        top = self.getEntry()
         #capture the command-line testbench
         explicit_tb = self.getVar('tb')
 
@@ -444,7 +444,7 @@ Enter:
         block = Block.getCurrent()
      
         #capture the passed-in entity name
-        top = self.getItem()
+        top = self.getEntry()
         #capture the command-line testbench
         explicit_tb = self.getVar('tb')
 
@@ -745,13 +745,13 @@ Enter:
         visibles = self.WS().loadBlocks(id_dsgns=False)
         
         #make sure an entity is being requested
-        if(self.getItem() == None):
+        if(self.getEntry() == None):
             exit(log.error("Pass a unit name to get."))
 
         #verify a block under this name exists
-        block = self.WS().shortcut(self.getItem(), req_entity=True, visibility=True)
+        block = self.WS().shortcut(self.getEntry(), req_entity=True, visibility=True)
         if(block == None):
-            exit(log.error("Could not identify a block for unit "+self.getItem()+'.'))
+            exit(log.error("Could not identify a block for unit "+self.getEntry()+'.'))
 
         #remember title for error statement in case block becomes None
         title = block.getFull()
@@ -770,7 +770,7 @@ Enter:
             self.WS().decodeUnits()
 
         #get the entity name
-        _,_,_,_,ent = Block.snapTitle(self.getItem(), inc_ent=True)
+        _,_,_,_,ent = Block.snapTitle(self.getEntry(), inc_ent=True)
 
         #get what language was defined by the command-line ('inst' has high precedence
         #than 'comp')
@@ -784,7 +784,7 @@ Enter:
                 list_arch=self.hasFlag('arch'), \
                 inst=self.hasFlag('inst'), \
                 comp=self.hasFlag('comp'), \
-                lang=lang, \
+                lang_str=lang, \
                 edges=self.hasFlag('edges'))
         pass
 
@@ -796,7 +796,7 @@ Enter:
         #try to create a block at the current working directory
         block = Block(cur_path, self.WS())
         #intialize block attributes/itself
-        block.initialize(self.getItem(), self.getVar('remote'), self.hasFlag('fork'), self.getVar('summary'))
+        block.initialize(self.getEntry(), self.getVar('remote'), self.hasFlag('fork'), self.getVar('summary'))
         pass
 
 
@@ -807,10 +807,10 @@ Enter:
         self.WS().loadBlocks(id_dsgns=False)
 
         #shortcut name
-        block = self.WS().shortcut(self.getItem(), visibility=False)
+        block = self.WS().shortcut(self.getEntry(), visibility=False)
 
         if(block == None):
-            log.error("Could not identify a block with "+self.getItem()+'.')
+            log.error("Could not identify a block with "+self.getEntry()+'.')
             return
 
         #recursively install each requirement
@@ -845,10 +845,10 @@ Enter:
         #load blocks
         self.WS().loadBlocks(id_dsgns=False)
         #shortcut name
-        block = self.WS().shortcut(self.getItem(), visibility=False)
+        block = self.WS().shortcut(self.getEntry(), visibility=False)
         #check if block exists
         if(block == None):
-            exit(log.error("Could not identify a block with "+self.getItem()+'.'))
+            exit(log.error("Could not identify a block with "+self.getEntry()+'.'))
 
         success = block.uninstall(self.getVerNum(places=[1,2,3]))
 
@@ -862,28 +862,28 @@ Enter:
         
         if(self.hasFlag('profile')):
             #make sure the requested profile exists to be read
-            if(self.getItem().lower() not in Profile.Jar.keys()):
-                log.error("Profile "+self.getItem()+" does not exist!")
+            if(self.getEntry().lower() not in Profile.Jar.keys()):
+                log.error("Profile "+self.getEntry()+" does not exist!")
                 return
             #print the profile's information/summary
-            print('\n'+Profile.Jar[self.getItem()].readAbout()+'\n')
+            print('\n'+Profile.Jar[self.getEntry()].readAbout()+'\n')
             return
         
         if(self.hasFlag('vendor')):
             #make sure the requested vendor exists to be read
-            if(self.getItem().lower() not in Vendor.Jar.keys()):
-                log.error("Vendor "+self.getItem()+" does not exist!")
+            if(self.getEntry().lower() not in Vendor.Jar.keys()):
+                log.error("Vendor "+self.getEntry()+" does not exist!")
                 return
             #print the vendor's information/summary
-            print('\n'+Vendor.Jar[self.getItem()].readAbout()+'\n')
+            print('\n'+Vendor.Jar[self.getEntry()].readAbout()+'\n')
             return
 
         #get the block object from all possible blocks
-        block = self.WS().shortcut(self.getItem(), visibility=False)
+        block = self.WS().shortcut(self.getEntry(), visibility=False)
 
-        #make sure the user passed in a value for the item
+        #make sure the user passed in a value for the entry
         if(block == None):
-            exit(log.error("Could not find a block as "+self.getItem()))
+            exit(log.error("Could not find a block as "+self.getEntry()))
 
         #check which block to use
         title = block.getFull()
@@ -952,9 +952,9 @@ Enter:
     def _config(self):
         '''Run 'config' command.'''
 
-        #import a profile if a profile name is given as item.
-        if(self.getItem(raw=True) in Profile.Jar.keys()):
-            Profile.Jar[self.getItem(raw=True)].importLoadout(ask=self.hasFlag('ask'))
+        #import a profile if a profile name is given as entry.
+        if(self.getEntry(raw=True) in Profile.Jar.keys()):
+            Profile.Jar[self.getEntry(raw=True)].importLoadout(ask=self.hasFlag('ask'))
             return
 
         #generate list of all available keys/editable sections
@@ -1175,10 +1175,10 @@ Enter:
         '''Run the 'del' command.'''
         
         #make sure the block exists in downloaded workspace path
-        block = self.WS().shortcut(self.getItem(), req_entity=False, visibility=False)
+        block = self.WS().shortcut(self.getEntry(), req_entity=False, visibility=False)
 
         if(block == None):
-            exit(log.error("Could not identify a block with "+self.getItem()))
+            exit(log.error("Could not identify a block with "+self.getEntry()))
 
         if(block.getLvlBlock(Block.Level.DNLD) == None):
             log.error("Cannot delete block "+block.getFull()+" because it is not downloaded!")
@@ -1197,13 +1197,13 @@ Enter:
         #create a new file
         if(self.hasFlag('file')):
             Block(os.getcwd(), self.WS())
-            Block.getCurrent().newFile(self.getItem(raw=True), \
+            Block.getCurrent().newFile(self.getEntry(raw=True), \
                 tmplt_fpath=self.getVar("file"), \
                 force=self.hasFlag('force'), \
                 not_open=self.hasFlag('no-open'))
             return
         
-        title = self.getItem()
+        title = self.getEntry()
         #make sure a valid title is captured
         if(Block.validTitle(title) == False):
             return
@@ -1229,23 +1229,23 @@ Enter:
     def _download(self):
         '''Run 'download' command.'''
 
-        #determine if the item passed is a url to directly clone
+        #determine if the entry passed is a url to directly clone
         from_url = False
 
-        if(self.getItem() == None):
+        if(self.getEntry() == None):
             log.error("Enter a block or repository to download.")
             return
 
         #get the block object from all possible blocks
-        block = self.WS().shortcut(self.getItem(), visibility=False)
+        block = self.WS().shortcut(self.getEntry(), visibility=False)
 
-        #make sure the user passed in a value for the item
+        #make sure the user passed in a value for the entry
         if(block == None):
             #try to see if a remote was passed
-            if(Git.isValidRepo(self.getItem(), remote=True)):
+            if(Git.isValidRepo(self.getEntry(), remote=True)):
                 from_url = True
             else:
-                exit(log.error("Could not find a block as "+self.getItem()))
+                exit(log.error("Could not find a block as "+self.getEntry()))
 
         #download from the identified block
         if(from_url == False):
@@ -1291,19 +1291,19 @@ Enter:
             for it in jar.values():
                 it.refresh()
         #refresh all workspace vendors
-        elif(self.getItem() == None and self.hasFlag('profile') == False):
+        elif(self.getEntry() == None and self.hasFlag('profile') == False):
             log.info("Refreshing all workspace "+self.WS().getName()+" vendors...")
             for vndr in self.WS().getVendors():
                 vndr.refresh()
-        #make sure an item was entered
-        elif(self.getItem() == None):
+        #make sure an entry was entered
+        elif(self.getEntry() == None):
             log.error("Enter a known "+target[:len(target)-1]+".")
-        #check if item exists in its container
-        elif(self.getItem() in jar.keys()):
-            jar[self.getItem()].refresh()
+        #check if entry exists in its container
+        elif(self.getEntry() in jar.keys()):
+            jar[self.getEntry()].refresh()
         #could not locate the target
         else:
-            log.error("Unknown "+target[:len(target)-1]+" "+self.getItem()+".")
+            log.error("Unknown "+target[:len(target)-1]+" "+self.getEntry()+".")
         pass
 
 
@@ -1336,7 +1336,7 @@ Enter:
                 print('{:<60}'.format(f[0]),'{:<8}'.format(status))
                 pass
         elif(self.hasFlag('unit')):
-            self.WS().listUnits(title=self.getItem(),
+            self.WS().listUnits(title=self.getEntry(),
                 alpha=self.hasFlag('alpha'),
                 usable=(not self.hasFlag('all')),
                 ignore_tb=self.hasFlag('ignore-tb')
@@ -1344,7 +1344,7 @@ Enter:
             #categorize by hidden files (skipped)
             #and visible files (files that are copied in on using template)
         else:
-            self.WS().listBlocks(title=self.getItem(), \
+            self.WS().listBlocks(title=self.getEntry(), \
                 alpha=self.hasFlag('alpha'), \
                 instl=self.hasFlag('i'), \
                 dnld=self.hasFlag('d'), \
@@ -1363,7 +1363,7 @@ Enter:
 
         #note: run export before release to make sure requirements are up-to-date?
 
-        block.release(self.getItem(), msg=self.getVar("msg"), \
+        block.release(self.getEntry(), msg=self.getVar("msg"), \
             dry_run=self.hasFlag('dry-run'), \
             only_meta=self.hasFlag('strict'), \
             no_install=self.hasFlag('no-install'), \
@@ -1414,16 +1414,16 @@ Enter:
             plugin_path = apt.fs(apt.HIDDEN+"plugins/")
 
             #maybe open up the plugin file directly if given a value
-            if(self._item.lower() in Plugin.Jar.keys()):
+            if(self._entry.lower() in Plugin.Jar.keys()):
                 #able to open plugin?
-                plgn = Plugin.Jar[self._item.lower()]
+                plgn = Plugin.Jar[self._entry.lower()]
                 if(plgn.hasPath()):
                     plugin_path = plgn.getPath()
-                    log.info("Opening plugin "+self._item+" at... "+plugin_path)
+                    log.info("Opening plugin "+self._entry+" at... "+plugin_path)
                 else:
-                    exit(log.error("Plugin "+self._item+" has no path to open."))
-            elif(self.getItem() != None):
-                exit(log.error("Plugin "+self._item+" does not exist."))
+                    exit(log.error("Plugin "+self._entry+" has no path to open."))
+            elif(self.getEntry() != None):
+                exit(log.error("Plugin "+self._entry+" does not exist."))
             else:
                 log.info("Opening built-in plugins folder at... "+plugin_path)
             apt.execute(apt.getEditor(),plugin_path)
@@ -1431,27 +1431,27 @@ Enter:
         #open profile
         elif(self.hasFlag("profile")):
             #open the specified path to the profile if it exists
-            if(self.getItem(raw=True).lower() in Profile.Jar.keys()):
-                prfl_path = Profile.Jar[self.getItem(raw=True)].getProfileDir()
-                log.info("Opening profile "+self.getItem(raw=True)+" at... "+prfl_path)
+            if(self.getEntry(raw=True).lower() in Profile.Jar.keys()):
+                prfl_path = Profile.Jar[self.getEntry(raw=True)].getProfileDir()
+                log.info("Opening profile "+self.getEntry(raw=True)+" at... "+prfl_path)
                 apt.execute(apt.getEditor(), prfl_path)
             else:
-                log.error("Profile "+self.getItem(raw=True)+" does not exist.")
+                log.error("Profile "+self.getEntry(raw=True)+" does not exist.")
             pass
         #open vendor
         elif(self.hasFlag("vendor")):
             #open the specified path to the vendor if it exists
-            if(self.getItem(raw=True).lower() in Vendor.Jar.keys()):
-                vndr_path = Vendor.Jar[self.getItem(raw=True)].getVendorDir()
-                log.info("Opening vendor "+self.getItem(raw=True)+" at... "+vndr_path)
+            if(self.getEntry(raw=True).lower() in Vendor.Jar.keys()):
+                vndr_path = Vendor.Jar[self.getEntry(raw=True)].getVendorDir()
+                log.info("Opening vendor "+self.getEntry(raw=True)+" at... "+vndr_path)
                 apt.execute(apt.getEditor(), vndr_path)
             else:
-                log.error("Vendor "+self.getItem(raw=True)+" does not exist.")
+                log.error("Vendor "+self.getEntry(raw=True)+" does not exist.")
             pass
         #open block
         else:
             #search all blocks (visibility off)
-            block = self.WS().shortcut(self.getItem(raw=True), visibility=False)
+            block = self.WS().shortcut(self.getEntry(raw=True), visibility=False)
             if(block != None):
                 #verify the block to open has download status
                 if(block.getLvlBlock(Block.Level.DNLD) != None):
@@ -1459,14 +1459,14 @@ Enter:
                 else:
                     exit(log.error("Block "+block.getFull()+" is not downloaded!"))
             else:
-                exit(log.error("No block "+self.getItem(raw=True)+" exists in your workspace."))
+                exit(log.error("No block "+self.getEntry(raw=True)+" exists in your workspace."))
             pass
         pass
             
 
     def _help(self):
         '''
-        Reads from provided manual.txt regarding the _item passed by
+        Reads from provided manual.txt regarding the _entry passed by
         user, given that the _command was 'help'.
 
         Parameters:
@@ -1489,7 +1489,7 @@ Enter:
                 if(sep[0].startswith(';')):
                     continue
                 #find where to start
-                if(len(sep) > 1 and sep[0] == '*' and sep[1] == self.getItem(True).lower()):
+                if(len(sep) > 1 and sep[0] == '*' and sep[1] == self.getEntry(True).lower()):
                     disp = True
                 elif(disp == True):
                     if(sep[0] == '*'):
@@ -1558,11 +1558,11 @@ Enter:
         
         #allow for 'build' command to be optional
         if(len(cmd) and cmd[0] == '+'):
-            self._item = cmd
+            self._entry = cmd
             cmd = 'build'
         #verify the help flag is intended for the legohdl program
         if(cmd != 'build' and (self.hasFlag('h') or self.hasFlag('help'))):
-            self._item = cmd
+            self._entry = cmd
             cmd = 'help'
 
         if('new' == cmd):
@@ -1651,7 +1651,7 @@ Enter:
     # def __str__(self):
     #     return f'''
     #     command: {self._command}
-    #     item: {self.getItem()}
+    #     entry: {self.getEntry()}
     #     flags: {self._flags}
     #     vars: {self._vars}
     #     '''
