@@ -22,7 +22,7 @@ legoHDL.
 
 HELP:
 For more information on how to edit this file, read the documentation at 
-___.
+https://c-rus.github.io/legoHDL/user_guide/managing_settings.html.
 ------------------------------------------------------------------------------
 * end
 
