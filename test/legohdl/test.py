@@ -125,8 +125,7 @@ def main():
     dirs = ['input/']
     for d in dirs:
         if(os.path.exists(d)):
-            shutil.rmtree(d)
-        os.makedirs(d, exist_ok=True)
+            shutil.rmtree(d, onerror=apt.rmReadOnly)
         pass
 
     #delete testing workspace

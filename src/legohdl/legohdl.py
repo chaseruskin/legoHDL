@@ -112,11 +112,8 @@ class legoHDL:
             self.WS().autoRefresh(rate=apt.getRefreshRate())
 
         #print(self)
-
-        if('debug' == self._command):
-            test()
-        else:
-            self.runCommand()
+        
+        self.runCommand()
         pass
 
 
