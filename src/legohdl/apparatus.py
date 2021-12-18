@@ -177,6 +177,14 @@ class Apparatus:
 
     @classmethod
     def load(cls):
+        '''
+        Verify settings are secure.
+
+        Parameters:
+            None
+        Returns:
+            None
+        '''
         #ensure all pieces of settings are correct
         cls.secureSettings()
 
@@ -203,7 +211,7 @@ class Apparatus:
 
         Parameters:
             inner_path (str): path to see if within another path
-            path (str): the bigger path to see if a path is within it
+            path (str): the bigger path to see if inner_path is within path
         Returns:
             (bool): true if path starts with inner_path 
         '''
@@ -212,8 +220,11 @@ class Apparatus:
         if(kernel != "Linux"):
             inner_path = inner_path.lower()
             path = path.lower()
+        
+        path = cls.fs(path)
+        inner_path = cls.fs(inner_path)
 
-        return cls.fs(path).startswith(cls.fs(inner_path)) and (path != inner_path)
+        return path.startswith(inner_path) and (path != inner_path)
 
     
     @classmethod

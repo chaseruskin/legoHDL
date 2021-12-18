@@ -2,6 +2,7 @@
 
 # legoHDL
 ![ci-build](https://github.com/c-rus/legohdl/actions/workflows/build.yml/badge.svg)
+![ci-test](https://github.com/c-rus/legohdl/actions/workflows/test.yml/badge.svg)
 ![CodeQL](https://github.com/c-rus/legohdl/actions/workflows/codeql-analysis.yml/badge.svg)
 ### The package manager and development tool for Hardware Description Languages (HDL).
   

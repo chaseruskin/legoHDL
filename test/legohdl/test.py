@@ -11,35 +11,129 @@ from datetime import datetime
 from enum import Enum
 
 from legohdl.apparatus import Apparatus as apt
+from legohdl.workspace import Workspace
+from legohdl.block import Block
+from legohdl.vhdl import Vhdl
+from legohdl.unit import Unit
+
 
 # ------------------------------------------------------------------------------
 # -- MAIN TESTING LAUNCH PAD
 # ------------------------------------------------------------------------------
 def main():
+    #keep shorthand ready to override severity levels
     ts = Test.Severity
 
-    #clean and create test output directory
-    if(os.path.exists("output/")):
-        shutil.rmtree("output/")
-    os.makedirs("output/", exist_ok=True)
+    #clean and create test input/output directories
+    dirs = ['output/', 'input/']
+    for d in dirs:
+        if(os.path.exists(d)):
+            shutil.rmtree(d)
+        os.makedirs(d, exist_ok=True)
+        pass
 
-    #run unit tests
+    #load metadata
+    apt.initialize()
+
+    #setup fake workspace
+    ws_path = './input/'
+    ws = Workspace("testing-launch-pad", ws_path)
+
+    #[!] create test object
     t = Test("unit-tests")
 
-    t.unit(t.run(incBy1, input=1423), \
-        exp=1424)
+    #[!] run unit-tests --------------------------------------------------------
 
-    t.unit(t.run(incBy1, input=10), \
-        exp=11)
-
-    t.unit(t.run(incBy1, 1), \
-        exp=2)
-
+    #--- apparatus.py ---
+    t.writeSection("APPARATUS.PY")
+    #longest-word
     t.unit(t.run(apt.computeLongestWord, ['abc', 'a', 'abcd', 'abc']), \
         exp=len('abcd'))
 
-    t.summary()
+    #sub-path
+    p1 = "c:/users/chase/develop/"
+    p2 = "C:\\\\Users\\\\Chase\\\\develop"
+    t.unit(t.run(apt.isSubPath, p1, p2), \
+        exp=False)
 
+    #sub-path
+    p1 = "c:/users/chase/develop/"
+    p2 = "C:\\\\Users\\\\Chase\\\\develop/lvl1/"
+    t.unit(t.run(apt.isSubPath, p1, p2), \
+        exp=True)
+
+    #sub-path
+    p1 = "c:/users/chase/develop/hdl/"
+    p2 = "C:\\\\Users\\\\Chase\\\\develop/lvl1/"
+    t.unit(t.run(apt.isSubPath, p1, p2), \
+        exp=False)
+
+    #equal path
+    p1 = "c:/users/chase/develop/"
+    p2 = "C:\\\\Users\\\\Chase\\\\develop"
+    t.unit(t.run(apt.isEqualPath, p1, p2), \
+        exp=True)
+
+    #equal path
+    p1 = "c:/users/chase/develop/"
+    p2 = "c:/users/chase/developp/"
+    t.unit(t.run(apt.isEqualPath, p1, p2), \
+        exp=False)
+
+    #--- block.py ---
+    t.writeSection("BLOCK.PY")
+    b1 = Block(ws_path+'Block1/', ws)
+
+    t.unit(t.run(b1.isValid), \
+        exp=False)
+
+    t.unit(t.run(b1.create, 'libraryA.Block1'), \
+        exp=True)
+
+    t.unit(t.run(b1.isValid), \
+        exp=True)
+
+    t.unit(t.run(b1.M), \
+        exp='')
+
+    t.unit(t.run(b1.L), \
+        exp='libraryA')
+
+    t.unit(t.run(b1.N), \
+        exp='Block1')
+
+    #--- vhdl.py ---
+    t.writeSection("VHDL.PY")
+    vhdl1 = Vhdl("./test/data/test1.vhd", block=b1)
+
+    #get about
+    exp = '''\
+ File: test1.vhd
+ Author: Chase Ruskin
+ Description:
+  Includes VHDL code to test against legoHDL functions. This initial comment block
+  will also be tested to see if it is returned when getting an entity.
+ Note:
+  Code may be purposely written poorly to test the VHDL analysis in legoHDL.
+'''
+    t.unit(t.run(vhdl1.getAbout), \
+        exp=exp)
+
+    # end unit tests -----------------------------------------------------------
+
+    #clean test input directory
+    dirs = ['input/']
+    for d in dirs:
+        if(os.path.exists(d)):
+            shutil.rmtree(d)
+        os.makedirs(d, exist_ok=True)
+        pass
+
+    #delete testing workspace
+    del Workspace.Jar['testing-launch-pad']
+
+    #[!] save file and report results
+    t.summary()
     exit(t.hasFailure())
 
 
@@ -47,8 +141,10 @@ def main():
 # -- TEST CLASS
 # ------------------------------------------------------------------------------
 class Test:
-    '''The Test class. Creates a tracker to track all types of tests performed. 
-    Outputs a log file with a report.'''
+    '''
+    The Test class. Creates a tracker to track all types of tests performed. 
+    Outputs a log file with a report.
+    '''
 
     class Severity(Enum):
         OBSERVE  = 0
@@ -73,18 +169,21 @@ class Test:
     #boolean to determine if to print log lines to console as well
     DEBUG = True
 
+
     def __init__(self, name):
         '''
         Creates a test object.
 
         Parameters:
-            name (str): the name of the test
+            name (str): the test log file name
+        Returns:
+            None
         '''
         self._name = name
         #create logfile
         self._log = open(Test.OUTPUT+self._name+".log", 'w')
 
-        #create header
+        #create HEADER log section
         txt = "FILE: "+self._name+".log\n"
         txt = txt + "TIME: "+str(datetime.now())+"\n"
         self.writeSection("HEADER", txt)
@@ -99,6 +198,7 @@ class Test:
         #add to class container
         Test.Suite += [self]
 
+        #begin TESTS log section
         self.writeSection("TESTS")
         pass
 
@@ -113,6 +213,10 @@ class Test:
         Begin a new section in the logfile
 
         Parameters:
+            title (str): section header
+            details (str): optional extra text to add
+        Returns:
+            None
         '''
         self.log(Test.DIVIDER)
         self.log(title+'\n')
@@ -120,6 +224,7 @@ class Test:
         self.log(details)
         if(len(details)):
             self.log(Test.DIVIDER)
+        pass
 
 
     def summary(self):
@@ -135,6 +240,8 @@ class Test:
 
     
     def log(self, txt):
+        '''Write to logfile and may also print to console the logfile line.'''
+
         if(Test.DEBUG):
             print(txt,end='')
         self._log.write(txt)
@@ -152,7 +259,7 @@ class Test:
             sev (Test.Severity): level of importance
             report (str): message to write when test fails
         Returns:
-            NonE
+            None
         '''
         #stop timer
         t1 = time.time()
@@ -189,7 +296,7 @@ class Test:
 
     
     def run(self, funct, *args, **kwargs):
-        '''Run the inputted function with the arguments provided.'''
+        '''Start a timer and execute 'funct'. Returns the result.'''
 
         self._funct = funct.__name__
         self._t0 = time.time()
@@ -199,16 +306,9 @@ class Test:
     def timestamp(self, t_delta):
         '''Returns intial data for a logfile line.'''
 
-        return "CASE "+str(self._testcases)+":\tELAPSED: "+str(t_delta)+'\t'
+        return "# "+str(self._testcases)+":\tELAPSED: "+str(t_delta)+'\t'
 
     pass
-
-
-# example function to test
-def incBy1(input):
-    '''Returns input + 1.''' 
-
-    return int(input)+1
 
 
 # ------------------------------------------------------------------------------
