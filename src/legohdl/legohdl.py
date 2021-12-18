@@ -1516,7 +1516,7 @@ Enter:
             pass
 
         print('\nUsage: \
-        \n\tlegohdl <command> [entry] [<flags>] [-h]\
+        \n\tlegohdl <command> [<entry>] [<flags>] [-h]\
         \n')
         print("Commands:")
 

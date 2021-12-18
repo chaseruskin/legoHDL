@@ -172,11 +172,11 @@ legoHDL has configurable aspects, such as custom labels, multiple workspaces, an
 To learn more about the powers of legoHDL, read the [documentation](https://c-rus.github.io/legoHDL/).
 
 ## __Roadmap__
-Check out the [roadmap](https://github.com/c-rus/legoHDL/projects/1) to see what features and enhancements are currently being worked on.
+Check out the [roadmap](https://github.com/c-rus/legoHDL/projects/1) to see what features and enhancements are currently being worked on. This project is under active development, so features may change or be added.
 
 ## __Trying it out__
 
-1. Make sure a version of python >=3.5 and git are installed.
+1. Make sure python as version 3.5+ and git are installed.
 
 `python --version`
 
@@ -186,9 +186,9 @@ Check out the [roadmap](https://github.com/c-rus/legoHDL/projects/1) to see what
 
 `git clone https://github.com/c-rus/legoHDL.git`
 
-3. Install the program via pip from the root of the legoHDL repository
+3. Install the program via pip
 
-`pip install .`
+`pip install ./legoHDL`
 
 4. Verify it is properly installed.
 
@@ -203,21 +203,21 @@ Check out the [roadmap](https://github.com/c-rus/legoHDL/projects/1) to see what
 
 2. When prompted to import a profile, return `y`.
 
-3. Next, return nothing to get going with the default profile.
+3. Next, return an empty response to get going with the default profile.
 
 4. Enter other prompted information such as your name, text-editor, and workspace path.
 
-5. legoHDL is now ready. Create a block from the imported default template and automatically open it in the configured text-editor
-`legohdl new MyLib.MyBlock -open`
+5. legoHDL is now ready. Create your first block and open it in the configured text-editor with
+`legohdl new tutorials.gates -open`.
 
-Refer to the [documentation](https://c-rus.github.io/legoHDL/) for more details.
+Checkout the [tutorials](https://c-rus.github.io/legoHDL/tutorials/tutorials.html) for next steps.
 
 ## __Commands__
 Refer to the [manual](https://github.com/c-rus/legoHDL/blob/master/src/legohdl/data/manual.txt) for complete overview and explanations on every command and their relevant flags.
 
 ```
 Usage:             
-        legohdl <command> [entry] [<flags>] [-h]          
+        legohdl <command> [<entry>] [<flags>] [-h]          
 
 Commands:
 Development
