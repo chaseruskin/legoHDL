@@ -253,7 +253,7 @@ NAME:
         graph - Visualize the dependency tree for the design
 
 SYNOPSIS:
-        legohdl graph [<entity>] [-tb=<tb> | -ignore-tb] [-compress] [-display-full]
+        legohdl graph [<entity>] [-tb=<tb> | -ignore-tb] [-expand] [-display-full]
 
 DESCRIPTION:
         Create and view the dependency tree for the current block design. This 
@@ -266,6 +266,10 @@ DESCRIPTION:
         auto-detected, if one exists. The user will be prompted to select one if
         multiple exist.
 
+        By default, the graph is in compression mode and will create reference points
+        when a duplicate branch occurs. Raising -expand will explicitly display all
+        branches without reference points.
+
 OPTIONS:
         <entity>
                 The design unit to request as top-level.
@@ -277,8 +281,8 @@ OPTIONS:
         -ignore-tb
                 Do not include any testbench unit in the dependency tree.
 
-        -compress
-                Compress duplicate branchs of the graph into reference points.
+        -expand
+                Decompress reference points into their duplicate branchs.
 
         -display-full
                 Display full block identifiers for each unit.

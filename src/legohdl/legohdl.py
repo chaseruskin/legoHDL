@@ -381,6 +381,7 @@ Enter:
 
         inc_tb = (self.hasFlag('ignore-tb') == False)
         disp_full = self.hasFlag('display-full')
+        compress = (self.hasFlag('expand') == False)
 
         self.WS().loadBlocks(id_dsgns=True)
         block = Block.getCurrent()
@@ -400,7 +401,7 @@ Enter:
         hierarchy = Unit.Hierarchy
         
         #print the dependency tree
-        print(hierarchy.output(top_dog, compress=self.hasFlag('compress'), disp_full=disp_full))
+        print(hierarchy.output(top_dog, compress=compress, disp_full=disp_full))
         print()
         
         unit_order,block_order = hierarchy.topologicalSort()
