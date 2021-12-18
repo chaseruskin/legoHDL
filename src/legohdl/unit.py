@@ -111,12 +111,12 @@ class Unit:
         if(self.E().lower() not in self.Jar[self.M()][self.L()][self.N()].keys()):
             self.Jar[self.M()][self.L()][self.N()][self.E()] = self
         else:
-            log.error("An entity at this level already exists as: "+self.E()+"!")
-            print("Already:")
-            print(self.Jar[self.M()][self.L()][self.N()][self.E()])
-            print("Tries:")
-            print(self)
-            exit(1)
+            log.error("Detected a duplicate entity identifier for "+self.getLanguageFile().getOwner().getFull()+':'+self.E())
+            print("First location:")
+            print(self.Jar[self.M()][self.L()][self.N()][self.E()].getFile())
+            print("Conflicting location:")
+            print(self.getFile())
+            exit("Exiting HDL file analysis...")
 
         # add to Bottle - a 2-level Map with values as lists effectively binning units together
         #create new library level if libray DNE
