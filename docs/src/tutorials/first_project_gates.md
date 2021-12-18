@@ -427,6 +427,18 @@ Our testbench uses an instance of the entity _and_gate_. Let's verify this with 
 
 ```
 $ legohdl graph
+INFO:   Identified top-level unit: and_gate
+INFO:   Identified top-level testbench: and_gate_tb
+INFO:   Generating dependency tree...
+--- DEPENDENCY TREE ---
+\- tutorials.and_gate_tb 
+   \- tutorials.and_gate 
+      \- tutorials.nor_gate 
+
+
+--- BLOCK ORDER ---
+[1]^-   tutorials.gates(@v0.0.0)
+
 ```
 
 ## Generating a blueprint
@@ -435,7 +447,9 @@ At this point in the design process, we want to verify that _and_gate_ is perfor
 
 > __Note:__ For the purposes of this tutorial trying to be as dependency-free as possible so that everyone may follow it, we will utilize a _pseudo-plugin_ called __demo__. This is a legoHDL plugin that mainly just prints text to the console. We will use this to avoid assuming/forcing a backend EDA tool/simulator.
 
-From the `graph` command, we can see legoHDL knows how our designs are connected, yet our plugin does not. We need a way to tell our plugin what files we need to build our current design. We will create a [blueprint](./../glossary.md#blueprint) for our plugin to understand what files are needed.
+From the `graph` command, we can see legoHDL knows how our designs are connected, yet our [plugin](./../glossary.md#plugin) does not. We need a way to tell our plugin what files we need to build our current design.
+
+Create a [blueprint](./../glossary.md#blueprint) so any plugin can know what files will be are needed.
 
 ```
 $ legohdl export
