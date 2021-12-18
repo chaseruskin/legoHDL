@@ -2825,7 +2825,7 @@ class Block:
         hang_end = apt.CFG.get('HDL-styling.hanging-end', dtype=bool)
         auto_fit = apt.CFG.get('HDL-styling.auto-fit', dtype=bool)
         alignment = apt.CFG.get('HDL-styling.alignment', dtype=int)
-        maps_on_newline = apt.CFG.get('HDL-styling.newline-maps', dtype=int)
+        maps_on_newline = apt.CFG.get('HDL-styling.newline-maps', dtype=bool)
         inst_name = apt.CFG.get('HDL-styling.instance-name')
 
         g_mod = apt.CFG.get('HDL-styling.generic-modifier')
