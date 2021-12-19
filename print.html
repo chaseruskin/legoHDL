@@ -1167,8 +1167,8 @@ INFO:	Generating dependency tree...
 <pre><code>$ legohdl export
 </code></pre>
 <h2 id="defining-labels"><a class="header" href="#defining-labels">Defining Labels</a></h2>
-<p>Commonly, your workflow for your HDL projects may require project-specific files outside of the HDL code such as constraints files, test vector files, tcl scripts, etc. </p>
-<p>Imagine our task now is to use our psuedo-plugin to implement this design for an FPGA.</p>
+<p>Commonly, your <a href="tutorials/./../glossary.html#workflow">workflow</a> for your HDL projects may require project-specific files outside of the HDL code such as constraints files, test vector files, tcl scripts, etc. </p>
+<p>Imagine our task now is to use our pseudo-plugin to implement this design for an FPGA.</p>
 <p>Try to route (implement) our exported design using the <strong>demo</strong> plugin.</p>
 <pre><code>$ legohdl build +demo -route
 INFO:	python $LEGOHDL/plugins/demo.py -route 
@@ -1220,7 +1220,7 @@ PC2 --&gt; gt
 PC0 --&gt; eq
 Pin assignments complete.
 </code></pre>
-<p>Great work! We've customized our <a href="tutorials/./../glossary.html#workflow">workflow</a> to go along with our plugin. </p>
+<p>Great work! We've customized our workflow to go along with our plugin. </p>
 <blockquote>
 <p><strong>Note:</strong> Remember, plugins are developed by <em>you</em>, meaning you can choose what labels to expect and what to do with the listed files in the blueprint!</p>
 </blockquote>
