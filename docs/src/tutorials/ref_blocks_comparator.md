@@ -250,7 +250,7 @@ entity comparator is
 end entity;
 ```
 
-Now, imagine you have completely blanked on what entities we have for use! How could we remember?
+Now imagine we have completely blanked on what entities we can use. How could we remember?
 
 View what blocks are available.
 
@@ -302,7 +302,9 @@ VHDL units:
     and_gate       gates          nor_gate       and_gate_tb
 ```
 
-And look! We can see what VHDL primary design units exist in the block and Verilog modules if there were any. Now, that we know the units at our disposal, let's inspect them.
+And look! We can see what VHDL primary design units are defined in the block (as well as if there were any Verilog modules). 
+
+Now that we know the units at our disposal, let's inspect them.
 
 ```
 $ legohdl get gates
@@ -343,7 +345,7 @@ $ legohdl get nor_gate -comp -inst
 $ legohdl get xor_gate -inst
 ```
 
-Copy and paste their outputted code into `comparator.vhd`, and connect signals accordingly. The final comparator architecture resemebles the following.
+Copy and paste their outputted code into `comparator.vhd`, and connect signals accordingly. The final comparator architecture resembles the following.
 
 ```VHDL
 architecture rtl of comparator is
@@ -413,7 +415,7 @@ INFO:	Generating dependency tree...
 [1]^-	tutorials.gates(@v1.0.0)
 ```
 
-Awesome! This is how our design is supposed to look.
+Awesome! This is how we intended our design to look.
 
 > __Note:__ Graphs are compressed by default; meaning duplicate branches use referecnce points. Use `-expand` to see the graph completely output duplicate branches.
 
@@ -422,8 +424,6 @@ Export a blueprint file so we can use a plugin to build our design.
 ```
 $ legohdl export
 ```
-
-
 
 ## Defining Labels
 
@@ -458,7 +458,7 @@ Create a file called `pins.csv`.
 ```
 $ legohdl new ./pins.csv -file
 ```
-Enter the following contents in `./pins.csv`.
+Copy the following contents in `./pins.csv`.
 ```CSV
 PA1,a
 PA7,b
@@ -467,13 +467,13 @@ PC2,gt
 PC0,eq
 ```
 
-Our FPGA has pins called `PA1`, `PA7`, `PC3`, `PC2`, and `PC0`, that we want to map to our design's ports `a`, `b`, `lt`, `gt`, and `eq`, respectively.
+Assume our FPGA has pins called `PA1`, `PA7`, `PC3`, `PC2`, and `PC0`, that we want to map to our design's ports `a`, `b`, `lt`, `gt`, and `eq`, respectively.
 
 Export a new blueprint.
 ```
 $ legohdl export
 ```
-Inspecting the blueprint file, we can see legoHDL listed our `PIN-MAP` file.
+Inspecting the blueprint file, we can see legoHDL included a file as a `PIN-MAP` label.
 ```
 @PIN-MAP C:/Users/chase/develop/hdl/tutorials/comparator/pins.csv
 @VHDL-LIB tutorials C:/Users/chase/.legohdl/workspaces/primary/cache/_/tutorials/gates/gates/src/gates.vhd
@@ -510,4 +510,4 @@ Woo-hoo! On this page, we learned how to:
 - edit the template and use placeholders for generic run-time values within files
 - use entities from outside the current block
 - find information such as units defined for a particular block with `info`
-- create a label to be searched for during export and dumped into the blueprint
+- create a label to search for particular supportive files during export and added into the blueprint
