@@ -193,16 +193,32 @@ end architecture;
 <p>Create a new file from our previously edited template file and call it <code>xor_gate.vhd</code>.</p>
 <pre><code>$ legohdl new ./src/xor_gate.vhd -file=&quot;/src/TEMPLATE.vhd&quot;
 </code></pre>
-<p>Fill in a description of how the design will behave below <code>-- Description:</code>. Then, define the entity's interface like our previous designs.</p>
-<pre><code class="language-VHDL">entity xor_gate is
+<p>Fill in a description for how the design will behave below the <code>-- Description:</code> line. Note that the block's identifier, your name, and the day's date should already be filled in. Also define the entity's port interface.</p>
+<pre><code class="language-VHDL">--------------------------------------------------------------------------------
+-- Block: tutorials.comparator
+-- Author: Chase Ruskin
+-- Created: December 18, 2021
+-- Entity: xor_gate
+-- Description:
+--	Q = A ^ B.
+--	
+--	Takes two singular bits A and B, and performs the XOR operation to produce
+--	Q.
+--------------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity xor_gate is
     port(
         a, b : in std_logic;
         q : out std_logic);
 end entity;
+...
 </code></pre>
-<p>Now we define the architecture according to the previous schematic.</p>
-<p>Uh-oh, <em>and_gate</em> and <em>nor_gate</em> are not defined in this project!</p>
-<p>That's okay, accessing these entities is the same as we've done.</p>
+<p>Now it is time to describe the architecture according to the previous schematic.</p>
+<p>Hang on, <em>and_gate</em> and <em>nor_gate</em> are not defined in this block!</p>
+<p>That's okay, accessing these entities is the same as before.</p>
 <pre><code>$ legohdl get and_gate -inst
 --- ABOUT ---
 ------------------------------------------------------------------------------
@@ -321,7 +337,7 @@ INFO:	Generating dependency tree...
 [2]^-	tutorials.comparator(@v0.0.0)
 [1]^-	tutorials.gates(@v1.0.0)
 </code></pre>
-<p>Looks good! Notice how we know have a block order of requirements, and it shows what version of the block <em>gates</em> is being referenced to create the current design.</p>
+<p>Looks good! Notice how we now have a block order of requirements, and it shows what version of the block <em>gates</em> is being referenced to create the current design.</p>
 <h2 id="creating-a-comparator"><a class="header" href="#creating-a-comparator">Creating a Comparator</a></h2>
 <p>Now open <code>./src/comparator.vhd</code> to create our final design, which will use 3 <em>nor_gates</em>, 2 <em>and_gates</em>, and 1 <em>xor_gate</em>.</p>
 <p>First, write a description about our design and fill in the entity interface.</p>
@@ -394,7 +410,7 @@ VHDL units:
 --- ABOUT ---
 ------------------------------------------------------------------------------
  Block: tutorials.gates
- Created: December 18, 2021
+ Created: December 16, 2021
  Package: gates
  Description:
   Auto-generated package file by legoHDL. Components declared:
@@ -403,7 +419,7 @@ VHDL units:
 
 </code></pre>
 <p><em>gates</em> is a VHDL package file. Let's use it to help instantiate our <em>nor_gate</em> and <em>and_gate</em>.</p>
-<p>Add the <code>library</code> and <code>use</code> clauses for <em>gates</em> above <code>library ieee;</code>. </p>
+<p>Add the <code>library</code> and <code>use</code> clauses for the <em>gates</em> package above <code>library ieee;</code>. </p>
 <pre><code class="language-VHDL">library tutorials;
 use tutorials.gates.all;
 library ieee;
@@ -490,9 +506,9 @@ INFO:	Generating dependency tree...
 <pre><code>$ legohdl export
 </code></pre>
 <h2 id="defining-labels"><a class="header" href="#defining-labels">Defining Labels</a></h2>
-<p>Most commonly your HDL projects may require project-specific files outside of the HDL code such as constraints files, test vector files, tcl scripts, etc. </p>
+<p>Commonly, your workflow for your HDL projects may require project-specific files outside of the HDL code such as constraints files, test vector files, tcl scripts, etc. </p>
 <p>Imagine our task now is to use our psuedo-plugin to implement this design for an FPGA.</p>
-<p>Try to route (implement) our exported design.</p>
+<p>Try to route (implement) our exported design using the <strong>demo</strong> plugin.</p>
 <pre><code>$ legohdl build +demo -route
 INFO:	python $LEGOHDL/plugins/demo.py -route 
 Error: no routing file (.csv) was found for label @PIN-MAP.
@@ -507,7 +523,7 @@ Error: no routing file (.csv) was found for label @PIN-MAP.
 <pre><code>$ legohdl config -&quot;label.local.PIN-MAP=*.csv&quot;
 CREATED: label.local.pin-map = *.csv
 </code></pre>
-<p>Create a file called <code>pins.csv</code>.</p>
+<p>Create a new file called <code>pins.csv</code>.</p>
 <pre><code>$ legohdl new ./pins.csv -file
 </code></pre>
 <p>Copy the following contents in <code>./pins.csv</code>.</p>
@@ -521,7 +537,7 @@ PC0,eq
 <p>Export a new blueprint.</p>
 <pre><code>$ legohdl export
 </code></pre>
-<p>Inspecting the blueprint file, we can see legoHDL included a file as a <code>PIN-MAP</code> label.</p>
+<p>Inspecting the blueprint file, we can see legoHDL included a file under the custom <code>PIN-MAP</code> label.</p>
 <pre><code>@PIN-MAP C:/Users/chase/develop/hdl/tutorials/comparator/pins.csv
 @VHDL-LIB tutorials C:/Users/chase/.legohdl/workspaces/primary/cache/_/tutorials/gates/gates/src/gates.vhd
 @VHDL-LIB tutorials C:/Users/chase/.legohdl/workspaces/primary/cache/_/tutorials/gates/gates/src/nor_gate.vhd
