@@ -221,9 +221,7 @@ class Graph:
                 temp_leaf = temp_leaf.replace(reg_branch, edge_branch)
             #print to console
             node = top.getFull()
-            if(compress):
-                pass
-            elif(disp_full):
+            if(disp_full):
                 node = top.getTitle()
             #add this graph-line to the text
             txt = txt + temp_leaf+' '+node+' '+ref+'\n'

@@ -380,7 +380,7 @@ Enter:
         '''Run the 'graph' command.'''
 
         inc_tb = (self.hasFlag('ignore-tb') == False)
-        disp_full = self.hasFlag('display-full')
+        disp_full = self.hasFlag('disp-full')
         compress = (self.hasFlag('expand') == False)
 
         self.WS().loadBlocks(id_dsgns=True)

@@ -74,6 +74,11 @@ The "packages" this package manager maintains are called [blocks](./glossary.md#
 ### Partial version
 A _partial_ _version_ consists of either 1 or 2 of the most significant parts of a semantic version (version X or version X.X). Also related: [full version](./glossary.md#full-version).
 
+### Placeholder
+A _placeholder_ is a temporary word that will be replaced by a value that cannot be determined until run-time. legoHDL finds all placeholders when creating a file and replaces them with their determined value.  
+
+All placeholders are enclosed with `%` symbols, except the `TEMPLATE` placeholder.
+
 ### Plugin
 A _plugin_ is a custom program to build the current block's design. It can consist of an executable or script written in any language to call any desired tool to perform any task such as linting, simulation, synthesis, generating a bitstream, or programming a bitfile to a target FPGA. A plugin commonly either wraps or directly is a [backend tool](./glossary.md#backend-tool).
 

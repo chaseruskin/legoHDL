@@ -240,12 +240,12 @@ INFO:   Generating dependency tree...
 
 The other half to hardware designing involves verification. We will create a testbench to verify the entity _and_gate_ behaves according to the following truth table.
 
-| A  | B  |\|| Q  |
-|----|----|--|----|
-| 0  | 0  |  | 0  |
-| 0  | 1  |  | 0  |
-| 1  | 0  |  | 0  |
-| 1  | 1  |  | 1  |
+| A  | B  | Q  |
+|----|----|----|
+| 0  | 0  | 0  |
+| 0  | 1  | 0  |
+| 1  | 0  | 0  |
+| 1  | 1  | 1  |
 
 ## Creating a file from the template
 
@@ -567,9 +567,17 @@ tutorials        gates                D I      1.0.0
 Notice that the `release` command also installed the _gates_ block to the workspace cache, indicated by the `I` in status.
 The `D` indicates the block is also downloaded/developing because it is found in our workspace's local development path.
 
+We are done developing _gates_, so close the text-editor and delete the block from the downloads space.
+
+```
+$ legohdl del gates
+```
+
+> __Note:__ Deleting the folder where the project is located will have the same effect as the command above.
+
 # Page Review
 
-Woo-hoo! We learned how to:
+Woo-hoo! On this page, We learned how to:
 - create a new block and new files with `new`
 - view blocks, plugins, and template files with `list`
 - check how our design connects together with `graph`
