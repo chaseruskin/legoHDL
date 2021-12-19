@@ -143,18 +143,417 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="referencing-blocks-comparator"><a class="header" href="#referencing-blocks-comparator">Referencing Blocks: Comparator</a></h1>
+                        <h1 id="using-blocks-comparator"><a class="header" href="#using-blocks-comparator">Using Blocks: Comparator</a></h1>
 <p>On this page, we begin to see more of the package management aspects of legoHDL as we create a second project called <em>comparator</em>. <em>Comparator</em> will need to use external designs previously created in the block <em>gates</em>. Before we create our next block, let's learn how to edit the template.</p>
 <h2 id="editing-the-template"><a class="header" href="#editing-the-template">Editing the template</a></h2>
+<p>Open the template's folder.</p>
+<pre><code>$ legohdl open -template
+</code></pre>
+<p>All files in here we will copied when creating a new block, except for any files within folders beginning with <code>.</code>. A <a href="./../glossary.html#blockcfg">Block.cfg</a> file will always be created by legoHDL for every block, so no need to include that here.</p>
+<p>Edit the <code>./src/TEMPLATE.vhd</code> file with the following code.</p>
+<pre><code class="language-VHDL">--------------------------------------------------------------------------------
+-- Block: %BLOCK%
+-- Author: %AUTHOR%
+-- Created: %DATE%
+-- Entity: TEMPLATE
+-- Description:
+--
+--------------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity TEMPLATE is
+	port(
+	
+	);
+end entity;
+
+
+architecture rtl of TEMPLATE is
+
+
+begin
+
+
+end architecture;
+</code></pre>
+<p>We use <a href="./../glossary.html#placeholder">placeholders</a> to mark the spot for data be filled in when the file is created. These placeholders will change values based on factors external of the template, such as today's date for <code>%DATE%</code>, the block's identifier for <code>%BLOCK%</code>, or the file's name for <code>TEMPLATE</code>.</p>
+<p>Save the file and exit the template.</p>
+<p>Create a new block <code>comparator</code> under the library <code>tutorials</code> and open it.</p>
+<pre><code>$ legohdl new tutorials.comparator -open
+</code></pre>
+<p>Our comparator will require an XOR gate, so let's design an XOR gate next.</p>
 <br>
 <h2 id="creating-xor-gate"><a class="header" href="#creating-xor-gate">Creating XOR gate</a></h2>
-<p>Our final design for the <em>gates</em> block will be an XOR gate.</p>
+<p>The first design for the <em>comparator</em> block will be an XOR gate.</p>
 <p>Let's review the schematic for an XOR gate from purely NOR gates.</p>
 <p><img src="./../images/XOR_from_NOR.svg.png" alt="xor_from_nor" /></p>
 <p>Notice how the upper 3 NOR gates are the equivalent to the AND gate we previously designed. Rather than using 5 instances of a NOR gate, we will save time by using 1 AND gate instance and 2 instances of the NOR gate.</p>
-<p>Create a new file from our template called <code>xor_gate.vhd</code>.</p>
-<pre><code>$ legohdl new ./src/xor_gate.vhd -file=/src/TEMPLATE.vhd
+<p>Create a new file from our previously edited template file and call it <code>xor_gate.vhd</code>.</p>
+<pre><code>$ legohdl new ./src/xor_gate.vhd -file=&quot;/src/TEMPLATE.vhd&quot;
 </code></pre>
+<p>Fill in a description of how the design will behave below <code>-- Description:</code>. Then, define the entity's interface like our previous designs.</p>
+<pre><code class="language-VHDL">entity xor_gate is
+    port(
+        a, b : in std_logic;
+        q : out std_logic);
+end entity;
+</code></pre>
+<p>Now we define the architecture according to the previous schematic.</p>
+<p>Uh-oh, <em>and_gate</em> and <em>nor_gate</em> are not defined in this project!</p>
+<p>That's okay, accessing these entities is the same as we've done.</p>
+<pre><code>$ legohdl get and_gate -inst
+--- ABOUT ---
+------------------------------------------------------------------------------
+ Block: tutorials.gates
+ Entity: and_gate
+ Description:
+  Takes two bits and performs the AND operation. Q &lt;- A &amp; B.
+
+  Both A and B are a singular bit and each must be '1' for Q to be '1'. Built
+  from 3 instances of logical NOR gates.
+------------------------------------------------------------------------------
+
+--- CODE ---
+signal a : std_logic;
+signal b : std_logic;
+signal q : std_logic;
+
+uX : entity tutorials.and_gate port map(
+    a =&gt; a,
+    b =&gt; b,
+    q =&gt; q);
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> Specifying the entity's entire scope will produce the same result. <code>legohdl get tutorials.gates:and_gate -inst</code></p>
+</blockquote>
+<p>Copy and paste the outputted code to instantiate an <em>and_gate</em>. Connect signals according to the schematic.</p>
+<p>Get the <em>nor_gate</em> instance code.</p>
+<pre><code>$ legohdl get nor_gate -inst
+--- ABOUT ---
+------------------------------------------------------------------------------
+ Block: tutorials.gates
+ Entity: nor_gate
+ Description:
+  Takes two bits and performs the NOR operation. Q = ~(A | B).
+
+  Both A and B are a singular bit and must both be '0' for Q to be '1'.
+------------------------------------------------------------------------------
+
+--- CODE ---
+signal a : std_logic;
+signal b : std_logic;
+signal q : std_logic;
+
+uX : entity tutorials.nor_gate port map(
+    a =&gt; a,
+    b =&gt; b,
+    q =&gt; q);
+</code></pre>
+<p>Copy and paste the <em>nor_gate</em> code to create 2 instances connected together with the 1 <em>and_gate</em> according to the schematic.</p>
+<p>The final code should resemble the following.</p>
+<pre><code class="language-VHDL">--------------------------------------------------------------------------------
+-- Block: tutorials.comparator
+-- Author: Chase Ruskin
+-- Created: December 18, 2021
+-- Entity: xor_gate
+-- Description:
+--	Q = A ^ B.
+--	
+--	Takes two singular bits A and B, and performs the XOR operation to produce
+--	Q.
+--------------------------------------------------------------------------------
+
+library ieee;
+library tutorials;
+use ieee.std_logic_1164.all;
+
+entity xor_gate is
+    port(
+        a, b : in std_logic;
+        q : out std_logic);
+end entity;
+
+
+architecture rtl of xor_gate is
+
+	signal w_and_q : std_logic;
+	signal w_nor_q : std_logic;
+
+begin
+	--send inputs A and B through AND-gate
+	u_AND : entity tutorials.and_gate port map(
+		a =&gt; a,
+		b =&gt; b,
+		q =&gt; w_and_q);
+	
+	--send inputs A and B through NOR-gate
+	u_NOR : entity tutorials.nor_gate port map(
+		a =&gt; a,
+		b =&gt; b,
+		q =&gt; w_nor_q);
+	
+	--send outputs from AND and NOR through a NOR-gate to produce XOR
+	u_XOR : entity tutorials.nor_gate port map(
+		a =&gt; w_and_q,
+		b =&gt; w_nor_q,
+		q =&gt; q);
+
+end architecture;
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> <em>nor_gate</em> and <em>and_gate</em> are external HDL files. They belong to the library <em>tutorials</em>. Since we instantiated them using VHDL's entity instantiation technique, we must declare their library at the top of the file with the line <code>library tutorials;</code></p>
+</blockquote>
+<p>Run the graph command, but now with each entity's entire scope being displayed using the <code>-disp-full</code> <a href="./../glossary.html#flag">flag</a>.</p>
+<pre><code>$ legohdl graph -disp-full
+INFO:	Identified top-level unit: xor_gate
+WARNING:	No testbench detected.
+INFO:	Generating dependency tree...
+--- DEPENDENCY TREE ---
+\- tutorials.comparator:xor_gate 
+   +- tutorials.gates:and_gate 
+   |  \- tutorials.gates:nor_gate 
+   \- tutorials.gates:nor_gate 
+
+
+--- BLOCK ORDER ---
+[2]^-	tutorials.comparator(@v0.0.0)
+[1]^-	tutorials.gates(@v1.0.0)
+</code></pre>
+<p>Looks good! Notice how we know have a block order of requirements, and it shows what version of the block <em>gates</em> is being referenced to create the current design.</p>
+<h2 id="creating-a-comparator"><a class="header" href="#creating-a-comparator">Creating a Comparator</a></h2>
+<p>Now open <code>./src/comparator.vhd</code> to create our final design, which will use 3 <em>nor_gates</em>, 2 <em>and_gates</em>, and 1 <em>xor_gate</em>.</p>
+<p>First, write a description about our design and fill in the entity interface.</p>
+<pre><code class="language-VHDL">--------------------------------------------------------------------------------
+-- Block: tutorials.comparator
+-- Author: Chase Ruskin
+-- Created: December 18, 2021
+-- Entity: comparator
+-- Description:
+--	Compares two singular bits: A and B. Outputs 3 different results. 
+--
+--	'lt' = (A &lt; B)
+--	'eq' = (A == B)
+--	'gt' = (A &gt; B)
+--------------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity comparator is
+	port(
+		a, b : in std_logic;
+		lt, eq, gt : out std_logic);
+end entity;
+</code></pre>
+<p>Now, imagine you have completely blanked on what entities we have for use! How could we remember?</p>
+<p>View what blocks are available.</p>
+<pre><code>$ legohdl list
+Library          Block                Status   Version    Vendor
+---------------- -------------------- -------- ---------- ----------------
+tutorials        comparator           D
+tutorials        gates                  I      1.0.0
+</code></pre>
+<p>Okay, we have a <em>gates</em> block installed to use, but what entities were designed in there?</p>
+<p>View information about the <em>gates</em> block.</p>
+<pre><code>$ legohdl info tutorials.gates
+--- METADATA ---    
+[block]
+name     = gates    
+library  = tutorials
+version  = 1.0.0    
+remote   = 
+vendor   = 
+requires = ()   
+</code></pre>
+<p>Not very helpful right now, but we can see the metadata defined in its Block.cfg. Let's try to get more information with the <code>-more</code> flag.</p>
+<pre><code>$ legohdl info tutorials.gates -more
+--- METADATA ---    
+[block]
+name     = gates    
+library  = tutorials
+version  = 1.0.0    
+remote   =
+vendor   =
+requires = ()
+
+--- STATS ---
+Location = C:/Users/chase/.legohdl/workspaces/primary/cache/_/tutorials/gates/gates/
+Size     = 31.98 KB
+Level    = INSTL
+Required by:
+        N/A
+
+VHDL units:
+    and_gate       gates          nor_gate       and_gate_tb
+</code></pre>
+<p>And look! We can see what VHDL primary design units exist in the block and Verilog modules if there were any. Now, that we know the units at our disposal, let's inspect them.</p>
+<pre><code>$ legohdl get gates
+--- ABOUT ---
+------------------------------------------------------------------------------
+ Block: tutorials.gates
+ Created: December 18, 2021
+ Package: gates
+ Description:
+  Auto-generated package file by legoHDL. Components declared:
+      and_gate    nor_gate
+------------------------------------------------------------------------------
+
+</code></pre>
+<p><em>gates</em> is a VHDL package file. Let's use it to help instantiate our <em>nor_gate</em> and <em>and_gate</em>.</p>
+<p>Add the <code>library</code> and <code>use</code> clauses for <em>gates</em> above <code>library ieee;</code>. </p>
+<pre><code class="language-VHDL">library tutorials;
+use tutorials.gates.all;
+library ieee;
+...
+</code></pre>
+<p>In the <em>comparator's</em> architecture, we only need the component instantiations for <em>and_gate</em> and <em>nor_gate</em>. We can access those by combining flags <code>-comp</code> and <code>-inst</code>.</p>
+<p>Get the component instantiations for <em>nor_gate</em> and <em>and_gate</em>, as well as the entity instantiation for <em>xor_gate</em>.</p>
+<pre><code>$ legohdl get and_gate -comp -inst
+</code></pre>
+<pre><code>$ legohdl get nor_gate -comp -inst
+</code></pre>
+<pre><code>$ legohdl get xor_gate -inst
+</code></pre>
+<p>Copy and paste their outputted code into <code>comparator.vhd</code>, and connect signals accordingly. The final comparator architecture resemebles the following.</p>
+<pre><code class="language-VHDL">architecture rtl of comparator is
+
+	signal w_not_a : std_logic;
+	signal w_not_b : std_logic;
+	signal w_not_eq : std_logic;
+
+begin
+	--invert incoming A bit
+	u_NEG_A : nor_gate port map(
+		a =&gt; a,
+		b =&gt; a,
+		q =&gt; w_not_a);
+	
+	--invert incoming B bit
+	u_NEG_B : nor_gate port map(
+		a =&gt; b,
+		b =&gt; b,
+		q =&gt; w_not_b);
+	
+	--output a &lt; b when /a = '0' and b = '1'
+	u_AND_LT : and_gate port map(
+		a =&gt; w_not_a,
+		b =&gt; b,
+		q =&gt; lt);
+	
+	--output a &gt; b when a = '1' and /b = '0'
+	u_AND_GT : and_gate port map(
+		a =&gt; a,
+		b =&gt; w_not_b,
+		q =&gt; gt);
+		
+	--inequality logic created by XOR
+	u_NOT_EQ : entity work.xor_gate port map(
+		a =&gt; a,
+		b =&gt; b,
+		q =&gt; w_not_eq);
+	
+	--invert the XOR output to get equality logic
+	u_EQ : nor_gate port map(
+		a =&gt; w_not_eq,
+		b =&gt; w_not_eq,
+		q =&gt; eq);
+
+end architecture;
+</code></pre>
+<p>View the current design's hierarchy tree.</p>
+<pre><code>$ legohdl graph
+INFO:	Identified top-level unit: comparator
+WARNING:	No testbench detected.
+INFO:	Generating dependency tree...
+--- DEPENDENCY TREE ---
+\- tutorials.comparator 
+   +- tutorials.nor_gate 
+   +- tutorials.and_gate [A]
+   |  \- tutorials.nor_gate 
+   \- tutorials.xor_gate 
+      +- tutorials.and_gate [A]
+      \- tutorials.nor_gate 
+
+
+--- BLOCK ORDER ---
+[2]^-	tutorials.comparator(@v0.0.0)
+[1]^-	tutorials.gates(@v1.0.0)
+</code></pre>
+<p>Awesome! This is how our design is supposed to look.</p>
+<blockquote>
+<p><strong>Note:</strong> Graphs are compressed by default; meaning duplicate branches use referecnce points. Use <code>-expand</code> to see the graph completely output duplicate branches.</p>
+</blockquote>
+<p>Export a blueprint file so we can use a plugin to build our design.</p>
+<pre><code>$ legohdl export
+</code></pre>
+<h2 id="defining-labels"><a class="header" href="#defining-labels">Defining Labels</a></h2>
+<p>Most commonly your HDL projects may require project-specific files outside of the HDL code such as constraints files, test vector files, tcl scripts, etc. </p>
+<p>Imagine our task now is to use our psuedo-plugin to implement this design for an FPGA.</p>
+<p>Try to route (implement) our exported design.</p>
+<pre><code>$ legohdl build +demo -route
+INFO:	python $LEGOHDL/plugins/demo.py -route 
+Error: no routing file (.csv) was found for label @PIN-MAP.
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> Remember, the plugin produced its own error; all build commands are simply a wrapper for the entered plugin's command.</p>
+</blockquote>
+<p>Our plugin expects a custom <a href="./../glossary.html#label">label</a> to collect data for the routing step.</p>
+<p>FPGA implementations typically require a constraints file like in this example, which lists the pin assginments for our top-level design. </p>
+<p>For our projects, our constraints file will be <code>.csv</code> files. How can we get this file into our blueprint for our plugin to use?</p>
+<p>Add a new local label called <code>PIN-MAP</code> that will search for any <code>.csv</code> files within the current block.</p>
+<pre><code>$ legohdl config -&quot;label.local.PIN-MAP=*.csv&quot;
+CREATED: label.local.pin-map = *.csv
+</code></pre>
+<p>Create a file called <code>pins.csv</code>.</p>
+<pre><code>$ legohdl new ./pins.csv -file
+</code></pre>
+<p>Enter the following contents in <code>./pins.csv</code>.</p>
+<pre><code class="language-CSV">PA1,a
+PA7,b
+PC3,lt
+PC2,gt
+PC0,eq
+</code></pre>
+<p>Our FPGA has pins called <code>PA1</code>, <code>PA7</code>, <code>PC3</code>, <code>PC2</code>, and <code>PC0</code>, that we want to map to our design's ports <code>a</code>, <code>b</code>, <code>lt</code>, <code>gt</code>, and <code>eq</code>, respectively.</p>
+<p>Export a new blueprint.</p>
+<pre><code>$ legohdl export
+</code></pre>
+<p>Inspecting the blueprint file, we can see legoHDL listed our <code>PIN-MAP</code> file.</p>
+<pre><code>@PIN-MAP C:/Users/chase/develop/hdl/tutorials/comparator/pins.csv
+@VHDL-LIB tutorials C:/Users/chase/.legohdl/workspaces/primary/cache/_/tutorials/gates/gates/src/gates.vhd
+@VHDL-LIB tutorials C:/Users/chase/.legohdl/workspaces/primary/cache/_/tutorials/gates/gates/src/nor_gate.vhd
+@VHDL-LIB tutorials C:/Users/chase/.legohdl/workspaces/primary/cache/_/tutorials/gates/gates/src/and_gate.vhd
+@VHDL-SRC C:/Users/chase/develop/hdl/tutorials/comparator/src/xor_gate.vhd
+@VHDL-SRC C:/Users/chase/develop/hdl/tutorials/comparator/src/comparator.vhd
+@VHDL-SRC-TOP comparator C:/Users/chase/develop/hdl/tutorials/comparator/src/comparator.vhd
+</code></pre>
+<p>Now rebuild with the <strong>demo</strong> plugin and its <code>-route</code> option.</p>
+<pre><code>$ legohdl build +demo -route
+INFO:	python $LEGOHDL/plugins/demo.py -route 
+echo PSEUDO PIN MAPPER 
+PSEUDO PIN MAPPER 
+Routing pins for device A2CG1099-1...
+PA1 --&gt; a
+PA7 --&gt; b
+PC3 --&gt; lt
+PC2 --&gt; gt
+PC0 --&gt; eq
+Pin assignments complete.
+</code></pre>
+<p>Great work! We've customized our <a href="./../glossary.html#workflow">workflow</a> to go along with our plugin. </p>
+<blockquote>
+<p><strong>Note:</strong> Remember, plugins are developed by <em>you</em>, meaning you can choose what labels to expect and what to do with the listed files in the blueprint!</p>
+</blockquote>
+<h1 id="page-review"><a class="header" href="#page-review">Page Review</a></h1>
+<p>Woo-hoo! On this page, we learned how to:</p>
+<ul>
+<li>edit the template and use placeholders for generic run-time values within files</li>
+<li>use entities from outside the current block</li>
+<li>find information such as units defined for a particular block with <code>info</code></li>
+<li>create a label to be searched for during export and dumped into the blueprint</li>
+</ul>
 
                     </main>
 

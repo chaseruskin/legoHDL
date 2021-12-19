@@ -194,6 +194,9 @@
 <p>The &quot;packages&quot; this package manager maintains are called <a href="./glossary.html#blocks">blocks</a>.</p>
 <h3 id="partial-version"><a class="header" href="#partial-version">Partial version</a></h3>
 <p>A <em>partial</em> <em>version</em> consists of either 1 or 2 of the most significant parts of a semantic version (version X or version X.X). Also related: <a href="./glossary.html#full-version">full version</a>.</p>
+<h3 id="placeholder"><a class="header" href="#placeholder">Placeholder</a></h3>
+<p>A <em>placeholder</em> is a temporary word that will be replaced by a value that cannot be determined until run-time. legoHDL finds all placeholders when creating a file and replaces them with their determined value.</p>
+<p>All placeholders are enclosed with <code>%</code> symbols, except the <code>TEMPLATE</code> placeholder.</p>
 <h3 id="plugin"><a class="header" href="#plugin">Plugin</a></h3>
 <p>A <em>plugin</em> is a custom program to build the current block's design. It can consist of an executable or script written in any language to call any desired tool to perform any task such as linting, simulation, synthesis, generating a bitstream, or programming a bitfile to a target FPGA. A plugin commonly either wraps or directly is a <a href="./glossary.html#backend-tool">backend tool</a>.</p>
 <p>In general, a plugin should read the <a href="./glossary.html#blueprint">blueprint</a> file to collect necessary data regarding what files are used for the current design. It is up to the plugin's developer to do what they want with the blueprint's collected information.</p>

@@ -333,11 +333,11 @@ INFO:   Generating dependency tree...
 <br>
 <h1 id="2-building-the-block"><a class="header" href="#2-building-the-block">2. Building the Block</a></h1>
 <p>The other half to hardware designing involves verification. We will create a testbench to verify the entity <em>and_gate</em> behaves according to the following truth table.</p>
-<table><thead><tr><th>A</th><th>B</th><th>|</th><th>Q</th></tr></thead><tbody>
-<tr><td>0</td><td>0</td><td></td><td>0</td></tr>
-<tr><td>0</td><td>1</td><td></td><td>0</td></tr>
-<tr><td>1</td><td>0</td><td></td><td>0</td></tr>
-<tr><td>1</td><td>1</td><td></td><td>1</td></tr>
+<table><thead><tr><th>A</th><th>B</th><th>Q</th></tr></thead><tbody>
+<tr><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>0</td><td>1</td><td>0</td></tr>
+<tr><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>1</td><td>1</td><td>1</td></tr>
 </tbody></table>
 <h2 id="creating-a-file-from-the-template"><a class="header" href="#creating-a-file-from-the-template">Creating a file from the template</a></h2>
 <p>Different types of HDL files can follow similiar code layouts, such as when designing a 2-process FSM or a testbench. For these situations, its beneficial to create a boilerplate template file for when that code-style is needed.</p>
@@ -607,8 +607,14 @@ tutorials        gates                D I      1.0.0
 </code></pre>
 <p>Notice that the <code>release</code> command also installed the <em>gates</em> block to the workspace cache, indicated by the <code>I</code> in status.
 The <code>D</code> indicates the block is also downloaded/developing because it is found in our workspace's local development path.</p>
+<p>We are done developing <em>gates</em>, so close the text-editor and delete the block from the downloads space.</p>
+<pre><code>$ legohdl del gates
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> Deleting the folder where the project is located will have the same effect as the command above.</p>
+</blockquote>
 <h1 id="page-review"><a class="header" href="#page-review">Page Review</a></h1>
-<p>Woo-hoo! We learned how to:</p>
+<p>Woo-hoo! On this page, We learned how to:</p>
 <ul>
 <li>create a new block and new files with <code>new</code></li>
 <li>view blocks, plugins, and template files with <code>list</code></li>
