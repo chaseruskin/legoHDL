@@ -145,6 +145,30 @@ class Vhdl(Language):
         #get all code statements
         csegs = self.spinCode()
 
+        #make sure the design unit is an entity to read architectures
+        if(u.getDesign() == Unit.Design.PACKAGE):
+            #check if package file uses an instance of a generic package
+            on_track = False
+            for cseg in csegs:
+                if(cseg[0].lower() == 'package' and cseg[1] == u.E()):
+                    on_track = True
+                elif(cseg[0] == 'is' and on_track):
+                    on_track = True
+                elif(cseg[0] == 'new' and on_track):
+                    inherits = cseg[1]
+                    #split into library and 
+                    parts = inherits.split('.')
+                    inherit_lib = 'work'
+                    if(len(parts) > 1):
+                        inherit_lib = parts[0]
+                    inherit_pkg = inherits
+                    u.linkLibs([inherit_lib], [inherit_pkg])
+                    #done adding inherited package as dependency
+                    break
+                else:
+                    on_track = False
+                pass
+
         #collect all visible component declarations
         for pkg in u.decodePkgs():
             #print("Importing "+pkg.getTitle())
@@ -153,8 +177,8 @@ class Vhdl(Language):
             if(pkg.isChecked() == False and recursive):
                 pkg.getLanguageFile().decode(pkg, recursive)
             pass
-
-        #make sure the design unit is an entity to read architectures
+        
+        #only decode entity units
         if(u.getDesign() != Unit.Design.ENTITY):
             u.setChecked(True)
             return

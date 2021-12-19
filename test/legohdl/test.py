@@ -118,9 +118,18 @@ def main():
 '''
     t.unit(t.run(vhdl1.getAbout), \
         exp=exp)
-    
-    # t.unit(t.run(vhdl1.spinCode), \
-    #     sev=ts.OBSERVE, dbg=False)
+
+    #decode package unit to test vhdl package inheritance
+    sub_pkg = list(Unit.Bottle['libraryA']['inheritpkg'])[0]
+    base_pkg = list(Unit.Bottle['libraryA']['genericpkg'])[0]
+    t.unit(t.run(vhdl1.decode, sub_pkg), \
+        sev=ts.OBSERVE)
+
+    #verify that the generic package is identified as a required package for sub_pkg
+    sub_req = sub_pkg.getReqs()[0]
+    t.unit(t.run(t.isEqual, sub_req, base_pkg), \
+        exp=True)
+
 
     # end unit tests -----------------------------------------------------------
 
@@ -300,6 +309,11 @@ class Test:
         
         self.log("\n")
         pass
+
+
+    def isEqual(self, lhs, rhs):
+        '''Return (bool) for lhs == rhs.'''
+        return lhs == rhs
 
     
     def run(self, funct, *args, **kwargs):
