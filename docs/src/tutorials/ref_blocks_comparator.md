@@ -73,21 +73,37 @@ Create a new file from our previously edited template file and call it `xor_gate
 $ legohdl new ./src/xor_gate.vhd -file="/src/TEMPLATE.vhd"
 ```
 
-Fill in a description of how the design will behave below `-- Description:`. Then, define the entity's interface like our previous designs.
+Fill in a description for how the design will behave below the `-- Description:` line. Note that the block's identifier, your name, and the day's date should already be filled in. Also define the entity's port interface.
 
 ```VHDL
+--------------------------------------------------------------------------------
+-- Block: tutorials.comparator
+-- Author: Chase Ruskin
+-- Created: December 18, 2021
+-- Entity: xor_gate
+-- Description:
+--	Q = A ^ B.
+--	
+--	Takes two singular bits A and B, and performs the XOR operation to produce
+--	Q.
+--------------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+
 entity xor_gate is
     port(
         a, b : in std_logic;
         q : out std_logic);
 end entity;
+...
 ```
 
-Now we define the architecture according to the previous schematic.
+Now it is time to describe the architecture according to the previous schematic.
 
-Uh-oh, _and_gate_ and _nor_gate_ are not defined in this project!
+Hang on, _and_gate_ and _nor_gate_ are not defined in this block!
 
-That's okay, accessing these entities is the same as we've done.
+That's okay, accessing these entities is the same as before.
 
 ```
 $ legohdl get and_gate -inst
@@ -218,7 +234,7 @@ INFO:	Generating dependency tree...
 [1]^-	tutorials.gates(@v1.0.0)
 ```
 
-Looks good! Notice how we know have a block order of requirements, and it shows what version of the block _gates_ is being referenced to create the current design.
+Looks good! Notice how we now have a block order of requirements, and it shows what version of the block _gates_ is being referenced to create the current design.
 
 ## Creating a Comparator
 
@@ -311,7 +327,7 @@ $ legohdl get gates
 --- ABOUT ---
 ------------------------------------------------------------------------------
  Block: tutorials.gates
- Created: December 18, 2021
+ Created: December 16, 2021
  Package: gates
  Description:
   Auto-generated package file by legoHDL. Components declared:
@@ -322,7 +338,7 @@ $ legohdl get gates
 
 _gates_ is a VHDL package file. Let's use it to help instantiate our _nor_gate_ and _and_gate_.
 
-Add the `library` and `use` clauses for _gates_ above `library ieee;`. 
+Add the `library` and `use` clauses for the _gates_ package above `library ieee;`. 
 
 ```VHDL
 library tutorials;
@@ -427,11 +443,11 @@ $ legohdl export
 
 ## Defining Labels
 
-Most commonly your HDL projects may require project-specific files outside of the HDL code such as constraints files, test vector files, tcl scripts, etc. 
+Commonly, your workflow for your HDL projects may require project-specific files outside of the HDL code such as constraints files, test vector files, tcl scripts, etc. 
 
 Imagine our task now is to use our psuedo-plugin to implement this design for an FPGA.
 
-Try to route (implement) our exported design.
+Try to route (implement) our exported design using the __demo__ plugin.
 
 ```
 $ legohdl build +demo -route
@@ -454,7 +470,7 @@ $ legohdl config -"label.local.PIN-MAP=*.csv"
 CREATED: label.local.pin-map = *.csv
 ```
 
-Create a file called `pins.csv`.
+Create a new file called `pins.csv`.
 ```
 $ legohdl new ./pins.csv -file
 ```
@@ -473,7 +489,7 @@ Export a new blueprint.
 ```
 $ legohdl export
 ```
-Inspecting the blueprint file, we can see legoHDL included a file as a `PIN-MAP` label.
+Inspecting the blueprint file, we can see legoHDL included a file under the custom `PIN-MAP` label.
 ```
 @PIN-MAP C:/Users/chase/develop/hdl/tutorials/comparator/pins.csv
 @VHDL-LIB tutorials C:/Users/chase/.legohdl/workspaces/primary/cache/_/tutorials/gates/gates/src/gates.vhd
