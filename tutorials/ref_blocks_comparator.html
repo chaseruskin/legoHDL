@@ -347,7 +347,7 @@ entity comparator is
 		lt, eq, gt : out std_logic);
 end entity;
 </code></pre>
-<p>Now, imagine you have completely blanked on what entities we have for use! How could we remember?</p>
+<p>Now imagine we have completely blanked on what entities we can use. How could we remember?</p>
 <p>View what blocks are available.</p>
 <pre><code>$ legohdl list
 Library          Block                Status   Version    Vendor
@@ -388,7 +388,8 @@ Required by:
 VHDL units:
     and_gate       gates          nor_gate       and_gate_tb
 </code></pre>
-<p>And look! We can see what VHDL primary design units exist in the block and Verilog modules if there were any. Now, that we know the units at our disposal, let's inspect them.</p>
+<p>And look! We can see what VHDL primary design units are defined in the block (as well as if there were any Verilog modules). </p>
+<p>Now that we know the units at our disposal, let's inspect them.</p>
 <pre><code>$ legohdl get gates
 --- ABOUT ---
 ------------------------------------------------------------------------------
@@ -416,7 +417,7 @@ library ieee;
 </code></pre>
 <pre><code>$ legohdl get xor_gate -inst
 </code></pre>
-<p>Copy and paste their outputted code into <code>comparator.vhd</code>, and connect signals accordingly. The final comparator architecture resemebles the following.</p>
+<p>Copy and paste their outputted code into <code>comparator.vhd</code>, and connect signals accordingly. The final comparator architecture resembles the following.</p>
 <pre><code class="language-VHDL">architecture rtl of comparator is
 
 	signal w_not_a : std_logic;
@@ -481,7 +482,7 @@ INFO:	Generating dependency tree...
 [2]^-	tutorials.comparator(@v0.0.0)
 [1]^-	tutorials.gates(@v1.0.0)
 </code></pre>
-<p>Awesome! This is how our design is supposed to look.</p>
+<p>Awesome! This is how we intended our design to look.</p>
 <blockquote>
 <p><strong>Note:</strong> Graphs are compressed by default; meaning duplicate branches use referecnce points. Use <code>-expand</code> to see the graph completely output duplicate branches.</p>
 </blockquote>
@@ -509,18 +510,18 @@ CREATED: label.local.pin-map = *.csv
 <p>Create a file called <code>pins.csv</code>.</p>
 <pre><code>$ legohdl new ./pins.csv -file
 </code></pre>
-<p>Enter the following contents in <code>./pins.csv</code>.</p>
+<p>Copy the following contents in <code>./pins.csv</code>.</p>
 <pre><code class="language-CSV">PA1,a
 PA7,b
 PC3,lt
 PC2,gt
 PC0,eq
 </code></pre>
-<p>Our FPGA has pins called <code>PA1</code>, <code>PA7</code>, <code>PC3</code>, <code>PC2</code>, and <code>PC0</code>, that we want to map to our design's ports <code>a</code>, <code>b</code>, <code>lt</code>, <code>gt</code>, and <code>eq</code>, respectively.</p>
+<p>Assume our FPGA has pins called <code>PA1</code>, <code>PA7</code>, <code>PC3</code>, <code>PC2</code>, and <code>PC0</code>, that we want to map to our design's ports <code>a</code>, <code>b</code>, <code>lt</code>, <code>gt</code>, and <code>eq</code>, respectively.</p>
 <p>Export a new blueprint.</p>
 <pre><code>$ legohdl export
 </code></pre>
-<p>Inspecting the blueprint file, we can see legoHDL listed our <code>PIN-MAP</code> file.</p>
+<p>Inspecting the blueprint file, we can see legoHDL included a file as a <code>PIN-MAP</code> label.</p>
 <pre><code>@PIN-MAP C:/Users/chase/develop/hdl/tutorials/comparator/pins.csv
 @VHDL-LIB tutorials C:/Users/chase/.legohdl/workspaces/primary/cache/_/tutorials/gates/gates/src/gates.vhd
 @VHDL-LIB tutorials C:/Users/chase/.legohdl/workspaces/primary/cache/_/tutorials/gates/gates/src/nor_gate.vhd
@@ -552,7 +553,7 @@ Pin assignments complete.
 <li>edit the template and use placeholders for generic run-time values within files</li>
 <li>use entities from outside the current block</li>
 <li>find information such as units defined for a particular block with <code>info</code></li>
-<li>create a label to be searched for during export and dumped into the blueprint</li>
+<li>create a label to search for particular supportive files during export and added into the blueprint</li>
 </ul>
 
                     </main>
