@@ -6,7 +6,7 @@
 #   Runs tests to verify certain functions within legoHDL.
 # ------------------------------------------------------------------------------
 
-import os, shutil, time
+import os, shutil, time, sys
 from datetime import datetime
 from enum import Enum
 
@@ -118,6 +118,9 @@ def main():
 '''
     t.unit(t.run(vhdl1.getAbout), \
         exp=exp)
+    
+    # t.unit(t.run(vhdl1.spinCode), \
+    #     sev=ts.OBSERVE, dbg=False)
 
     # end unit tests -----------------------------------------------------------
 
@@ -146,6 +149,7 @@ class Test:
     '''
 
     class Severity(Enum):
+        DEBUG    = -1
         OBSERVE  = 0
         WARNING  = 1
         ERROR    = 2
@@ -247,7 +251,7 @@ class Test:
         pass
 
 
-    def unit(self, got, exp, sev=Severity.ERROR, report=''):
+    def unit(self, got, exp=None, sev=Severity.ERROR, report=''):
         '''
         Perform a unit test.
         
@@ -280,7 +284,11 @@ class Test:
         if(sev != Test.Severity.CRITICAL):
             name = '\t' + name
 
-        if(got != exp):
+        #only print output
+        if(sev == Test.Severity.DEBUG):
+            self.log(str(sev.name)+name+'\n')
+            self.log(str(got))
+        elif(got != exp):
             #count as a failure if worse than WARNING
             if(sev.value > 1):
                 self._failures += 1

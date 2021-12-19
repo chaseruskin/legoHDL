@@ -443,9 +443,9 @@ $ legohdl export
 
 ## Defining Labels
 
-Commonly, your workflow for your HDL projects may require project-specific files outside of the HDL code such as constraints files, test vector files, tcl scripts, etc. 
+Commonly, your [workflow](./../glossary.md#workflow) for your HDL projects may require project-specific files outside of the HDL code such as constraints files, test vector files, tcl scripts, etc. 
 
-Imagine our task now is to use our psuedo-plugin to implement this design for an FPGA.
+Imagine our task now is to use our pseudo-plugin to implement this design for an FPGA.
 
 Try to route (implement) our exported design using the __demo__ plugin.
 
@@ -516,7 +516,7 @@ PC0 --> eq
 Pin assignments complete.
 ```
 
-Great work! We've customized our [workflow](./../glossary.md#workflow) to go along with our plugin. 
+Great work! We've customized our workflow to go along with our plugin. 
 
 > __Note:__ Remember, plugins are developed by _you_, meaning you can choose what labels to expect and what to do with the listed files in the blueprint!
 

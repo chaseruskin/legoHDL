@@ -20,3 +20,17 @@ architecture rtl of test1 is signal W_A : std_logic_vector; --begin
         B <= W_A;
         
     end architecture;
+
+
+
+-- vhdl-2008 construct
+package genericPKG is
+generic(
+    constant a : integer := 3
+);
+end package;
+
+package inheritPkg is new work.genericPKG
+    generic map(
+        a => 4
+    );
