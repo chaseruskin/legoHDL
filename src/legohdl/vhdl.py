@@ -402,11 +402,15 @@ class Vhdl(Language):
 
             #print(cseg)
 
-            if(len(cseg) and in_ports or in_generics):
+            if(len(cseg) and (in_ports or in_generics)):
                 #print(pb_cnt)
                 #print(cseg)
                 self._collectConnections(u, cseg, in_ports)
                 pass
+           
+            if(pb_cnt == 0):
+                in_ports = False
+                in_generics = False
         pass
 
 
