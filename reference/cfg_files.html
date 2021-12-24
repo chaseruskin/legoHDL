@@ -144,6 +144,51 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="cfg-files"><a class="header" href="#cfg-files">.cfg Files</a></h1>
+<p>This page describes technical information about the structure and syntax of configuration files (.cfg files) under legoHDL.</p>
+<p>legoHDL stores and retrieves data from files with a <code>.cfg</code> extension. This file structure has been pre-existing and loosely defined <a href="https://en.wikipedia.org/wiki/INI_file">here</a> on wikipedia. Some differences/unique features will be highlighted on this page relating to how legoHDL interprets these file types.</p>
+<h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
+<ul>
+<li>Keys and sections are case-insensitive. </li>
+<li>leading and trailing whitespace is trimmed from keys and regular values (indentation is ignored).</li>
+</ul>
+<h2 id="structure"><a class="header" href="#structure">Structure</a></h2>
+<p>There are 4 components to legoHDL cfg files: </p>
+<ul>
+<li>comments</li>
+<li>sections</li>
+<li>keys</li>
+<li>values</li>
+</ul>
+<h3 id="comments"><a class="header" href="#comments">Comments</a></h3>
+<p>Single-line comments are supported and must begin with a <code>;</code>.</p>
+<pre><code class="language-INI">; a comment!
+</code></pre>
+<h3 id="sections"><a class="header" href="#sections">Sections</a></h3>
+<p>Sections are enclosed with <code>[</code> <code>]</code>. Sections must be defined on their own line. Sections can be nested up to 2 levels; begin a section with <code>[.</code> instead of <code>[</code> to signify this section is nested within the immediately previously declared section.</p>
+<pre><code class="language-INI">[workspace]
+...
+
+[.lab] ; flattens out to section &quot;workspace.lab&quot;
+...
+</code></pre>
+<h3 id="keys"><a class="header" href="#keys">Keys</a></h3>
+<p>Keys must be the first thing on a new line and followed by a <code>=</code>. Keys must be a single word wihout spaces. Keys are used to define values.</p>
+<pre><code class="language-INI">secret-key = 30
+</code></pre>
+<h3 id="values"><a class="header" href="#values">Values</a></h3>
+<p>Values are WYSIWYG. All values are interpreted as strings. When not encapsulating a value in double quotes (<code>&quot;</code> <code>&quot;</code>), a newline in the value is converted into a single space during file reading. You can also you double quotes to make sure <code>;</code> or any other special cfg characters are kept in the value.</p>
+<p>Values can also be lists under the following rules:</p>
+<ul>
+<li>use <code>(</code> to begin the list and <code>)</code> to end the list</li>
+<li>items are separated by <code>,</code></li>
+</ul>
+<pre><code class="language-INI">; normal value
+norm-key = What you see is what you get!
+; this key will keep the ';'
+save-key = &quot;DO NOT TOUCH; THIS IS IMPORTANT&quot;
+; this key lists items
+list-key = (item1, item2, item3)
+</code></pre>
 
                     </main>
 
