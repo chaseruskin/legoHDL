@@ -40,7 +40,7 @@ Blocks can be used from this level within other blocks only if the `multi-develo
 A _flag_ is a special type of [argument](./glossary.md#argument) that controls or modifies how the specified command will function.
 
 ### Full version
-A _full version_ contains all 3 parts of a semantic version (version X.X.X). Also related: [partial version](./glossary.md#partial-version).
+A _full version_ contains all 3 parts of a semantic version (version `v*.*.*`). Also related: [partial version](./glossary.md#partial-version).
 
 ### Hardware Description Languages (HDLs)
 _Hardware_ _Description_ _Languages_ are a type of specialized computer language to describe electronic circuits. Two popular HDLs are [VHDL](./glossary.md#vhdl) and [verilog](./glossary.md#verilog).
@@ -72,7 +72,7 @@ A _package manager_ is a software program used to automate the finding, installi
 The "packages" this package manager maintains are called [blocks](./glossary.md#blocks).
 
 ### Partial version
-A _partial_ _version_ consists of either 1 or 2 of the most significant parts of a semantic version (version X or version X.X). Also related: [full version](./glossary.md#full-version).
+A _partial_ _version_ consists of either 1 or 2 of the most significant parts of a semantic version (version `v*` or version `v*.*`). Also related: [full version](./glossary.md#full-version).
 
 ### Placeholder
 A _placeholder_ is a temporary word that will be replaced by a value that cannot be determined until run-time. legoHDL finds all placeholders when creating a file and replaces them with their determined value.  

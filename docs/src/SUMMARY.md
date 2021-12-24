@@ -15,6 +15,7 @@
 
 - [Topic Guide](./topic_guide/topic_guide.md)
     - [Why does legoHDL exist?](./topic_guide/why_legohdl.md)
+    - [Versioning](./topic_guide/versioning.md)
     - [Intelligent Component Recognition](./topic_guide/intell_comp_rec.md)
 
 - [Reference](./reference/reference.md)
