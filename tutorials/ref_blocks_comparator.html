@@ -144,8 +144,15 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="using-blocks-comparator"><a class="header" href="#using-blocks-comparator">Using Blocks: Comparator</a></h1>
-<p>On this page, we begin to see more of the package management aspects of legoHDL as we create a second project called <em>comparator</em>. <em>Comparator</em> will need to use external designs previously created in the block <em>gates</em>. Before we create our next block, let's learn how to edit the template.</p>
-<h2 id="editing-the-template"><a class="header" href="#editing-the-template">Editing the template</a></h2>
+<p>On this page, we begin to see more of the package management aspects of legoHDL as we create a second project called <em>comparator</em>. </p>
+<ol>
+<li><a href="./ref_blocks_comparator.html#1-editing-the-template">Editing the template</a></li>
+<li><a href="./ref_blocks_comparator.html#2-creating-xor-gate">Creating XOR gate</a></li>
+<li><a href="./ref_blocks_comparator.html#3-creating-a-comparator">Creating a Comparator</a></li>
+<li><a href="./ref_blocks_comparator.html#4-defining-labels">Defining Labels</a></li>
+</ol>
+<p><em>Comparator</em> will need to use external designs previously created in the block <em>gates</em>. Before we create our next block, let's learn how to edit the template.</p>
+<h2 id="1-editing-the-template"><a class="header" href="#1-editing-the-template">1. Editing the template</a></h2>
 <p>Open the template's folder.</p>
 <pre><code>$ legohdl open -template
 </code></pre>
@@ -185,7 +192,7 @@ end architecture;
 </code></pre>
 <p>Our comparator will require an XOR gate, so let's design an XOR gate next.</p>
 <br>
-<h2 id="creating-xor-gate"><a class="header" href="#creating-xor-gate">Creating XOR gate</a></h2>
+<h2 id="2-creating-xor-gate"><a class="header" href="#2-creating-xor-gate">2. Creating XOR gate</a></h2>
 <p>The first design for the <em>comparator</em> block will be an XOR gate.</p>
 <p>Let's review the schematic for an XOR gate from purely NOR gates.</p>
 <p><img src="./../images/XOR_from_NOR.svg.png" alt="xor_from_nor" /></p>
@@ -338,7 +345,7 @@ INFO:	Generating dependency tree...
 [1]^-	tutorials.gates(@v1.0.0)
 </code></pre>
 <p>Looks good! Notice how we now have a block order of requirements, and it shows what version of the block <em>gates</em> is being referenced to create the current design.</p>
-<h2 id="creating-a-comparator"><a class="header" href="#creating-a-comparator">Creating a Comparator</a></h2>
+<h2 id="3-creating-a-comparator"><a class="header" href="#3-creating-a-comparator">3. Creating a Comparator</a></h2>
 <p>Now open <code>./src/comparator.vhd</code> to create our final design, which will use 3 <em>nor_gates</em>, 2 <em>and_gates</em>, and 1 <em>xor_gate</em>.</p>
 <p>First, write a description about our design and fill in the entity interface.</p>
 <pre><code class="language-VHDL">--------------------------------------------------------------------------------
@@ -505,7 +512,7 @@ INFO:	Generating dependency tree...
 <p>Export a blueprint file so we can use a plugin to build our design.</p>
 <pre><code>$ legohdl export
 </code></pre>
-<h2 id="defining-labels"><a class="header" href="#defining-labels">Defining Labels</a></h2>
+<h2 id="4-defining-labels"><a class="header" href="#4-defining-labels">4. Defining Labels</a></h2>
 <p>Commonly, your <a href="./../glossary.html#workflow">workflow</a> for your HDL projects may require project-specific files outside of the HDL code such as constraints files, test vector files, tcl scripts, etc. </p>
 <p>Imagine our task now is to use our pseudo-plugin to implement this design for an FPGA.</p>
 <p>Try to route (implement) our exported design using the <strong>demo</strong> plugin.</p>
