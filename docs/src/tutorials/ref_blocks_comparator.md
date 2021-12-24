@@ -1,8 +1,15 @@
 # Using Blocks: Comparator
 
-On this page, we begin to see more of the package management aspects of legoHDL as we create a second project called _comparator_. _Comparator_ will need to use external designs previously created in the block _gates_. Before we create our next block, let's learn how to edit the template.
+On this page, we begin to see more of the package management aspects of legoHDL as we create a second project called _comparator_. 
 
-## Editing the template
+1. [Editing the template](./ref_blocks_comparator.md#1-editing-the-template)
+2. [Creating XOR gate](./ref_blocks_comparator.md#2-creating-xor-gate)
+3. [Creating a Comparator](./ref_blocks_comparator.md#3-creating-a-comparator)
+4. [Defining Labels](./ref_blocks_comparator.md#4-defining-labels)
+
+_Comparator_ will need to use external designs previously created in the block _gates_. Before we create our next block, let's learn how to edit the template.
+
+## 1. Editing the template
 
 Open the template's folder.
 
@@ -57,7 +64,7 @@ Our comparator will require an XOR gate, so let's design an XOR gate next.
 
 <br>
 
-## Creating XOR gate
+## 2. Creating XOR gate
 
 The first design for the _comparator_ block will be an XOR gate.
 
@@ -236,7 +243,7 @@ INFO:	Generating dependency tree...
 
 Looks good! Notice how we now have a block order of requirements, and it shows what version of the block _gates_ is being referenced to create the current design.
 
-## Creating a Comparator
+## 3. Creating a Comparator
 
 Now open `./src/comparator.vhd` to create our final design, which will use 3 _nor_gates_, 2 _and_gates_, and 1 _xor_gate_.
 
@@ -441,7 +448,7 @@ Export a blueprint file so we can use a plugin to build our design.
 $ legohdl export
 ```
 
-## Defining Labels
+## 4. Defining Labels
 
 Commonly, your [workflow](./../glossary.md#workflow) for your HDL projects may require project-specific files outside of the HDL code such as constraints files, test vector files, tcl scripts, etc. 
 
