@@ -1219,8 +1219,19 @@ Enter:
 
         #create block object
         b = Block(block_path, self.WS())
-        #create the new block
-        b.create(title, cp_template=(self.hasFlag('no-template') == 0), remote=self.getVar('remote'))
+
+        remote = self.getVar('remote')
+        #make sure a git repository is empty if passing in a remote
+        if(remote != None and (Git.isBlankRepo(remote) == False) and (Git.isValidRepo(remote, remote=True))):
+            #clone project to the specified path, then run init command on that path
+            log.info("Creating new block from existing remote project...")
+            b.initialize(title, remote=remote, fork=self.hasFlag('fork'))
+            pass
+        else:
+            #create the new block
+            b.create(title, cp_template=(self.hasFlag('no-template') == 0), remote=remote)
+            pass
+
         #load the block
         if(self.hasFlag('open')):
             b.openInEditor()
