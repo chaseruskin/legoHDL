@@ -144,6 +144,53 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="open"><a class="header" href="#open">open</a></h1>
+<h2 id="name"><a class="header" href="#name">Name</a></h2>
+<pre><code>    open - Use a text-editor to open a variety of legoHDL-related things
+</code></pre>
+<h2 id="synopsis"><a class="header" href="#synopsis">Synopsis</a></h2>
+<pre><code>    legohdl open &lt;block&gt;
+    legohdl open [&lt;plugin-alias&gt;] -plugin
+    legohdl open &lt;profile-name&gt; -profile
+    legohdl open (-template | -settings[=&lt;mode&gt;])
+    legohdl open &lt;vendor-name&gt; -vendor
+</code></pre>
+<h2 id="description"><a class="header" href="#description">Description</a></h2>
+<pre><code>    :todo:
+</code></pre>
+<h2 id="options"><a class="header" href="#options">Options</a></h2>
+<pre><code>    &lt;block&gt;
+            :ref:
+
+    &lt;plugin-alias&gt;
+        The alias for the saved custom plugin within legoHDL. It is a 
+        user-defined key in settings under &quot;plugins&quot;. If the alias's value 
+        is a command that references a real existing file, that file will be
+        opened.
+
+    -plugin
+        The flag to indicate a plugin is trying to be opened. If no 
+        &lt;plugin-alias&gt; value is given with this flag, the built-in plugins 
+        folder will be opened.
+
+    &lt;profile-name&gt;
+        The profile configuration name stored within legoHDL settings. When 
+        valid, that profile directory will open.
+
+    -profile
+        The flag to indicate a profile is trying to be opened.
+
+    -template
+        The flag to indicate the template is trying to be opened. If the
+        configured template value in settings is blank, the built-in 
+        template folder will be opened.
+
+    -settings[=&lt;mode&gt;]
+        The flag to indicate the settings are trying to be opened.
+
+        &lt;mode&gt; determines how to open the settings. Accepted values are gui 
+        and file. When omitted, the default is to open the settings in gui 
+        mode.
+</code></pre>
 
                     </main>
 

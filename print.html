@@ -1621,21 +1621,399 @@ list-key = (item1, item2, item3)
 <li><a href="commands/./development/del.html">del</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="new"><a class="header" href="#new">new</a></h1>
-<blockquote>
-<p>Create a new legoHDL block (project)</p>
-</blockquote>
+<h2 id="name"><a class="header" href="#name">Name</a></h2>
+<pre><code>    new - Create a new legoHDL block (project)
+</code></pre>
 <h2 id="synopsis"><a class="header" href="#synopsis">Synopsis</a></h2>
+<pre><code>    legohdl new &lt;block&gt; [-open] [-remote=&lt;url&gt; [-fork]] [-path=&lt;path&gt;] 
+            [-no-template]
+    legohdl new &lt;file&gt; -file[=&lt;template-file&gt;] [-force] [-no-open]
+</code></pre>
 <h2 id="description"><a class="header" href="#description">Description</a></h2>
+<pre><code>    Create a new HDL project recognized by legoHDL as a &quot;block&quot;. The block
+    will be created under a new folder at the workspace's local path such
+    as &lt;workspace-path&gt;/&lt;block-library&gt;/&lt;block-name&gt;. A git repository will 
+    be automatically created, and a bare git remote repository URL can be 
+    passed for automatic configuration. If a non-bare remote repository is 
+    passed, the block will be created and can be optionally forked using 
+    -fork.
+
+    When copying in the template, files hidden within a hidden directory 
+    will not be copied. The files a designer would place inside a hidden 
+    directory may be extra files that could be initialized later on a 
+    per-block basis.
+
+    If trying to create a new file and that path already exists, the
+    existing file will not be overwritten unless -force is used. Creating 
+    new files by default will auto-open in the configured text editor.
+</code></pre>
 <h2 id="options"><a class="header" href="#options">Options</a></h2>
-<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<pre><code>    &lt;block&gt;
+        The project's title. A library and a name must be included, and 
+        optionally a vendor can be prepended to the title.
+
+    -open
+        Upon creating the block, open it in the configured text-editor.
+
+    -remote=&lt;url&gt;
+        A bare remote git repository to be attached to the created block's
+        git repository.
+
+    -fork
+        Separate the remote repository from the local repository. Do not
+        push changes to the original remote.
+
+    -path=&lt;path&gt;
+        Overrides the default download path and instead creates block at
+        &lt;path&gt; relative to the workspace's local path.
+
+    -no-template
+        Do not copy in the configured template folder. The created block
+        folder will only contain the necessary Block.cfg file.
+
+    &lt;file&gt;
+        The filepath to intialize a new file.
+
+    -file[=&lt;template-file&gt;]
+        Initialize a new file within the current block. Specifying 
+        &lt;template-file&gt; will copy the template file to the desired directory
+        with placeholders correctly replaced. Omitting &lt;template-file&gt; will 
+        create a blank file.
+
+    -force
+        Overwrite the filepath even if it already exists when initializing a
+        file.
+
+    -no-open
+        Do not open the newly created file in the configured editor.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="init"><a class="header" href="#init">init</a></h1>
+<h2 id="name-1"><a class="header" href="#name-1">Name</a></h2>
+<pre><code>    init - Initialize a legoHDL block from existing code and block metadata.
+</code></pre>
+<h2 id="synopsis-1"><a class="header" href="#synopsis-1">Synopsis</a></h2>
+<pre><code>    legohdl init &lt;block&gt; [-remote=&lt;url&gt; [-fork]] [-vendor=&lt;mkrt&gt;] 
+            [-summary=&lt;summary&gt;]
+</code></pre>
+<h2 id="description-1"><a class="header" href="#description-1">Description</a></h2>
+<pre><code>    When the current directory or provided remote repository already is a 
+    valid legoHDL block, the &lt;block&gt; is ignored.
+
+    When a remote repository is given and it already is a valid block (i.e. 
+    the root directory contains a Block.cfg file), the &lt;block&gt; will be 
+    ignored and the actual title will be used. This becomes an equivalent to
+    using the 'download' command.
+</code></pre>
+<h2 id="options-1"><a class="header" href="#options-1">Options</a></h2>
+<pre><code>    &lt;block&gt;
+            :ref:
+
+    -remote=&lt;url&gt;
+            :ref:
+
+    -fork
+            Do not link to the remote repository and try to push any changes
+            to the provided &lt;url&gt;.
+
+    -vendor=&lt;vndr&gt;
+            Set the block's vendor. &lt;vendor&gt; must be a valid vendor 
+            available in the current workspace.
+
+    -summary=&lt;summary&gt;
+            Fill in the summary for the block's metadata. &lt;summary&gt; is a 
+            string that describes the current block.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="open"><a class="header" href="#open">open</a></h1>
+<h2 id="name-2"><a class="header" href="#name-2">Name</a></h2>
+<pre><code>    open - Use a text-editor to open a variety of legoHDL-related things
+</code></pre>
+<h2 id="synopsis-2"><a class="header" href="#synopsis-2">Synopsis</a></h2>
+<pre><code>    legohdl open &lt;block&gt;
+    legohdl open [&lt;plugin-alias&gt;] -plugin
+    legohdl open &lt;profile-name&gt; -profile
+    legohdl open (-template | -settings[=&lt;mode&gt;])
+    legohdl open &lt;vendor-name&gt; -vendor
+</code></pre>
+<h2 id="description-2"><a class="header" href="#description-2">Description</a></h2>
+<pre><code>    :todo:
+</code></pre>
+<h2 id="options-2"><a class="header" href="#options-2">Options</a></h2>
+<pre><code>    &lt;block&gt;
+            :ref:
+
+    &lt;plugin-alias&gt;
+        The alias for the saved custom plugin within legoHDL. It is a 
+        user-defined key in settings under &quot;plugins&quot;. If the alias's value 
+        is a command that references a real existing file, that file will be
+        opened.
+
+    -plugin
+        The flag to indicate a plugin is trying to be opened. If no 
+        &lt;plugin-alias&gt; value is given with this flag, the built-in plugins 
+        folder will be opened.
+
+    &lt;profile-name&gt;
+        The profile configuration name stored within legoHDL settings. When 
+        valid, that profile directory will open.
+
+    -profile
+        The flag to indicate a profile is trying to be opened.
+
+    -template
+        The flag to indicate the template is trying to be opened. If the
+        configured template value in settings is blank, the built-in 
+        template folder will be opened.
+
+    -settings[=&lt;mode&gt;]
+        The flag to indicate the settings are trying to be opened.
+
+        &lt;mode&gt; determines how to open the settings. Accepted values are gui 
+        and file. When omitted, the default is to open the settings in gui 
+        mode.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="get"><a class="header" href="#get">get</a></h1>
+<h2 id="name-3"><a class="header" href="#name-3">Name</a></h2>
+<pre><code>    get - Print the compatible code for the ports list of a specified unit
+</code></pre>
+<h2 id="synopsis-3"><a class="header" href="#synopsis-3">Synopsis</a></h2>
+<pre><code>    legohdl get [&lt;block&gt;:]&lt;unit&gt; [-comp[=&lt;lang&gt;]] [-inst[=&lt;lang&gt;]] [-arch]
+            [-edges] [-D | -I] [-no-about]
+</code></pre>
+<h2 id="description-3"><a class="header" href="#description-3">Description</a></h2>
+<pre><code>    When trying to access current block-level entities, the &lt;block&gt;
+    can be omitted (a form of shortcutting). To reference a unit,
+    &lt;vendor&gt;.&lt;library&gt;.&lt;project&gt;:&lt;unit&gt;.
+
+    By default, it will print the 'about' section and the component 
+    declaration for VHDL entities or the module interface for Verilog 
+    modules. This is the comment header block found at the beginning of this
+    unit's file (if exists). Helpful to read more information about an unit 
+    and how it behaves (if a developer wrote one).
+
+    If -comp is present when -inst is also present and the language 
+    outputted is VHDL, the returned VHDL instantiation code will be a 
+    component instantiation. If -comp is omitted in this scenario, 
+    the returned VHDL instantiation code will be a direct entity 
+    instantiation.
+
+    The &lt;lang&gt; assignment from -inst has higher precedence of the &lt;lang&gt;
+    assignemnt from -comp when both are present.
+</code></pre>
+<h2 id="options-3"><a class="header" href="#options-3">Options</a></h2>
+<pre><code>    &lt;block&gt;
+            The block's title. If omitted, the &lt;entity&gt; is searched for only
+            within the current block's scope.
+
+    &lt;unit&gt;
+            The design unit name. For VHDL this is a package or entity, and
+            for Verilog this is a module.
+
+    -comp[=&lt;lang&gt;]
+            Print the component declaration. For Verilog language, the 
+            module interface is printed instead of a component declaration.
+
+            &lt;lang&gt; specifies what HDL language to use to print the formatted
+            code. Accepted values are vlog and vhdl. Omitting &lt;lang&gt; prints 
+            the code in the entity's original language.
+
+    -inst[=&lt;lang&gt;]
+            Print the direct entity instantiation (VHDL-93 feature) or 
+            component instantiation. This includes relevant constants for 
+            each generic, relevant signals for each port, and the 
+            instantiation code. 
+
+            &lt;lang&gt; specifies what HDL language to use to print the formatted
+            code. Accepted values are vlog and vhdl. Omitting &lt;lang&gt; prints 
+            the code in the unit's original language.
+
+    -arch
+            List the available architectures. If the unit is a Verilog
+            module, only &quot;rtl&quot; will be listed.
+
+    -edges
+            Print the units are required by this unit and print the units 
+            that integrate this unit into their design. Gets the edges from
+            the hierarchical graph.
+
+    -D
+            Search the downloaded blocks to get this unit, regardless of
+            the status of 'multi-develop'.
+
+    -I
+            Search the installed blocks to get this unit, regardless of 
+            the status of 'multi-develop'.
+
+    -no-about
+            Do not print the 'about' section for the given design unit.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="graph"><a class="header" href="#graph">graph</a></h1>
+<h2 id="name-4"><a class="header" href="#name-4">Name</a></h2>
+<pre><code>    graph - Visualize the dependency tree for the design
+</code></pre>
+<h2 id="synopsis-4"><a class="header" href="#synopsis-4">Synopsis</a></h2>
+<pre><code>    legohdl graph [&lt;entity&gt;] [-tb=&lt;tb&gt; | -ignore-tb] [-expand] [-disp-full]
+</code></pre>
+<h2 id="description-4"><a class="header" href="#description-4">Description</a></h2>
+<pre><code>    Create and view the dependency tree for the current block design. This 
+    command is provided as a guide to quickly help the designer see how the
+    design unfolds.
+
+    When no &lt;entity&gt; is given, the top-level will be auto-detected and the
+    user will be prompted to select one if multiple exist. When -ignore-tb 
+    and -tb=&lt;tb&gt; are absent, the testbench for the top-level entity will be 
+    auto-detected, if one exists. The user will be prompted to select one if
+    multiple exist.
+
+    By default, the graph is in compression mode and will create reference points
+    when a duplicate branch occurs. Raising -expand will explicitly display all
+    branches without reference points.
+</code></pre>
+<h2 id="options-4"><a class="header" href="#options-4">Options</a></h2>
+<pre><code>    &lt;entity&gt;
+            The design unit to request as top-level.
+
+    -tb=&lt;tb&gt;
+            The relevant testbench file to explicitly include in the 
+            dependency tree. Has higher precedence of -ignore-tb.
+
+    -ignore-tb
+            Do not include any testbench unit in the dependency tree.
+
+    -expand
+            Decompress reference points into their duplicate branchs.
+
+    -disp-full
+            Display full block identifiers for each unit.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="export"><a class="header" href="#export">export</a></h1>
+<h2 id="name-5"><a class="header" href="#name-5">Name</a></h2>
+<pre><code>    export - Generate a blueprint file or VHDL package file
+</code></pre>
+<h2 id="synopsis-5"><a class="header" href="#synopsis-5">Synopsis</a></h2>
+<pre><code>    legohdl export [&lt;unit&gt;] [-tb=&lt;tb&gt; | -ignore-tb] [-quiet] [-no-clean]
+            [-all]
+    legohdl export -pack[=&lt;file&gt;] [-omit=&lt;units&gt;] [-inc=&lt;units&gt;]
+</code></pre>
+<h2 id="description-5"><a class="header" href="#description-5">Description</a></h2>
+<pre><code>    -ignore-tb has higher precedence than when a &lt;tb&gt; is stated.
+
+    For generating a VHDL package file, passing -inc will ignore -omit if it
+    is passed to the command-line as well. -inc has higher precedence than 
+    -omit.
+
+    The default VHDL package file name is the block's project name appended
+    with '_pkg', and its path will be located at the same directory of the
+    Block.cfg file. Override its location and name by entering a &lt;file&gt;.
+    Testbench units (design units with no port interfaces) are always
+    omitted.
+</code></pre>
+<h2 id="options-5"><a class="header" href="#options-5">Options</a></h2>
+<pre><code>    &lt;unit&gt;
+            The design unit to request as top-level. All relevant HDL files
+            will stem from this unit's file.
+
+    -tb=&lt;tb&gt;
+            Explicitly request what top-level simulation file to include in
+            the blueprint.
+
+    -ignore-tb
+            Do not include a testbench file in the blueprint.
+
+    -quiet
+            Do not print intermediate information while the blueprint file 
+            is being created.
+
+    -no-clean
+            Do not delete the build/ directory when writing the blueprint.
+
+    -all
+            Add all block-level source files and their dependencies.
+
+    -pack[=&lt;file&gt;]
+            Create a VHDL package file with component declarations for the 
+            current block. Optionally add a relative path and file name for
+            &lt;file&gt;.
+
+    -omit=&lt;units&gt;
+            Specific list of units to exclude when generating the package 
+            file. &lt;units&gt; is a list separated by ','.
+
+    -inc=&lt;units&gt;
+            When given, it will only allow these explicit units to be
+            included in the VHDL package file. &lt;units&gt; is a list separated
+            by ','.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="build"><a class="header" href="#build">build</a></h1>
+<h2 id="name-6"><a class="header" href="#name-6">Name</a></h2>
+<pre><code>    build - Execute a custom backend plugin/tool command
+</code></pre>
+<h2 id="synopsis-6"><a class="header" href="#synopsis-6">Synopsis</a></h2>
+<pre><code>    legohdl [build] +&lt;plugin-alias&gt; [&lt;plugin-args...&gt;]
+</code></pre>
+<h2 id="description-6"><a class="header" href="#description-6">Description</a></h2>
+<pre><code>    :todo:
+</code></pre>
+<h2 id="options-6"><a class="header" href="#options-6">Options</a></h2>
+<pre><code>    &lt;plugin-alias&gt;
+            The alias for the saved custom plugin within legoHDL. It will 
+            execute the command as if it was called through the terminal.
+
+    &lt;plugin-args...&gt;
+            Any additonal arguments to pass directly to the called command.
+            All arguments after &lt;plugin-alias&gt; will be passed to the 
+            executed command.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="release"><a class="header" href="#release">release</a></h1>
+<h2 id="name-7"><a class="header" href="#name-7">Name</a></h2>
+<pre><code>    release - Set a newer version for the current block
+</code></pre>
+<h2 id="synopsis-7"><a class="header" href="#synopsis-7">Synopsis</a></h2>
+<pre><code>    legohdl release &lt;version&gt; [-msg=&lt;msg&gt;] [-strict] [-dry-run] 
+            [-no-changelog] [-no-install]
+</code></pre>
+<h2 id="description-7"><a class="header" href="#description-7">Description</a></h2>
+<pre><code>    :todo:
+</code></pre>
+<h2 id="options-7"><a class="header" href="#options-7">Options</a></h2>
+<pre><code>    &lt;version&gt;
+            The next version for the current block. The value must be either
+            major, minor, patch, or an explicit version.
+
+    -msg=&lt;msg&gt;
+            The message to commit with. The value for &lt;msg&gt; is a string and
+            if the string includes spaces then quotes must encapsulate 
+            &lt;msg&gt;. The default message is: &quot;Releases legohdl version
+            &lt;version&gt;&quot;.
+
+    -strict
+            Only adds and commits the modified changelog (if exists) and the
+            Block.cfg file. All other uncommitted changes will not be in
+            the following release.
+
+    -dry-run
+            Perform the complete release process as-if the block was to be
+            released, but leaves the block unmodified and unreleased.
+
+    -no-install
+            Will not automatically install the latest version to the cache.
+
+    -no-changelog
+            Skip auto-opening a changelog file (if exists) during the
+            release process.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="del"><a class="header" href="#del">del</a></h1>
+<h2 id="name-8"><a class="header" href="#name-8">Name</a></h2>
+<pre><code>    del - Remove a variety of legoHDL-related things
+</code></pre>
+<h2 id="synopsis-8"><a class="header" href="#synopsis-8">Synopsis</a></h2>
+<pre><code>    legohdl del &lt;block&gt; [-uninstall]
+</code></pre>
+<h2 id="description-8"><a class="header" href="#description-8">Description</a></h2>
+<pre><code>    :todo:
+</code></pre>
+<h2 id="options-8"><a class="header" href="#options-8">Options</a></h2>
+<pre><code>    :todo:
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="management-commands"><a class="header" href="#management-commands">Management Commands</a></h1>
 <ul>
 <li><a href="commands/./management/list.html">list</a></li>
@@ -1648,13 +2026,265 @@ list-key = (item1, item2, item3)
 <li><a href="commands/./management/config.html">config</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="list"><a class="header" href="#list">list</a></h1>
+<h2 id="name-9"><a class="header" href="#name-9">Name</a></h2>
+<pre><code>    list - View a variety of legoHDL-related things
+</code></pre>
+<h2 id="synopsis-9"><a class="header" href="#synopsis-9">Synopsis</a></h2>
+<pre><code>    legohdl list [&lt;search&gt;] [[-unit [-all] [-ignore-tb]] | [-D] [-I] [-A]] [-alpha]
+    legohdl list [-plugin | -label | -vendor | -workspace | -profile | 
+            -template]
+</code></pre>
+<h2 id="description-9"><a class="header" href="#description-9">Description</a></h2>
+<pre><code>    Retrieves a requested data from the catalog.
+
+    When passing a value for &lt;search&gt;, each subsection of a block's
+    identifier can be omitted. With each additionally provided subsection,
+    the values shift left to the next subsection. See EXAMPLES for more 
+    information.
+</code></pre>
+<h2 id="options-9"><a class="header" href="#options-9">Options</a></h2>
+<pre><code>    &lt;search&gt;
+            Optional field to narrow the given list by. 
+
+    -unit
+            Instead of listing blocks, list the units.
+
+    -alpha
+            Organize the list in alphabetical order.
+
+    -I
+            Filter only installed blocks or units.
+
+    -D
+            Filter only downloaded blocks or units.    
+
+    -A
+            Filter only available blocks or units from vendors.
+
+    -all
+            Display all units, regardless if they are usable or not
+            according to what 'multi-develop' is set to.
+
+    -plugin
+            Return the list of plugins. Fields are alias and command.
+
+    -label
+            Return the list of labels. Fields are label, extensions,
+            and global.
+
+    -vendor
+            Return the list of vendors. Fields are vendor, remote 
+            repository, block count, and active.
+
+    -workspace
+            Return the list of workspaces. Fields are workspace, active, 
+            path, and vendors.
+
+    -profile
+            Return the list of profiles. Fields are profile, last import, 
+            legohdl.cfg, template/, and plugins/.
+
+    -template
+            Return the list of all availble files from the current template.
+            These files can be referenced exactly as listed when 
+            initializing a new file with the 'init' command.
+</code></pre>
+<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<pre><code>    legohdl list lab0
+            Since a vendor is omitted and a library is omitted, all blocks 
+            starting with &quot;lab0&quot; in their name are returned.
+
+    legohdl list eel4712c.  
+            Since a vendor is omitted and a name is omitted, all blocks 
+            starting with &quot;eel4712c&quot; in their library are returned.
+
+    legohdl list uf-ece..
+            Since a library is omitted and a name is omitted, all blocks 
+            starting with &quot;uf-ece&quot; in their vendor are returned.
+
+    legohdl list ..:mux_2x1 -unit
+            All V.L.N subsections are blank, so the entire catalog is 
+            searched to see if an unit exists with the name &quot;mux_2x1&quot;.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="refresh"><a class="header" href="#refresh">refresh</a></h1>
+<h2 id="name-10"><a class="header" href="#name-10">Name</a></h2>
+<pre><code>    refresh - Synchronize local vendor repositories with their remotes
+</code></pre>
+<h2 id="synopsis-10"><a class="header" href="#synopsis-10">Synopsis</a></h2>
+<pre><code>    legohdl refresh [&lt;vendor&gt; | -all]
+    legohdl refresh [&lt;profile&gt; | -all] -profile
+</code></pre>
+<h2 id="description-10"><a class="header" href="#description-10">Description</a></h2>
+<pre><code>    Checks for updates from vendor remote repositories and pulls them down
+    to stay up-to-date.
+
+    If no arguments are given, by default all vendors available to the
+    current workspace will try to refresh. If -all is given, every possible
+    vendor, even outside workspace availability, will sync with its remote 
+    (if exists).
+</code></pre>
+<h2 id="options-10"><a class="header" href="#options-10">Options</a></h2>
+<pre><code>    &lt;vendor&gt;
+            The name of the known vendor to synchronize.
+
+    -all
+            Synchronize all profiles or vendors across all workspaces.
+
+    &lt;profile&gt;
+            The name of the profile to syncrhonize.
+
+    -profile
+            Flag to indicate that a profile is trying to be refreshed.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="install"><a class="header" href="#install">install</a></h1>
+<h2 id="name-11"><a class="header" href="#name-11">Name</a></h2>
+<pre><code>    install - Bring a block to the workspace's cache for usage
+</code></pre>
+<h2 id="synopsis-11"><a class="header" href="#synopsis-11">Synopsis</a></h2>
+<pre><code>    legohdl install &lt;block&gt; [-&lt;version&gt; | -requirements]
+</code></pre>
+<h2 id="description-11"><a class="header" href="#description-11">Description</a></h2>
+<h2 id="options-11"><a class="header" href="#options-11">Options</a></h2>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="uninstall"><a class="header" href="#uninstall">uninstall</a></h1>
+<h2 id="name-12"><a class="header" href="#name-12">Name</a></h2>
+<pre><code>    uninstall - Remove a block from the workspace's cache
+</code></pre>
+<h2 id="synopsis-12"><a class="header" href="#synopsis-12">Synopsis</a></h2>
+<pre><code>    legohdl uninstall &lt;block&gt; [-&lt;version&gt;]
+</code></pre>
+<h2 id="description-12"><a class="header" href="#description-12">Description</a></h2>
+<pre><code>    Removes installed block versions from the workspace cache. 
+
+    If -&lt;version&gt; is omitted, then ALL versions for the specified block will
+    be removed. Specifying -&lt;version&gt; will only remove it and no others, 
+    given it is installed. 
+
+    Can also remove groups of versions by passing a partial version to
+    -&lt;version&gt;.
+</code></pre>
+<h2 id="options-12"><a class="header" href="#options-12">Options</a></h2>
+<pre><code>    &lt;block&gt;
+            :ref:
+
+    -&lt;version&gt;
+            Specific version to uninstall.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="download"><a class="header" href="#download">download</a></h1>
+<h2 id="name-13"><a class="header" href="#name-13">Name</a></h2>
+<pre><code>    download - Bring a block to the local workspace for development
+</code></pre>
+<h2 id="synopsis-13"><a class="header" href="#synopsis-13">Synopsis</a></h2>
+<pre><code>    legohdl download (&lt;block&gt; | (&lt;url&gt; [-fork])) [-open] [-path=&lt;path&gt;]
+</code></pre>
+<h2 id="description-13"><a class="header" href="#description-13">Description</a></h2>
+<h2 id="options-13"><a class="header" href="#options-13">Options</a></h2>
+<pre><code>    -path=&lt;path&gt;
+        Overrides the default download path and instead creates block at
+        &lt;path&gt; relative to the workspace's local path.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="update"><a class="header" href="#update">update</a></h1>
+<h2 id="name-14"><a class="header" href="#name-14">Name</a></h2>
+<pre><code>    update - Get the latest installed block or profile
+</code></pre>
+<h2 id="synopsis-14"><a class="header" href="#synopsis-14">Synopsis</a></h2>
+<pre><code>    legohdl update &lt;block&gt;
+    legohdl update &lt;profile-name&gt; -profile
+</code></pre>
+<h2 id="description-14"><a class="header" href="#description-14">Description</a></h2>
+<pre><code>    &lt;block&gt;
+            :ref:
+
+    &lt;profile-name&gt;
+            :todo:
+
+    -profile
+            :todo:
+</code></pre>
+<h2 id="options-14"><a class="header" href="#options-14">Options</a></h2>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="info"><a class="header" href="#info">info</a></h1>
+<h2 id="name-15"><a class="header" href="#name-15">Name</a></h2>
+<pre><code>    info - Read detailed information about a block
+</code></pre>
+<h2 id="synopsis-15"><a class="header" href="#synopsis-15">Synopsis</a></h2>
+<pre><code>    legohdl info &lt;block&gt; [-D | -I | -&lt;version&gt; | -A] [-more] 
+            [-vers[=&lt;range&gt;]] [-changelog]
+    legohdl info &lt;profile&gt; -profile
+    legohdl info &lt;vendor&gt; -vendor
+</code></pre>
+<h2 id="description-15"><a class="header" href="#description-15">Description</a></h2>
+<pre><code>    By default, will print the metadata about the given block. 
+
+    If -vers is applied, it will list all the available versions for 
+    installation, and hightlight which versions are installed under the 
+    workspace cache.
+
+    If -changelog is applied, only the changelog file will be printed to
+    the console (if exists).
+</code></pre>
+<h2 id="options-15"><a class="header" href="#options-15">Options</a></h2>
+<pre><code>    &lt;block&gt;
+            :ref:
+
+    -D
+            Return data from block at the download level, regardless of
+            the status of 'multi-develop'.
+
+    -I
+            Return data from latest block at the installation level,
+            regardless of the status of 'multi-develop'.
+
+    -&lt;version&gt;
+            Return data from the block with specified version/partial
+            version.
+
+    -A
+            Return data from the block at the available level.
+
+    -more
+            Get relevant stats about the block such as the path, project 
+            size, design units, and block integrations.
+
+    -vers[=&lt;range&gt;]
+            List all available versions for the specified block. &lt;range&gt;
+            will constrain the list of versions. Accepted values for &lt;range&gt;
+            are I or a version indexing.
+
+    -changelog
+            Print the associated changelog with the block.
+
+    &lt;profile&gt;
+            :ref:
+
+    -profile
+            Indicate that a profile is to be searched for its information.
+
+    &lt;vendor&gt;
+            :ref:
+
+    -vendor
+            Indicate that a vendor is to be searched for its information.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="config"><a class="header" href="#config">config</a></h1>
+<h2 id="name-16"><a class="header" href="#name-16">Name</a></h2>
+<pre><code>    config - Edit/modify legoHDL settings
+</code></pre>
+<h2 id="synopsis-16"><a class="header" href="#synopsis-16">Synopsis</a></h2>
+<pre><code>    legohdl config &lt;profile-name&gt; [-ask]
+    legohdl config [-&lt;keypath&gt;[(+ | -)]=&lt;value&gt;] [-&lt;sectionpath&gt;]
+</code></pre>
+<h2 id="description-16"><a class="header" href="#description-16">Description</a></h2>
+<pre><code>    :todo:
+</code></pre>
+<h2 id="options-16"><a class="header" href="#options-16">Options</a></h2>
+<pre><code>    &lt;profile-name&gt;
+            An existing profile to import settings from.
+
+    -ask
+            Prompts the user before each import step (settings, template, 
+            plugins) if the following should be imported and overloaded.
+
+    :todo:
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
 <h3 id="argument"><a class="header" href="#argument">Argument</a></h3>
 <p>An <em>argument</em> is a string/value proceding a call to a software program on the command-line that will be passed to that program.</p>

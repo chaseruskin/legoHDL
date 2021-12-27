@@ -144,6 +144,63 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="export"><a class="header" href="#export">export</a></h1>
+<h2 id="name"><a class="header" href="#name">Name</a></h2>
+<pre><code>    export - Generate a blueprint file or VHDL package file
+</code></pre>
+<h2 id="synopsis"><a class="header" href="#synopsis">Synopsis</a></h2>
+<pre><code>    legohdl export [&lt;unit&gt;] [-tb=&lt;tb&gt; | -ignore-tb] [-quiet] [-no-clean]
+            [-all]
+    legohdl export -pack[=&lt;file&gt;] [-omit=&lt;units&gt;] [-inc=&lt;units&gt;]
+</code></pre>
+<h2 id="description"><a class="header" href="#description">Description</a></h2>
+<pre><code>    -ignore-tb has higher precedence than when a &lt;tb&gt; is stated.
+
+    For generating a VHDL package file, passing -inc will ignore -omit if it
+    is passed to the command-line as well. -inc has higher precedence than 
+    -omit.
+
+    The default VHDL package file name is the block's project name appended
+    with '_pkg', and its path will be located at the same directory of the
+    Block.cfg file. Override its location and name by entering a &lt;file&gt;.
+    Testbench units (design units with no port interfaces) are always
+    omitted.
+</code></pre>
+<h2 id="options"><a class="header" href="#options">Options</a></h2>
+<pre><code>    &lt;unit&gt;
+            The design unit to request as top-level. All relevant HDL files
+            will stem from this unit's file.
+
+    -tb=&lt;tb&gt;
+            Explicitly request what top-level simulation file to include in
+            the blueprint.
+
+    -ignore-tb
+            Do not include a testbench file in the blueprint.
+
+    -quiet
+            Do not print intermediate information while the blueprint file 
+            is being created.
+
+    -no-clean
+            Do not delete the build/ directory when writing the blueprint.
+
+    -all
+            Add all block-level source files and their dependencies.
+
+    -pack[=&lt;file&gt;]
+            Create a VHDL package file with component declarations for the 
+            current block. Optionally add a relative path and file name for
+            &lt;file&gt;.
+
+    -omit=&lt;units&gt;
+            Specific list of units to exclude when generating the package 
+            file. &lt;units&gt; is a list separated by ','.
+
+    -inc=&lt;units&gt;
+            When given, it will only allow these explicit units to be
+            included in the VHDL package file. &lt;units&gt; is a list separated
+            by ','.
+</code></pre>
 
                     </main>
 

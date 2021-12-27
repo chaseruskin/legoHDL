@@ -144,6 +144,35 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="refresh"><a class="header" href="#refresh">refresh</a></h1>
+<h2 id="name"><a class="header" href="#name">Name</a></h2>
+<pre><code>    refresh - Synchronize local vendor repositories with their remotes
+</code></pre>
+<h2 id="synopsis"><a class="header" href="#synopsis">Synopsis</a></h2>
+<pre><code>    legohdl refresh [&lt;vendor&gt; | -all]
+    legohdl refresh [&lt;profile&gt; | -all] -profile
+</code></pre>
+<h2 id="description"><a class="header" href="#description">Description</a></h2>
+<pre><code>    Checks for updates from vendor remote repositories and pulls them down
+    to stay up-to-date.
+
+    If no arguments are given, by default all vendors available to the
+    current workspace will try to refresh. If -all is given, every possible
+    vendor, even outside workspace availability, will sync with its remote 
+    (if exists).
+</code></pre>
+<h2 id="options"><a class="header" href="#options">Options</a></h2>
+<pre><code>    &lt;vendor&gt;
+            The name of the known vendor to synchronize.
+
+    -all
+            Synchronize all profiles or vendors across all workspaces.
+
+    &lt;profile&gt;
+            The name of the profile to syncrhonize.
+
+    -profile
+            Flag to indicate that a profile is trying to be refreshed.
+</code></pre>
 
                     </main>
 

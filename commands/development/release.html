@@ -144,6 +144,43 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="release"><a class="header" href="#release">release</a></h1>
+<h2 id="name"><a class="header" href="#name">Name</a></h2>
+<pre><code>    release - Set a newer version for the current block
+</code></pre>
+<h2 id="synopsis"><a class="header" href="#synopsis">Synopsis</a></h2>
+<pre><code>    legohdl release &lt;version&gt; [-msg=&lt;msg&gt;] [-strict] [-dry-run] 
+            [-no-changelog] [-no-install]
+</code></pre>
+<h2 id="description"><a class="header" href="#description">Description</a></h2>
+<pre><code>    :todo:
+</code></pre>
+<h2 id="options"><a class="header" href="#options">Options</a></h2>
+<pre><code>    &lt;version&gt;
+            The next version for the current block. The value must be either
+            major, minor, patch, or an explicit version.
+
+    -msg=&lt;msg&gt;
+            The message to commit with. The value for &lt;msg&gt; is a string and
+            if the string includes spaces then quotes must encapsulate 
+            &lt;msg&gt;. The default message is: &quot;Releases legohdl version
+            &lt;version&gt;&quot;.
+
+    -strict
+            Only adds and commits the modified changelog (if exists) and the
+            Block.cfg file. All other uncommitted changes will not be in
+            the following release.
+
+    -dry-run
+            Perform the complete release process as-if the block was to be
+            released, but leaves the block unmodified and unreleased.
+
+    -no-install
+            Will not automatically install the latest version to the cache.
+
+    -no-changelog
+            Skip auto-opening a changelog file (if exists) during the
+            release process.
+</code></pre>
 
                     </main>
 

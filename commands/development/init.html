@@ -144,6 +144,41 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="init"><a class="header" href="#init">init</a></h1>
+<h2 id="name"><a class="header" href="#name">Name</a></h2>
+<pre><code>    init - Initialize a legoHDL block from existing code and block metadata.
+</code></pre>
+<h2 id="synopsis"><a class="header" href="#synopsis">Synopsis</a></h2>
+<pre><code>    legohdl init &lt;block&gt; [-remote=&lt;url&gt; [-fork]] [-vendor=&lt;mkrt&gt;] 
+            [-summary=&lt;summary&gt;]
+</code></pre>
+<h2 id="description"><a class="header" href="#description">Description</a></h2>
+<pre><code>    When the current directory or provided remote repository already is a 
+    valid legoHDL block, the &lt;block&gt; is ignored.
+
+    When a remote repository is given and it already is a valid block (i.e. 
+    the root directory contains a Block.cfg file), the &lt;block&gt; will be 
+    ignored and the actual title will be used. This becomes an equivalent to
+    using the 'download' command.
+</code></pre>
+<h2 id="options"><a class="header" href="#options">Options</a></h2>
+<pre><code>    &lt;block&gt;
+            :ref:
+
+    -remote=&lt;url&gt;
+            :ref:
+
+    -fork
+            Do not link to the remote repository and try to push any changes
+            to the provided &lt;url&gt;.
+
+    -vendor=&lt;vndr&gt;
+            Set the block's vendor. &lt;vendor&gt; must be a valid vendor 
+            available in the current workspace.
+
+    -summary=&lt;summary&gt;
+            Fill in the summary for the block's metadata. &lt;summary&gt; is a 
+            string that describes the current block.
+</code></pre>
 
                     </main>
 

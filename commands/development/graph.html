@@ -144,6 +144,44 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="graph"><a class="header" href="#graph">graph</a></h1>
+<h2 id="name"><a class="header" href="#name">Name</a></h2>
+<pre><code>    graph - Visualize the dependency tree for the design
+</code></pre>
+<h2 id="synopsis"><a class="header" href="#synopsis">Synopsis</a></h2>
+<pre><code>    legohdl graph [&lt;entity&gt;] [-tb=&lt;tb&gt; | -ignore-tb] [-expand] [-disp-full]
+</code></pre>
+<h2 id="description"><a class="header" href="#description">Description</a></h2>
+<pre><code>    Create and view the dependency tree for the current block design. This 
+    command is provided as a guide to quickly help the designer see how the
+    design unfolds.
+
+    When no &lt;entity&gt; is given, the top-level will be auto-detected and the
+    user will be prompted to select one if multiple exist. When -ignore-tb 
+    and -tb=&lt;tb&gt; are absent, the testbench for the top-level entity will be 
+    auto-detected, if one exists. The user will be prompted to select one if
+    multiple exist.
+
+    By default, the graph is in compression mode and will create reference points
+    when a duplicate branch occurs. Raising -expand will explicitly display all
+    branches without reference points.
+</code></pre>
+<h2 id="options"><a class="header" href="#options">Options</a></h2>
+<pre><code>    &lt;entity&gt;
+            The design unit to request as top-level.
+
+    -tb=&lt;tb&gt;
+            The relevant testbench file to explicitly include in the 
+            dependency tree. Has higher precedence of -ignore-tb.
+
+    -ignore-tb
+            Do not include any testbench unit in the dependency tree.
+
+    -expand
+            Decompress reference points into their duplicate branchs.
+
+    -disp-full
+            Display full block identifiers for each unit.
+</code></pre>
 
                     </main>
 
