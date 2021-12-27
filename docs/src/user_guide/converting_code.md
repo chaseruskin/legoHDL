@@ -5,7 +5,7 @@ within legoHDL.
 
 <br>
 
-### A local project
+### Local projects
 
 1. Determine the local path of your current workspace.
 ```
@@ -22,7 +22,7 @@ $ legohdl init <block>
 
 <br>
 
-### A remote project
+### Remote projects
 
 1. Copy the remote repository URL (paste it where `<url>` is in the following command).
 
