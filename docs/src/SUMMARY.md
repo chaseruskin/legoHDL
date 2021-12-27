@@ -11,6 +11,8 @@
     - [Using Blocks: Comparator](./tutorials/ref_blocks_comparator.md)
 
 - [User Guide](./user_guide/user_guide.md)
+    - [Converting Code](./user_guide/converting_code.md)
+    - [Writing Plugins](./user_guide/writing_plugins.md)
     - [Managing Settings](./user_guide/managing_settings.md)
 
 - [Topic Guide](./topic_guide/topic_guide.md)

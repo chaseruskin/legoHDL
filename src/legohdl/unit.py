@@ -887,6 +887,8 @@ class Port(Signal):
             self._route = self.Route.IN
         elif(mode.startswith('out')):
             self._route = self.Route.OUT
+        elif(mode.startswith('buffer')):
+            self._route = self.Route.BUFFER
         else:
             self._route = self.Route.OTHER
 
@@ -940,7 +942,13 @@ class Port(Signal):
         spaces = 0
         if(even and self.getRoute() == self.Route.IN):
             spaces = 1
+        #return common route
+        if(self.getRoute().name == 'INOUT'):
+            return 'inout'
         if(lang == Unit.Language.VERILOG):
+            #return inout for incompatible type buffer
+            if(self.getRoute().name == 'BUFFER'):
+                return 'inout'
             rt = str(self.getRoute().name).lower()+'put'+(spaces*' ')
         elif(lang == Unit.Language.VHDL):
             rt = str(self.getRoute().name).lower()+(spaces*' ')
