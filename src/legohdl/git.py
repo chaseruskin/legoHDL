@@ -244,7 +244,7 @@ class Git:
         if(remote == False):
             return os.path.isdir(apt.fs(path)+'.git/')
         #has it aleady been checked?
-        if(path in cls._URLstatus.keys() and 'valid' in cls._URLstatus[path].keys()):
+        if(path in cls._URLstatus.keys() and 'valid' in cls._URLstatus[path].keys() and (os.path.exists(path) ^ remote)):
             return cls._URLstatus[path]['valid']
         #actually check the remote connection
         if(path == None or path.count(".git") == 0 or path == ''):

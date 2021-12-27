@@ -225,9 +225,10 @@ class Vhdl(Language):
             if(cseg[0].lower() == 'begin'):
                 in_begin = True
 
-            #exit case - finding 'end' with architecture or its name
-            if(in_begin and len(cseg) > 1 and cseg[0].lower() == 'end'):
-                if(cseg[1].lower() == 'architecture' or cseg[1].lower() == arch_name):
+            #exit case - finding 'end' with architecture or its name (optional, can also just be 'end')
+            if(in_begin and cseg[0].lower() == 'end'):
+                if((len(cseg) > 1 and (cseg[1].lower() == 'architecture' or cseg[1].lower() == arch_name)) or
+                    (len(cseg) == 1)):
                     u.setChecked(True)
                     in_arch = False
                     in_begin = False
@@ -489,7 +490,9 @@ class Vhdl(Language):
                 continue
             #exit status - finding 'end' with 'package' or package's identifier
             if(cseg[0].lower() == 'end'):
-                if(cseg[1].lower() == pkg.E().lower() or cseg[1].lower() == 'package'):
+                if(len(cseg) > 1 and (cseg[1].lower() == pkg.E().lower() or cseg[1].lower() == 'package')):
+                    in_pkg = False
+                elif(len(cseg) == 1):
                     in_pkg = False
             #add all component names as lower case for evaluation purposes
             if(cseg[0].lower() == 'component'):
