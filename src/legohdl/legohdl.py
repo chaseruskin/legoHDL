@@ -13,11 +13,9 @@
 # ------------------------------------------------------------------------------
 
 import os, sys, shutil
-from posixpath import dirname
 import logging as log
 
 from .__version__ import __version__
-from .test import main as test
 
 from .apparatus import Apparatus as apt
 from .cfg import Cfg, Section, Key

@@ -6,3 +6,5 @@ dist/
 src/legoHDL.egg-info/
 src/legohdl/__pycache__/
 pip-wheel-metadata/
+
+man2md.py
