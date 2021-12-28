@@ -187,8 +187,120 @@ within legoHDL.</p>
 <pre><code>$ legohdl new &lt;block&gt; -remote=&quot;&lt;url&gt;&quot;
 </code></pre>
 <br>
-<h2 id="off-the-shelf-examples"><a class="header" href="#off-the-shelf-examples">Off-The-Shelf Examples</a></h2>
+<h1 id="off-the-shelf-examples"><a class="header" href="#off-the-shelf-examples">Off-The-Shelf Examples</a></h1>
 <p>This section lists random or popular HDL git repositories available on GitHub that are easily integrated into legoHDL.</p>
+<h2 id="basic-risc-v-cpu"><a class="header" href="#basic-risc-v-cpu">Basic RISC-V CPU</a></h2>
+<ul>
+<li>Project: https://github.com/Domipheus/RPU.git</li>
+<li>Author: <a href="https://github.com/Domipheus">Colin Riley</a></li>
+</ul>
+<p>One-line command:</p>
+<pre><code>$ legohdl new cpu.riscv -remote=&quot;https://github.com/Domipheus/RPU.git&quot; -fork -open
+</code></pre>
+<p>From the project's root directory:</p>
+<pre><code>$ legohdl info -more
+--- METADATA ---
+[block]
+name     = riscv
+library  = cpu
+version  = 0.0.0
+remote   = 
+vendor   = 
+requires = ()
+
+--- STATS ---
+Location = /Users/chase/develop/eel4712c/cpu/riscv/
+Size     = 465.19 KB
+Level    = DNLD
+Required by:
+        N/A
+
+VHDL units:
+    tb_unit_decoder_RV32_01    alu_int32_div_tb           
+    tb_unit_alu_RV32I_01       rpu_core_tb                
+    register_set               constants                  
+    core                       alu_RV32I                  
+    mem_controller             control_unit               
+    decoder_RV32               alu_int32_div              
+    lint_unit                  csr_unit                   
+    pc_unit                    
+</code></pre>
+<p>Viewing the entity design hierarchy:</p>
+<pre><code>$ legohdl graph
+INFO:   Identified top-level unit: core
+INFO:   Identified top-level testbench: rpu_core_tb
+INFO:   Generating dependency tree...
+--- DEPENDENCY TREE ---
+\- cpu.rpu_core_tb 
+   \- cpu.core 
+      +- cpu.mem_controller 
+      +- cpu.pc_unit 
+      +- cpu.control_unit 
+      +- cpu.decoder_RV32 
+      +- cpu.alu_RV32I 
+      |  \- cpu.alu_int32_div 
+      +- cpu.register_set 
+      +- cpu.csr_unit 
+      \- cpu.lint_unit 
+
+
+--- BLOCK ORDER ---
+[1]^-   cpu.riscv(@v0.0.0)
+</code></pre>
+<p>Everything checks out; from here you can release this block as a new version using <code>release</code> and reuse any designs in a different project.</p>
+<h2 id="simple-uart"><a class="header" href="#simple-uart">Simple UART</a></h2>
+<ul>
+<li>Project: https://github.com/jakubcabal/uart-for-fpga</li>
+<li>Author: <a href="https://github.com/jakubcabal">Jakub Cabal</a></li>
+</ul>
+<p>One-line command:</p>
+<pre><code>$ legohdl new comms.uart -remote=https://github.com/jakubcabal/uart-for-fpga.git -fork -open
+</code></pre>
+<p>From the project's root directory:</p>
+<pre><code>$ legohdl info -more
+--- METADATA ---
+[block]
+name     = uart
+library  = comms
+version  = 0.0.0
+remote   = 
+vendor   = 
+requires = ()
+
+--- STATS ---
+Location = /Users/chase/develop/eel4712c/comms/uart/
+Size     = 331.37 KB
+Level    = DNLD
+Required by:
+        N/A
+
+VHDL units:
+    RST_SYNC                 UART_LOOPBACK_CYC1000    UART2WBM                 
+    UART2WB_FPGA_CYC1000     UART                     UART_PARITY              
+    UART_CLK_DIV             UART_TX                  UART_DEBOUNCER           
+    UART_RX                  UART_TB                  
+</code></pre>
+<p>Viewing the entity hierarchy:</p>
+<pre><code>$ legohdl graph uart -tb=uart_tb
+INFO:   Identified top-level testbench: UART_TB
+INFO:   Generating dependency tree...
+--- DEPENDENCY TREE ---
+\- comms.UART_TB 
+   \- comms.UART 
+      +- comms.UART_CLK_DIV 
+      +- comms.UART_DEBOUNCER 
+      +- comms.UART_RX 
+      |  +- comms.UART_CLK_DIV 
+      |  \- comms.UART_PARITY 
+      \- comms.UART_TX 
+         +- comms.UART_CLK_DIV 
+         \- comms.UART_PARITY 
+
+
+--- BLOCK ORDER ---
+[1]^-   comms.uart(@v0.0.0)
+</code></pre>
+<p>Everything checks out; from here you can release this block as a new version using <code>release</code> and reuse any designs in a different project. Before releasing, you could also run <code>legohdl export -pack</code> to create a VHDL package file for all non-testbench design components.</p>
 
                     </main>
 
