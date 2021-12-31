@@ -241,8 +241,9 @@ class Git:
         path.
         '''
         #check local path
+        is_local = os.path.isdir(apt.fs(path)+'.git/')
         if(remote == False):
-            return os.path.isdir(apt.fs(path)+'.git/')
+            return is_local
         #has it aleady been checked?
         if(path in cls._URLstatus.keys() and 'valid' in cls._URLstatus[path].keys() and (os.path.exists(path) ^ remote)):
             return cls._URLstatus[path]['valid']
@@ -253,7 +254,9 @@ class Git:
 
         log.info("Checking ability to link to remote url "+path+"...")
         out,err = apt.execute('git', 'ls-remote', path, quiet=cls.QUIET, returnoutput=True)
-        is_valid = (len(err) == 0)
+        #a valid remote repo when not a local path and checks out with ls-remote
+        is_valid = (len(err) == 0) and (is_local == False)
+        
         is_blank = is_valid and (len(out) == 0)
         #update dictionary to log this url
         cls.setRepoProperties(path, valid=is_valid, blank=is_blank)
