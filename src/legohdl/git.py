@@ -240,6 +240,8 @@ class Git:
         empty for faster performance the next time the method is called on same
         path.
         '''
+        if(path == None):
+            return False
         #check local path
         is_local = os.path.isdir(apt.fs(path)+'.git/')
         if(remote == False):
