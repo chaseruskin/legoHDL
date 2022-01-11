@@ -1401,6 +1401,22 @@ INFO:   Generating dependency tree...
 <p>Everything checks out; from here you can release this block as a new version using <code>release</code> and reuse any designs in a different project. Before releasing, you could also run <code>legohdl export -pack</code> to create a VHDL package file for all non-testbench design components.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="writing-plugins"><a class="header" href="#writing-plugins">Writing Plugins</a></h1>
 <p>This page walks through a general procedure for how a plugin could be written within the scope of legoHDL.</p>
+<p>A <a href="user_guide/./../glossary.html#plugin">plugin</a> is loosely defined as a command. However, to be beneficial to HDL designing, these commands will typically be a wrapper of a FPGA-tool, such as quartus, GHDL, verilator, etc.</p>
+<p>Plugins are defined in the legohdl.cfg file.</p>
+<pre><code class="language-ini">[plugin]
+backend1 = echo &quot;hello world!&quot;
+backend2 = python c:/users/chase/hdl/plugins/ghdl.py
+</code></pre>
+<p>Here, <code>ghdl.py</code> is a custom user-defined script that wraps the GHDL command-line tool.</p>
+<p>The general series of steps a plugin should follow are:</p>
+<ol>
+<li>Collect data from the <a href="user_guide/./../glossary.html#blueprint">blueprint</a> file</li>
+<li>Perform an action with the collected data</li>
+</ol>
+<blockquote>
+<p><strong>Note:</strong> Remember, you can extend your plugin to handle its own command-line arguments for an even more customized experiences/shortcuts.</p>
+</blockquote>
+<p>The blueprint file, if created, can be guaranteed to located from the block's base directory at <code>/build/blueprint</code> after a successful export.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="managing-settings"><a class="header" href="#managing-settings">Managing Settings</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="topic-guide"><a class="header" href="#topic-guide">Topic Guide</a></h1>
 <p>In this chapter, we go in-depth explaining legoHDL and its major concepts.</p>
