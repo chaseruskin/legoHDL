@@ -1769,6 +1769,11 @@ end architecture;
 <li>Keys and sections are case-insensitive. </li>
 <li>leading and trailing whitespace is trimmed from keys and regular values (indentation is ignored).</li>
 </ul>
+<h2 id="grammar"><a class="header" href="#grammar">Grammar</a></h2>
+<ul>
+<li>Sections must be on their own line (ignoring leading whitespace).</li>
+<li>A key declaration must be the beginning of a line (ignoring leading whitespace).</li>
+</ul>
 <h2 id="structure"><a class="header" href="#structure">Structure</a></h2>
 <p>There are 4 components to legoHDL cfg files: </p>
 <ul>
@@ -1777,35 +1782,54 @@ end architecture;
 <li>keys</li>
 <li>values</li>
 </ul>
-<h3 id="comments"><a class="header" href="#comments">Comments</a></h3>
+<h2 id="comments"><a class="header" href="#comments">Comments</a></h2>
 <p>Single-line comments are supported and must begin with a <code>;</code>.</p>
 <pre><code class="language-INI">; a comment!
 </code></pre>
-<h3 id="sections-1"><a class="header" href="#sections-1">Sections</a></h3>
+<h2 id="sections-1"><a class="header" href="#sections-1">Sections</a></h2>
 <p>Sections are enclosed with <code>[</code> <code>]</code>. Sections must be defined on their own line. Sections can be nested up to 2 levels; begin a section with <code>[.</code> instead of <code>[</code> to signify this section is nested within the immediately previously declared section.</p>
 <pre><code class="language-INI">[workspace]
-...
+
 
 [.lab] ; flattens out to section &quot;workspace.lab&quot;
-...
+
 </code></pre>
-<h3 id="keys"><a class="header" href="#keys">Keys</a></h3>
+<h2 id="keys"><a class="header" href="#keys">Keys</a></h2>
 <p>Keys must be the first thing on a new line and followed by a <code>=</code>. Keys must be a single word wihout spaces. Keys are used to define values.</p>
-<pre><code class="language-INI">secret-key = 30
+<pre><code class="language-INI">public-key = 42942
+
+secret-key = 30
 </code></pre>
-<h3 id="values"><a class="header" href="#values">Values</a></h3>
-<p>Values are WYSIWYG. All values are interpreted as strings. When not encapsulating a value in double quotes (<code>&quot;</code> <code>&quot;</code>), a newline in the value is converted into a single space during file reading. You can also you double quotes to make sure <code>;</code> or any other special cfg characters are kept in the value.</p>
-<p>Values can also be lists under the following rules:</p>
-<ul>
-<li>use <code>(</code> to begin the list and <code>)</code> to end the list</li>
-<li>items are separated by <code>,</code></li>
-</ul>
-<pre><code class="language-INI">; normal value
-norm-key = What you see is what you get!
-; this key will keep the ';'
-save-key = &quot;DO NOT TOUCH; THIS IS IMPORTANT&quot;
-; this key lists items
+<h2 id="values"><a class="header" href="#values">Values</a></h2>
+<p>Values are WYSIWYG. There are three types of value intpretations: basic literals, string literals, and lists.</p>
+<h3 id="basic-literals"><a class="header" href="#basic-literals">Basic literals</a></h3>
+<p>A basic literal evaluates as a string and is not encapsulated by any delimiters. Leading and trailing whitespace is trimmed. A new-line within a basic literal is converted into a space. This design implementation allows for neater formatting, increasing user readability.</p>
+<pre><code class="language-ini">basic-key = What you see is what you get!
+
+summary = This is a long block of text. In order to keep readability a priority, 
+          new-lines will be treated as a space and a lines leading whitespace 
+          will be ignored.
+</code></pre>
+<h3 id="string-literals"><a class="header" href="#string-literals">String literals</a></h3>
+<p>A string literal evaluates as a string and allows for any character to be stored within the string except the delimiting character (<code>&quot;</code>).</p>
+<pre><code class="language-ini">; a key that captures the ';' character
+true-key = &quot;Do not touch; this is important!&quot;
+
+; a key that captures the '=' character
+question = &quot;Does P = NP ?&quot;
+</code></pre>
+<h3 id="lists"><a class="header" href="#lists">Lists</a></h3>
+<p>A list evaulates each item as either a string literal or basic literal. The value must begin with a <code>(</code> character and end with a <code>)</code> character. Items are separated by a <code>,</code> character.</p>
+<pre><code class="language-ini">; this key lists items of basic literals
 list-key = (item1, item2, item3)
+
+; this stores a combination of string literals and basic literals
+combo-key = (
+    &quot;0&quot;,
+    200,
+    &quot;1&quot;,
+    300
+)
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
 <!-- Alternate quote: “Now I am the ruler of all the ocean! The waves obey my every whim!” -Ursula, The Little Mermaid -->
