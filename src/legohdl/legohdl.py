@@ -28,7 +28,6 @@ from .label import Label
 from .git import Git
 from .map import Map
 from .unit import Unit
-from .gui import GUI
 
 
 class legoHDL:
@@ -1396,10 +1395,12 @@ Enter:
                 Label.load()
                 #load plugin
                 Plugin.load()
-                #enable GUI
-                settings_gui = GUI()
+                #enable GUI :TO-DO: REIMPLEMENT GUI
+                #settings_gui = GUI()
                 #adjust success if initialization failed
-                gui_mode = settings_gui.initialized() 
+                #gui_mode = settings_gui.initialized() 
+                #remove this line after re-implementing GUI
+                gui_mode = False
 
             if(valid_editor and gui_mode == False):
                 log.info("Opening settings CFG file at... "+apt.fs(apt.HIDDEN+apt.SETTINGS_FILE))

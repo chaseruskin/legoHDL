@@ -5,6 +5,8 @@
 # Description:
 #   This script contains the class describing the settings GUI framework
 #   and behavior for interacting, modifying, and saving settings.
+# TO-DO:
+#   [ ] refactor and reimplement
 # ------------------------------------------------------------------------------
 
 import os, webbrowser

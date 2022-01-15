@@ -9,6 +9,10 @@ legoHDL stores and retrieves data from files with a `.cfg` extension. This file 
 - Keys and sections are case-insensitive. 
 - leading and trailing whitespace is trimmed from keys and regular values (indentation is ignored).
 
+## Grammar
+
+- Sections must be on their own line (ignoring leading whitespace).
+- A key declaration must be the beginning of a line (ignoring leading whitespace).
 
 ## Structure
 
@@ -18,7 +22,7 @@ There are 4 components to legoHDL cfg files:
 - keys
 - values
 
-### Comments
+## Comments
 
 Single-line comments are supported and must begin with a `;`.
 
@@ -26,39 +30,69 @@ Single-line comments are supported and must begin with a `;`.
 ; a comment!
 ```
 
-### Sections
+## Sections
 
 Sections are enclosed with `[` `]`. Sections must be defined on their own line. Sections can be nested up to 2 levels; begin a section with `[.` instead of `[` to signify this section is nested within the immediately previously declared section.
 
 ```INI
 [workspace]
-...
+
 
 [.lab] ; flattens out to section "workspace.lab"
-...
+
 ```
 
-### Keys
+## Keys
 
 Keys must be the first thing on a new line and followed by a `=`. Keys must be a single word wihout spaces. Keys are used to define values.
 
 ```INI
+public-key = 42942
+
 secret-key = 30
 ```
 
-### Values
+## Values
 
-Values are WYSIWYG. All values are interpreted as strings. When not encapsulating a value in double quotes (`"` `"`), a newline in the value is converted into a single space during file reading. You can also you double quotes to make sure `;` or any other special cfg characters are kept in the value.
+Values are WYSIWYG. There are three types of value intpretations: basic literals, string literals, and lists.
 
-Values can also be lists under the following rules:
-- use `(` to begin the list and `)` to end the list
-- items are separated by `,`
+### Basic literals
 
-```INI
-; normal value
-norm-key = What you see is what you get!
-; this key will keep the ';'
-save-key = "DO NOT TOUCH; THIS IS IMPORTANT"
-; this key lists items
+A basic literal evaluates as a string and is not encapsulated by any delimiters. Leading and trailing whitespace is trimmed. A new-line within a basic literal is converted into a space. This design implementation allows for neater formatting, increasing user readability.
+
+```ini
+basic-key = What you see is what you get!
+
+summary = This is a long block of text. In order to keep readability a priority, 
+          new-lines will be treated as a space and a lines leading whitespace 
+          will be ignored.
+```
+
+### String literals
+
+A string literal evaluates as a string and allows for any character to be stored within the string except the delimiting character (`"`).
+
+```ini
+; a key that captures the ';' character
+true-key = "Do not touch; this is important!"
+
+; a key that captures the '=' character
+question = "Does P = NP ?"
+```
+
+### Lists
+
+A list evaulates each item as either a string literal or basic literal. The value must begin with a `(` character and end with a `)` character. Items are separated by a `,` character.
+
+```ini
+; this key lists items of basic literals
 list-key = (item1, item2, item3)
+
+; this stores a combination of string literals and basic literals
+combo-key = (
+    "0",
+    200,
+    "1",
+    300
+)
 ```
