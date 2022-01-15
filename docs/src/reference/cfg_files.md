@@ -54,7 +54,7 @@ secret-key = 30
 
 ## Values
 
-Values are WYSIWYG. There are three types of value intpretations: basic literals, string literals, and lists.
+Values are WYSIWYG. There are three types of value intpretations: _basic literals_, _string literals_, and _lists_.
 
 ### Basic literals
 
@@ -64,8 +64,8 @@ A basic literal evaluates as a string and is not encapsulated by any delimiters.
 basic-key = What you see is what you get!
 
 summary = This is a long block of text. In order to keep readability a priority, 
-          new-lines will be treated as a space and a lines leading whitespace 
-          will be ignored.
+          newlines will be treated as a space and the leading whitespace for
+          each line will be ignored.
 ```
 
 ### String literals
