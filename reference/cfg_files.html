@@ -183,14 +183,14 @@
 secret-key = 30
 </code></pre>
 <h2 id="values"><a class="header" href="#values">Values</a></h2>
-<p>Values are WYSIWYG. There are three types of value intpretations: basic literals, string literals, and lists.</p>
+<p>Values are WYSIWYG. There are three types of value intpretations: <em>basic literals</em>, <em>string literals</em>, and <em>lists</em>.</p>
 <h3 id="basic-literals"><a class="header" href="#basic-literals">Basic literals</a></h3>
 <p>A basic literal evaluates as a string and is not encapsulated by any delimiters. Leading and trailing whitespace is trimmed. A new-line within a basic literal is converted into a space. This design implementation allows for neater formatting, increasing user readability.</p>
 <pre><code class="language-ini">basic-key = What you see is what you get!
 
 summary = This is a long block of text. In order to keep readability a priority, 
-          new-lines will be treated as a space and a lines leading whitespace 
-          will be ignored.
+          newlines will be treated as a space and the leading whitespace for
+          each line will be ignored.
 </code></pre>
 <h3 id="string-literals"><a class="header" href="#string-literals">String literals</a></h3>
 <p>A string literal evaluates as a string and allows for any character to be stored within the string except the delimiting character (<code>&quot;</code>).</p>

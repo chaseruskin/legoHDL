@@ -1418,6 +1418,37 @@ backend2 = python c:/users/chase/hdl/plugins/ghdl.py
 </blockquote>
 <p>The blueprint file, if created, can be guaranteed to located from the block's base directory at <code>/build/blueprint</code> after a successful export.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="defining-a-template"><a class="header" href="#defining-a-template">Defining a Template</a></h1>
+<p>A template is helpful in that it can encourage a team to use a particular coding practice and removes the need to continually write boilerplate code.</p>
+<p>A template can exist anywhere on a user's machine. </p>
+<p>To set a folder as the defined template, edit the <code>template</code> key under the <code>[general]</code> section in the <code>legohdl.cfg</code> file.</p>
+<pre><code class="language-ini">[general]
+    template = /users/chase/develop/template/
+</code></pre>
+<p>Organize the folder's directory as fit. A block is created using the defined template by default. This means the folder is copied into a new location under the workspace's local path.</p>
+<h2 id="viewing-templated-files"><a class="header" href="#viewing-templated-files">Viewing templated files</a></h2>
+<pre><code>$ legohdl list -template
+Relative Path                                                Hidden  
+------------------------------------------------------------ --------
+/.hidden/tb/TEMPLATE.vhd                                     yes     
+/.gitignore                                                  -       
+/src/TEMPLATE.vhd                                            -       
+</code></pre>
+<h2 id="editing-the-template"><a class="header" href="#editing-the-template">Editing the template</a></h2>
+<p>To open the template folder in your configured text-editor run the following command:</p>
+<pre><code>$ legohdl open -template
+</code></pre>
+<h2 id="importing-a-templated-file-into-an-existing-block"><a class="header" href="#importing-a-templated-file-into-an-existing-block">Importing a templated file into an existing block</a></h2>
+<p>An existing block can have a new file based off a templated file with the following command:</p>
+<pre><code>$ legohdl new &lt;file&gt; -file=&lt;template-file&gt;
+</code></pre>
+<p>where <code>&lt;file&gt;</code> is a relative non-existent path and <code>&lt;template-file&gt;</code> is a value listed under the template's &quot;Relative Path&quot; column.</p>
+<p>Use <code>-force</code> to overwrite a file that already exists.</p>
+<h2 id="hiding-files-for-particular-scenarios"><a class="header" href="#hiding-files-for-particular-scenarios">Hiding files for particular scenarios</a></h2>
+<p>Templates will not copy in hidden directories when creating a block.</p>
+<p>To hide a file for availability when only needed on a case-by-case basis, nest it inside a hidden directory.</p>
+<p>An example defining a folder named <code>.hidden</code> located at the root of our template's path.</p>
+<pre><code>/.hidden/tb/TEMPLATE.vhd 
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sharing-settings-profiles"><a class="header" href="#sharing-settings-profiles">Sharing Settings: Profiles</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="managing-settings"><a class="header" href="#managing-settings">Managing Settings</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="topic-guide"><a class="header" href="#topic-guide">Topic Guide</a></h1>
@@ -1801,14 +1832,14 @@ end architecture;
 secret-key = 30
 </code></pre>
 <h2 id="values"><a class="header" href="#values">Values</a></h2>
-<p>Values are WYSIWYG. There are three types of value intpretations: basic literals, string literals, and lists.</p>
+<p>Values are WYSIWYG. There are three types of value intpretations: <em>basic literals</em>, <em>string literals</em>, and <em>lists</em>.</p>
 <h3 id="basic-literals"><a class="header" href="#basic-literals">Basic literals</a></h3>
 <p>A basic literal evaluates as a string and is not encapsulated by any delimiters. Leading and trailing whitespace is trimmed. A new-line within a basic literal is converted into a space. This design implementation allows for neater formatting, increasing user readability.</p>
 <pre><code class="language-ini">basic-key = What you see is what you get!
 
 summary = This is a long block of text. In order to keep readability a priority, 
-          new-lines will be treated as a space and a lines leading whitespace 
-          will be ignored.
+          newlines will be treated as a space and the leading whitespace for
+          each line will be ignored.
 </code></pre>
 <h3 id="string-literals"><a class="header" href="#string-literals">String literals</a></h3>
 <p>A string literal evaluates as a string and allows for any character to be stored within the string except the delimiting character (<code>&quot;</code>).</p>

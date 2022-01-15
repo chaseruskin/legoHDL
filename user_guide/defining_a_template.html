@@ -144,6 +144,37 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="defining-a-template"><a class="header" href="#defining-a-template">Defining a Template</a></h1>
+<p>A template is helpful in that it can encourage a team to use a particular coding practice and removes the need to continually write boilerplate code.</p>
+<p>A template can exist anywhere on a user's machine. </p>
+<p>To set a folder as the defined template, edit the <code>template</code> key under the <code>[general]</code> section in the <code>legohdl.cfg</code> file.</p>
+<pre><code class="language-ini">[general]
+    template = /users/chase/develop/template/
+</code></pre>
+<p>Organize the folder's directory as fit. A block is created using the defined template by default. This means the folder is copied into a new location under the workspace's local path.</p>
+<h2 id="viewing-templated-files"><a class="header" href="#viewing-templated-files">Viewing templated files</a></h2>
+<pre><code>$ legohdl list -template
+Relative Path                                                Hidden  
+------------------------------------------------------------ --------
+/.hidden/tb/TEMPLATE.vhd                                     yes     
+/.gitignore                                                  -       
+/src/TEMPLATE.vhd                                            -       
+</code></pre>
+<h2 id="editing-the-template"><a class="header" href="#editing-the-template">Editing the template</a></h2>
+<p>To open the template folder in your configured text-editor run the following command:</p>
+<pre><code>$ legohdl open -template
+</code></pre>
+<h2 id="importing-a-templated-file-into-an-existing-block"><a class="header" href="#importing-a-templated-file-into-an-existing-block">Importing a templated file into an existing block</a></h2>
+<p>An existing block can have a new file based off a templated file with the following command:</p>
+<pre><code>$ legohdl new &lt;file&gt; -file=&lt;template-file&gt;
+</code></pre>
+<p>where <code>&lt;file&gt;</code> is a relative non-existent path and <code>&lt;template-file&gt;</code> is a value listed under the template's &quot;Relative Path&quot; column.</p>
+<p>Use <code>-force</code> to overwrite a file that already exists.</p>
+<h2 id="hiding-files-for-particular-scenarios"><a class="header" href="#hiding-files-for-particular-scenarios">Hiding files for particular scenarios</a></h2>
+<p>Templates will not copy in hidden directories when creating a block.</p>
+<p>To hide a file for availability when only needed on a case-by-case basis, nest it inside a hidden directory.</p>
+<p>An example defining a folder named <code>.hidden</code> located at the root of our template's path.</p>
+<pre><code>/.hidden/tb/TEMPLATE.vhd 
+</code></pre>
 
                     </main>
 
