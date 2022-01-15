@@ -13,12 +13,17 @@
 - [User Guide](./user_guide/user_guide.md)
     - [Converting Code](./user_guide/converting_code.md)
     - [Writing Plugins](./user_guide/writing_plugins.md)
+    - [Defining a Template](./user_guide/defining_a_template.md)
+    - [Sharing Settings: Profiles](./user_guide/profiles.md)
     - [Managing Settings](./user_guide/managing_settings.md)
 
 - [Topic Guide](./topic_guide/topic_guide.md)
     - [Why does legoHDL exist?](./topic_guide/why_legohdl.md)
     - [Blocks](./topic_guide/blocks.md)
+    - [Workspaces](./topic_guide/workspaces.md)
     - [Versioning](./topic_guide/versioning.md)
+    - [Plugins](./topic_guide/plugins.md)
+    - [Vendors](./topic_guide/vendors.md)
     - [Intelligent Component Recognition](./topic_guide/intell_comp_rec.md)
 
 - [Reference](./reference/reference.md)
