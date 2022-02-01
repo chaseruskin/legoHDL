@@ -10,6 +10,8 @@
 
 legoHDL is a complete, robust, and flexible HDL package manager and development tool used through the command-line interface. It provides full package management capabilities and incorporates special functionality specific to HDL designs to rapidly improve development workflow.
 
+>__NOTE:__ This project is considered a prototype and has neared its final major pushes. Feedback is welcome from trying out the tool. I have learned a lot and this project has grown greatly from the lessons learned. More enhancements and revisions will be applied when creating the real product. Real development is planned to be written in Rust under the test-driven-development methodology.
+
 __VHDL__ and __Verilog__ are supported as well as mixed-language.
 
 Cross-platform compatibility with __macos__, __ubuntu__, and __windows__.
