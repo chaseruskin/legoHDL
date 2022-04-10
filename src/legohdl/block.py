@@ -134,7 +134,7 @@ class Block:
         return self._lvl
 
 
-    def addToInventory(self):
+    def addToInventory(self) -> bool:
         '''
         Adds the self block object to the class container at the correct level.
 
@@ -145,6 +145,9 @@ class Block:
         Returns:
             (bool): determine if the block was successfully added (spot empty)
         '''
+        if(self.M() == None or self.L() == None or self.N() == None):
+            print('warning: invalid manifest file:', self.getMetaFile())
+            return False
         #make sure appropriate scopes exists in inventory
         if(self.M().lower() not in Block.Inventory.keys()):
             Block.Inventory[self.M()] = Map()
